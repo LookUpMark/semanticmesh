@@ -190,7 +190,7 @@ class BuilderState(TypedDict):
 
     # Schema enrichment outputs
     table_schemas: list[TableSchema]  # parsed DDL output
-    enriched_tables: list[TableSchema]  # after LLM Schema Enrichment (enriched names/descriptions)
+    enriched_tables: list[EnrichedTableSchema]  # after LLM Schema Enrichment (enriched names/descriptions)
 
     # Mapping outputs
     mapping_proposals: list[Mapping]  # BusinessConcept -> PhysicalTable

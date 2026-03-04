@@ -1,2 +1,30 @@
-Sample business glossary document for testing PDF ingestion.
-This is a placeholder — replace with a real multi-page PDF.
+BUSINESS GLOSSARY — E-COMMERCE DOMAIN
+
+Customer
+A Customer is any individual or legal entity that has registered an account on the platform and has made at least one purchase. Customers are identified by a unique Customer ID and may have one or more associated delivery addresses. Synonyms: client, buyer, account holder.
+
+Product
+A Product is a tangible or digital item offered for sale on the platform. Each Product is uniquely identified by a SKU (Stock Keeping Unit) code and belongs to exactly one Category. Products have a defined unit price and an active/inactive status flag. Synonyms: item, article, goods.
+
+SalesOrder
+A SalesOrder is a formal transactional document that records the agreement between the platform and a Customer to supply one or more Products at specified quantities and prices, on a specific date. Each SalesOrder has a unique Order ID and a status (PENDING, CONFIRMED, SHIPPED, CANCELLED). Synonyms: order, purchase order, transaction.
+
+OrderLineItem
+An OrderLineItem is a single line within a SalesOrder that specifies a particular Product, the quantity ordered, and the agreed unit price at time of purchase. A SalesOrder must contain at least one OrderLineItem. Synonyms: line item, order detail, order row.
+
+Category
+A Category is a hierarchical classification grouping related Products. Categories can have parent Categories, forming a tree structure. Each Product belongs to exactly one leaf Category. Synonyms: product category, product type, product group.
+
+CustomerAddress
+A CustomerAddress is a postal or geographic address associated with a Customer, used for delivery or billing purposes. A Customer may have multiple CustomerAddresses, of which one is designated as the primary address. Synonyms: delivery address, shipping address, billing address.
+
+Inventory
+Inventory refers to the quantity of a Product currently available in a specific warehouse location. Inventory levels are updated in real-time with each SalesOrder confirmation and product restocking event. Synonyms: stock, available quantity, stock level.
+
+KEY RELATIONSHIPS:
+- A Customer places one or more SalesOrders.
+- A SalesOrder contains one or more OrderLineItems.
+- Each OrderLineItem references exactly one Product.
+- A Product belongs to one Category.
+- A Customer has one or more CustomerAddresses.
+- Inventory tracks the available stock for each Product.

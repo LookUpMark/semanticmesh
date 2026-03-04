@@ -1,2 +1,79 @@
-Sample data dictionary for testing text ingestion.
-This is a placeholder — replace with actual data dictionary content.
+DATA DICTIONARY — E-COMMERCE DATABASE
+
+Table: CUSTOMER_MASTER
+Description: Master record for all registered platform customers. Each row represents one customer account.
+Key Columns:
+  - CUST_ID (INT, PK): Unique numeric identifier for the customer.
+  - FULL_NAME (VARCHAR 200): Customer's full legal name.
+  - EMAIL (VARCHAR 150): Primary contact email address. Must be unique.
+  - REGION_CODE (VARCHAR 10): Geographic region code (ISO 3166-2 subdivision).
+  - CREATED_AT (DATETIME): Timestamp of account creation.
+  - IS_ACTIVE (BOOLEAN): Whether the customer account is active.
+
+Table: TB_PRODUCT
+Description: Master catalogue of all products available for sale on the platform.
+Key Columns:
+  - PRODUCT_ID (INT, PK): Unique numeric product identifier.
+  - SKU (VARCHAR 50, UNIQUE): Stock Keeping Unit — human-readable product code.
+  - PRODUCT_NAME (VARCHAR 300): Full product title.
+  - CATEGORY_ID (INT, FK -> TB_CATEGORY): The category this product belongs to.
+  - UNIT_PRICE (DECIMAL 10,2): Current selling price per unit.
+  - IS_ACTIVE (BOOLEAN): Whether the product is currently listed for sale.
+
+Table: SALES_ORDER_HDR
+Description: Header record for each customer sales order. One row per order.
+Key Columns:
+  - ORDER_ID (BIGINT, PK): Unique order identifier.
+  - CUST_ID (INT, FK -> CUSTOMER_MASTER): The customer who placed the order.
+  - ORDER_DATE (DATE): Date the order was placed.
+  - TOTAL_AMT (DECIMAL 12,2): Total monetary value of the order.
+  - STATUS_CODE (VARCHAR 20): Order status — PENDING, CONFIRMED, SHIPPED, or CANCELLED.
+
+Table: ORDER_LINE_ITEM
+Description: Individual product lines within a sales order.
+Key Columns:
+  - LINE_ID (INT, PK): Unique line item identifier.
+  - ORDER_ID (BIGINT, FK -> SALES_ORDER_HDR): Parent order.
+  - PRODUCT_ID (INT, FK -> TB_PRODUCT): The product ordered.
+  - QUANTITY (INT): Number of units ordered.
+  - UNIT_PRICE (DECIMAL 10,2): Price per unit at time of order.
+
+Table: TB_CATEGORY
+Description: Hierarchical product category tree.
+Key Columns:
+  - CATEGORY_ID (INT, PK): Unique category identifier.
+  - CATEGORY_NAME (VARCHAR 200): Human-readable category name.
+  - PARENT_CATEGORY_ID (INT, FK -> TB_CATEGORY): Parent category (NULL for root categories).
+
+Table: CUST_ADDRESS
+Description: Delivery and billing addresses for customers.
+Key Columns:
+  - ADDRESS_ID (INT, PK): Unique address identifier.
+  - CUST_ID (INT, FK -> CUSTOMER_MASTER): Owning customer.
+  - ADDRESS_TYPE (VARCHAR 20): DELIVERY or BILLING.
+  - STREET (VARCHAR 300): Street address.
+  - CITY (VARCHAR 100): City name.
+  - POSTAL_CODE (VARCHAR 20): Postal/ZIP code.
+  - COUNTRY_CODE (CHAR 2): ISO 3166-1 alpha-2 country code.
+  - IS_PRIMARY (BOOLEAN): Whether this is the customer's primary address.
+
+Table: INVENTORY
+Description: Real-time stock levels per product per warehouse location.
+Key Columns:
+  - INVENTORY_ID (INT, PK): Unique record identifier.
+  - PRODUCT_ID (INT, FK -> TB_PRODUCT): The stocked product.
+  - WAREHOUSE_CODE (VARCHAR 20): Warehouse location identifier.
+  - QUANTITY_ON_HAND (INT): Number of units currently in stock.
+  - LAST_UPDATED (DATETIME): Timestamp of last stock level update.
+
+Table: SYS_AUDIT_LOG
+Description: SYSTEM TABLE — Records all data modification events for compliance auditing. Contains no business data. Should NOT be mapped to any business concept.
+Key Columns:
+  - LOG_ID (BIGINT, PK, AUTO_INCREMENT): Unique log entry.
+  - ACTION_TYPE (VARCHAR 50): INSERT, UPDATE, or DELETE.
+  - TABLE_NAME (VARCHAR 100): Name of the affected table.
+  - RECORD_ID (VARCHAR 100): Primary key of the affected record (as string).
+  - CHANGED_BY (VARCHAR 100): Username that performed the change.
+  - CHANGED_AT (DATETIME): Timestamp of the change.
+  - OLD_VALUES (JSON): Previous values (for UPDATE/DELETE).
+  - NEW_VALUES (JSON): New values (for INSERT/UPDATE).
