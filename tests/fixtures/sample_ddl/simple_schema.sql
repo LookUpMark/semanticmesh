@@ -1,0 +1,2 @@
+-- Simple schema fixture: 3 tables, 1 FK relationship.
+-- Used by UT-03 (DDL parser) and IT-01 (Builder Graph small schema).

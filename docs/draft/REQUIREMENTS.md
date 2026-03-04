@@ -126,14 +126,23 @@ thesis/
 ├── docs/
 │   └── draft/
 │       ├── SPECS.md
-│       └── REQUIREMENTS.md          ← this file
+│       ├── REQUIREMENTS.md          ← this file
+│       ├── ADR.md
+│       ├── PROMPTS.md
+│       ├── TEST_PLAN.md
+│       ├── DATASET.md
+│       └── ABLATION.md
 ├── src/
+│   ├── __init__.py
 │   ├── config/
 │   │   ├── __init__.py
-│   │   └── settings.py              # Pydantic BaseSettings, all env vars
+│   │   ├── settings.py              # Pydantic BaseSettings, all env vars
+│   │   ├── llm_factory.py           # ChatOpenAI builder per role (reasoning/extraction/generation)
+│   │   └── logging.py               # Structured JSON logging setup
 │   ├── models/
 │   │   ├── __init__.py
-│   │   └── schemas.py               # All Pydantic v2 data models
+│   │   ├── schemas.py               # All Pydantic v2 data models
+│   │   └── state.py                 # LangGraph state: BuilderState, QueryState
 │   ├── ingestion/
 │   │   ├── __init__.py
 │   │   ├── pdf_loader.py            # EP-02: PDF chunking
@@ -144,18 +153,23 @@ thesis/
 │   │   └── triplet_extractor.py     # EP-03: SLM extraction node
 │   ├── resolution/
 │   │   ├── __init__.py
-│   │   └── entity_resolver.py       # EP-04: 2-stage ER
+│   │   ├── blocking.py              # EP-04 Stage 1: embedding-based K-NN blocking
+│   │   ├── llm_judge.py             # EP-04 Stage 2: LLM merge/separate judge
+│   │   └── entity_resolver.py       # EP-04: orchestrator (blocking → judge → merge)
 │   ├── mapping/
 │   │   ├── __init__.py
 │   │   ├── rag_mapper.py            # EP-06: RAG semantic mapping node
-│   │   └── validator.py             # EP-07: Pydantic + Actor-Critic validation
+│   │   ├── validator.py             # EP-07: Pydantic + Actor-Critic validation
+│   │   └── hitl.py                  # EP-08: HITL review payload + decision handling
 │   ├── graph/
 │   │   ├── __init__.py
-│   │   ├── cypher_generator.py      # EP-09: Cypher generation + healing
+│   │   ├── cypher_generator.py      # EP-09: Cypher generation from mappings
+│   │   ├── cypher_healer.py         # EP-09: Cypher healing loop (retry on error)
 │   │   ├── neo4j_client.py          # EP-10: Neo4j driver wrapper
 │   │   └── builder_graph.py         # EP-11: LangGraph Builder DAG
 │   ├── retrieval/
 │   │   ├── __init__.py
+│   │   ├── embeddings.py            # EP-12: FlagEmbedding BGE-M3 wrapper
 │   │   ├── hybrid_retriever.py      # EP-12: Vector + BM25 + Graph traversal
 │   │   └── reranker.py              # EP-13: Cross-Encoder reranking
 │   ├── generation/
@@ -165,20 +179,69 @@ thesis/
 │   │   └── query_graph.py           # EP-15: LangGraph Query DAG
 │   ├── prompts/
 │   │   ├── __init__.py
-│   │   └── templates.py             # All prompt templates centralised
+│   │   ├── templates.py             # All prompt templates centralised
+│   │   └── few_shot.py              # Few-shot example bank (Cypher, mapping)
 │   └── evaluation/
 │       ├── __init__.py
-│       └── ragas_runner.py          # EP-16: RAGAS evaluation pipeline
+│       ├── ragas_runner.py          # EP-16: RAGAS evaluation pipeline
+│       ├── custom_metrics.py        # EP-16: cypher_healing_rate, hitl_confidence_agreement
+│       └── ablation_runner.py       # Ablation experiment runner (see ABLATION.md)
 ├── tests/
+│   ├── conftest.py                  # Shared fixtures (settings, mock LLM, Neo4j)
 │   ├── unit/
+│   │   ├── __init__.py
+│   │   ├── test_settings.py         # UT-01
+│   │   ├── test_pdf_loader.py       # UT-02
+│   │   ├── test_ddl_parser.py       # UT-03
+│   │   ├── test_triplet_extractor.py # UT-04
+│   │   ├── test_entity_resolver.py  # UT-05 + UT-06
+│   │   ├── test_schema_enricher.py  # UT-17
+│   │   ├── test_rag_mapper.py       # UT-07
+│   │   ├── test_validator.py        # UT-08
+│   │   ├── test_cypher_generator.py # UT-09
+│   │   ├── test_cypher_healer.py    # UT-10
+│   │   ├── test_neo4j_client.py     # UT-11
+│   │   ├── test_hybrid_retriever.py # UT-12
+│   │   ├── test_reranker.py         # UT-13
+│   │   ├── test_answer_generator.py # UT-14
+│   │   ├── test_hallucination_grader.py # UT-15
+│   │   ├── test_prompts.py          # UT-16
+│   │   └── test_web_search_fallback.py  # UT-18
 │   ├── integration/
+│   │   ├── __init__.py
+│   │   ├── test_builder_graph.py    # IT-01, IT-02, IT-03, IT-05
+│   │   ├── test_query_graph.py      # IT-06, IT-07
+│   │   ├── test_cypher_healing.py   # IT-04
+│   │   └── test_incremental_update.py # IT-08
+│   ├── evaluation/
+│   │   ├── __init__.py
+│   │   ├── test_ragas.py
+│   │   └── test_ablation.py
 │   └── fixtures/
-│       ├── sample.pdf
-│       ├── sample.ddl
+│       ├── sample_docs/
+│       │   ├── business_glossary.txt
+│       │   └── data_dictionary.txt
+│       ├── sample_ddl/
+│       │   ├── simple_schema.sql    # 3 tables, 1 FK
+│       │   ├── complex_schema.sql   # 9 tables (8 business + 1 system)
+│       │   └── system_tables.sql    # 3 system tables
+│       ├── mock_responses/
+│       │   ├── extraction_response.json
+│       │   ├── er_judge_merge.json
+│       │   ├── er_judge_separate.json
+│       │   ├── mapping_high_confidence.json
+│       │   ├── mapping_null.json
+│       │   ├── critic_approved.json
+│       │   ├── critic_rejected.json
+│       │   ├── enrichment_response.json
+│       │   ├── grader_faithful.json
+│       │   └── grader_hallucinated.json
+│       ├── few_shot_examples.json
 │       └── gold_standard.json
 ├── notebooks/
 │   └── exploration.ipynb
 ├── .env.example
+├── .gitignore
 ├── pyproject.toml
 └── README.md
 ```

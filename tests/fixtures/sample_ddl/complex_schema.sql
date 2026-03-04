@@ -1,0 +1,2 @@
+-- Complex schema fixture: 9 tables (8 business + 1 system), multi-FK.
+-- Used by ablation studies and full integration tests.

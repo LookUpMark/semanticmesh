@@ -1,0 +1,2 @@
+-- System tables fixture: 3 system/audit tables, no business concept mappings.
+-- Used to test null-mapping path in RAG mapper.

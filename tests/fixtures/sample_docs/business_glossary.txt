@@ -1,0 +1,2 @@
+Sample business glossary document for testing PDF ingestion.
+This is a placeholder — replace with a real multi-page PDF.

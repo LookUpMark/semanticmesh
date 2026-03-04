@@ -1,0 +1,2 @@
+Sample data dictionary for testing text ingestion.
+This is a placeholder — replace with actual data dictionary content.
