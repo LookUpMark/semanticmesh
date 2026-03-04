@@ -1,2 +1,28 @@
--- System tables fixture: 3 system/audit tables, no business concept mappings.
--- Used to test null-mapping path in RAG mapper.
+-- Schema containing ONLY system/technical tables with NO business concept mapping.
+-- Used to test the null-mapping path and ensure the LLM does not hallucinate mappings.
+
+CREATE TABLE SYS_CONFIG (
+    CONFIG_KEY   VARCHAR(100) PRIMARY KEY,
+    CONFIG_VALUE TEXT,
+    DATA_TYPE    VARCHAR(20),
+    MODIFIED_AT  DATETIME,
+    MODIFIED_BY  VARCHAR(100)
+);
+
+CREATE TABLE SYS_JOB_LOG (
+    JOB_ID     BIGINT PRIMARY KEY AUTO_INCREMENT,
+    JOB_NAME   VARCHAR(200),
+    START_TIME DATETIME,
+    END_TIME   DATETIME,
+    STATUS     VARCHAR(20),
+    ERROR_MSG  TEXT
+);
+
+CREATE TABLE SYS_USER_SESSION (
+    SESSION_ID VARCHAR(128) PRIMARY KEY,
+    USER_ID    INT,
+    LOGIN_AT   DATETIME,
+    LOGOUT_AT  DATETIME,
+    IP_ADDRESS VARCHAR(45),
+    USER_AGENT TEXT
+);
