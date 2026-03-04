@@ -18,6 +18,7 @@ Follow the numbered order below. Each guide lists its **prerequisites** so you a
 | 2 | `src/config/settings.py` | [02-settings.md](part-1-infrastructure/02-settings.md) | EP-01 |
 | 3 | `src/config/logging.py` | [03-logging.md](part-1-infrastructure/03-logging.md) | EP-01 |
 | 4 | `src/config/llm_factory.py` | [04-llm-factory.md](part-1-infrastructure/04-llm-factory.md) | EP-01 |
+| 4b | `src/config/llm_client.py` | [04b-llm-client.md](part-1-infrastructure/04b-llm-client.md) | EP-01 |
 | 5 | `src/models/schemas.py` | [05-schemas.md](part-2-models-prompts/05-schemas.md) | EP-06 data models |
 | 6 | `src/models/state.py` | [06-state.md](part-2-models-prompts/06-state.md) | EP-11, EP-15 |
 | 7 | `src/prompts/templates.py` | [07-templates.md](part-2-models-prompts/07-templates.md) | EP-07 prompts |
@@ -122,9 +123,14 @@ docker run -d \
   -e NEO4J_AUTH=neo4j/your_password_here \
   neo4j:5
 
-# 4. Pull LLM models (Ollama example)
-ollama pull qwen2.5-coder:32b
-ollama pull nuextract
+# 4. Thesis LLM setup — OpenRouter Free Tier (zero cost, no local GPU required)
+#    Get your API key at https://openrouter.ai/keys then add to .env:
+#    OPENROUTER_API_KEY=sk-or-v1-...
+#    LLM_MODEL_REASONING=qwen/qwen3-coder:free
+#    LLM_MODEL_EXTRACTION=qwen/qwen3-next-80b-a3b-instruct:free
+#
+#    Architecture: swap model slugs in .env, or replace ChatOpenRouter in
+#    src/config/llm_factory.py with ChatOpenAI / ChatAnthropic / ChatOllama.
 
 # 5. Run the test suite (unit tests only, no Neo4j needed)
 pytest tests/unit/ -v

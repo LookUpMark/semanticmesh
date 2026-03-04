@@ -24,7 +24,7 @@ For each physical table, retrieves the most relevant business entities using a M
 |---|---|---|
 | `build_retrieval_query` | `(table: EnrichedTableSchema) -> str` | Constructs a text query from enriched table metadata |
 | `retrieve_top_entities` | `(query: str, entities: list[Entity], embeddings: Embeddings, top_k: int) -> list[Entity]` | Returns the `top_k` most similar entities to the query |
-| `propose_mapping` | `(table: TableSchema, entities: list[Entity], llm: BaseChatModel, few_shot_examples: str) -> MappingProposal` | Calls LLM; returns `MappingProposal` |
+| `propose_mapping` | `(table: TableSchema, entities: list[Entity], llm: LLMProtocol, few_shot_examples: str) -> MappingProposal` | Calls LLM; returns `MappingProposal` |
 
 ---
 
@@ -44,8 +44,9 @@ import logging
 
 import numpy as np
 from langchain_core.embeddings import Embeddings
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -141,8 +142,9 @@ def retrieve_top_entities(
 def propose_mapping(
     table: TableSchema,
     entities: list[Entity],
-    llm: BaseChatModel,
+    llm: LLMProtocol,
     few_shot_examples: str = "",
+    reflection_prompt: str | None = None,
 ) -> MappingProposal:
     """Call the LLM to propose a semantic mapping for a single table.
 
@@ -152,6 +154,8 @@ def propose_mapping(
         llm: Reasoning LLM (temperature=0.0).
         few_shot_examples: Formatted string from ``format_mapping_examples``
                            to inject into ``MAPPING_USER``.
+        reflection_prompt: Optional Reflection Prompt critique from the validator;
+                           prepended to ``few_shot_examples`` on retry calls.
 
     Returns:
         A validated ``MappingProposal``.  On any failure, returns a
@@ -169,8 +173,15 @@ def propose_mapping(
             for e in entities
         ]
     )
+    # Prepend reflection critique when this is a retry call
+    effective_few_shot = (
+        f"[REFLECTION CRITIQUE — correct the following error before generating]\n"
+        f"{reflection_prompt}\n\n{few_shot_examples}"
+        if reflection_prompt
+        else few_shot_examples
+    )
     user_prompt = MAPPING_USER.format(
-        few_shot_examples=few_shot_examples,
+        few_shot_examples=effective_few_shot,
         table_ddl=table.ddl_source,
         entities_json=entities_json,
     )

@@ -4,21 +4,24 @@
 
 **Epic:** EP-01 — US-01-01
 
-Provides three cached factory functions that build `ChatOpenAI` instances sourced entirely from `settings`. All pipeline nodes import from here — no node constructs an LLM object directly. This enforces the invariant that model names and temperatures are always from the environment.
+**Architectural design:** The factory is the single seam that selects a concrete `BaseChatModel` implementation. All pipeline nodes depend only on `LLMProtocol` (see `04b-llm-client.md`) — they never import a provider class directly. Swapping from `ChatOpenRouter` to `ChatOpenAI`, `ChatAnthropic`, `ChatOllama`, or any other LangChain chat-model requires changing one import line and one constructor call here, with zero changes elsewhere.
 
-Three distinct LLM roles exist because they use different temperatures:
+**Thesis constraint (zero budget, no local GPU):** All three factories return `InstrumentedLLM`-wrapped `ChatOpenRouter` instances backed by OpenRouter Free Tier. `ChatOpenRouter` (from `langchain-openrouter`) reads `OPENROUTER_API_KEY` from the environment automatically — no `base_url` wiring required.
+
+Three distinct LLM roles exist because they use different temperatures and model slugs:
 
 | Factory | Model setting | Temperature | Used by |
 |---|---|---|---|
-| `get_reasoning_llm()` | `llm_model_reasoning` | `0.0` | Mapping, Cypher Gen, ER judge, Critic, Grader, Enrichment |
-| `get_extraction_llm()` | `llm_model_extraction` | `0.0` | Triplet Extractor (SLM) |
-| `get_generation_llm()` | `llm_model_reasoning` | `0.3` | Answer Generator |
+| `get_reasoning_llm()` | `llm_model_reasoning` (`qwen/qwen3-coder:free`) | `0.0` | Mapping, Cypher Gen, ER judge, Critic, Grader, Enrichment |
+| `get_extraction_llm()` | `llm_model_extraction` (`qwen/qwen3-next-80b-a3b-instruct:free`) | `0.0` | Triplet Extractor (SLM — replaces NuExtract) |
+| `get_generation_llm()` | `llm_model_reasoning` (`qwen/qwen3-coder:free`) | `0.3` | Answer Generator |
 
 ---
 
 ## 2. Prerequisites
 
 - `settings.py` complete (step 2)
+- `llm_client.py` complete (step 4b) — `InstrumentedLLM`, `LLMProtocol`
 
 ---
 
@@ -26,11 +29,11 @@ Three distinct LLM roles exist because they use different temperatures:
 
 | Function | Returns | Description |
 |---|---|---|
-| `get_reasoning_llm()` | `ChatOpenAI` | Deterministic LLM for reasoning tasks |
-| `get_extraction_llm()` | `ChatOpenAI` | SLM for JSON-mode extraction |
-| `get_generation_llm()` | `ChatOpenAI` | LLM with T=0.3 for answer generation |
+| `get_reasoning_llm()` | `LLMProtocol` | Deterministic LLM for reasoning tasks |
+| `get_extraction_llm()` | `LLMProtocol` | SLM for JSON-mode extraction |
+| `get_generation_llm()` | `LLMProtocol` | LLM with T=0.3 for answer generation |
 
-All three are `@lru_cache(maxsize=1)` — calling them multiple times returns the same object.
+All three are `@lru_cache(maxsize=1)` — calling them multiple times returns the same `InstrumentedLLM` object.
 
 ---
 
@@ -39,62 +42,75 @@ All three are `@lru_cache(maxsize=1)` — calling them multiple times returns th
 ```python
 """EP-01: LLM client factory.
 
-Builds `ChatOpenAI` instances from `settings`. All callers should use these
-factories rather than constructing LLM objects directly so that model names,
-base_url, and temperatures are always sourced from the environment.
+Builds InstrumentedLLM-wrapped ChatOpenRouter instances from settings.
+All callers import from here — no pipeline node constructs an LLM object directly.
+
+Architecture: replace `ChatOpenRouter` with any LangChain BaseChatModel subclass
+(ChatOpenAI, ChatAnthropic, ChatOllama, ChatHuggingFace, …) to switch provider.
+Only this file changes — all pipeline nodes depend on LLMProtocol.
+
+Thesis: ChatOpenRouter @ OpenRouter Free Tier.  OPENROUTER_API_KEY must be set.
 """
 
 from __future__ import annotations
 
 from functools import lru_cache
 
-from langchain_openai import ChatOpenAI
+from langchain_openrouter import ChatOpenRouter
 
+from src.config.llm_client import InstrumentedLLM, LLMProtocol
 from src.config.settings import settings
 
 
 @lru_cache(maxsize=1)
-def get_reasoning_llm() -> ChatOpenAI:
-    """Return a cached ChatOpenAI for reasoning tasks (mapping, Cypher, grading).
+def get_reasoning_llm() -> LLMProtocol:
+    """Return a cached LLM for reasoning tasks (mapping, Cypher, grading).
 
-    Model      : settings.llm_model_reasoning  (e.g. 'qwen2.5-coder:32b')
-    Temperature: 0.0 — deterministic, structured output
+    Thesis   : ChatOpenRouter @ qwen/qwen3-coder:free, T=0.0
+    Swap to  : ChatOpenAI(model="gpt-4o") | ChatAnthropic(model="claude-3-5-sonnet-20241022")
     """
-    return ChatOpenAI(
-        model=settings.llm_model_reasoning,
-        base_url=settings.llm_base_url,
-        api_key=settings.llm_api_key.get_secret_value(),
-        temperature=settings.llm_temperature_reasoning,
+    return InstrumentedLLM(
+        ChatOpenRouter(
+            model=settings.llm_model_reasoning,
+            temperature=settings.llm_temperature_reasoning,
+        ),
+        name="reasoning",
+        max_retries=settings.max_llm_retries,
     )
 
 
 @lru_cache(maxsize=1)
-def get_extraction_llm() -> ChatOpenAI:
-    """Return a cached ChatOpenAI for SLM extraction tasks.
+def get_extraction_llm() -> LLMProtocol:
+    """Return a cached SLM for JSON-mode extraction.
 
-    Model      : settings.llm_model_extraction  (e.g. 'nuextract')
-    Temperature: 0.0 — deterministic JSON-mode output
+    Thesis   : ChatOpenRouter @ qwen/qwen3-next-80b-a3b-instruct:free, T=0.0
+    Originally designed for NuExtract (local GPU); any instruction-tuned
+    model with JSON-mode support is a valid drop-in.
     """
-    return ChatOpenAI(
-        model=settings.llm_model_extraction,
-        base_url=settings.llm_base_url,
-        api_key=settings.llm_api_key.get_secret_value(),
-        temperature=settings.llm_temperature_extraction,
+    return InstrumentedLLM(
+        ChatOpenRouter(
+            model=settings.llm_model_extraction,
+            temperature=settings.llm_temperature_extraction,
+        ),
+        name="extraction",
+        max_retries=settings.max_llm_retries,
     )
 
 
 @lru_cache(maxsize=1)
-def get_generation_llm() -> ChatOpenAI:
-    """Return a cached ChatOpenAI for natural-language answer generation.
+def get_generation_llm() -> LLMProtocol:
+    """Return a cached LLM for natural-language answer generation.
 
-    Model      : settings.llm_model_reasoning  (same model, higher temperature)
-    Temperature: 0.3 — slight creativity for fluent user-facing answers
+    Thesis   : ChatOpenRouter @ qwen/qwen3-coder:free, T=0.3
+    Same model as reasoning but higher temperature for fluency.
     """
-    return ChatOpenAI(
-        model=settings.llm_model_reasoning,
-        base_url=settings.llm_base_url,
-        api_key=settings.llm_api_key.get_secret_value(),
-        temperature=settings.llm_temperature_generation,
+    return InstrumentedLLM(
+        ChatOpenRouter(
+            model=settings.llm_model_reasoning,
+            temperature=settings.llm_temperature_generation,
+        ),
+        name="generation",
+        max_retries=settings.max_llm_retries,
     )
 ```
 
@@ -102,15 +118,10 @@ def get_generation_llm() -> ChatOpenAI:
 
 ## 5. Tests
 
-**File:** `tests/unit/test_settings.py` (add to existing file, or create a separate `test_llm_factory.py`)
-
 ```python
 """Unit tests for src/config/llm_factory.py"""
 
-from unittest.mock import patch
-
-from langchain_openai import ChatOpenAI
-
+from src.config.llm_client import InstrumentedLLM, LLMProtocol
 from src.config.llm_factory import (
     get_extraction_llm,
     get_generation_llm,
@@ -119,35 +130,39 @@ from src.config.llm_factory import (
 
 
 class TestLlmFactory:
-    def test_get_reasoning_llm_returns_chat_openai(self) -> None:
+    def test_get_reasoning_llm_satisfies_protocol(self) -> None:
         llm = get_reasoning_llm()
-        assert isinstance(llm, ChatOpenAI)
+        assert isinstance(llm, LLMProtocol)
 
-    def test_get_extraction_llm_returns_chat_openai(self) -> None:
+    def test_get_extraction_llm_satisfies_protocol(self) -> None:
         llm = get_extraction_llm()
-        assert isinstance(llm, ChatOpenAI)
+        assert isinstance(llm, LLMProtocol)
 
-    def test_get_generation_llm_returns_chat_openai(self) -> None:
+    def test_get_generation_llm_satisfies_protocol(self) -> None:
         llm = get_generation_llm()
-        assert isinstance(llm, ChatOpenAI)
+        assert isinstance(llm, LLMProtocol)
+
+    def test_all_are_instrumented(self) -> None:
+        assert isinstance(get_reasoning_llm(), InstrumentedLLM)
+        assert isinstance(get_extraction_llm(), InstrumentedLLM)
+        assert isinstance(get_generation_llm(), InstrumentedLLM)
 
     def test_reasoning_llm_temperature(self) -> None:
         llm = get_reasoning_llm()
-        assert llm.temperature == 0.0
+        assert llm._model.temperature == 0.0
 
     def test_generation_llm_temperature(self) -> None:
         llm = get_generation_llm()
-        assert llm.temperature == 0.3
+        assert llm._model.temperature == 0.3
 
     def test_extraction_llm_temperature(self) -> None:
         llm = get_extraction_llm()
-        assert llm.temperature == 0.0
+        assert llm._model.temperature == 0.0
 
-    def test_reasoning_and_generation_same_model(self) -> None:
-        # Both use llm_model_reasoning but different temperatures
+    def test_reasoning_and_generation_same_model_slug(self) -> None:
         r = get_reasoning_llm()
         g = get_generation_llm()
-        assert r.model_name == g.model_name
+        assert r._model.model == g._model.model
 
     def test_singleton_same_object(self) -> None:
         llm1 = get_reasoning_llm()

@@ -6,6 +6,10 @@
 
 Loads every configurable parameter from environment variables / `.env` file. Provides a module-level singleton `settings` so all other modules import config in one line. Uses `pydantic-settings` for automatic env-var parsing, type coercion, and validation.
 
+**Architectural capability:** Only model *identifiers* and *thresholds* live here. The concrete `BaseChatModel` subclass — `ChatOpenRouter`, `ChatOpenAI`, `ChatOllama`, `ChatAnthropic`, etc. — is selected inside `llm_factory.py`. Swapping provider requires changing one import and one constructor call there; `settings.py` is untouched.
+
+**Thesis constraint (zero budget, no local GPU):** All thesis runs use OpenRouter Free Tier via `OPENROUTER_API_KEY`. The two Qwen Free-Tier model slugs below cover the SLM extraction role (originally NuExtract) and the reasoning / generation role.
+
 ---
 
 ## 2. Prerequisites
@@ -51,11 +55,12 @@ class Settings(BaseSettings):
     neo4j_user: str = "neo4j"
     neo4j_password: SecretStr = SecretStr("neo4j")
 
-    # ── LLM (OpenAI-compatible endpoint) ──────────────────────────────────────
-    llm_base_url: str = "http://localhost:11434/v1"
-    llm_api_key: SecretStr = SecretStr("ollama")
-    llm_model_reasoning: str = "qwen2.5-coder:32b"
-    llm_model_extraction: str = "nuextract"
+    # ── LLM — thesis: OpenRouter Free Tier; architecture: any BaseChatModel ───
+    # Swap llm_model_* values (and ChatOpenRouter in llm_factory.py) to route
+    # to any provider: gpt-4o, claude-3-5-sonnet, llama via vLLM, etc.
+    openrouter_api_key: SecretStr = SecretStr("")   # OPENROUTER_API_KEY env var
+    llm_model_reasoning: str = "qwen/qwen3-coder:free"                    # reasoning + generation
+    llm_model_extraction: str = "qwen/qwen3-next-80b-a3b-instruct:free"   # SLM extraction
     llm_temperature_extraction: float = 0.0
     llm_temperature_reasoning: float = 0.0
     llm_temperature_generation: float = 0.3
@@ -74,6 +79,7 @@ class Settings(BaseSettings):
     max_reflection_attempts: int = 3
     max_cypher_healing_attempts: int = 3
     max_hallucination_retries: int = 3
+    max_llm_retries: int = 3                # InstrumentedLLM retry attempts on rate-limit/timeout
 
     # ── Chunking ───────────────────────────────────────────────────────────────
     chunk_size: int = 512
@@ -114,10 +120,12 @@ settings: Settings = get_settings()
 
 | Field | Default | Notes |
 |---|---|---|
-| `neo4j_password` | — | `SecretStr`: never logged, accessed via `.get_secret_value()` |
-| `llm_api_key` | `"ollama"` | Ollama ignores auth; set real key for OpenAI |
+| `openrouter_api_key` | `""` | `SecretStr` — set via `OPENROUTER_API_KEY`; obtain at openrouter.ai/keys |
+| `llm_model_extraction` | `"qwen/qwen3-next-80b-a3b-instruct:free"` | Thesis SLM — fills NuExtract role without local GPU; drop-in for any JSON-mode model |
+| `llm_model_reasoning` | `"qwen/qwen3-coder:free"` | Thesis reasoning/generation model — replace slug for any OpenRouter or other provider model |
 | `llm_temperature_extraction` | `0.0` | SLM must be deterministic |
 | `llm_temperature_generation` | `0.3` | Slight creativity for fluent answers |
+| `max_llm_retries` | `3` | Max retry attempts in `InstrumentedLLM` on rate-limit / timeout |
 | `confidence_threshold` | `0.90` | Below this → HITL breakpoint triggered |
 | `er_similarity_threshold` | `0.85` | Cosine similarity cut-off for ER blocking |
 | `retrieval_mode` | `"hybrid"` | Ablation: set to `"vector"` or `"bm25"` to disable components |

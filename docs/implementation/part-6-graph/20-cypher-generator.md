@@ -28,7 +28,7 @@ Output is a **raw Cypher string** — no markdown fences, no explanation. The ca
 
 | Symbol | Signature | Description |
 |---|---|---|
-| `generate_cypher` | `(mapping: MappingProposal, table: TableSchema, entity: Entity, few_shot: list[CypherExample], llm: BaseChatModel) -> str` | Call LLM, return raw Cypher string |
+| `generate_cypher` | `(mapping: MappingProposal, table: TableSchema, entity: Entity, few_shot: list[CypherExample], llm: LLMProtocol) -> str` | Call LLM, return raw Cypher string |
 | `strip_cypher_fence` | `(raw: str) -> str` | Remove any accidental markdown fences |
 
 ---
@@ -47,8 +47,9 @@ from __future__ import annotations
 import logging
 import re
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.config.llm_client import LLMProtocol
 
 from src.config.logging import get_logger
 from src.models.schemas import CypherExample, Entity, MappingProposal, TableSchema
@@ -101,7 +102,7 @@ def generate_cypher(
     table: TableSchema,
     entity: Entity,
     few_shot: list[CypherExample],
-    llm: BaseChatModel,
+    llm: LLMProtocol,
 ) -> str:
     """Call the LLM to produce a MERGE-based Cypher statement for one mapping.
 

@@ -43,8 +43,8 @@
 
 | Term | Definition |
 |---|---|
-| **SLM** | Small Language Model (e.g., NuExtract, Qwen2.5-3B). Used for constrained JSON extraction only. |
-| **LLM** | Large frontier Language Model (e.g., Qwen2.5-Coder-32B, gpt-4o). Used for reasoning, mapping, Cypher generation. |
+| **SLM** | Small Language Model (`qwen/qwen3-next-80b-a3b-instruct:free` via OpenRouter). Used for constrained JSON extraction only. |
+| **LLM** | Large frontier Language Model (`qwen/qwen3-coder:free` via OpenRouter). Used for reasoning, mapping, Cypher generation. |
 | **Triplet** | `(subject, predicate, object)` semantic fact extracted from text, augmented with `provenance_text`. |
 | **Entity** | A canonical business concept after Entity Resolution (deduplication + canonicalization). |
 | **Mapping** | A proposed alignment between a `BusinessConcept` (logical) and a `PhysicalTable` (physical). |
@@ -137,7 +137,7 @@ thesis/
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── settings.py              # Pydantic BaseSettings, all env vars
-│   │   ├── llm_factory.py           # ChatOpenAI builder per role (reasoning/extraction/generation)
+│   │   ├── llm_factory.py           # ChatOpenRouter builder per role (reasoning/extraction/generation)
 │   │   └── logging.py               # Structured JSON logging setup
 │   ├── models/
 │   │   ├── __init__.py
@@ -271,7 +271,8 @@ Bootstrap the project: environment, dependencies, settings management, logging, 
 |---|---|---|
 | `langgraph` | `>=0.2` | Graph orchestration |
 | `langchain` | `>=0.3` | Chain / prompt management |
-| `langchain-openai` | `>=0.2` | OpenAI-compatible client |
+| `langchain-openai` | `>=0.2` | OpenAI-compatible base client (used by langchain-openrouter) |
+| `langchain-openrouter` | `>=0.1` | OpenRouter Free Tier LLM provider |
 | `langchain-community` | `>=0.3` | Community integrations |
 | `neo4j` | `>=5.0` | Neo4j Python driver |
 | `pydantic` | `>=2.7` | Data validation |
@@ -308,14 +309,13 @@ class Settings(BaseSettings):
     neo4j_user: str                       # neo4j
     neo4j_password: SecretStr
 
-    # LLM (OpenAI-compatible endpoint)
-    llm_base_url: str                     # supports local Ollama or OpenAI
-    llm_api_key: SecretStr
-    llm_model_reasoning: str              # e.g. "qwen2.5-coder:32b"
-    llm_model_extraction: str             # e.g. "nuextract" or "qwen2.5:3b"
+    # LLM (OpenRouter Free Tier)
+    openrouter_api_key: SecretStr
+    llm_model_reasoning: str              # "qwen/qwen3-coder:free"
+    llm_model_extraction: str             # "qwen/qwen3-next-80b-a3b-instruct:free"
     llm_temperature_extraction: float = 0.0
-    llm_temperature_reasoning: float = 0.0
     llm_temperature_generation: float = 0.3
+    max_llm_retries: int = 3
 
     # Embeddings & Reranking
     embedding_model: str = "BAAI/bge-m3"
@@ -1393,14 +1393,13 @@ NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=your_password_here
 
-# ── LLM (OpenAI-compatible — works with Ollama, vLLM, OpenAI) ─────────────────
-LLM_BASE_URL=http://localhost:11434/v1
-LLM_API_KEY=ollama
-LLM_MODEL_REASONING=qwen2.5-coder:32b
-LLM_MODEL_EXTRACTION=nuextract
+# ── LLM (OpenRouter Free Tier) ───────────────────────────────────────────────
+OPENROUTER_API_KEY=sk-or-v1-your_key_here
+LLM_MODEL_REASONING=qwen/qwen3-coder:free
+LLM_MODEL_EXTRACTION=qwen/qwen3-next-80b-a3b-instruct:free
 LLM_TEMPERATURE_EXTRACTION=0.0
-LLM_TEMPERATURE_REASONING=0.0
 LLM_TEMPERATURE_GENERATION=0.3
+MAX_LLM_RETRIES=3
 
 # ── Embeddings & Reranking ────────────────────────────────────────────────────
 EMBEDDING_MODEL=BAAI/bge-m3

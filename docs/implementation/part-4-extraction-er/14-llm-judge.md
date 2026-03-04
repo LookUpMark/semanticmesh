@@ -16,7 +16,7 @@ The provenance texts from the original triplets are the critical disambiguation 
 - `src/models/schemas.py` — `Triplet`, `EntityCluster`, `CanonicalEntityDecision`, `Entity` (step 3)
 - `src/prompts/templates.py` — `ER_JUDGE_SYSTEM`, `ER_JUDGE_USER` (step 7)
 - `src/config/logging.py` — `get_logger`, `NodeTimer`
-- LLM arg: caller passes `BaseChatModel`
+- LLM arg: caller passes `LLMProtocol` from `src/config/llm_client` (see step 4b)
 
 ---
 
@@ -24,7 +24,7 @@ The provenance texts from the original triplets are the critical disambiguation 
 
 | Symbol | Signature | Description |
 |---|---|---|
-| `judge_cluster` | `(cluster: EntityCluster, provenance_map: dict[str, list[str]], llm: BaseChatModel) -> CanonicalEntityDecision` | Calls LLM once per cluster; returns merge decision |
+| `judge_cluster` | `(cluster: EntityCluster, provenance_map: dict[str, list[str]], llm: LLMProtocol) -> CanonicalEntityDecision` | Calls LLM once per cluster; returns merge decision |
 | `cluster_to_entity` | `(cluster: EntityCluster, decision: CanonicalEntityDecision, provenance_map: dict[str, list[str]]) -> Entity` | Builds an `Entity` object from a cluster + judge decision |
 | `build_provenance_map` | `(triplets: list[Triplet]) -> dict[str, list[str]]` | Maps each entity string to its provenance texts from triplets |
 
@@ -46,8 +46,9 @@ import json
 import logging
 from collections import defaultdict
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 
 from src.config.logging import NodeTimer, get_logger
@@ -87,7 +88,7 @@ def build_provenance_map(triplets: list[Triplet]) -> dict[str, list[str]]:
 def judge_cluster(
     cluster: EntityCluster,
     provenance_map: dict[str, list[str]],
-    llm: BaseChatModel,
+    llm: LLMProtocol,
 ) -> CanonicalEntityDecision:
     """Call the LLM judge for a single EntityCluster.
 

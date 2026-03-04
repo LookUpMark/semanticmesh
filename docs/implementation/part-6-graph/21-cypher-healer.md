@@ -29,7 +29,7 @@
 | Symbol | Signature | Description |
 |---|---|---|
 | `test_cypher` | `(cypher: str, driver: neo4j.Driver) -> tuple[bool, str \| None]` | Dry-run via EXPLAIN; returns (True, None) or (False, error) |
-| `fix_cypher` | `(cypher: str, error: str, mapping: MappingProposal, llm: BaseChatModel) -> str` | One-shot LLM fix via Reflection Prompt |
+| `fix_cypher` | `(cypher: str, error: str, mapping: MappingProposal, llm: LLMProtocol) -> str` | One-shot LLM fix via Reflection Prompt |
 | `heal_cypher` | `(cypher: str, mapping: MappingProposal, driver, llm, max_attempts: int) -> str \| None` | Full retry loop; None on exhaustion |
 
 ---
@@ -50,8 +50,9 @@ from __future__ import annotations
 import logging
 
 import neo4j.exceptions
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.config.llm_client import LLMProtocol
 from neo4j import Driver
 
 from src.config.logging import get_logger
@@ -104,7 +105,7 @@ def fix_cypher(
     cypher: str,
     error: str,
     mapping: MappingProposal,
-    llm: BaseChatModel,
+    llm: LLMProtocol,
 ) -> str:
     """Ask the LLM to correct a Cypher statement given the Neo4j error.
 
@@ -125,9 +126,7 @@ def fix_cypher(
     """
     user_prompt = CYPHER_FIX_USER.format(
         broken_cypher=cypher,
-        neo4j_error=error,
-        table_name=mapping.table_name,
-        mapped_concept=mapping.mapped_concept,
+        error_message=error,
     )
     response = llm.invoke(
         [
@@ -146,7 +145,7 @@ def heal_cypher(
     cypher: str,
     mapping: MappingProposal,
     driver: Driver,
-    llm: BaseChatModel,
+    llm: LLMProtocol,
     max_attempts: int | None = None,
 ) -> str | None:
     """Iteratively test and fix a Cypher statement until it passes or is exhausted.

@@ -27,7 +27,7 @@ Failed validations produce a Reflection Prompt error string that is injected bac
 | Symbol | Signature | Description |
 |---|---|---|
 | `validate_schema` | `(proposal_dict: dict) -> tuple[MappingProposal \| None, str \| None]` | Pydantic validation; returns (obj, None) or (None, error_str) |
-| `critic_review` | `(proposal: MappingProposal, table: TableSchema, entities: list[Entity], llm: BaseChatModel) -> CriticDecision` | LLM critic verdict |
+| `critic_review` | `(proposal: MappingProposal, table: TableSchema, entities: list[Entity], llm: LLMProtocol) -> CriticDecision` | LLM critic verdict |
 | `build_reflection_prompt` | `(role: str, output_format: str, error: str, original_input: str) -> str` | Formats `REFLECTION_TEMPLATE` for a retry call |
 
 ---
@@ -46,8 +46,9 @@ from __future__ import annotations
 import json
 import logging
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 
 from src.config.logging import get_logger
@@ -87,7 +88,7 @@ def critic_review(
     proposal: MappingProposal,
     table: TableSchema,
     entities: list[Entity],
-    llm: BaseChatModel,
+    llm: LLMProtocol,
 ) -> CriticDecision:
     """Call the LLM critic to audit a semantically valid MappingProposal.
 

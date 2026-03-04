@@ -22,8 +22,8 @@ Uses a Small Language Model (SLM) in JSON mode to extract `(subject, predicate, 
 
 | Symbol | Signature | Description |
 |---|---|---|
-| `extract_triplets` | `(chunk: Chunk, llm: BaseChatModel) -> list[Triplet]` | Extract triplets from a single chunk; returns `[]` on failure |
-| `extract_all_triplets` | `(chunks: list[Chunk], llm: BaseChatModel) -> list[Triplet]` | Batch extraction across all chunks |
+| `extract_triplets` | `(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]` | Extract triplets from a single chunk; returns `[]` on failure |
+| `extract_all_triplets` | `(chunks: list[Chunk], llm: LLMProtocol) -> list[Triplet]` | Batch extraction across all chunks |
 
 ---
 
@@ -43,8 +43,9 @@ from __future__ import annotations
 import json
 import logging
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 
 from src.config.logging import NodeTimer, get_logger
@@ -54,12 +55,12 @@ from src.prompts.templates import EXTRACTION_SYSTEM, EXTRACTION_USER
 logger: logging.Logger = get_logger(__name__)
 
 
-def extract_triplets(chunk: Chunk, llm: BaseChatModel) -> list[Triplet]:
+def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
     """Extract semantic triplets from a single text chunk using the SLM.
 
     Args:
         chunk: A ``Chunk`` object from the PDF/chunking pipeline.
-        llm: A BaseChatModel configured for extraction (temperature=0.0).
+        llm: A LLMProtocol instance configured for extraction (temperature=0.0).
              Use ``get_extraction_llm()`` from the factory.
 
     Returns:
@@ -128,7 +129,7 @@ def extract_triplets(chunk: Chunk, llm: BaseChatModel) -> list[Triplet]:
     return triplets
 
 
-def extract_all_triplets(chunks: list[Chunk], llm: BaseChatModel) -> list[Triplet]:
+def extract_all_triplets(chunks: list[Chunk], llm: LLMProtocol) -> list[Triplet]:
     """Extract triplets from all chunks and flatten into a single list.
 
     Individual chunk failures are silently skipped (logged as warnings).

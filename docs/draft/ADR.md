@@ -21,7 +21,7 @@
 | [ADR-09](#adr-09--self-rag-critique-generation-over-naive-hallucination-filtering) | Self-RAG critique generation over naive hallucination filtering | **Accepted** | 2026-02 |
 | [ADR-10](#adr-10--temperature-00-for-all-structuredcode-nodes) | Temperature 0.0 for all structured/code nodes | **Accepted** | 2026-02 |
 | [ADR-11](#adr-11--two-stage-entity-resolution-blocking--llm-judge) | Two-stage Entity Resolution: blocking + LLM judge | **Accepted** | 2026-02 |
-| [ADR-12](#adr-12--openai-compatible-api-interface-for-local-and-remote-llms) | OpenAI-compatible API interface for local and remote LLMs | **Accepted** | 2026-02 |
+| [ADR-12](#adr-12--openrouter-free-tier-as-the-unified-llm-provider) | OpenRouter Free Tier as the unified LLM provider | **Accepted** | 2026-02 |
 | [ADR-13](#adr-13--sqlglot-for-ddl-parsing-no-llm-on-deterministic-tasks) | sqlglot for DDL parsing — no LLM on deterministic tasks | **Accepted** | 2026-02 |
 | [ADR-14](#adr-14--ragas-as-the-evaluation-framework) | RAGAS as the evaluation framework | **Accepted** | 2026-03 |
 | [ADR-15](#adr-15--llm-zero-shot-schema-enrichment-for-lexical-gap-mitigation) | LLM Zero-Shot Schema Enrichment for Lexical Gap Mitigation | **Accepted** | 2026-03 |
@@ -106,7 +106,7 @@ Triplet extraction from text chunks is a structured, constrained task (output = 
 
 ### Decision
 
-Use a **Small Language Model (SLM)** — specifically `NuExtract` or `Qwen2.5-3B` — exclusively for the extraction node, called in **JSON Mode** with a mandatory Pydantic output schema.
+Use a **Small Language Model (SLM)** — specifically `qwen/qwen3-next-80b-a3b-instruct:free` via **OpenRouter Free Tier** — exclusively for the extraction node, called in **JSON Mode** with a mandatory Pydantic output schema.
 
 ### Rationale
 
@@ -368,7 +368,7 @@ Different nodes have different output requirements. Extraction, mapping, and Cyp
 
 ### Consequences
 
-- **Constraint for agent:** Temperature values come from `settings` (`llm_temperature_extraction=0.0`, `llm_temperature_reasoning=0.0`, `llm_temperature_generation=0.3`). Never hardcode temperature values in node functions. Never use `temperature > 0` as a "retry strategy" (see ADR-07).
+- **Constraint for agent:** Temperature values come from `settings` (`llm_temperature_extraction=0.0`, `llm_temperature_generation=0.3`). Never hardcode temperature values in node functions. Never use `temperature > 0` as a "retry strategy" (see ADR-07).
 
 ---
 
@@ -405,37 +405,43 @@ The LLM judge **must receive** the original `provenance_text` for each variant �
 
 ---
 
-## ADR-12 — OpenAI-Compatible API Interface for Local and Remote LLMs
+## ADR-12 — OpenRouter Free Tier as the Unified LLM Provider
 
 **Status:** Accepted
 **Date:** February 2026
 
 ### Context
 
-The system must support both local LLM inference (Ollama, vLLM for development/cost) and remote API calls (OpenAI, Azure OpenAI for production/quality). Binding to a single provider would reduce flexibility.
+The system requires access to both a **reasoning-capable LLM** (for mapping, Cypher generation, grading) and an **SLM** (for structured extraction) without incurring the hardware cost of local inference or the per-token cost of commercial APIs at scale during thesis development.
 
 ### Decision
 
-Use `langchain-openai`'s `ChatOpenAI` class with a configurable `base_url` and `api_key`, making the LLM client agnostic to whether it talks to Ollama, vLLM, or OpenAI.
+Use **OpenRouter Free Tier** as the single LLM provider, accessed via `langchain-openrouter`'s `ChatOpenRouter` class. A single `OPENROUTER_API_KEY` authenticates both the reasoning LLM and the extraction SLM. The underlying model is selected per-call via model slug in `settings`.
 
 ### Configuration
 
 ```bash
-# Local Ollama
-LLM_BASE_URL=http://localhost:11434/v1
-LLM_API_KEY=ollama
-LLM_MODEL_REASONING=qwen2.5-coder:32b
-
-# OpenAI
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_API_KEY=sk-...
-LLM_MODEL_REASONING=gpt-4o
+# OpenRouter Free Tier
+OPENROUTER_API_KEY=sk-or-v1-...
+LLM_MODEL_REASONING=qwen/qwen3-coder:free
+LLM_MODEL_EXTRACTION=qwen/qwen3-next-80b-a3b-instruct:free
 ```
+
+### Alternatives Evaluated
+
+| Option | Why Rejected |
+|---|---|
+| **Local Ollama (Qwen2.5-Coder-32B + NuExtract)** | Requires local GPU/sufficient VRAM not available in the thesis environment. Cannot run a 32B-parameter model on CPU at usable speed. |
+| **OpenAI API (gpt-4o)** | Per-token cost unsustainable for bulk extraction + evaluation runs across 50+ gold-standard samples. No free tier for reasoning-grade models. |
+| **Azure OpenAI** | Requires enterprise account setup; overkill for a thesis project. Same cost concerns as OpenAI API. |
+| **Direct Anthropic/Google APIs** | Separate SDK per provider; breaks the single-provider abstraction. Higher integration complexity with LangChain. |
+| **OpenRouter (chosen)** | Unified API for multiple model families; Free Tier covers both reasoning and extraction model needs; single auth key; full LangChain integration via `langchain-openrouter`. |
 
 ### Consequences
 
-- **Positive:** Zero code changes to switch between local and remote inference.
-- **Constraint for agent:** Never use `openai` SDK directly. Always use `langchain_openai.ChatOpenAI` with `base_url=settings.llm_base_url`. Model names are always read from `settings`, never hardcoded.
+- **Positive:** Zero local compute cost. Both model roles (reasoning + extraction) served from a single API endpoint under one key. `ChatOpenRouter` integrates natively with LangChain LCEL and `with_structured_output()`.
+- **Negative:** Depends on external service availability. Free Tier has rate limits — evaluation runs should be scheduled with retry logic (`max_llm_retries`).
+- **Constraint for agent:** Never use `openai` SDK directly. Always use `langchain_openrouter.ChatOpenRouter` with `openrouter_api_key=settings.openrouter_api_key`. Model names are always read from `settings` (`llm_model_reasoning` / `llm_model_extraction`), never hardcoded.
 
 ---
 

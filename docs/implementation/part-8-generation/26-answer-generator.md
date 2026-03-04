@@ -45,8 +45,9 @@ from __future__ import annotations
 
 import logging
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.config.llm_client import LLMProtocol
 
 from src.config.logging import get_logger
 from src.models.schemas import RetrievedChunk
@@ -84,7 +85,7 @@ def format_context(chunks: list[RetrievedChunk]) -> str:
 def generate_answer(
     query: str,
     chunks: list[RetrievedChunk],
-    llm: BaseChatModel,
+    llm: LLMProtocol,
     critique: str | None = None,
 ) -> str:
     """Generate a grounded natural-language answer from reranked context chunks.

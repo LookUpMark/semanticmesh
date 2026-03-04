@@ -116,7 +116,7 @@ All input sections use explicit delimiters to prevent prompt injection and impro
 ### PT-01 — Triplet Extraction (SLM)
 
 **Node:** `Extract_Triplets_SLM`
-**Model:** `settings.llm_model_extraction` (NuExtract / Qwen2.5-3B)
+**Model:** `settings.llm_model_extraction` (`qwen/qwen3-next-80b-a3b-instruct:free` via OpenRouter)
 **Constants:** `EXTRACTION_SYSTEM`, `EXTRACTION_USER`
 
 #### Design Rationale
@@ -681,7 +681,7 @@ Is every claim in the generated answer supported by the retrieved context? Retur
 ### PT-11 — Schema Enrichment (LLM)
 
 **Node:** `LLM_Schema_Enrichment`
-**Model:** `settings.llm_model_reasoning` (Qwen2.5-Coder-32B / gpt-4o)
+**Model:** `settings.llm_model_reasoning` (`qwen/qwen3-coder:free` via OpenRouter)
 **Constants:** `ENRICHMENT_SYSTEM`, `ENRICHMENT_USER`
 
 #### Design Rationale

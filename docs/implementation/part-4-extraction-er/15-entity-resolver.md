@@ -28,7 +28,7 @@ Singletons (entities not in any cluster) are promoted directly to `Entity` witho
 
 | Symbol | Signature | Description |
 |---|---|---|
-| `resolve_entities` | `(triplets: list[Triplet], embeddings: Embeddings, llm: BaseChatModel, source_doc: str) -> list[Entity]` | Full two-stage resolution pipeline |
+| `resolve_entities` | `(triplets: list[Triplet], embeddings: Embeddings, llm: LLMProtocol, source_doc: str) -> list[Entity]` | Full two-stage resolution pipeline |
 
 ---
 
@@ -46,7 +46,8 @@ from __future__ import annotations
 import logging
 
 from langchain_core.embeddings import Embeddings
-from langchain_core.language_models import BaseChatModel
+
+from src.config.llm_client import LLMProtocol
 
 from src.config.logging import get_logger
 from src.models.schemas import Entity, EntityCluster, Triplet
@@ -63,7 +64,7 @@ logger: logging.Logger = get_logger(__name__)
 def resolve_entities(
     triplets: list[Triplet],
     embeddings: Embeddings,
-    llm: BaseChatModel,
+    llm: LLMProtocol,
     source_doc: str = "",
 ) -> list[Entity]:
     """Run the full two-stage entity resolution pipeline.

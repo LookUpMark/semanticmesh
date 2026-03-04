@@ -148,7 +148,7 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
     # If coming from a reflection retry, inject the critique into the proposal call
     proposal = propose_mapping(
         current_table, top_entities, llm,
-        few_shot_examples=[],  # loaded from disk; simplified here
+        few_shot_examples="",  # loaded from disk; simplified here
         reflection_prompt=reflection_prompt,
     )
 

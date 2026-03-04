@@ -535,7 +535,7 @@ class TestTemplateFormatting:
 ```bash
 python -c "
 from src.prompts.templates import (
-    EXTRACTION_SYSTEM, MAPPING_USER, REFLECTION_TEMPLATE,
+    EXTRACTION_SYSTEM, EXTRACTION_USER, MAPPING_USER, REFLECTION_TEMPLATE,
     CYPHER_SYSTEM, GRADER_USER, FEW_SHOT_MAPPING_EXAMPLES
 )
 print('templates.py import OK')

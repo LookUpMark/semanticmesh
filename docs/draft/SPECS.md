@@ -159,8 +159,8 @@ MERGE (bc)-[:MAPPED_TO {confidence: $score, validated_by: $validator}]->(pt)
 |---|---|---|
 | **Orchestration** | LangGraph | DAG state machine, conditional routing, checkpointing |
 | **Chain Management** | LangChain | Prompt templates, chain composition, tool calling |
-| **SLM Extraction** | `NuExtract` / `Qwen2.5-3B` | Structured triplet extraction (JSON Mode only) |
-| **LLM Reasoning** | `Qwen2.5-Coder-32B` / `gpt-4o` | Canonicalization, mapping, text-to-Cypher |
+| **SLM Extraction** | `qwen/qwen3-next-80b-a3b-instruct:free` (OpenRouter) | Structured triplet extraction (JSON Mode only) |
+| **LLM Reasoning** | `qwen/qwen3-coder:free` (OpenRouter) | Canonicalization, mapping, text-to-Cypher |
 | **Dense Embeddings** | `BGE-M3` | Multilingual semantic embedding |
 | **Reranking** | `bge-reranker-large` | Cross-Encoder scoring (query × chunk joint attention) |
 | **Graph + Vector DB** | Neo4j | Hybrid: graph topology + vector index + BM25 |
@@ -171,8 +171,8 @@ MERGE (bc)-[:MAPPED_TO {confidence: $score, validated_by: $validator}]->(pt)
 
 | Model Role | Model | Why |
 |---|---|---|
-| Extraction (SLM) | `NuExtract` or `Qwen2.5-3B` | Decoder-only, constrained JSON output, no reasoning overhead, bypasses NER taxonomy lock-in |
-| Reasoning (LLM) | `Qwen2.5-Coder-32B` or `gpt-4o` | Strong instruction following, In-Context Learning, Cypher generation fidelity |
+| Extraction (SLM) | `qwen/qwen3-next-80b-a3b-instruct:free` | Decoder-only, constrained JSON output, no reasoning overhead, bypasses NER taxonomy lock-in |
+| Reasoning (LLM) | `qwen/qwen3-coder:free` | Strong instruction following, In-Context Learning, Cypher generation fidelity |
 | Embeddings | `BGE-M3` | Multilingual, state-of-the-art dense retrieval, handles domain-specific vocabulary |
 | Reranker | `bge-reranker-large` | Cross-Encoder: joint query+chunk attention → highest precision scoring |
 
@@ -277,14 +277,14 @@ graph TD
 
 | Node | Model | T | Input | Output | Key Pattern |
 |---|---|---|---|---|---|
-| `Extract_Triplets_SLM` | NuExtract / Qwen2.5-3B | 0.0 | PDF chunks | `(subject, predicate, object, provenance_text)` | JSON Mode + Data Provenance retention |
+| `Extract_Triplets_SLM` | `qwen/qwen3-next-80b-a3b-instruct:free` | 0.0 | PDF chunks | `(subject, predicate, object, provenance_text)` | JSON Mode + Data Provenance retention |
 | `Agentic_Entity_Resolution` | BGE-M3 + LLM judge | — | raw triplets | canonical entities | Two-stage: K-NN blocking → LLM matching |
 | `Parse_Technical_Schema` | deterministic parser | — | DDL SQL | structured table metadata | No LLM; pure parsing |
-| `LLM_Schema_Enrichment` | Qwen2.5-Coder / gpt-4o | 0.0 | raw table/column identifiers | enriched metadata (natural-language names + descriptions) | Zero-Shot Acronym Expansion; resolves Lexical Gap before embedding |
-| `Retrieval_Augmented_Mapping_LLM` | Qwen2.5-Coder / gpt-4o | 0.0 | 1 table + top-K chunks | `Mapping(concept, table, confidence)` | Map-Reduce per table, focused attention |
+| `LLM_Schema_Enrichment` | `qwen/qwen3-coder:free` | 0.0 | raw table/column identifiers | enriched metadata (natural-language names + descriptions) | Zero-Shot Acronym Expansion; resolves Lexical Gap before embedding |
+| `Retrieval_Augmented_Mapping_LLM` | `qwen/qwen3-coder:free` | 0.0 | 1 table + top-K chunks | `Mapping(concept, table, confidence)` | Map-Reduce per table, focused attention |
 | `Validate_Mapping_Logic` | Pydantic v2 + LLM critic | 0.0 | mapping proposal | pass / error string | Actor-Critic: exception → Reflection Prompt |
-| `Generate_Cypher` | Qwen2.5-Coder / gpt-4o | 0.0 | validated mapping | MERGE Cypher string | Few-Shot (3–5 SQL→Cypher examples) |
-| `Fix_Cypher_LLM` | Qwen2.5-Coder / gpt-4o | 0.0 | Cypher + error | corrected Cypher | Zero-shot from native Neo4j exception |
+| `Generate_Cypher` | `qwen/qwen3-coder:free` | 0.0 | validated mapping | MERGE Cypher string | Few-Shot (3–5 SQL→Cypher examples) |
+| `Fix_Cypher_LLM` | `qwen/qwen3-coder:free` | 0.0 | Cypher + error | corrected Cypher | Zero-shot from native Neo4j exception |
 | `Build_Knowledge_Graph` | — (Neo4j driver) | — | valid Cypher | graph commit | Upsert/MERGE strategy |
 
 ### 4.3 Self-Reflection Loop Detail
@@ -349,7 +349,7 @@ graph TD
     Rerank["<b>Cross_Encoder_Reranking</b><br/>bge-reranker-large<br/>Joint (query × chunk) attention → precision score<br/>Output: Top-K high-density chunks only"]
     Rerank --> Generate
 
-    Generate["<b>Answer_Generation_LLM</b><br/>Qwen2.5-Coder / gpt-4o · T=0.3<br/>Grounded on Top-K chunks only"]
+    Generate["<b>Answer_Generation_LLM</b><br/>qwen/qwen3-coder:free · T=0.3<br/>Grounded on Top-K chunks only"]
     Generate --> Grade
 
     Grade["<b>Hallucination_Grader</b><br/>Self-RAG paradigm<br/>Generates explicit natural-language Critique<br/>if answer not grounded in context"]

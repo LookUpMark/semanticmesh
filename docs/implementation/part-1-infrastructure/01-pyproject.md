@@ -41,7 +41,7 @@ authors = [{ name = "Marc'Antonio Lopez" }]
 dependencies = [
     "langgraph>=0.2",
     "langchain>=0.3",
-    "langchain-openai>=0.2",
+    "langchain-openrouter>=0.1",
     "langchain-community>=0.3",
     "neo4j>=5.0",
     "pydantic>=2.7",
@@ -58,6 +58,7 @@ dependencies = [
     "scikit-learn>=1.4",
     "faiss-cpu>=1.8",
     "langchain-tavily>=0.1",
+    "tenacity>=8.0",
 ]
 
 [project.optional-dependencies]
@@ -106,7 +107,8 @@ markers = [
 |---|---|---|
 | `langgraph` | `>=0.2` | DAG state machine, `interrupt()`, checkpointing |
 | `langchain` | `>=0.3` | Prompt templates, chain composition, tool calls |
-| `langchain-openai` | `>=0.2` | `ChatOpenAI` — connects to Ollama / OpenAI / vLLM |
+| `langchain-openrouter` | `>=0.1` | `ChatOpenRouter` — thesis LLM client (OpenRouter Free Tier); architecture-level swap point |
+| `tenacity` | `>=8.0` | Exponential-backoff retry for rate-limit / timeout errors in `InstrumentedLLM` |
 | `langchain-community` | `>=0.3` | Tavily/DuckDuckGo search tools |
 | `neo4j` | `>=5.0` | Official Neo4j Python driver |
 | `pydantic` | `>=2.7` | Schema validation on all LLM outputs |
@@ -160,7 +162,7 @@ mypy src/ --ignore-missing-imports
 
 ```bash
 pip install -e ".[dev]"
-python -c "import langgraph, langchain_openai, neo4j, pydantic, sqlglot; print('All imports OK')"
+python -c "import langgraph, langchain_openrouter, neo4j, pydantic, sqlglot, tenacity; print('All imports OK')"
 ```
 
 Expected output: `All imports OK`

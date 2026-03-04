@@ -263,7 +263,7 @@ Each ablation result should be documented in the following format:
 
 **Date:** YYYY-MM-DD
 **Hardware:** [GPU model, RAM, CPU]
-**LLM Configuration:** [model, temperature, base_url]
+**LLM Configuration:** [model slug, temperature, openrouter_api_key (masked)]
 
 #### Results
 

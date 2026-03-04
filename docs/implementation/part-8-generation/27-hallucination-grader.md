@@ -47,8 +47,9 @@ from __future__ import annotations
 import json
 import logging
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 
 from src.config.logging import get_logger
@@ -63,7 +64,7 @@ def grade_answer(
     query: str,
     answer: str,
     chunks: list[RetrievedChunk],
-    llm: BaseChatModel,
+    llm: LLMProtocol,
 ) -> GraderDecision:
     """Audit a generated answer for unsupported claims against the context chunks.
 

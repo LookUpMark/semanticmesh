@@ -82,7 +82,7 @@ def extract_triplets(chunk: Chunk, llm: BaseChatModel) -> list[Triplet]:
 
 # ❌ Wrong — untestable without monkey-patching
 def extract_triplets(chunk: Chunk) -> list[Triplet]:
-    llm = ChatOpenAI(...)  # hardcoded
+    llm = ChatOpenRouter(...)  # hardcoded
     ...
 ```
 
@@ -192,8 +192,7 @@ def test_settings() -> Settings:
         neo4j_uri="bolt://localhost:7688",  # test port
         neo4j_user="neo4j",
         neo4j_password="test_password",
-        llm_base_url="http://localhost:11434/v1",
-        llm_api_key="test",
+        openrouter_api_key="sk-or-test",
         llm_model_reasoning="test-model",
         llm_model_extraction="test-slm",
         embedding_model="BAAI/bge-m3",
@@ -251,7 +250,7 @@ def test_settings_missing_password_raises():
 
 def test_settings_default_temperatures():
     s = Settings(_env_file=None, neo4j_uri="bolt://x", neo4j_user="u", neo4j_password="p",
-                 llm_base_url="http://x", llm_api_key="k",
+                 openrouter_api_key="sk-or-test",
                  llm_model_reasoning="m", llm_model_extraction="s")
     assert s.llm_temperature_extraction == 0.0
     assert s.llm_temperature_generation == 0.3

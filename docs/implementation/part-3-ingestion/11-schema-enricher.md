@@ -16,7 +16,7 @@ Original identifiers are **never modified** — enriched names are additive meta
 - `src/models/schemas.py` — `TableSchema`, `EnrichedColumn`, `EnrichedTableSchema` (step 3)
 - `src/prompts/templates.py` — `ENRICHMENT_SYSTEM`, `ENRICHMENT_USER` (step 7)
 - `src/config/logging.py` — `get_logger`, `NodeTimer`
-- LLM arg: caller passes `BaseChatModel` from `src/config/llm_factory.py`
+- LLM arg: caller passes `LLMProtocol` from `src/config/llm_client` (see step 4b)
 
 ---
 
@@ -24,8 +24,8 @@ Original identifiers are **never modified** — enriched names are additive meta
 
 | Symbol | Signature | Description |
 |---|---|---|
-| `enrich_schema` | `(table: TableSchema, llm: BaseChatModel) -> EnrichedTableSchema` | Calls LLM once per table to produce human-readable names and a description |
-| `enrich_all` | `(tables: list[TableSchema], llm: BaseChatModel) -> list[EnrichedTableSchema]` | Enriches every table in the list; gracefully degrades on individual failures |
+| `enrich_schema` | `(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema` | Calls LLM once per table to produce human-readable names and a description |
+| `enrich_all` | `(tables: list[TableSchema], llm: LLMProtocol) -> list[EnrichedTableSchema]` | Enriches every table in the list; gracefully degrades on individual failures |
 
 ---
 
@@ -44,8 +44,9 @@ from __future__ import annotations
 import json
 import logging
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 
 from src.config.logging import NodeTimer, get_logger
@@ -76,7 +77,7 @@ def _format_columns_text(table: TableSchema) -> str:
     return "\n".join(lines)
 
 
-def enrich_schema(table: TableSchema, llm: BaseChatModel) -> EnrichedTableSchema:
+def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
     """Call an LLM to enrich one TableSchema with human-readable names.
 
     The LLM receives ENRICHMENT_SYSTEM + ENRICHMENT_USER and returns a JSON
@@ -89,7 +90,7 @@ def enrich_schema(table: TableSchema, llm: BaseChatModel) -> EnrichedTableSchema
 
     Args:
         table: Parsed ``TableSchema`` from ``ddl_parser``.
-        llm: Any ``BaseChatModel`` instance (use ``get_reasoning_llm()`` from factory).
+        llm: Any ``LLMProtocol`` instance (use ``get_reasoning_llm()`` from factory).
 
     Returns:
         ``EnrichedTableSchema`` with enrichment fields populated (best-effort).
@@ -160,7 +161,7 @@ def enrich_schema(table: TableSchema, llm: BaseChatModel) -> EnrichedTableSchema
 
 def enrich_all(
     tables: list[TableSchema],
-    llm: BaseChatModel,
+    llm: LLMProtocol,
 ) -> list[EnrichedTableSchema]:
     """Enrich every table in the list; gracefully degrade on individual failures.
 
