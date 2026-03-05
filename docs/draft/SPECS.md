@@ -90,7 +90,9 @@ graph TB
 
     PDF --> B1
     DDL --> B3
-    B1 --> B2 --> B3 --> B3a --> B4 --> B5
+    B1 --> B2 --> B4
+    B3 --> B3a --> B4
+    B4 --> B5
     B5 -- "Structural Error" --> B4
     B5 -- "Pass" --> B6
     B6 -- "Low Confidence" --> B7
@@ -103,7 +105,7 @@ graph TB
     KG --> Q1
     Q1 --> Q2 --> Q3 --> Q4
     Q4 -- "Hallucination Detected\n(Critique injected)" --> Q3
-    Q4 -- "No Relevant Context" --> Q5 --> OUTPUT
+    Q4 -- "No Relevant Context" --> Q5 --> Q3
     Q4 -- "Grounded & Faithful" --> OUTPUT
 ```
 
@@ -221,12 +223,13 @@ class QueryState(TypedDict):
 ```mermaid
 graph TD
     Start(["📥 Ingest: PDF docs + DDL schemas"]) --> Extract
+    Start --> Parse
 
     Extract["<b>Extract_Triplets_SLM</b><br/>SLM · JSON Mode · T=0.0<br/>Output: triplets + provenance"]
     Extract --> ER
 
     ER["<b>Agentic_Entity_Resolution</b><br/>Stage 1: K-NN vector blocking<br/>Stage 2: LLM canonicalization judge"]
-    ER --> Parse
+    ER --> Map
 
     Parse["<b>Parse_Technical_Schema</b><br/>DDL parser → structured table metadata"]
     Parse --> Enrich
@@ -358,7 +361,7 @@ graph TD
     Grade -- "❌ No Relevant Context\nFound in Graph" --> Fallback
 
     Fallback["<b>Web_Search_Fallback</b><br/>External knowledge retrieval"]
-    Fallback --> Output
+    Fallback --> Generate
 
     Grade -- "✅ Grounded & Faithful" --> Output
 
