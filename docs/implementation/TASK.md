@@ -82,7 +82,7 @@ Configure structured JSON logging using `python-json-logger`. Every LangGraph no
 
 ---
 
-### TASK-04 — `src/config/llm_factory.py`
+### [DONE] TASK-04 — `src/config/llm_factory.py`
 
 **Epic:** EP-01 · **Priority:** P0 · **Prerequisites:** TASK-02, TASK-03
 
