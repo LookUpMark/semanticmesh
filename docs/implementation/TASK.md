@@ -153,7 +153,7 @@ Implement `BuilderState` and `QueryState` as `TypedDict` subclasses for LangGrap
 
 ---
 
-### TASK-07 — `src/prompts/templates.py`
+### TASK-07 — `src/prompts/templates.py` [DONE]
 
 **Epic:** prompting · **Priority:** P0 · **Prerequisites:** TASK-05
 
