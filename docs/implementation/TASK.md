@@ -46,7 +46,7 @@ Populate `pyproject.toml` with all direct and dev dependencies (PEP 621 format).
 
 ---
 
-### TASK-02 — `src/config/settings.py`
+### [DONE] TASK-02 — `src/config/settings.py`
 
 **Epic:** EP-01 · **Priority:** P0 · **Prerequisites:** TASK-01
 
