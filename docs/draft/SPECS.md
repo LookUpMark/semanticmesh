@@ -308,19 +308,19 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    participant Actor as LLM Actor<br/>(Mapping / Cypher Gen)
-    participant Validator as Critic / DB
+    participant Actor as LLM Actor (Mapping / Cypher Gen)
+    participant Validator as Critic / DB
     participant State as LangGraph State
 
-    Actor->>Validator: Generated output (mapping / Cypher)
-    Validator-->>State: ❌ Error / Critique message
+    LLM Actor->>Critic / DB: Generated output (mapping / Cypher)
+    Critic / DB-->>LangGraph State: ❌ Error / Critique message
 
     Note over State: Exception string appended to state.validation_errors
-    State->>Actor: Reflection Prompt:<br/>"Previous attempt failed with: {error}.<br/>Fix and regenerate."
+    LangGraph State->>LLM Actor: Reflection Prompt:\n"Previous attempt failed with: {error}.\nFix and regenerate."
 
-    Actor->>Validator: Corrected output
-    Validator-->>State: ✅ Pass
-    State->>State: Clear error buffer, advance node
+    LLM Actor->>Critic / DB: Corrected output
+    Critic / DB-->>LangGraph State: ✅ Pass
+    LangGraph State->>LangGraph State: Clear error buffer, advance node
 ```
 
 **Reflection Prompt Template:**
