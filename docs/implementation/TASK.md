@@ -136,7 +136,7 @@ Define all Pydantic v2 data models used across the pipeline: `Triplet`, `Triplet
 
 ---
 
-### TASK-06 — `src/models/state.py`
+### [DONE] TASK-06 — `src/models/state.py`
 
 **Epic:** EP-11, EP-15 · **Priority:** P0 · **Prerequisites:** TASK-05
 

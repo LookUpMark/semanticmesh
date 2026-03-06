@@ -1,2 +1,83 @@
-# LangGraph state definitions: BuilderState, QueryState.
-# TypedDict classes consumed by builder_graph.py and query_graph.py.
+"""LangGraph state schemas for builder_graph and query_graph.
+
+Both use TypedDict (not Pydantic) so LangGraph can serialise them
+with its built-in reducers. Use Optional / `| None` instead of
+Field(default=...) here.
+"""
+
+from __future__ import annotations
+
+from typing import TypedDict
+
+from src.models.schemas import (
+    Chunk,
+    Document,
+    EnrichedTableSchema,
+    Entity,
+    GraderDecision,
+    MappingProposal,
+    RetrievedChunk,
+    TableSchema,
+    Triplet,
+)
+
+
+class BuilderState(TypedDict, total=False):
+    """Mutable state flowing through the Knowledge Graph Builder graph."""
+
+    # Entry-point inputs
+    ddl_paths: list[str]
+    source_doc: str
+
+    # Ingestion
+    documents: list[Document]
+    chunks: list[Chunk]
+
+    # Extraction + Entity Resolution
+    triplets: list[Triplet]
+    entities: list[Entity]  # canonical, post-ER
+
+    # Schema parsing
+    tables: list[TableSchema]  # raw DDL output
+    enriched_tables: list[EnrichedTableSchema]
+
+    # Mapping (queue-based, one table at a time)
+    pending_tables: list[EnrichedTableSchema]
+    current_table: EnrichedTableSchema | None
+    current_entities: list[Entity]
+    mapping_proposal: MappingProposal | None
+    reflection_prompt: str | None
+    reflection_attempts: int
+
+    # Cypher
+    current_cypher: str | None
+    healing_attempts: int
+    cypher_failed: bool
+
+    # Control
+    hitl_flag: bool
+    failed_mappings: list[str]
+    ingestion_errors: list[str]
+
+
+class QueryState(TypedDict, total=False):
+    """Mutable state flowing through the Query/Answer graph."""
+
+    # Input (set once, never mutated)
+    user_query: str
+
+    # Retrieval
+    retrieved_chunks: list[RetrievedChunk]
+    reranked_chunks: list[RetrievedChunk]
+
+    # Generation + grading
+    current_answer: str
+    last_critique: str | None
+    grader_decision: GraderDecision | None
+
+    # Output
+    final_answer: str
+    sources: list[str]
+
+    # Control
+    iteration_count: int
