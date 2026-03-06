@@ -2,7 +2,7 @@
 
 > **Project:** Multi-Agent Framework for Semantic Discovery & GraphRAG  
 > **Author:** Marc'Antonio Lopez  
-> **Status:** All source files are stubs — full implementation pending.  
+> **Status:** Phase 1 in progress — TASK-01 completed.  
 > **Last updated:** March 2026
 
 Follow the tasks in the numbered order below. Each task lists its prerequisites, the file(s) to implement, the corresponding test file(s), and the documentation references to anchor the implementation.
@@ -28,7 +28,7 @@ Follow the tasks in the numbered order below. Each task lists its prerequisites,
 
 ---
 
-### TASK-01 — `pyproject.toml` + `.env.example`
+### [DONE] TASK-01 — `pyproject.toml` + `.env.example`
 
 **Epic:** EP-01 · **Priority:** P0 · **Prerequisites:** none
 
