@@ -98,7 +98,7 @@ Implement the factory that returns the correct `BaseChatModel` instance based on
 
 ---
 
-### TASK-04b — `src/config/llm_client.py`
+### [DONE] TASK-04b — `src/config/llm_client.py`
 
 **Epic:** EP-01 · **Priority:** P0 · **Prerequisites:** TASK-04
 
