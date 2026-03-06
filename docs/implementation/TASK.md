@@ -65,7 +65,7 @@ Implement the `Settings` class using `pydantic_settings.BaseSettings`. Expose a 
 
 ---
 
-### TASK-03 — `src/config/logging.py`
+### [DONE] TASK-03 — `src/config/logging.py`
 
 **Epic:** EP-01 · **Priority:** P0 · **Prerequisites:** TASK-02
 
