@@ -195,7 +195,7 @@ Implement `load_cypher_examples()` and `load_mapping_examples()` that read `src/
 
 ---
 
-### TASK-09 — `src/ingestion/pdf_loader.py`
+### TASK-09 — `src/ingestion/pdf_loader.py` [DONE]
 
 **Epic:** EP-02 · **Priority:** P0 · **Prerequisites:** TASK-05, TASK-06
 
