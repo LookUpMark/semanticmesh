@@ -172,7 +172,7 @@ Implement all prompt template constants (PT-01 through PT-11) as Python string c
 
 ---
 
-### TASK-08 — `src/prompts/few_shot.py`
+### TASK-08 — `src/prompts/few_shot.py` [DONE]
 
 **Epic:** EP-06, EP-09 · **Priority:** P0 · **Prerequisites:** TASK-07
 
