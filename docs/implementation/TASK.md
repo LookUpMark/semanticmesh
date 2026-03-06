@@ -118,7 +118,7 @@ Implement `LLMProtocol` (structural `typing.Protocol` satisfied by any `BaseChat
 
 ---
 
-### TASK-05 — `src/models/schemas.py`
+### [DONE] TASK-05 — `src/models/schemas.py`
 
 **Epic:** EP-06 data models · **Priority:** P0 · **Prerequisites:** TASK-01
 
