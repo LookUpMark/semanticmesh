@@ -235,7 +235,8 @@ thesis/
 │       │   ├── critic_rejected.json
 │       │   ├── enrichment_response.json
 │       │   ├── grader_faithful.json
-│       │   └── grader_hallucinated.json
+│       │   ├── grader_hallucinated.json
+│       │   └── grader_web_search.json
 │       ├── few_shot_examples.json
 │       └── gold_standard.json
 ├── notebooks/

@@ -135,15 +135,14 @@ class EnrichedColumn(BaseModel):
     enriched_name: str              # e.g. "Customer ID" — human-readable
 
 
-class EnrichedTableSchema(BaseModel):
-    """TableSchema + LLM-generated human-readable names and description."""
-    # Original fields (mirrored from TableSchema)
-    table_name: str
-    schema_name: str | None = None
-    columns: list[ColumnSchema]
-    ddl_source: str
-    comment: str | None = None
-    # Enrichment-only fields
+class EnrichedTableSchema(TableSchema):
+    """TableSchema extended with LLM-generated human-readable names and description.
+
+    Inherits all fields from ``TableSchema`` (table_name, schema_name, columns,
+    ddl_source, comment) so it is Liskov-substitutable wherever TableSchema is
+    expected — avoids mypy --strict errors at call sites that accept either type.
+    """
+    # Enrichment-only fields (TableSchema fields are inherited)
     enriched_table_name: str | None = None
     enriched_columns: list[EnrichedColumn] = Field(default_factory=list)
     table_description: str | None = None

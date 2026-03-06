@@ -181,37 +181,51 @@ MERGE (bc)-[:MAPPED_TO {confidence: $score, validated_by: $validator}]->(pt)
 ### 3.3 LangGraph State Schema (conceptual)
 
 ```python
-class BuilderState(TypedDict):
-    # Inputs
-    raw_documents: list[str]          # PDF chunks
-    ddl_statements: list[str]         # SQL DDL
+class BuilderState(TypedDict, total=False):
+    # Entry-point inputs
+    ddl_paths: list[str]
+    source_doc: str
 
-    # Extraction outputs
-    triplets: list[Triplet]           # (subject, predicate, object, provenance)
-    resolved_entities: list[Entity]   # post-Entity Resolution
+    # Ingestion
+    documents: list[Document]
+    chunks: list[Chunk]
 
-    # Schema enrichment outputs
-    table_schemas: list[TableSchema]  # parsed DDL output
-    enriched_tables: list[EnrichedTableSchema]  # after LLM Schema Enrichment (enriched names/descriptions)
+    # Extraction + Entity Resolution
+    triplets: list[Triplet]
+    entities: list[Entity]            # canonical, post-ER
 
-    # Mapping outputs
-    mapping_proposals: list[Mapping]  # BusinessConcept -> PhysicalTable
-    validation_errors: list[str]      # Pydantic / LLM critique feedback
-    confidence_scores: dict[str, float]
+    # Schema parsing
+    tables: list[TableSchema]         # raw DDL output
+    enriched_tables: list[EnrichedTableSchema]
 
-    # Graph writing
-    cypher_statements: list[str]
-    cypher_errors: list[str]
-    hitl_required: bool               # triggers Human-in-the-Loop breakpoint
+    # Mapping (queue-based, one table at a time)
+    pending_tables: list[EnrichedTableSchema]
+    current_table: EnrichedTableSchema | None
+    current_entities: list[Entity]
+    mapping_proposal: MappingProposal | None
+    reflection_prompt: str | None
+    reflection_attempts: int
 
-class QueryState(TypedDict):
+    # Cypher
+    current_cypher: str | None
+    healing_attempts: int
+    cypher_failed: bool
+
+    # Control
+    hitl_flag: bool                   # triggers Human-in-the-Loop breakpoint
+    failed_mappings: list[str]
+    ingestion_errors: list[str]
+
+class QueryState(TypedDict, total=False):
     user_query: str
-    retrieved_chunks: list[Chunk]
-    reranked_chunks: list[Chunk]
-    generated_answer: str
-    hallucination_critique: str | None
-    iteration_count: int              # loop guard
+    retrieved_chunks: list[RetrievedChunk]
+    reranked_chunks: list[RetrievedChunk]
+    current_answer: str
+    last_critique: str | None
+    grader_decision: GraderDecision | None
     final_answer: str
+    sources: list[str]
+    iteration_count: int              # loop guard
 ```
 
 ---

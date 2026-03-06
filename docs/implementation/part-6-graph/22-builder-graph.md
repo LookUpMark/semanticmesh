@@ -231,7 +231,7 @@ def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
 
     with Neo4jClient() as client:
         healed = heal_cypher(
-            cypher, proposal, client._driver, llm,
+            cypher, proposal, client.driver, llm,
             max_attempts=settings.max_cypher_healing_attempts,
         )
 

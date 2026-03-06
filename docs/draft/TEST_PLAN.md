@@ -142,21 +142,25 @@ tests/
 │   ├── test_rag_mapper.py
 │   ├── test_validator.py
 │   ├── test_cypher_generator.py
+│   ├── test_cypher_healer.py
 │   ├── test_neo4j_client.py
 │   ├── test_hybrid_retriever.py
 │   ├── test_reranker.py
 │   ├── test_answer_generator.py
 │   ├── test_hallucination_grader.py
-│   └── test_prompts.py
+│   ├── test_prompts.py
+│   └── test_web_search_fallback.py
 ├── integration/
 │   ├── test_builder_graph.py
 │   ├── test_query_graph.py
+│   ├── test_cypher_healing.py
 │   └── test_incremental_update.py
 ├── evaluation/
-│   └── test_ragas.py
+│   ├── test_ragas.py
+│   └── test_ablation.py
 └── fixtures/
     ├── sample_docs/
-    │   ├── business_glossary.pdf    # Real PDF fixture (small, ~5 pages)
+    │   ├── business_glossary.txt    # Plain text fixture (see DATASET.md §2.3)
     │   └── data_dictionary.txt
     ├── sample_ddl/
     │   ├── simple_schema.sql        # 3 tables, 1 FK
@@ -170,8 +174,9 @@ tests/
     │   ├── mapping_null.json
     │   ├── critic_approved.json
     │   ├── critic_rejected.json
-    │   ├── grader_pass.json
-    │   ├── grader_hallucination.json
+    │   ├── enrichment_response.json
+    │   ├── grader_faithful.json
+    │   ├── grader_hallucinated.json
     │   └── grader_web_search.json
     └── gold_standard.json           # See DATASET.md for full spec
 ```
@@ -687,7 +692,7 @@ def test_enrichment_invalid_json_falls_through(mock_llm):
 
 ### UT-18 — Web Search Fallback
 
-**File:** `tests/unit/test_answer_generator.py`
+**File:** `tests/unit/test_web_search_fallback.py`
 
 | Test ID | Scenario | Expected |
 |---|---|---|

@@ -24,7 +24,7 @@ For each physical table, retrieves the most relevant business entities using a M
 |---|---|---|
 | `build_retrieval_query` | `(table: EnrichedTableSchema) -> str` | Constructs a text query from enriched table metadata |
 | `retrieve_top_entities` | `(query: str, entities: list[Entity], embeddings: Embeddings, top_k: int) -> list[Entity]` | Returns the `top_k` most similar entities to the query |
-| `propose_mapping` | `(table: TableSchema, entities: list[Entity], llm: LLMProtocol, few_shot_examples: str) -> MappingProposal` | Calls LLM; returns `MappingProposal` |
+| `propose_mapping` | `(table: TableSchema, entities: list[Entity], llm: LLMProtocol, few_shot_examples: str, reflection_prompt: str \| None = None) -> MappingProposal` | Calls LLM; on retry injects the Reflection Prompt critique before few-shot examples |
 
 ---
 

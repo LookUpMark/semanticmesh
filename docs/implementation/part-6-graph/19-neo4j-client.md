@@ -31,6 +31,7 @@ All Cypher statements executed by the ingestion pipeline flow through this clien
 | `Neo4jClient` | class | Context-manager wrapper around GraphDatabase.driver |
 | `.execute_cypher` | `(cypher: str, params: dict | None) -> list[dict]` | Run one statement, return records as dicts |
 | `.execute_batch` | `(statements: list[tuple[str, dict]]) -> None` | Execute many statements in one explicit transaction |
+| `.driver` | `@property -> neo4j.Driver` | Exposes the underlying driver for modules that need it (e.g., `cypher_healer`) |
 | `setup_schema` | `(client: Neo4jClient) -> None` | Idempotent CREATE CONSTRAINT + CREATE VECTOR INDEX |
 
 ---
@@ -135,6 +136,22 @@ class Neo4jClient:
         if self._driver is not None:
             self._driver.close()
             logger.debug("Neo4j driver closed.")
+
+    # ── Driver Property ────────────────────────────────────────────────────────
+
+    @property
+    def driver(self) -> "neo4j.Driver":
+        """Expose the underlying neo4j.Driver for callers that need raw access.
+
+        Used by ``cypher_healer.test_cypher`` which requires the driver directly
+        to run ``EXPLAIN`` statements outside the standard execute_cypher path.
+
+        Raises:
+            RuntimeError: If accessed before the context manager is entered.
+        """
+        if self._driver is None:
+            raise RuntimeError("Neo4jClient must be used as a context manager.")
+        return self._driver
 
     # ── Single Statement ───────────────────────────────────────────────────────
 
