@@ -232,7 +232,7 @@ Implement `parse_ddl(sql: str) -> list[TableSchema]` using `sqlglot`. Each `Tabl
 
 ---
 
-### TASK-11 — `src/ingestion/schema_enricher.py`
+### TASK-11 — `src/ingestion/schema_enricher.py` [DONE]
 
 **Epic:** EP-05b · **Priority:** P0 · **Prerequisites:** TASK-07, TASK-10
 
