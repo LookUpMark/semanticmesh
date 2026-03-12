@@ -6,12 +6,10 @@ Never define models inline in node functions — always import from here.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal
+from datetime import datetime  # noqa: TC003
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
-
-if TYPE_CHECKING:
-    from datetime import datetime
 
 # ── Ingestion ──────────────────────────────────────────────────────────────────
 

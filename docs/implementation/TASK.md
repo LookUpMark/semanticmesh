@@ -624,7 +624,7 @@ Wire the complete Query Graph as a LangGraph `StateGraph` using `QueryState`. No
 
 ---
 
-### TASK-29 — `src/evaluation/ragas_runner.py`
+### [DONE] TASK-29 — `src/evaluation/ragas_runner.py`
 
 **Epic:** EP-16 · **Priority:** P1 · **Prerequisites:** TASK-28
 
@@ -643,7 +643,7 @@ Implement `run_ragas_evaluation(dataset_path: Path) -> dict[str, float]`. Loads 
 
 ---
 
-### TASK-30 — `src/evaluation/custom_metrics.py`
+### [DONE] TASK-30 — `src/evaluation/custom_metrics.py`
 
 **Epic:** EP-16 · **Priority:** P1 · **Prerequisites:** TASK-22, TASK-29
 
@@ -663,7 +663,7 @@ Implement two custom metrics not covered by RAGAS:
 
 ---
 
-### TASK-31 — `src/evaluation/ablation_runner.py`
+### [DONE] TASK-31 — `src/evaluation/ablation_runner.py`
 
 **Epic:** EP-16 · **Priority:** P1 · **Prerequisites:** TASK-22, TASK-28, TASK-29, TASK-30
 
