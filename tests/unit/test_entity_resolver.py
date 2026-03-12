@@ -1,11 +1,17 @@
-"""Unit tests for src/resolution/blocking.py — UT-05 (Stage 1)"""
+"""Unit tests for src/resolution/blocking.py (UT-05) and src/resolution/llm_judge.py (UT-06)."""
 
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock
 
-from src.models.schemas import Triplet
+from src.models.schemas import CanonicalEntityDecision, EntityCluster, Triplet
 from src.resolution.blocking import block_entities, extract_unique_entities
+from src.resolution.llm_judge import (
+    build_provenance_map,
+    cluster_to_entity,
+    judge_cluster,
+)
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
@@ -109,3 +115,126 @@ class TestBlockEntities:
         clusters = block_entities(["Customer", "Customers"], emb, threshold=0.9)
         if clusters:
             assert 0.0 <= clusters[0].avg_similarity <= 1.0
+
+
+# ── Fixtures for LLM Judge ───────────────────────────────────────────────────────
+
+def _make_cluster(*variants: str) -> EntityCluster:
+    return EntityCluster(
+        canonical_candidate=max(variants, key=len),
+        variants=list(variants),
+        avg_similarity=0.95,
+    )
+
+
+def _make_triplet_with_provenance(subject: str, obj: str, provenance: str) -> Triplet:
+    return Triplet(
+        subject=subject, predicate="is", object=obj,
+        provenance_text=provenance,
+        confidence=0.9,
+    )
+
+
+def _make_merge_llm(merge: bool, canonical: str) -> MagicMock:
+    llm = MagicMock()
+    resp = MagicMock()
+    resp.content = json.dumps({
+        "merge": merge,
+        "canonical_name": canonical,
+        "reasoning": "test reasoning",
+    })
+    llm.invoke.return_value = resp
+    return llm
+
+
+# ── build_provenance_map ─────────────────────────────────────────────────────────
+
+class TestBuildProvenanceMap:
+    def test_maps_subjects_and_objects(self) -> None:
+        triplets = [
+            _make_triplet_with_provenance("Customer", "Product", "A Customer buys a Product."),
+        ]
+        pmap = build_provenance_map(triplets)
+        assert "Customer" in pmap
+        assert "Product" in pmap
+        assert "A Customer buys a Product." in pmap["Customer"]
+
+    def test_multiple_triplets_accumulate_provenance(self) -> None:
+        t1 = _make_triplet_with_provenance("Customer", "Order", "Customer places an Order.")
+        t2 = _make_triplet_with_provenance("Customer", "Invoice", "Customer receives an Invoice.")
+        pmap = build_provenance_map([t1, t2])
+        assert len(pmap["Customer"]) == 2
+
+    def test_empty_returns_empty_dict(self) -> None:
+        assert build_provenance_map([]) == {}
+
+
+# ── judge_cluster ─────────────────────────────────────────────────────────────────
+
+class TestJudgeCluster:
+    def test_merge_true_decision(self) -> None:
+        cluster = _make_cluster("Customer", "Customers")
+        pmap = {"Customer": ["A Customer buys things."], "Customers": ["Customers are registered."]}
+        llm = _make_merge_llm(merge=True, canonical="Customer")
+        decision = judge_cluster(cluster, pmap, llm)
+        assert decision.merge is True
+        assert decision.canonical_name == "Customer"
+
+    def test_merge_false_decision(self) -> None:
+        cluster = _make_cluster("Apple (company)", "Apple (fruit)")
+        pmap: dict[str, list[str]] = {}
+        llm = _make_merge_llm(merge=False, canonical="Apple (company)")
+        decision = judge_cluster(cluster, pmap, llm)
+        assert decision.merge is False
+
+    def test_llm_error_returns_conservative_no_merge(self) -> None:
+        cluster = _make_cluster("Customer", "Customers")
+        llm = MagicMock()
+        llm.invoke.side_effect = RuntimeError("timeout")
+        decision = judge_cluster(cluster, {}, llm)
+        assert decision.merge is False  # conservative
+
+    def test_bad_json_returns_no_merge(self) -> None:
+        cluster = _make_cluster("Customer", "Customers")
+        llm = MagicMock()
+        resp = MagicMock()
+        resp.content = "Not JSON"
+        llm.invoke.return_value = resp
+        decision = judge_cluster(cluster, {}, llm)
+        assert decision.merge is False
+
+
+# ── cluster_to_entity ───────────────────────────────────────────────────────────
+
+class TestClusterToEntity:
+    def test_canonical_name_from_decision(self) -> None:
+        cluster = _make_cluster("Cust", "Customer", "CUST")
+        decision = CanonicalEntityDecision(merge=True, canonical_name="Customer", reasoning="ok")
+        entity = cluster_to_entity(cluster, decision, {})
+        assert entity.name == "Customer"
+
+    def test_synonyms_exclude_canonical(self) -> None:
+        cluster = _make_cluster("Cust", "Customer")
+        decision = CanonicalEntityDecision(merge=True, canonical_name="Customer", reasoning="ok")
+        entity = cluster_to_entity(cluster, decision, {})
+        assert "Customer" not in entity.synonyms
+        assert "Cust" in entity.synonyms
+
+    def test_provenance_aggregated_from_all_variants(self) -> None:
+        cluster = _make_cluster("Customer", "CUST")
+        decision = CanonicalEntityDecision(merge=True, canonical_name="Customer", reasoning="ok")
+        pmap = {
+            "Customer": ["A Customer is a buyer."],
+            "CUST": ["CUST table stores customer data."],
+        }
+        entity = cluster_to_entity(cluster, decision, pmap)
+        assert "A Customer is a buyer." in entity.provenance_text
+        assert "CUST table stores" in entity.provenance_text
+
+    def test_no_merge_uses_canonical_candidate(self) -> None:
+        cluster = _make_cluster("Apple company", "Apple fruit")
+        decision = CanonicalEntityDecision(
+            merge=False, canonical_name="Apple company", reasoning="different contexts"
+        )
+        entity = cluster_to_entity(cluster, decision, {})
+        assert entity.name == "Apple company"

@@ -293,7 +293,7 @@ Implement `block_entities(entities: list[str], embeddings) -> list[EntityCluster
 
 ---
 
-### TASK-14 — `src/resolution/llm_judge.py`
+### TASK-14 — `src/resolution/llm_judge.py` [DONE]
 
 **Epic:** EP-04 Stage 2 · **Priority:** P0 · **Prerequisites:** TASK-07, TASK-13
 
