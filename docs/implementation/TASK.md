@@ -377,7 +377,7 @@ Implement `validate_mapping(proposal: MappingProposal, table: EnrichedTableSchem
 
 ---
 
-### TASK-18 — `src/mapping/hitl.py`
+### [DONE] TASK-18 — `src/mapping/hitl.py`
 
 **Epic:** EP-08 · **Priority:** P1 · **Prerequisites:** TASK-06, TASK-17
 

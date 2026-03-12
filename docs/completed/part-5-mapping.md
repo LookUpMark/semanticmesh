@@ -1,58 +1,58 @@
-# Parte 5 — Mapping Semantico
+# Part 5 — Semantic Mapping
 
-Con le entità business estratte dai documenti e le tabelle database parsate dal DDL, il prossimo passo è allinearle. La Parte 5 implementa il mapping semantico tra tabelle fisiche e concetti business usando un approccio RAG-augmented con pattern Map-Reduce, validazione Actor-Critic, e human-in-the-loop per revisione.
+With business entities extracted from documents and database tables parsed from DDL, the next step is to align them. Part 5 implements semantic mapping between physical tables and business concepts using a RAG-augmented approach with Map-Reduce pattern, Actor-Critic validation, and human-in-the-loop review.
 
-## TASK-16: RAG Mapper con Few-Shot Learning
+## TASK-16: RAG Mapper with Few-Shot Learning
 
-Il cuore del mapping è la funzione `map_table_to_concepts()`, che prende una tabella arricchita e la mappa al concetto business più appropriato. Questo è un problema di retrieval: dato che abbiamo migliaia di entità nel grafo, quali sono quelle rilevanti per questa tabella?
+The heart of mapping is the `map_table_to_concepts()` function, which takes an enriched table and maps it to the most appropriate business concept. This is a retrieval problem: given thousands of entities in the graph, which ones are relevant for this table?
 
-L'approccio usa un retriever ibrido che combina dense vector search, BM25 keyword search, e graph traversal. Per una tabella come `TB_CUST_ORD` (Customer Orders), il retriever trova entità come "Customer", "Order", "Sales", e altre correlate. Poi un LLM seleziona il best match e assegna un confidence score.
+The approach uses a hybrid retriever combining dense vector search, BM25 keyword search, and graph traversal. For a table like `TB_CUST_ORD` (Customer Orders), the retriever finds entities like "Customer", "Order", "Sales", and other related concepts. Then an LLM selects the best match and assigns a confidence score.
 
-Il pattern Map-Reduce qui è implicito. Il "map" è il retrieval che mappa la tabella a un set di candidati. Il "reduce" è il LLM che riduce i candidati a una singola proposta. Questo approccio è più efficiente che chiedere al LLM di considerare tutte le entità — il retriever pre-filtra le candidates, e il LLM si concentra solo su quelle rilevanti.
+The Map-Reduce pattern here is implicit. The "map" is the retrieval that maps the table to a set of candidates. The "reduce" is the LLM that reduces candidates to a single proposal. This approach is more efficient than asking the LLM to consider all entities — the retriever pre-filters candidates, and the LLM focuses only on relevant ones.
 
-Gli esempi few-shot giocano un ruolo cruciale. Il sistema ha una bank di esempi di mapping, e seleziona dinamicamente quelli più rilevanti per la tabella corrente. Se la tabella ha tre colonne, preferisce esempi di tabelle semplici. Se ha venti colonne, preferisce esempi di tabelle complesse. Questa adattabilità migliora la qualità del mapping senza dover codificare logica complessa nel prompt.
+Few-shot examples play a crucial role. The system has a bank of mapping examples and dynamically selects the most relevant ones for the current table. If the table has three columns, it prefers examples of simple tables. If it has twenty columns, it prefers examples of complex tables. This adaptability improves mapping quality without encoding complex logic in the prompt.
 
-Il confidence score che il LLM assegna è cruciale per il downstream. Un score di 0.95+ indica near-certain match — il sistema può auto-approvare. Un score di 0.7-0.9 indica probabile match ma con incertezza — richiede revisione umana. Un score sotto 0.7 indica che nessun concetto business corrisponde davvero — la tabella potrebbe essere un sistema table (audit log, cache, etc.) senza controparte business.
+The confidence score the LLM assigns is crucial for downstream processing. A score of 0.95+ indicates a near-certain match — the system can auto-approve. A score of 0.7-0.9 indicates a probable match but with uncertainty — requires human review. A score below 0.7 indicates no business concept really corresponds — the table might be a system table (audit log, cache, etc.) without a business counterpart.
 
-## TASK-17: Validazione Actor-Critic
+## TASK-17: Actor-Critic Validation
 
-Un mapping proposto dal LLM potrebbe sembrare corretto ma avere problemi sottili. La tabella `TB_PROD` potrebbe essere mappata a "Product", ma un esame più attento rivela che contiene solo product IDs e nient'altro — è probabilmente una tabella di riferimento o cache, non la tabella principale Product. Questo è il tipo di errore che la validazione Actor-Critic cattura.
+An LLM-proposed mapping might look correct but have subtle issues. Table `TB_PROD` might be mapped to "Product", but closer examination reveals it only contains product IDs and nothing else — it's likely a reference or cache table, not the main Product table. This is the type of error Actor-Critic validation catches.
 
-Il pattern Actor-Critic viene dal reinforcement learning. L'Actor genera una proposta, il Critic la valuta, e se il Critic la respinge, l'Actor riprova con il feedback. Qui applichiamo lo stesso pattern: l'Actor è il mapper LLM che genera il `MappingProposal`, il Critic è un secondo LLM che valuta se la proposta è valida.
+The Actor-Critic pattern comes from reinforcement learning. The Actor generates a proposal, the Critic evaluates it, and if the Critic rejects it, the Actor retries with feedback. Here we apply the same pattern: the Actor is the mapper LLM that generates the `MappingProposal`, the Critic is a second LLM that evaluates whether the proposal is valid.
 
-Il Critic controlla tre cose: la coerenza (la struttura della tabella corrisponde alla definizione del concetto?), la giustificazione del confidence (il score è appropriato?), e le contraddizioni logiche (ci sono incoerenze nella proposta?). Se trova problemi, ritorna un `CriticDecision` con `approved=False`, un `critique` che descrive il problema, e un `suggested_correction`.
+The Critic checks three things: coherence (does the table structure match the concept definition?), confidence justification (is the score appropriate?), and logical contradictions (are there inconsistencies in the proposal?). If it finds problems, it returns a `CriticDecision` with `approved=False`, a `critique` describing the problem, and a `suggested_correction`.
 
-Se la proposta è respinta, il sistema la rigenera con la critique iniettata nel prompt. Questo "reflection loop" continua fino a tre tentativi, dopo di cui il sistema accetta l'ultima proposta anche se non approvata. Questo limite impedisce al sistema di entrare in un loop infinito su casi difficili.
+If the proposal is rejected, the system regenerates it with the critique injected into the prompt. This "reflection loop" continues up to three attempts, after which the system accepts the last proposal even if not approved. This limit prevents the system from entering an infinite loop on difficult cases.
 
-Questa validazione a due fasi — prima Pydantic per validare la struttura, poi Actor-Critic per validare la semantica — aggiunge un layer di sicurezza senza sacrificare flessibilità. Le proposte valide passano rapidamente. Quelle problematiche vengono catturate e corrette.
+This two-phase validation — Pydantic first for structure, then Actor-Critic for semantics — adds a layer of security without sacrificing flexibility. Valid proposals pass quickly. Problematic ones are caught and corrected.
 
-## TASK-18: Human-in-the-Loop per Confidenza Bassa
+## TASK-18: Human-in-the-Loop for Low Confidence
 
-Non tutto può essere automatizzato. Ci sono casi in cui nemmeno il validatore Actor-Critic può decidere con certezza, e casi in cui la revisione umana è comunque richiesta per compliance o regulatory reasons. Il sistema HITL in `src/mapping/hitl.py` gestisce questi casi.
+Not everything can be automated. There are cases where even the Actor-Critic validator cannot decide with certainty, and cases where human review is required for compliance or regulatory reasons. The HITL system in `src/mapping/hitl.py` manages these cases.
 
-La funzione `should_interrupt()` controlla se il confidence score della proposta è sotto la soglia configurata (default 0.90). Se lo è, setta `hitl_required=True` nello stato, che causa LangGraph a interrompere l'esecuzione e attendere input umano. Questo è realizzato tramite il meccanismo `interrupt` di LangGraph, che permette di pausere e riprendere l'esecuzione del grafo.
+The `should_interrupt()` function checks if the proposal's confidence score is below the configured threshold (default 0.90). If so, it sets `hitl_required=True` in the state, causing LangGraph to interrupt execution and wait for human input. This is implemented via LangGraph's `interrupt` mechanism, which allows pausing and resuming graph execution.
 
-Quando un umano interviene, può fornire feedback in tre formati: "APPROVE" per accettare la proposta (e boostare il confidence a 1.0), "CHANGE: NewConcept" per specificare il concetto corretto (che diventa il nuovo mapping con confidence massima), o "REJECT: reason" per rifiutare completamente la proposta.
+When a human intervenes, they can provide feedback in three formats: "APPROVE" to accept the proposal (and boost confidence to 1.0), "CHANGE: NewConcept" to specify the correct concept (which becomes the new mapping with maximum confidence), or "REJECT: reason" to completely reject the proposal.
 
-La funzione `resume_from_feedback()` processa questo feedback e aggiorna la proposta di conseguenza. Se l'umano approva, il confidence viene boostato a 1.0 — l'approvazione umana è il segnale più forte di correttezza. Se l'umano specifica un nuovo concetto, quello diventa il mapping con confidence massima. Se l'umano rifiuta, la proposta viene loggata come respinta e il pipeline continua con la tabella unmapped.
+The `resume_from_feedback()` function processes this feedback and updates the proposal accordingly. If the human approves, confidence is boosted to 1.0 — human approval is the strongest signal of correctness. If the human specifies a new concept, it becomes the mapping with maximum confidence. If the human rejects, the proposal is logged as rejected and the pipeline continues with the table unmapped.
 
-Questo approccio bilancia automazione e supervisione umana. La maggior parte dei mapping — quelli con alta confidence — vengono processati automaticamente. Quelli borderline richiedono una rapida revisione umana. E gli errori possono essere corretti prima che vengano scritti nel grafo.
+This approach balances automation and human supervision. Most mappings — those with high confidence — are processed automatically. Borderline ones require quick human review. And errors can be corrected before being written to the graph.
 
-## Il Valore della Validazione Multi-Layer
+## The Value of Multi-Layer Validation
 
-Questa parte del sistema implementa una filosofia di validazione a layer multipli. Per prima cosa, il mapping iniziale usa un retriever per pre-filtrare candidates — questo riduce lo spazio di ricerca e previene il "lost in the middle" problem dove il LLM perde traccia di opzioni troppo numerose.
+This part of the system implements a multi-layer validation philosophy. First, the initial mapping uses a retriever to pre-filter candidates — this reduces search space and prevents the "lost in the middle" problem where the LLM loses track of too many options.
 
-Poi, il validatore Actor-Critic aggiunge un secondo opinion. Due LLM sono meglio di uno per catturare errori — l'Actor può focalizzarsi sulla generazione mentre il Critic si specializza nella validazione. E se ancora c'è incertezza, l'umano nel loop fornisce la decisione finale.
+Then, the Actor-Critic validator adds a second opinion. Two LLMs are better than one at catching errors — the Actor can focus on generation while the Critic specializes in validation. And if uncertainty remains, the human in the loop provides the final decision.
 
-Ogni layer aggiunge robustezza senza sacrificare troppo efficienza. Il retriever è veloce e deterministico. Il Critic è più lento ma viene chiamato solo su proposte già ragionevoli. E l'intervento umano è riservato solo per casi incerti — nel tipico utilizzo, meno del 10% dei mapping richiede revisione.
+Each layer adds robustness without sacrificing too much efficiency. The retriever is fast and deterministic. The Critic is slower but is only called on already reasonable proposals. And human intervention is reserved only for uncertain cases — in typical use, less than 10% of mappings require review.
 
-Il risultato è un sistema che può automaticamente mappare la maggior parte delle tabelle, ma che sa quando chiedere aiuto e può incorporare feedback umano per migliorare continuamente.
+The result is a system that can automatically map most tables, but knows when to ask for help and can incorporate human feedback for continuous improvement.
 
 ---
 
-### Riferimenti
+### References
 
-Per i dettagli implementativi di ciascun task, consulta le guide dettagliate:
+For implementation details of each task, consult the detailed guides:
 - [`rag_mapper.py`](../implementation/part-5-mapping/16-rag-mapper.md) — RAG-augmented mapping
-- [`validator.py`](../implementation/part-5-mapping/17-validator.md) — Validazione Actor-Critic
+- [`validator.py`](../implementation/part-5-mapping/17-validator.md) — Actor-Critic validation
 - [`hitl.py`](../implementation/part-5-mapping/18-hitl.md) — Human-in-the-loop
