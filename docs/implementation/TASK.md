@@ -334,7 +334,7 @@ Implement `resolve_entities(triplets: list[Triplet], embeddings, llm) -> list[En
 
 ---
 
-### TASK-16 — `src/mapping/rag_mapper.py`
+### [DONE] TASK-16 — `src/mapping/rag_mapper.py`
 
 **Epic:** EP-06 · **Priority:** P0 · **Prerequisites:** TASK-07, TASK-08, TASK-11, TASK-15
 
