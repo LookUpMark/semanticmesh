@@ -556,7 +556,7 @@ Implement `CrossEncoderReranker` wrapping `FlagReranker` (`bge-reranker-large`).
 
 ---
 
-### TASK-26 — `src/generation/answer_generator.py`
+### [DONE] TASK-26 — `src/generation/answer_generator.py`
 
 **Epic:** EP-14 · **Priority:** P0 · **Prerequisites:** TASK-07, TASK-25
 
@@ -582,7 +582,7 @@ Also implement the helper `format_context(chunks: list[RetrievedChunk]) -> str` 
 
 ---
 
-### TASK-27 — `src/generation/hallucination_grader.py`
+### [DONE] TASK-27 — `src/generation/hallucination_grader.py`
 
 **Epic:** EP-14 · **Priority:** P0 · **Prerequisites:** TASK-07, TASK-26
 
