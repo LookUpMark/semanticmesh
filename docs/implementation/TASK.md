@@ -213,7 +213,7 @@ Implement `load_pdf(path: Path) -> list[Document]` using `pymupdf` (fitz). Imple
 
 ---
 
-### TASK-10 — `src/ingestion/ddl_parser.py`
+### TASK-10 — `src/ingestion/ddl_parser.py` [DONE]
 
 **Epic:** EP-05 · **Priority:** P0 · **Prerequisites:** TASK-05
 
