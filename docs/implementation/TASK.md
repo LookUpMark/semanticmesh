@@ -354,7 +354,7 @@ Implement the Map-Reduce mapping node: for each `EnrichedTableSchema`, retrieve 
 
 ---
 
-### TASK-17 — `src/mapping/validator.py`
+### [DONE] TASK-17 — `src/mapping/validator.py`
 
 **Epic:** EP-07 · **Priority:** P0 · **Prerequisites:** TASK-07, TASK-16
 
