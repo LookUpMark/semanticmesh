@@ -1,4 +1,8 @@
-"""EP-01: Application settings loaded from environment / .env file."""
+"""EP-01: Application settings loaded from environment / .env file.
+
+Sensitive values (API keys, passwords) are loaded from environment variables.
+Non-sensitive defaults are defined in config.py and can be overridden via env vars.
+"""
 
 from __future__ import annotations
 
@@ -7,8 +11,28 @@ from functools import lru_cache
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.config.config import DEFAULT_CONFIG
+
 
 class Settings(BaseSettings):
+    """Application settings with environment variable override support.
+
+    Environment variables:
+        NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+        OPENROUTER_API_KEY
+        LLM_MODEL_REASONING, LLM_MODEL_EXTRACTION
+        LLM_TEMPERATURE_EXTRACTION, LLM_TEMPERATURE_REASONING, LLM_TEMPERATURE_GENERATION
+        EMBEDDING_MODEL, RERANKER_MODEL
+        ER_BLOCKING_TOP_K, ER_SIMILARITY_THRESHOLD
+        CONFIDENCE_THRESHOLD, MAX_REFLECTION_ATTEMPTS, MAX_CYPHER_HEALING_ATTEMPTS
+        CHUNK_SIZE, CHUNK_OVERLAP
+        RETRIEVAL_VECTOR_TOP_K, RETRIEVAL_BM25_TOP_K, RETRIEVAL_GRAPH_DEPTH
+        FEW_SHOT_CYPHER_EXAMPLES
+        ENABLE_SCHEMA_ENRICHMENT, RETRIEVAL_MODE
+        ENABLE_CYPHER_HEALING, ENABLE_CRITIC_VALIDATION, ENABLE_RERANKER, ENABLE_HALLUCINATION_GRADER
+        LOG_LEVEL
+    """
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -17,58 +41,56 @@ class Settings(BaseSettings):
     )
 
     # ── Neo4j ──────────────────────────────────────────────────────────────────
-    neo4j_uri: str = "bolt://localhost:7687"
-    neo4j_user: str = "neo4j"
-    neo4j_password: SecretStr = SecretStr("neo4j")
+    neo4j_uri: str = DEFAULT_CONFIG.neo4j_uri
+    neo4j_user: str = DEFAULT_CONFIG.neo4j_user
+    neo4j_password: SecretStr = SecretStr("neo4j")  # Override via NEO4J_PASSWORD
 
-    # ── LLM — thesis: OpenRouter Free Tier; architecture: any BaseChatModel ───
-    # Swap llm_model_* values (and ChatOpenRouter in llm_factory.py) to route
-    # to any provider: gpt-4o, claude-3-5-sonnet, llama via vLLM, etc.
-    openrouter_api_key: SecretStr = SecretStr("")   # OPENROUTER_API_KEY env var
-    llm_model_reasoning: str = "qwen/qwen3-coder:free"                    # reasoning + generation
-    llm_model_extraction: str = "qwen/qwen3-next-80b-a3b-instruct:free"   # SLM extraction
-    llm_temperature_extraction: float = 0.0
-    llm_temperature_reasoning: float = 0.0
-    llm_temperature_generation: float = 0.3
+    # ── LLM ─────────────────────────────────────────────────────────────────────
+    openrouter_api_key: SecretStr = SecretStr("")  # Override via OPENROUTER_API_KEY
+    llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
+    llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
+    llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
+    llm_temperature_reasoning: float = DEFAULT_CONFIG.llm_temperature_reasoning
+    llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
-    embedding_model: str = "BAAI/bge-m3"
-    reranker_model: str = "BAAI/bge-reranker-large"
-    reranker_top_k: int = 5
+    embedding_model: str = DEFAULT_CONFIG.embedding_model
+    reranker_model: str = DEFAULT_CONFIG.reranker_model
+    reranker_top_k: int = DEFAULT_CONFIG.reranker_top_k
 
     # ── Entity Resolution ──────────────────────────────────────────────────────
-    er_blocking_top_k: int = 10
-    er_similarity_threshold: float = 0.85
+    er_blocking_top_k: int = DEFAULT_CONFIG.er_blocking_top_k
+    er_similarity_threshold: float = DEFAULT_CONFIG.er_similarity_threshold
 
     # ── Confidence & Loop Guards ───────────────────────────────────────────────
-    confidence_threshold: float = 0.90
-    max_reflection_attempts: int = 3
-    max_cypher_healing_attempts: int = 3
-    max_hallucination_retries: int = 3
-    max_llm_retries: int = 3                # InstrumentedLLM retry attempts on rate-limit/timeout
+    confidence_threshold: float = DEFAULT_CONFIG.confidence_threshold
+    max_reflection_attempts: int = DEFAULT_CONFIG.max_reflection_attempts
+    max_cypher_healing_attempts: int = DEFAULT_CONFIG.max_cypher_healing_attempts
+    max_hallucination_retries: int = DEFAULT_CONFIG.max_hallucination_retries
+    max_llm_retries: int = DEFAULT_CONFIG.max_llm_retries
 
     # ── Chunking ───────────────────────────────────────────────────────────────
-    chunk_size: int = 512
-    chunk_overlap: int = 64
+    chunk_size: int = DEFAULT_CONFIG.chunk_size
+    chunk_overlap: int = DEFAULT_CONFIG.chunk_overlap
 
     # ── Retrieval ──────────────────────────────────────────────────────────────
-    retrieval_vector_top_k: int = 20
-    retrieval_bm25_top_k: int = 10
-    retrieval_graph_depth: int = 2
+    retrieval_vector_top_k: int = DEFAULT_CONFIG.retrieval_vector_top_k
+    retrieval_bm25_top_k: int = DEFAULT_CONFIG.retrieval_bm25_top_k
+    retrieval_graph_depth: int = DEFAULT_CONFIG.retrieval_graph_depth
 
     # ── Few-Shot ───────────────────────────────────────────────────────────────
-    few_shot_cypher_examples: int = 5
+    few_shot_cypher_examples: int = DEFAULT_CONFIG.few_shot_cypher_examples
 
     # ── Ablation Flags ─────────────────────────────────────────────────────────
-    enable_schema_enrichment: bool = True
-    retrieval_mode: str = "hybrid"          # "hybrid" | "vector" | "bm25"
-    enable_cypher_healing: bool = True
-    enable_critic_validation: bool = True
-    enable_reranker: bool = True
-    enable_hallucination_grader: bool = True
+    enable_schema_enrichment: bool = DEFAULT_CONFIG.enable_schema_enrichment
+    retrieval_mode: str = DEFAULT_CONFIG.retrieval_mode
+    enable_cypher_healing: bool = DEFAULT_CONFIG.enable_cypher_healing
+    enable_critic_validation: bool = DEFAULT_CONFIG.enable_critic_validation
+    enable_reranker: bool = DEFAULT_CONFIG.enable_reranker
+    enable_hallucination_grader: bool = DEFAULT_CONFIG.enable_hallucination_grader
 
     # ── Logging ────────────────────────────────────────────────────────────────
-    log_level: str = "INFO"
+    log_level: str = DEFAULT_CONFIG.log_level
 
 
 @lru_cache(maxsize=1)

@@ -50,8 +50,9 @@ ragas-eval                          # CLI entry point for RAGAS evaluation
 
 ```
 src/
-├── config/           # EP-01: Infrastructure (settings, logging, LLM factory)
-│   ├── settings.py   # Pydantic settings with env var loading
+├── config/           # EP-01: Infrastructure (config, settings, logging, LLM factory)
+│   ├── config.py     # Application configuration defaults (dataclass)
+│   ├── settings.py   # Pydantic settings with env var loading (uses config.py defaults)
 │   ├── logging.py    # Structured JSON logging (get_logger, log_node_event)
 │   ├── llm_factory.py # Factory: get_reasoning_llm(), get_extraction_llm(), get_generation_llm()
 │   └── llm_client.py # LLMProtocol + InstrumentedLLM wrapper (retry + logging)
@@ -199,14 +200,44 @@ Settings boolean flags to disable pipeline components:
 
 ---
 
-## Environment Variables (via .env)
+## Configuration
 
-All configuration goes through `src/config/settings.py` which loads from environment or `.env` file:
+The application uses a two-tier configuration system:
+
+1. **`src/config/config.py`** — Non-sensitive defaults (dataclass)
+   - Model names, temperatures, thresholds, feature flags
+   - All defaults are visible in code for easy modification
+   - Can be overridden via environment variables
+
+2. **`.env` file** — Sensitive values only
+   - API keys (`OPENROUTER_API_KEY`)
+   - Passwords (`NEO4J_PASSWORD`)
+
+### Accessing Configuration
+
+```python
+from src.config.settings import get_settings
+
+settings = get_settings()
+# Access any config value:
+model = settings.llm_model_reasoning
+threshold = settings.confidence_threshold
+```
+
+### Environment Variables
+
+Sensitive values in `.env`:
 
 | Category | Key Variables |
 |----------|---------------|
 | **Neo4j** | `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` |
-| **LLM** | `OPENROUTER_API_KEY`, `LLM_MODEL_REASONING`, `LLM_MODEL_EXTRACTION` |
+| **LLM** | `OPENROUTER_API_KEY` |
+
+Non-sensitive defaults (in `config.py`, overrideable via env):
+
+| Category | Key Variables |
+|----------|---------------|
+| **LLM** | `LLM_MODEL_REASONING`, `LLM_MODEL_EXTRACTION`, `LLM_TEMPERATURE_*` |
 | **Embeddings** | `EMBEDDING_MODEL`, `RERANKER_MODEL` |
 | **Entity Resolution** | `ER_BLOCKING_TOP_K`, `ER_SIMILARITY_THRESHOLD` |
 | **Thresholds** | `CONFIDENCE_THRESHOLD`, `MAX_REFLECTION_ATTEMPTS`, `MAX_CYPHER_HEALING_ATTEMPTS` |
@@ -214,5 +245,3 @@ All configuration goes through `src/config/settings.py` which loads from environ
 | **Retrieval** | `RETRIEVAL_VECTOR_TOP_K`, `RETRIEVAL_BM25_TOP_K`, `RETRIEVAL_GRAPH_DEPTH` |
 | **Ablation** | `ENABLE_SCHEMA_ENRICHMENT`, `ENABLE_CYPHER_HEALING`, `RETRIEVAL_MODE`, etc. |
 | **Logging** | `LOG_LEVEL` |
-
-**Never hardcode configuration values** — always use `settings` from `src.config.settings`.
