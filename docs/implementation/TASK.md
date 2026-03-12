@@ -275,7 +275,7 @@ Implement `extract_triplets(chunk: Chunk, llm) -> list[Triplet]` using the SLM i
 
 ---
 
-### TASK-13 — `src/resolution/blocking.py`
+### TASK-13 — `src/resolution/blocking.py` [DONE]
 
 **Epic:** EP-04 Stage 1 · **Priority:** P0 · **Prerequisites:** TASK-05, TASK-12
 
