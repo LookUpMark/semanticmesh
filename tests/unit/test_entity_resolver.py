@@ -1,12 +1,15 @@
-"""Unit tests for src/resolution/blocking.py (UT-05) and src/resolution/llm_judge.py (UT-06)."""
+"""Unit tests for src/resolution/blocking.py (UT-05), src/resolution/llm_judge.py (UT-06),
+and src/resolution/entity_resolver.py (UT-06).
+"""
 
 from __future__ import annotations
 
 import json
 from unittest.mock import MagicMock
 
-from src.models.schemas import CanonicalEntityDecision, EntityCluster, Triplet
+from src.models.schemas import CanonicalEntityDecision, Entity, EntityCluster, Triplet
 from src.resolution.blocking import block_entities, extract_unique_entities
+from src.resolution.entity_resolver import resolve_entities
 from src.resolution.llm_judge import (
     build_provenance_map,
     cluster_to_entity,
@@ -238,3 +241,119 @@ class TestClusterToEntity:
         )
         entity = cluster_to_entity(cluster, decision, {})
         assert entity.name == "Apple company"
+
+
+# ── Fixtures for Entity Resolver ───────────────────────────────────────────────
+
+def _make_triplet_full(subject: str, obj: str, prov: str = "") -> Triplet:
+    return Triplet(
+        subject=subject,
+        predicate="is",
+        object=obj,
+        provenance_text=prov or f"{subject} is {obj}.",
+        confidence=0.9,
+    )
+
+
+def _make_embeddings_orthogonal(entities: list[str]) -> MagicMock:
+    """Each entity gets a unique orthogonal unit vector — no clusters form."""
+    emb = MagicMock()
+    dim = max(len(entities), 2)
+
+    def embed_documents(texts: list[str]) -> list[list[float]]:
+        vecs = []
+        for i, _t in enumerate(texts):
+            v = [0.0] * dim
+            v[i % dim] = 1.0
+            vecs.append(v)
+        return vecs
+
+    emb.embed_documents.side_effect = embed_documents
+    return emb
+
+
+def _make_embeddings_identical(entities: list[str]) -> MagicMock:
+    """All entities share the same vector — max clustering."""
+    emb = MagicMock()
+
+    def embed_documents(texts: list[str]) -> list[list[float]]:
+        return [[1.0, 0.0]] * len(texts)
+
+    emb.embed_documents.side_effect = embed_documents
+    return emb
+
+
+def _make_llm_merge(canonical: str) -> MagicMock:
+    llm = MagicMock()
+    resp = MagicMock()
+    resp.content = json.dumps({"merge": True, "canonical_name": canonical, "reasoning": "test"})
+    llm.invoke.return_value = resp
+    return llm
+
+
+def _make_llm_no_merge(canonical: str) -> MagicMock:
+    llm = MagicMock()
+    resp = MagicMock()
+    resp.content = json.dumps({"merge": False, "canonical_name": canonical, "reasoning": "test"})
+    llm.invoke.return_value = resp
+    return llm
+
+
+# ── resolve_entities ───────────────────────────────────────────────────────────
+
+class TestResolveEntities:
+    def test_empty_triplets_returns_empty(self) -> None:
+        emb = MagicMock()
+        llm = MagicMock()
+        result = resolve_entities([], emb, llm)
+        assert result == []
+
+    def test_all_singletons_no_llm_call(self) -> None:
+        """Orthogonal embeddings → no clusters → no LLM calls."""
+        triplets = [
+            _make_triplet_full("Customer", "Product"),
+            _make_triplet_full("Order", "Invoice"),
+        ]
+        entities = ["Customer", "Product", "Order", "Invoice"]
+        emb = _make_embeddings_orthogonal(entities)
+        llm = MagicMock()
+        result = resolve_entities(triplets, emb, llm)
+        llm.invoke.assert_not_called()
+        assert len(result) == 4  # all promoted as singletons
+
+    def test_cluster_resolved_to_single_entity(self) -> None:
+        """Identical embeddings → one big cluster → LLM merges to 'Customer'."""
+        triplets = [
+            _make_triplet_full("Customer", "CUST"),
+            _make_triplet_full("Customers", "Product"),
+        ]
+        emb = _make_embeddings_identical(["Customer", "CUST", "Customers", "Product"])
+        llm = _make_llm_merge("Customer")
+        result = resolve_entities(triplets, emb, llm)
+        assert any(e.name == "Customer" for e in result)
+
+    def test_returns_entity_objects(self) -> None:
+        triplets = [_make_triplet_full("Customer", "Product")]
+        emb = _make_embeddings_orthogonal(["Customer", "Product"])
+        llm = MagicMock()
+        result = resolve_entities(triplets, emb, llm)
+        assert all(isinstance(e, Entity) for e in result)
+
+    def test_source_doc_set_on_entities(self) -> None:
+        triplets = [_make_triplet_full("Customer", "Order")]
+        emb = _make_embeddings_orthogonal(["Customer", "Order"])
+        llm = MagicMock()
+        result = resolve_entities(triplets, emb, llm, source_doc="glossary.pdf")
+        for entity in result:
+            assert entity.source_doc == "glossary.pdf"
+
+    def test_llm_failure_in_judge_does_not_crash(self) -> None:
+        """If LLM judge fails for one cluster, pipeline continues."""
+        triplets = [_make_triplet_full("Customer", "CUST")]
+        emb = _make_embeddings_identical(["Customer", "CUST"])
+        llm = MagicMock()
+        llm.invoke.side_effect = RuntimeError("timeout")
+        result = resolve_entities(triplets, emb, llm)
+        # Conservative no-merge → cluster preserved but not crashed
+        assert len(result) >= 1
+

@@ -311,7 +311,7 @@ Implement `judge_cluster(cluster: EntityCluster, llm) -> EntityResolutionDecisio
 
 ---
 
-### TASK-15 — `src/resolution/entity_resolver.py`
+### TASK-15 — `src/resolution/entity_resolver.py` [DONE]
 
 **Epic:** EP-04 · **Priority:** P0 · **Prerequisites:** TASK-13, TASK-14
 
