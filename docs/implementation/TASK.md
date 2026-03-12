@@ -423,17 +423,17 @@ Implement `Neo4jClient` wrapping the official `neo4j` Python driver. Expose:
 
 ---
 
-### TASK-20 — `src/graph/cypher_generator.py`
+### [DONE] TASK-20 — `src/graph/cypher_generator.py`
 
 **Epic:** EP-09 · **Priority:** P0 · **Prerequisites:** TASK-07, TASK-08, TASK-17
 
 Implement `generate_cypher(mapping: MappingProposal, llm) -> str` using `CYPHER_SYSTEM` / `CYPHER_USER` + dynamic few-shot examples from `format_cypher_few_shot(n=settings.few_shot_cypher_examples)`. Output must contain only valid Cypher MERGE statements.
 
 **File(s) to implement:**
-- `src/graph/cypher_generator.py`
+- `src/graph/cypher_generator.py` ✅
 
 **Test file(s):**
-- `tests/unit/test_cypher_generator.py` (UT-09)
+- `tests/unit/test_cypher_generator.py` (UT-12) ✅ — 24 tests
 
 **Documentation references:**
 - `docs/implementation/part-6-graph/20-cypher-generator.md` — generation node implementation
