@@ -1,3 +1,165 @@
-# EP-09: Cypher healing loop.
-# Catches execution errors and asks the LLM to fix the broken Cypher.
-# Max retries: settings.MAX_CYPHER_HEALING_ATTEMPTS.
+"""Cypher healing — dry-run test via EXPLAIN + LLM self-correction loop.
+
+EP-09 / US-09-02 and US-09-03:
+  * test_cypher   — validate without executing (EXPLAIN prefix)
+  * fix_cypher    — inject Neo4j error into Reflection Prompt
+  * heal_cypher   — up to max_attempts test→fix iterations
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
+
+import neo4j.exceptions
+from langchain_core.messages import HumanMessage, SystemMessage
+from neo4j import Driver
+
+from src.config.llm_client import LLMProtocol
+from src.config.logging import get_logger
+from src.config.settings import get_settings
+from src.graph.cypher_generator import strip_cypher_fence
+from src.models.schemas import MappingProposal
+from src.prompts.templates import CYPHER_FIX_USER, CYPHER_SYSTEM
+
+logger: logging.Logger = get_logger(__name__)
+
+
+# ── Dry-Run Validation ─────────────────────────────────────────────────────────
+
+def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
+    """Validate a Cypher statement without executing any writes.
+
+    Uses Neo4j's ``EXPLAIN`` prefix which parses and plans the query but
+    does not run it, so no data is written or read.
+
+    Args:
+        cypher: The generated Cypher string to validate.
+        driver: An open ``neo4j.Driver`` instance.
+
+    Returns:
+        ``(True, None)`` if Neo4j accepts the query plan.
+        ``(False, error_message)`` on ``CypherSyntaxError``, ``ClientError``,
+        or any other driver exception. The ``error_message`` is injected into
+        the Reflection Prompt verbatim.
+    """
+    explain_stmt = f"EXPLAIN {cypher}"
+    try:
+        with driver.session() as session:
+            session.run(explain_stmt).consume()
+        logger.debug("test_cypher: EXPLAIN passed.")
+        return True, None
+    except neo4j.exceptions.CypherSyntaxError as exc:
+        logger.warning("Cypher syntax error: %s", exc)
+        return False, str(exc)
+    except neo4j.exceptions.ClientError as exc:
+        logger.warning("Cypher client error: %s", exc)
+        return False, str(exc)
+    except Exception as exc:
+        logger.warning("Cypher test unexpected error: %s", exc)
+        return False, str(exc)
+
+
+# ── One-Shot LLM Fix ──────────────────────────────────────────────────────────
+
+def fix_cypher(
+    cypher: str,
+    error: str,
+    mapping: MappingProposal,
+    llm: LLMProtocol,
+) -> str:
+    """Ask the LLM to correct a Cypher statement given the Neo4j error.
+
+    Uses ``CYPHER_FIX_USER`` — a Reflection Prompt variant that embeds the
+    broken Cypher and the exact Neo4j error message.
+
+    Args:
+        cypher:  The failing Cypher string.
+        error:   The raw Neo4j error string from ``test_cypher``.
+        mapping: The ``MappingProposal`` that produced the Cypher (for context).
+        llm:     Reasoning LLM (temperature=0.0).
+
+    Returns:
+        A corrected Cypher string (markdown fences stripped).
+
+    Raises:
+        RuntimeError: If the LLM call itself fails.
+    """
+    user_prompt = CYPHER_FIX_USER.format(
+        broken_cypher=cypher,
+        error_message=error,
+    )
+    response = llm.invoke(
+        [
+            SystemMessage(content=CYPHER_SYSTEM),
+            HumanMessage(content=user_prompt),
+        ]
+    )
+    fixed = strip_cypher_fence(response.content)
+    logger.debug("fix_cypher: LLM returned %d-char fix.", len(fixed))
+    return fixed
+
+
+# ── Full Healing Loop ─────────────────────────────────────────────────────────
+
+def heal_cypher(
+    cypher: str,
+    mapping: MappingProposal,
+    driver: Driver,
+    llm: LLMProtocol,
+    max_attempts: int | None = None,
+) -> str | None:
+    """Iteratively test and fix a Cypher statement until it passes or is exhausted.
+
+    Attempt sequence:
+    1. ``validate_cypher`` — if passes, return immediately.
+    2. ``fix_cypher``  — inject error into LLM Reflection Prompt.
+    3. Repeat up to ``max_attempts`` total test+fix cycles.
+
+    On exhaustion after ``max_attempts`` failures the function returns ``None``
+    and logs a CRITICAL warning.  The builder graph should then set
+    ``cypher_failed=True`` for this mapping and continue with the next table.
+
+    Args:
+        cypher:       Initial Cypher string from ``generate_cypher``.
+        mapping:      The ``MappingProposal`` that produced the Cypher.
+        driver:       An open ``neo4j.Driver`` for ``test_cypher``.
+        llm:          Reasoning LLM for ``fix_cypher``.
+        max_attempts: Override ``settings.max_cypher_healing_attempts`` (default 3).
+
+    Returns:
+        A valid Cypher string, or ``None`` if all attempts failed.
+    """
+    settings = get_settings()
+    limit: int = max_attempts if max_attempts is not None else settings.max_cypher_healing_attempts
+
+    current: str = cypher
+    for attempt in range(1, limit + 1):
+        ok, error = validate_cypher(current, driver)
+        if ok:
+            logger.info(
+                "Cypher healed for '%s' after %d attempt(s).",
+                mapping.table_name, attempt,
+            )
+            return current
+
+        logger.warning(
+            "Cypher attempt %d/%d failed for '%s': %s",
+            attempt, limit, mapping.table_name, error,
+        )
+
+        if attempt == limit:
+            logger.critical(
+                "Cypher healing exhausted for table '%s'. Marking as failed.",
+                mapping.table_name,
+            )
+            return None
+
+        try:
+            current = fix_cypher(current, error, mapping, llm)
+        except Exception as exc:
+            logger.error("fix_cypher LLM call failed: %s — aborting healing.", exc)
+            return None
+
+    # Should be unreachable; guard for static analysis
+    return None

@@ -442,18 +442,18 @@ Implement `generate_cypher(mapping: MappingProposal, llm) -> str` using `CYPHER_
 
 ---
 
-### TASK-21 — `src/graph/cypher_healer.py`
+### [DONE] TASK-21 — `src/graph/cypher_healer.py`
 
 **Epic:** EP-09 · **Priority:** P0 · **Prerequisites:** TASK-07, TASK-19, TASK-20
 
 Implement the Cypher Healing loop: attempt dry-run execution against Neo4j sandbox; on `CypherSyntaxError`, inject the native exception string into `CYPHER_FIX_USER` (Reflection Prompt) and retry. Max `settings.max_cypher_healing_attempts` retries before returning failure.
 
 **File(s) to implement:**
-- `src/graph/cypher_healer.py`
+- `src/graph/cypher_healer.py` ✅
 
 **Test file(s):**
-- `tests/unit/test_cypher_healer.py` (UT-10)
-- `tests/integration/test_cypher_healing.py` (IT-04)
+- `tests/unit/test_cypher_healer.py` (UT-13) ✅ — 12 tests
+- `tests/integration/test_cypher_healing.py` (IT-04) — not implemented
 
 **Documentation references:**
 - `docs/implementation/part-6-graph/21-cypher-healer.md` — healing loop logic
