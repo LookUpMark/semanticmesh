@@ -462,18 +462,19 @@ Implement the Cypher Healing loop: attempt dry-run execution against Neo4j sandb
 
 ---
 
-### TASK-22 — `src/graph/builder_graph.py`
+### [DONE] TASK-22 — `src/graph/builder_graph.py`
 
 **Epic:** EP-11 · **Priority:** P0 · **Prerequisites:** TASK-06, TASK-09–TASK-21
 
 Wire the complete Builder Graph as a LangGraph `StateGraph` using `BuilderState`. Define all nodes, conditional edges (confidence gate, critic loop, cypher healing loop), and the HITL interrupt. Compile and expose `builder_graph: CompiledGraph`.
 
 **File(s) to implement:**
-- `src/graph/builder_graph.py`
+- `src/graph/builder_graph.py` ✅
 
 **Test file(s):**
-- `tests/integration/test_builder_graph.py` (IT-01, IT-02, IT-03, IT-05)
-- `tests/integration/test_incremental_update.py` (IT-08)
+- `tests/unit/test_builder_graph.py` ✅ — 10 tests (routing + graph compilation)
+- `tests/integration/test_builder_graph.py` (IT-01, IT-02, IT-03, IT-05) — not implemented
+- `tests/integration/test_incremental_update.py` (IT-08) — not implemented
 
 **Documentation references:**
 - `docs/implementation/part-6-graph/22-builder-graph.md` — full `StateGraph` wiring code

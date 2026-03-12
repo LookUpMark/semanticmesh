@@ -13,11 +13,15 @@ Thesis: ChatOpenRouter @ OpenRouter Free Tier.  OPENROUTER_API_KEY must be set.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from langchain_openrouter import ChatOpenRouter
 
 from src.config.llm_client import InstrumentedLLM, LLMProtocol
 from src.config.settings import settings
+
+if TYPE_CHECKING:
+    from langchain_core.embeddings import Embeddings
 
 
 @lru_cache(maxsize=1)
@@ -70,3 +74,30 @@ def get_generation_llm() -> LLMProtocol:
         name="generation",
         max_retries=settings.max_llm_retries,
     )
+
+
+@lru_cache(maxsize=1)
+def get_embeddings() -> Embeddings:  # type: ignore[name-defined]
+    """Return a cached embedding model (stub for TASK-23).
+
+    This is a minimal stub implementation that provides dummy 1024-dim vectors
+    (matching BGE-M3 dimensionality). Will be replaced with proper FlagEmbedding
+    implementation in TASK-23.
+
+    Returns:
+        LangChain Embeddings protocol instance with dummy vectors.
+    """
+    from langchain_core.embeddings import Embeddings
+
+    class _StubEmbeddings(Embeddings):
+        """Stub embeddings returning zero vectors (1024-dim for BGE-M3 compatibility)."""
+
+        def embed_documents(self, texts: list[str]) -> list[list[float]]:
+            """Return dummy 1024-dim vectors for each text."""
+            return [[0.0] * 1024 for _ in texts]
+
+        def embed_query(self, text: str) -> list[float]:
+            """Return dummy 1024-dim vector for query."""
+            return [0.0] * 1024
+
+    return _StubEmbeddings()
