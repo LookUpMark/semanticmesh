@@ -1,57 +1,57 @@
-# Parte 6 — Grafo Neo4j e Cypher
+# Part 6 — Neo4j Graph & Cypher
 
-Con i mapping validati tra tabelle e concetti, il prossimo passo è renderli persistenti in un Knowledge Graph su Neo4j. La Parte 6 implementa l'integrazione Neo4j, la generazione di statement Cypher con few-shot learning, il self-healing per errori di sintassi, e il Builder Graph completo che orchestra tutto.
+With validated mappings between tables and concepts, the next step is to persist them in a Knowledge Graph on Neo4j. Part 6 implements the Neo4j integration, Cypher statement generation with few-shot learning, self-healing for syntax errors, and the complete Builder Graph that orchestrates everything.
 
-## TASK-19: Wrapper Neo4j con Helper MERGE
+## TASK-19: Neo4j Wrapper with MERGE Helpers
 
-Lavorare direttamente con il driver Neo4j può essere verboso e error-prone. Ogni query deve essere costruita come stringa, i parametri devono essere passati correttamente per prevenire injection, e le sessioni devono essere gestite con cura per evitare connection leaks. Il `Neo4jClient` in `src/graph/neo4j_client.py` incapsula tutta questa complessità.
+Working directly with the Neo4j driver can be verbose and error-prone. Each query must be constructed as a string, parameters must be passed correctly to prevent injection, and sessions must be managed carefully to avoid connection leaks. The `Neo4jClient` in `src/graph/neo4j_client.py` encapsulates all this complexity.
 
-I tre helper methods — `upsert_concept()`, `upsert_table()`, e `upsert_mapping()` — nascondono la complessità del Cypher MERGE. Il MERGE è cruciale per questo sistema: combina CREATE e MATCH in un'operazione atomica che crea il nodo se non esiste, oppure lo aggiorna se esiste già. Questo rende l'upsert idempotente — possiamo eseguire lo stesso upsert multiple volte senza creare duplicati.
+The three helper methods — `upsert_concept()`, `upsert_table()`, and `upsert_mapping()` — hide the complexity of Cypher MERGE. The MERGE is crucial for this system: it combines CREATE and MATCH in one atomic operation that creates the node if it doesn't exist, or updates it if it already exists. This makes upserts idempotent — we can run the same upsert multiple times without creating duplicates.
 
-La distinzione tra ON CREATE SET e ON MATCH SET è importante. Alcune proprietà, come il nome del concetto o della tabella, non dovrebbero mai cambiare — vanno in ON CREATE SET. Altre proprietà, come la definition di un concetto o il DDL source di una tabella, dovrebbero essere aggiornate su re-ingestione — vanno in ON MATCH SET. Questa distinzione permette al sistema di essere incrementale: possiamo re-ingestire documenti aggiornati e il grafo verrà aggiornato di conseguenza.
+The distinction between ON CREATE SET and ON MATCH SET is important. Some properties, like concept name or table name, should never change — they go in ON CREATE SET. Other properties, like a concept's definition or a table's DDL source, should be updated on re-ingestion — they go in ON MATCH SET. This distinction enables incremental system behavior: we can re-ingest updated documents and the graph will update accordingly.
 
-## TASK-20: Generazione Cypher con Few-Shot Examples
+## TASK-20: Cypher Generation with Few-Shot Examples
 
-Generare Cypher corretto è un problema non banale. Il LLM deve ricordare la sintassi MERGE con i suoi placeholder, deve formattare correttamente le liste di colonne, e deve usare i parametri correttamente. Anche piccoli errori di sintassi — una virgola mancante, un apice non chiuso — possono causare fallimenti.
+Generating correct Cypher is non-trivial. The LLM must remember MERGE syntax with its placeholders, format column lists correctly, and use parameters appropriately. Even small syntax errors — a missing comma, an unclosed quote — can cause failures.
 
-L'approccio few-shot risolve questo problema fornendo esempi concreti di Cypher corretto. Il sistema ha una bank di esempi, e per ogni tabella seleziona quelli più rilevanti basati sulla similarità (numero di colonne, tipi di dati, ecc.). Questo fornisce al LLM un template da seguire, riducendo drasticamente gli errori.
+The few-shot approach solves this problem by providing concrete examples of correct Cypher. The system has a bank of examples, and for each table selects the most relevant ones based on similarity (column count, data types, etc.). This gives the LLM a template to follow, dramatically reducing errors.
 
-Un dettaglio importante è che tutti i valori sono passati come parametri — `$concept_name`, `$concept_definition`, etc. — piuttosto che essere hardcoded nella stringa Cypher. Questo previene Cypher injection e migliora la performance perché Neo4j può cachare i query plan.
+An important detail is that all values are passed as parameters — `$concept_name`, `$concept_definition`, etc. — rather than being hardcoded in the Cypher string. This prevents Cypher injection and improves performance because Neo4j can cache query plans.
 
-Il ritorno è un `CypherStatement` che contiene sia il Cypher string che i parametri in un dict separato. Questo permette di eseguire la query con `session.run(cypher, **params)`, che è sia sicuro che efficiente.
+The result is a `CypherStatement` containing both the Cypher string and parameters in a separate dict. This allows executing the query with `session.run(cypher, **params)`, which is both secure and efficient.
 
-## TASK-21: Self-Healing per Errori Cypher
+## TASK-21: Self-Healing for Cypher Errors
 
-Nonostante i few-shot examples, gli errori accadono. Il LLM potrebbe generare sintassi leggermente sbagliata, potrebbe dimenticare una virgola, o potrebbe usare una keyword in modo non corretto. Invece di fallire completamente, il sistema implementa self-healing.
+Despite few-shot examples, errors happen. The LLM might generate slightly malformed syntax, might forget a comma, or might use a keyword incorrectly. Instead of failing completely, the system implements self-healing.
 
-La funzione `heal_cypher()` esegue un "dry-run" usando EXPLAIN — questo valida la sintassi senza modificare il database. Se trova un errore, inietta l'errore in un prompt di reflection e chiede al LLM di correggere il Cypher. Questo loop continua fino a tre tentativi o finché il Cypher non è valido.
+The `heal_cypher()` function performs a "dry-run" using EXPLAIN — this validates syntax without modifying the database. If it finds an error, it injects the error into a reflection prompt and asks the LLM to correct the Cypher. This loop continues up to three attempts or until the Cypher is valid.
 
-Il prompt di reflection è progettato specificamente per il healing: contiene il Cypher rotto, il messaggio d'errore esatto da Neo4j, e istruzioni per correggere solo l'errore specifico senza ristrutturare inutilmente la query. Questo focus riduce la possibilità che il LLM introduca nuovi errori mentre cerca di correggere quello originale.
+The reflection prompt is designed specifically for healing: it contains the broken Cypher, the exact error message from Neo4j, and instructions to correct only the specific error without unnecessarily restructuring the query. This focus reduces the chance that the LLM introduces new errors while trying to fix the original one.
 
-In pratica, il self-healing ha un tasso di successo molto alto. La maggior parte degli errori sono problemi minori di sintassi che il LLM corregge al primo tentativo. Gli errori più gravi — per esempio, cercare di usare una feature che non esiste in quella versione di Neo4j — possono richiedere due o tre tentativi ma vengono eventualmente risolti. Solo in rari casi il sistema fallisce dopo tre tentativi, e in quei casi l'errore viene loggato per investigazione manuale.
+In practice, self-healing has a very high success rate. Most errors are minor syntax issues that the LLM corrects on the first attempt. More severe errors — for example, trying to use a feature that doesn't exist in that Neo4j version — might require two or three attempts but are eventually resolved. Only in rare cases does the system fail after three attempts, and in those cases the error is logged for manual investigation.
 
-## TASK-22: Builder Graph Completo
+## TASK-22: Complete Builder Graph
 
-Il `BuilderGraph` in `src/graph/builder_graph.py` è dove tutti i componenti delle parti precedenti vengono assemblati in un pipeline completo. Esegue in sequenza: ingestione PDF, parsing DDL, enrichment schemi, estrazione triplette, risoluzione entità, mapping tabelle-concetti, generazione Cypher, e upsert Neo4j.
+The `BuilderGraph` in `src/graph/builder_graph.py` is where all components from previous parts are assembled into a complete pipeline. It executes sequentially: PDF ingestion, DDL parsing, schema enrichment, triplet extraction, entity resolution, table-to-concept mapping, Cypher generation, and Neo4j upsert.
 
-Il grafo usa il meccanismo di conditional routing di LangGraph per gestire casi speciali. Dopo il mapping, se il confidence è basso, il grafo interrompe e attende revisione umana. Se il grader approva, continua alla generazione Cypher. Se rifiuta, può rigenerare con feedback.
+The graph uses LangGraph's conditional routing mechanism to handle special cases. After mapping, if confidence is low, the graph interrupts and waits for human review. If the grader approves, it continues to Cypher generation. If rejected, it can regenerate with feedback.
 
-L'uso di LangGraph per orchestrare questo pipeline ha numerosi vantaggi. Primo, la visualizzazione — possiamo generare un grafo che mostra chiaramente il flusso dei dati e i punti di decisione. Secondo, il debugging — possiamo ispezionare lo stato in ogni nodo per vedere cosa è successo. Terzo, la flessibilità — aggiungere nuovi nodi o modificare il routing è questione di aggiungere o modificare funzioni, non di riscrivere logica complessa.
+Using LangGraph to orchestrate this pipeline has numerous advantages. First, visualization — we can generate a graph clearly showing data flow and decision points. Second, debugging — we can inspect state at each node to see what happened. Third, flexibility — adding new nodes or modifying routing is a matter of adding or modifying functions, not rewriting complex logic.
 
-Il test di integrazione per il Builder Graph esegue l'intero pipeline con dati reali, verificando che il grafo Neo4j risultante contenga i nodi e relationships corretti. Questo test end-to-end è la prova finale che tutte le componenti lavorano insieme correttamente.
+The integration test for the Builder Graph executes the entire pipeline with real data, verifying that the resulting Neo4j graph contains the correct nodes and relationships. This end-to-end test is the final proof that all components work together correctly.
 
-## Dall'Ingestion al Grafo
+## From Ingestion to Graph
 
-Questa parte rappresenta una transizione importante nel progetto. Nelle parti precedenti, estraevamo e processavamo dati. Qui, finalmente rendiamo quei dati persistenti in un Knowledge Graph strutturato su Neo4j. Questo grafo diventa la fonte di verità per il sistema — è ciò che il Query Graph (Parte 8) interrogherà per rispondere alle domande degli utenti.
+This part represents an important transition in the project. In previous parts, we extracted and processed data. Here, we finally make that data persistent in a structured Knowledge Graph on Neo4j. This graph becomes the source of truth for the system — it's what the Query Graph (Part 8) will query to answer user questions.
 
-Il viaggio da PDF grezzi e DDL SQL a un Knowledge Graph interrogabile è complesso, ma ogni passo è ora ben definito e testato. L'ingestion estrae e pulisce i dati. L'estrazione e la risoluzione entità identificano i concetti business. Il mapping allinea tabelle DB a concetti. Il Cypher generator traduce questi alignements in statement grafo. E il Builder Graph orchestra tutto.
+The journey from raw PDFs and SQL DDL to a queryable Knowledge Graph is complex, but each step is now well-defined and tested. Ingestion extracts and cleans data. Extraction and entity resolution identify business concepts. Mapping aligns database tables to concepts. Cypher generator translates these alignments into graph statements. And the Builder Graph orchestrates everything.
 
 ---
 
-### Riferimenti
+### References
 
-Per i dettagli implementativi di ciascun task, consulta le guide dettagliate:
-- [`neo4j_client.py`](../implementation/part-6-graph/19-neo4j-client.md) — Wrapper Neo4j con helper MERGE
-- [`cypher_generator.py`](../implementation/part-6-graph/20-cypher-generator.md) — Generazione Cypher con few-shot
-- [`cypher_healer.py`](../implementation/part-6-graph/21-cypher-healer.md) — Self-healing per errori
-- [`builder_graph.py`](../implementation/part-6-graph/22-builder-graph.md) — Builder Graph completo
+For implementation details of each task, consult the detailed guides:
+- [`neo4j_client.py`](../implementation/part-6-graph/19-neo4j-client.md) — Neo4j wrapper with MERGE helpers
+- [`cypher_generator.py`](../implementation/part-6-graph/20-cypher-generator.md) — Cypher generation with few-shot
+- [`cypher_healer.py`](../implementation/part-6-graph/21-cypher-healer.md) — Self-healing for errors
+- [`builder_graph.py`](../implementation/part-6-graph/22-builder-graph.md) — Complete Builder Graph

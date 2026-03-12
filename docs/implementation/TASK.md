@@ -400,7 +400,7 @@ Implement the HITL interrupt payload builder and resume handler for LangGraph. W
 
 ---
 
-### TASK-19 — `src/graph/neo4j_client.py`
+### [DONE] TASK-19 — `src/graph/neo4j_client.py`
 
 **Epic:** EP-10 · **Priority:** P0 · **Prerequisites:** TASK-02
 
