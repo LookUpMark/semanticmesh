@@ -255,7 +255,7 @@ Implement `enrich_schema(tables: list[TableSchema], llm) -> list[EnrichedTableSc
 
 ---
 
-### TASK-12 — `src/extraction/triplet_extractor.py`
+### TASK-12 — `src/extraction/triplet_extractor.py` [DONE]
 
 **Epic:** EP-03 · **Priority:** P0 · **Prerequisites:** TASK-05, TASK-07, TASK-09
 
