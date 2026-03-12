@@ -601,7 +601,7 @@ Implement `grade_answer(answer: str, chunks: list[Chunk], llm) -> HallucinationG
 
 ---
 
-### TASK-28 — `src/generation/query_graph.py`
+### [DONE] TASK-28 — `src/generation/query_graph.py`
 
 **Epic:** EP-15 · **Priority:** P0 · **Prerequisites:** TASK-06, TASK-24–TASK-27
 

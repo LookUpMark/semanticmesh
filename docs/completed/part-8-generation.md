@@ -1,55 +1,88 @@
-# Parte 8 — Generazione e Query Graph
+# Part 8 — Answer Generation & Query Graph
 
-L'ultimo pezzo del puzzle è generare risposte alle domande degli utenti usando il Knowledge Graph. La Parte 8 implementa l'answer generation con Self-RAG (Self-Reflective Retrieval-Augmented Generation), l'hallucination grading per detectare risposte non supportate, il web search fallback per context irrelevant, e il Query Graph completo che orchestra l'intero workflow Agentic RAG.
+Part 8 implements the final pipeline layer: generating natural-language answers from the Knowledge Graph using Self-RAG (Self-Reflective Retrieval-Augmented Generation), grading those answers for hallucinations, falling back to web search when context is irrelevant, and wiring everything together in a LangGraph `StateGraph`.
 
-## TASK-26: Answer Generation Context-Aware
+## TASK-26: Answer Generation
 
-La funzione `generate_answer()` in `src/generation/answer_generator.py` implementa il cuore del sistema di risposta. Prende una query utente e i chunks recuperati dal sistema di retrieval, e genera una risposta usando un LLM con temperatura 0.3 — abbastanza bassa per factualness, abbastanza alta per fluency.
+`src/generation/answer_generator.py` exposes three public functions:
 
-Il prompt ANSWER_SYSTEM istruisce il LLM a rispondere SOLO dalle informazioni nel context recuperato. Se la risposta non è presente nel context, il LLM deve usare esattamente la frase "I cannot find this information in the knowledge graph." Questo è cruciale per prevenire hallucination — il LLM non deve inventare informazioni che non sono nel grafo.
+**`format_context(chunks)`** formats reranked `RetrievedChunk` objects as a numbered list for injection into the LLM prompt:
 
-Il context viene formattato come una lista di chunk, ognuno prefissato con il suo node_type (BusinessConcept o PhysicalTable) e il suo text. Questo aiuta il LLM a capire la provenienza di ogni informazione e a citare le fonti appropriatamente nella risposta.
+```
+[1] Customer: A person who buys products.  [type=BusinessConcept, score=0.97]
+[2] Order: A purchase transaction.          [type=BusinessConcept, score=0.88]
+```
 
-Se una risposta viene generata ma il grader la trova non supportata (vedi TASK-27), la funzione `regenerate_with_critique()` viene chiamata. Questa funzione inietta la critique nel prompt, istruendo il LLM a evitare specificamente gli errori menzionati e a rimanere strettamente nel context.
+**`generate_answer(query, chunks, llm, critique=None)`** generates a grounded answer using the `ANSWER_SYSTEM` / `ANSWER_USER` prompt pair (temperature 0.3). If a `critique` from the Hallucination Grader is provided on retry, the `ANSWER_WITH_CRITIQUE_USER` template is used instead — injecting the specific unsupported claims so the model corrects them without inventing new information.
 
-## TASK-27: Hallucination Grading con Self-RAG
+**`web_search_fallback(query)`** is triggered when the Hallucination Grader returns `action="web_search"`. It attempts Tavily first (`TAVILY_API_KEY`), falls back to DuckDuckGo, and returns a string prefixed `[Source: Web Search]`. Both search backends are imported lazily inside the function, with graceful degradation when both fail.
 
-Una delle sfide più grandi nei sistemi RAG è l'hallucination — il LLM genera risposte che sembrano plausibili ma contengono informazioni non supportate dal context. L'hallucination grader in `src/generation/hallucination_grader.py` implementa il paradigma Self-RAG per detectare questi casi.
+## TASK-27: Hallucination Grading with Self-RAG
 
-Il grader prende la query, la risposta generata, e i context chunks, e produce un `GraderDecision` con tre campi: `grounded` (boolean), `critique` (stringa opzionale), e `action` ("pass", "regenerate", o "web_search").
+`src/generation/hallucination_grader.py` implements `grade_answer(query, answer, chunks, llm) -> GraderDecision`.
 
-Il caso più semplice è quando la risposta è fully grounded — tutte le affermazioni sono supportate dal context. In questo caso `grounded=True`, `critique=None`, e `action="pass"`. Il sistema accetta la risposta e la ritorna all'utente.
+The grader calls `GRADER_SYSTEM` / `GRADER_USER` at temperature 0.0 (deterministic audit). The LLM receives the context, the generated answer, and the original question, and must return a JSON `GraderDecision`:
 
-Più interessante è il caso quando la risposta contiene claims non supportati. Qui `grounded=False`, la `critique` deve specificare esattamente quale entità o affermazione non è supportata, e `action="regenerate"`. La critique deve essere specifica — non basta dire "alcune claims non sono supportate", deve dire "Table TB_ORD is not mentioned in any retrieved context chunk. Reformulate the answer omitting TB_ORD."
+| `action` | `grounded` | Meaning |
+|---|---|---|
+| `"pass"` | `True` | All claims are supported — accept the answer |
+| `"regenerate"` | `False` | Specific unsupported claims found — inject critique and retry |
+| `"web_search"` | `False` | Context is entirely irrelevant — fall back to external search |
 
-Il terzo caso è quando il context recuperato è completamente unrelated alla query. Qui il sistema non dovrebbe rigenerare la risposta — non servirebbe a nulla perché il context è sbagliato. Invece, `action="web_search"` e il sistema attiva il fallback.
+Three safety guarantees:
+- **LLM failure** → defaults to `GraderDecision(grounded=True, action="pass")` to avoid blocking the pipeline
+- **Bad JSON / Pydantic error** → same conservative default
+- **Inconsistency** (`grounded=True` with `action != "pass"`) → auto-corrected to `action="pass"`
 
-## TASK-28: Query Graph con Conditional Routing
+## TASK-28: Query Graph with Conditional Routing
 
-Il `QueryGraph` in `src/generation/query_graph.py` è l'orchestratore finale che combina tutti i componenti delle parti precedenti in un workflow Agentic RAG completo. Esegue in sequenza: retrieval, reranking, generation, grading, e poi conditional routing basato sulla decisione del grader.
+`src/generation/query_graph.py` wires all components into a compiled LangGraph `StateGraph` over `QueryState`.
 
-Il routing è implementato con `add_conditional_edges()` di LangGraph. Dopo il grading, se la risposta è grounded, il grafo termina e ritorna la risposta all'utente. Se la risposta non è grounded ma il context è rilevante, il grafo rigenera la risposta con la critique e poi la ri-grada. Se il context è completamente irrelevant, il grafo attiva il web search fallback e poi genera una nuova risposta basata su quel context.
+**Graph topology:**
 
-Questo routing condizionale implementa un loop di miglioramento: il sistema genera una risposta, la valuta, e se non è buona la migliora. Questo continua fino a tre tentativi di regeneration, dopo di cui il sistema accetta l'ultima risposta anche se non perfetta. Questo limite impedisce loop infiniti su query difficili.
+```
+hybrid_retrieval → reranking → answer_generation → hallucination_grader
+                                      ↑                      |
+                               (regenerate)          (pass) → finalise → END
+                                      |              (web_search) → web_search → END
+                                      └──────────────────────┘
+```
 
-## Dai Grafi LangGraph al Sistema Completo
+**Nodes:**
 
-Con il Query Graph completato, il sistema implementa ora due grafi LangGraph che lavorano insieme:
+| Node | Function |
+|---|---|
+| `hybrid_retrieval` | `vector_search` + `bm25_search` + `graph_traversal` + `merge_results` |
+| `reranking` | `rerank()` with cross-encoder |
+| `answer_generation` | `generate_answer()` with optional critique injection |
+| `hallucination_grader` | `grade_answer()` + loop guard |
+| `web_search` | `web_search_fallback()` |
+| `finalise` | assembles `final_answer` + `sources` list |
 
-1. **Builder Graph** (Parte 6): Costruisce il Knowledge Graph da documenti PDF e DDL SQL
-2. **Query Graph** (Parte 8): Interroga il Knowledge Graph per rispondere a domande utenti
+**Loop guard:** `iteration_count` in `QueryState` increments on each `answer_generation` call. When `iteration_count >= settings.max_hallucination_retries`, the grader node forces `action="web_search"` regardless of the LLM verdict, preventing infinite regeneration loops.
 
-Questa architettura a due grafi separa chiaramente due fasi distinte: la fase di costruzione (offline, batch) e la fase di interrogazione (online, latency-sensitive). Il Builder Graph può essere eseguito periodicamente per aggiornare il grafo con nuovi documenti o modifiche allo schema DB. Il Query Graph risponde alle query degli utenti usando il grafo corrente.
+**`_route_after_grader(state)`** is the conditional edge function:
+- `"pass"` → `"finalise"`
+- `"regenerate"` → `"answer_generation"` (with critique in `last_critique`)
+- `"web_search"` → `"web_search"`
+- `None` / unknown → `"finalise"` (safe default)
 
-L'intero sistema — dalle 8 parti, dai 28 task completati, dalle centinaia di unit test — rappresenta un'implementazione completa di un sistema Multi-Agent Framework for Semantic Discovery & GraphRAG. Può leggere documenti business PDF, parsare schema DB, estrarre triplette semantiche, risolvere entità, mappare tabelle a concetti, generare Cypher per Neo4j, e rispondere a domande con retrieval augmented generation.
+**`build_query_graph()`** compiles the graph with `MemorySaver` checkpointing. **`run_query(user_query)`** is a convenience wrapper that builds the graph, sets an initial `QueryState`, invokes it, and returns `{"final_answer": str, "sources": list[str]}`.
 
-È un sistema complesso, ma ogni componente è stato progettato, implementato, e testato con cura. E la documentazione in `docs/completed/` è qui per aiutare a capire come tutto funziona insieme.
+## The Two-Graph Architecture
+
+Part 8 completes the full system. Two LangGraph `StateGraph` instances work together:
+
+1. **Builder Graph** (Part 6) — offline, batch: PDF + DDL → Knowledge Graph (Neo4j)
+2. **Query Graph** (Part 8) — online, latency-sensitive: user query → grounded answer
+
+The Builder Graph runs periodically to update the graph with new documents or schema changes. The Query Graph serves user queries against the current graph state.
 
 ---
 
-### Riferimenti
+### Implementation References
 
-Per i dettagli implementativi di ciascun task, consulta le guide dettagliate:
-- [`answer_generator.py`](../implementation/part-8-generation/26-answer-generator.md) — Answer generation
-- [`hallucination_grader.py`](../implementation/part-8-generation/27-hallucination-grader.md) — Self-RAG grading
-- [`query_graph.py`](../implementation/part-8-generation/28-query-graph.md) — Query Graph completo
+- [`answer_generator.py`](../implementation/part-8-generation/26-answer-generator.md) — `generate_answer`, `web_search_fallback`, `format_context`
+- [`hallucination_grader.py`](../implementation/part-8-generation/27-hallucination-grader.md) — Self-RAG grading with `GraderDecision`
+- [`query_graph.py`](../implementation/part-8-generation/28-query-graph.md) — full Query Graph wiring and routing
+
