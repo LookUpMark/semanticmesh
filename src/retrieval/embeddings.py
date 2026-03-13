@@ -43,11 +43,12 @@ def get_embeddings():
 
     settings = get_settings()
     model_name: str = settings.embedding_model
-    logger.info("Loading embedding model '%s'...", model_name)
+    logger.info("Loading embedding model '%s' on CPU...", model_name)
     model = FlagModel(
         model_name,
-        use_fp16=True,  # halves VRAM usage; negligible accuracy loss
+        use_fp16=False,  # fp16 requires CUDA; use fp32 on CPU
         query_instruction_for_retrieval="Represent this sentence for retrieval: ",
+        devices=["cpu"],
     )
     logger.info("Embedding model loaded.")
     return model
@@ -71,7 +72,7 @@ def embed_texts(
         return []
     if model is None:
         model = get_embeddings()
-    embeddings = model.encode(texts, batch_size=32, show_progress_bar=False)
+    embeddings = model.encode(texts, batch_size=32)
     return embeddings.tolist()
 
 

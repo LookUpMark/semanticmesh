@@ -70,7 +70,7 @@ def get_reranker():
     settings = get_settings()
     model_name: str = settings.reranker_model
     logger.info("Loading reranker model '%s'...", model_name)
-    reranker = FlagReranker(model_name, use_fp16=True)
+    reranker = FlagReranker(model_name, use_fp16=False, device="cpu")
     logger.info("Reranker model loaded.")
     return reranker
 

@@ -405,10 +405,12 @@ Implement the HITL interrupt payload builder and resume handler for LangGraph. W
 **Epic:** EP-10 · **Priority:** P0 · **Prerequisites:** TASK-02
 
 Implement `Neo4jClient` wrapping the official `neo4j` Python driver. Expose:
-- `execute(cypher: str, params: dict) -> list[dict]` — general read/write
-- `upsert_concept(...)`, `upsert_table(...)`, `upsert_mapping(...)` — convenience MERGE wrappers
-- `test_connection() -> bool` — health check
+- `execute_cypher(cypher: str, params: dict) -> list[dict]` — general read/write
+- `execute_batch(statements: list[tuple[str, dict]]) -> None` — multi-statement transaction
+- `setup_schema(client)` — idempotent constraint + vector index creation
 - Context manager support (`__enter__` / `__exit__` for session lifecycle)
+
+**Bug fix (post-integration):** The vector index `OPTIONS` map used single-quoted keys (`'vector.dimensions'`) which Neo4j 5.x rejects. Fixed to use backtick-quoted keys (`` `vector.dimensions` ``). `setup_schema` must now be called explicitly in both `run_builder` and `run_query` entry points.
 
 **File(s) to implement:**
 - `src/graph/neo4j_client.py`
@@ -464,20 +466,47 @@ Implement the Cypher Healing loop: attempt dry-run execution against Neo4j sandb
 
 ### [DONE] TASK-22 — `src/graph/builder_graph.py`
 
-**Epic:** EP-11 · **Priority:** P0 · **Prerequisites:** TASK-06, TASK-09–TASK-21
+**Epic:** EP-11 · **Priority:** P0 · **Prerequisites:** TASK-06, TASK-09–TASK-21, TASK-22b
 
 Wire the complete Builder Graph as a LangGraph `StateGraph` using `BuilderState`. Define all nodes, conditional edges (confidence gate, critic loop, cypher healing loop), and the HITL interrupt. Compile and expose `builder_graph: CompiledGraph`.
+
+**Key implementation notes (post-integration hardening):**
+- `_node_generate_cypher` builds a synthetic `Entity` from `proposal.mapped_concept` (not `entities[0]`) so the generated Cypher always references the validated concept
+- `_node_build_graph` implements primary/fallback: if `cypher_failed=False` → execute LLM-healed Cypher; else → use `build_upsert_cypher` from TASK-22b
+- `_route_after_heal` always returns `"build_graph"` — primary/fallback decision is inside the node
+- `run_builder` accepts `clear_graph: bool = False` to wipe data before a demo run; calls `setup_schema(client)` before graph invocation
+- `BuilderState` includes `completed_tables: list[str]` (added in TASK-06 hardening)
 
 **File(s) to implement:**
 - `src/graph/builder_graph.py` ✅
 
 **Test file(s):**
-- `tests/unit/test_builder_graph.py` ✅ — 10 tests (routing + graph compilation)
+- `tests/unit/test_builder_graph.py` ✅ — 13 tests (routing + graph compilation); `TestRouteAfterHeal` updated to assert `"build_graph"` always
 - `tests/integration/test_builder_graph.py` ✅ — IT-01, IT-02, IT-03, IT-05 (4 test classes)
 - `tests/integration/test_incremental_update.py` ✅ — IT-08 (incremental delta update tests)
 
 **Documentation references:**
 - `docs/implementation/part-6-graph/22-builder-graph.md` — full `StateGraph` wiring code
+- `docs/implementation/part-6-graph/22b-cypher-builder.md` — deterministic fallback builder
+
+
+---
+
+### [DONE] TASK-22b — `src/graph/cypher_builder.py`
+
+**Epic:** EP-10 / EP-11 · **Priority:** P0 · **Prerequisites:** TASK-05, TASK-22
+
+Implement a deterministic parameterized Cypher builder used as the fallback write path in `_node_build_graph` when `cypher_failed=True`. Uses `$param` placeholders and driver-level binding to eliminate quoting and escaping bugs that arise when LLMs embed string values inline in Cypher.
+
+**Design rationale:** LLMs consistently fail to correctly escape strings with embedded quotes (e.g. DDL source, column definitions) when generating inline Cypher. Every healing attempt adds another quoting layer, creating an infinite regress. Parameterized queries solve this by separating query structure from values entirely — the driver handles all escaping.
+
+**File(s) to implement:**
+- `src/graph/cypher_builder.py` ✅
+
+**Test file(s):** _(covered indirectly via `test_builder_graph.py` integration path)_
+
+**Documentation references:**
+- `docs/implementation/part-6-graph/22b-cypher-builder.md` — full implementation
 - `docs/draft/SPECS.md` §4.1 — Builder Graph flow diagram
 - `docs/draft/SPECS.md` §4.3 — Self-Reflection Loop sequence diagram
 - `docs/draft/SPECS.md` §4.4 — Incremental upsert strategy

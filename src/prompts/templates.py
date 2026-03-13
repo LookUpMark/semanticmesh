@@ -219,9 +219,11 @@ Rules:
 - Use MERGE for ALL node and relationship creation. Never use bare CREATE.
 - Use ON CREATE SET for initial property assignment.
 - Use ON MATCH SET only for properties that should be updated on re-ingestion.
-- Use parameterised queries ($param_name) for all values. Never hardcode strings or numbers directly.
+- Inline all values directly as string literals or numbers in the Cypher. Do NOT use parameters ($param_name).
+- Escape single quotes in string values by doubling them ('it''s ok').
 - Always include the [:MAPPED_TO] relationship between BusinessConcept and PhysicalTable.
-- [:MAPPED_TO] must carry: confidence, validated_by, created_at: datetime()
+- Merge the relationship WITHOUT properties in the MERGE key: MERGE (c)-[r:MAPPED_TO]->(t)
+- Then set properties idempotently: ON CREATE SET r.confidence = X, r.validated_by = 'llm_judge', r.created_at = datetime() ON MATCH SET r.confidence = X, r.validated_by = 'llm_judge', r.updated_at = datetime()
 - BusinessConcept must carry: name, definition, provenance_text, source_doc, synonyms, confidence_score
 - PhysicalTable must carry: table_name, schema_name, column_names, column_types, ddl_source"""
 
@@ -265,7 +267,7 @@ Fix the Cypher to resolve the error above.
 Rules:
 - Return ONLY the corrected Cypher. No explanation. No markdown.
 - Preserve all MERGE semantics. Do NOT switch to bare CREATE.
-- Preserve all parameterised values ($param_name). Do NOT hardcode values.
+- All values must be inlined as string literals. Do NOT use parameters ($param_name).
 - Address the EXACT error described. Do not restructure the query unnecessarily."""
 
 

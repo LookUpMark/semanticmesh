@@ -58,6 +58,7 @@ class BuilderState(TypedDict, total=False):
     hitl_flag: bool
     failed_mappings: list[str]
     ingestion_errors: list[str]
+    completed_tables: list[str]
 
 
 class QueryState(TypedDict, total=False):
