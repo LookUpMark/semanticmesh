@@ -42,7 +42,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.config.config import DEFAULT_CONFIG
@@ -82,12 +82,15 @@ class Settings(BaseSettings):
 
     # ── LLM ─────────────────────────────────────────────────────────────────────
     lmstudio_base_url: str = DEFAULT_CONFIG.lmstudio_base_url
+    openrouter_api_key: SecretStr = Field(default=SecretStr(""), env="OPENROUTER_API_KEY")
+    openrouter_base_url: str = Field(default=DEFAULT_CONFIG.openrouter_base_url, env="OPENROUTER_BASE_URL")
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
     llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
     llm_temperature_reasoning: float = DEFAULT_CONFIG.llm_temperature_reasoning
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
     llm_max_tokens_extraction: int = DEFAULT_CONFIG.llm_max_tokens_extraction
+    llm_max_tokens_reasoning: int = Field(default=DEFAULT_CONFIG.llm_max_tokens_reasoning, env="LLM_MAX_TOKENS_REASONING")
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = DEFAULT_CONFIG.embedding_model
@@ -135,6 +138,35 @@ def get_settings() -> Settings:
     return Settings()
 
 
+def reload_settings() -> None:
+    """Force-reload Settings from the current ``os.environ``.
+
+    Clears the ``get_settings`` LRU cache, creates a fresh ``Settings()``
+    instance, then **mutates the module-level** ``settings`` **alias in-place**
+    so that existing ``from src.config.settings import settings`` bindings
+    across all already-imported modules immediately see the new values —
+    without requiring a kernel restart.
+
+    Why in-place mutation?  If ``reload_settings()`` simply reassigned the
+    module attribute (``settings_module.settings = new_instance``), callers
+    that have already done ``from settings import settings`` would keep a
+    reference to the *old* object.  Mutating ``settings.__dict__`` propagates
+    the change to every reference simultaneously.
+
+    Typical notebook usage::
+
+        import os
+        os.environ["LLM_MODEL_REASONING"] = "claude-sonnet-4-5"
+        from src.config.llm_factory import reconfigure_from_env
+        reconfigure_from_env()  # calls reload_settings() then clears LLM caches
+    """
+    import src.config.settings as _mod
+
+    get_settings.cache_clear()
+    new = Settings()
+    _mod.settings.__dict__.update(new.__dict__)
+
+
 # Module-level singleton — import with:
 #   from src.config.settings import settings
 settings: Settings = get_settings()
@@ -145,9 +177,12 @@ settings: Settings = get_settings()
 | Field | Default | Notes |
 |---|---|---|
 | `lmstudio_base_url` | `"http://localhost:1234/v1"` | LM Studio OpenAI-compatible endpoint — set via `LMSTUDIO_BASE_URL` |
+| `openrouter_api_key` | `""` | OpenRouter API key — set via `OPENROUTER_API_KEY` |
+| `openrouter_base_url` | `"https://openrouter.ai/api/v1"` | OpenRouter base URL — set via `OPENROUTER_BASE_URL` |
 | `llm_model_extraction` | `"local-model"` | Model name as shown in LM Studio's loader — set via `LLM_MODEL_EXTRACTION` |
 | `llm_model_reasoning` | `"local-model"` | Model name as shown in LM Studio's loader — set via `LLM_MODEL_REASONING` |
 | `llm_max_tokens_extraction` | `16384` | Max output tokens for extraction — prevents JSON truncation; set via `LLM_MAX_TOKENS_EXTRACTION` |
+| `llm_max_tokens_reasoning` | `8192` | Max token budget for reasoning/generation — caps thinking + output for OpenRouter models with mandatory thinking; set via `LLM_MAX_TOKENS_REASONING` |
 | `llm_temperature_extraction` | `0.0` | SLM must be deterministic |
 | `llm_temperature_generation` | `0.3` | Slight creativity for fluent answers |
 | `max_llm_retries` | `3` | Max retry attempts in `InstrumentedLLM` on rate-limit / timeout |
@@ -250,3 +285,47 @@ python -c "from src.config.settings import settings; print(settings.neo4j_uri)"
 ```
 
 Expected: `bolt://localhost:7687` (or your overridden value from `.env`)
+
+---
+
+## 7. Dynamic Reconfiguration
+
+### The Module-Level Binding Problem
+
+Python caches imported names at the call site:
+
+```python
+from src.config.settings import settings  # binds the name 'settings' to the current object
+```
+
+If `reload_settings()` simply did `settings_module.settings = new_instance`, every module that had already executed that import statement would still hold a reference to the *old* `Settings` object. Reassigning the module attribute does not update those existing references.
+
+### The In-Place Mutation Solution
+
+`reload_settings()` solves this by **mutating the existing object's `__dict__`** rather than replacing the object:
+
+```python
+_mod.settings.__dict__.update(new.__dict__)
+```
+
+This overwrites every field on the *same object in memory* that all callers already hold a reference to. The object identity (memory address) does not change — only its contents do.
+
+### Correct Notebook Pattern
+
+```python
+import os
+
+# 1. Change the environment variable
+os.environ["LLM_MODEL_REASONING"] = "claude-sonnet-4-5"
+
+# 2. Call reconfigure_from_env() — this calls reload_settings() internally,
+#    then clears the LLM factory's lru_cache so new LLM instances are built.
+from src.config.llm_factory import reconfigure_from_env
+reconfigure_from_env()
+
+# 3. All subsequent calls now use the new model
+from src.config.llm_factory import get_reasoning_llm
+llm = get_reasoning_llm()  # ChatAnthropic, not ChatOpenAI
+```
+
+> **Never** call `reload_settings()` directly in notebooks — always use `reconfigure_from_env()`, which also clears the LLM factory caches. Calling only `reload_settings()` would update `settings` but leave stale LLM instances cached.

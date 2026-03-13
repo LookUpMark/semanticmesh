@@ -52,14 +52,24 @@ logger: logging.Logger = get_logger(__name__)
 
 @lru_cache(maxsize=1)
 def get_reranker():
-    """Return the singleton FlagReranker instance.
+    """Return the singleton FlagReranker instance, loaded on CPU.
 
     The model is loaded from ``settings.reranker_model`` (default
-    ``"BAAI/bge-reranker-large"``).  Runs on CPU if no GPU is available.
+    ``"BAAI/bge-reranker-large"``).  Always runs on CPU regardless of GPU
+    availability.
+
+    **CUDA guard:** ``FlagReranker.__init__`` probes CUDA during initialization
+    even when ``device="cpu"`` is specified, which triggers OOM errors when GPU
+    VRAM is already occupied (e.g., by an LM Studio model loaded in the same
+    session).  To prevent this, ``CUDA_VISIBLE_DEVICES`` is temporarily set to
+    ``""`` (hiding all GPUs) for the duration of model initialization, then
+    restored to its original value immediately afterward.
 
     Returns:
         A ``FlagEmbedding.FlagReranker`` instance ready for ``.compute_score()``.
     """
+    import os
+
     try:
         from FlagEmbedding import FlagReranker
     except ImportError as exc:
@@ -70,9 +80,19 @@ def get_reranker():
     settings = get_settings()
     model_name: str = settings.reranker_model
     logger.info("Loading reranker model '%s'...", model_name)
-    reranker = FlagReranker(model_name, use_fp16=False, device="cpu")
+
+    old_cuda = os.environ.get("CUDA_VISIBLE_DEVICES")
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    try:
+        model = FlagReranker(model_name, use_fp16=False, device="cpu")
+    finally:
+        if old_cuda is None:
+            os.environ.pop("CUDA_VISIBLE_DEVICES", None)
+        else:
+            os.environ["CUDA_VISIBLE_DEVICES"] = old_cuda
+
     logger.info("Reranker model loaded.")
-    return reranker
+    return model
 
 
 def rerank(

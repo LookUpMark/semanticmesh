@@ -50,6 +50,7 @@ No third-party packages are required beyond the standard library — this module
 | Symbol | Signature | Description |
 |---|---|---|
 | `build_upsert_cypher` | `(proposal: MappingProposal, table: EnrichedTableSchema) -> tuple[str, dict]` | Returns the fixed MERGE Cypher template and a fully-populated params dict ready for driver execution |
+| `build_fk_cypher` | `(table: TableSchema) -> list[tuple[str, dict]]` | Returns a list of `(cypher, params)` tuples — one per FK column — that create `:REFERENCES` edges between `PhysicalTable` nodes |
 
 The returned tuple is consumed directly by `Neo4jClient.execute_cypher`:
 
@@ -172,6 +173,78 @@ def build_upsert_cypher(
         "confidence": proposal.confidence,
     }
     return _UPSERT_CYPHER, params
+```
+
+---
+
+### `build_fk_cypher`
+
+Builds `MERGE` Cypher statements for foreign-key edges between `PhysicalTable` nodes. Called by `_node_build_graph` in `builder_graph.py` immediately after the main upsert, for every table that declares FK columns.
+
+#### Cypher template produced
+
+```cypher
+MERGE (src:PhysicalTable {name: $src_name})
+MERGE (tgt:PhysicalTable {name: $tgt_name})
+MERGE (src)-[r:REFERENCES {fk_column: $fk_col, ref_column: $ref_col}]->(tgt)
+```
+
+The `MERGE` on the target node creates a **stub** `PhysicalTable` if the referenced table has not been ingested yet — allowing FK relationships to be recorded before the full schema of the referenced table is loaded. The stub is promoted to a full node when that table is eventually upserted.
+
+#### Parameters bound by the driver
+
+| Parameter | Source |
+|---|---|
+| `$src_name` | `table.table_name` (the table that declares the FK) |
+| `$tgt_name` | `column.foreign_key.referenced_table` |
+| `$fk_col` | `column.name` (the FK column in the source table) |
+| `$ref_col` | `column.foreign_key.referenced_column` |
+
+#### Implementation
+
+```python
+_FK_CYPHER = """\
+MERGE (src:PhysicalTable {name: $src_name})
+MERGE (tgt:PhysicalTable {name: $tgt_name})
+MERGE (src)-[r:REFERENCES {fk_column: $fk_col, ref_column: $ref_col}]->(tgt)
+"""
+
+
+def build_fk_cypher(table: TableSchema) -> list[tuple[str, dict]]:
+    """Build MERGE Cypher for FK edges: (:PhysicalTable)-[:REFERENCES]->(:PhysicalTable).
+
+    Iterates ``table.columns`` and emits one ``(cypher, params)`` tuple for each
+    column whose ``foreign_key`` field is not ``None``.  Returns an empty list
+    when the table has no FK columns, so the caller can skip the Neo4j round-trip
+    entirely.
+
+    The target ``PhysicalTable`` node is created as a stub if it does not yet
+    exist — the stub is promoted when the referenced table is eventually upserted.
+
+    Args:
+        table: Parsed :class:`~src.models.schemas.TableSchema` with column
+               metadata including optional ``foreign_key`` descriptors.
+
+    Returns:
+        A list of ``(cypher_template, params)`` tuples — one per FK column —
+        ready for ``Neo4jClient.execute_cypher(cypher, params)``.
+        Returns ``[]`` if no FK columns are present.
+
+    Used by:
+        ``_node_build_graph`` in ``builder_graph.py`` after the main upsert.
+    """
+    result: list[tuple[str, dict]] = []
+    for col in table.columns:
+        if col.foreign_key is None:
+            continue
+        params = {
+            "src_name": table.table_name,
+            "tgt_name": col.foreign_key.referenced_table,
+            "fk_col": col.name,
+            "ref_col": col.foreign_key.referenced_column,
+        }
+        result.append((_FK_CYPHER, params))
+    return result
 ```
 
 ---

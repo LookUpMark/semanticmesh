@@ -7,14 +7,15 @@
 
 The Hallucination Grader is an adversarial LLM node that reads the generated answer, the user's query, and the context chunks, then decides if any claims in the answer are unsupported.
 
-Three possible verdicts:
+Two possible verdicts:
 - `"pass"` — answer is fully grounded; send to user.
-- `"regenerate"` — specific unsupported claims found; inject critique and retry generation.
-- `"web_search"` — context is entirely irrelevant; fall back to external search.
+- `"regenerate"` — specific unsupported claims found, or context is insufficient; inject critique and retry generation.
+
+When context is insufficient to answer the query, the grader emits `"regenerate"` with a critique suggesting the generator acknowledge uncertainty (e.g., *"I don't have enough information in the knowledge graph to answer this question with confidence"*). There is no `web_search` fallback — the grader never routes outside the RAG loop.
+
+After `max_hallucination_retries`, the Query Graph forces `action="pass"` before calling the grader to prevent infinite loops — the grader itself does not enforce this guard.
 
 On JSON parse failure or Pydantic `ValidationError`, the grader triggers a self-reflection retry via `REFLECTION_TEMPLATE` (PT-05) up to `max_reflection_attempts` times (default 3) before defaulting to `grounded=True, action="pass"` — never blocking the pipeline on grader malfunction.
-
-A `QueryState.iteration_count` guard in the Query Graph prevents infinite regeneration loops.
 
 ---
 
@@ -92,7 +93,7 @@ def grade_answer(
     from src.models.schemas import GraderDecision  # noqa: PLC0415
 
     _pass = GraderDecision(grounded=True, critique=None, action="pass")
-    _fmt = '{"grounded": <bool>, "critique": "<str|null>", "action": "<pass|regenerate|web_search>"}'
+    _fmt = '{"grounded": <bool>, "critique": "<str|null>", "action": "<pass|regenerate>"}'
 
     context_block = format_context(chunks)
     user_prompt = GRADER_USER.format(
@@ -211,10 +212,15 @@ class TestGradeAnswer:
         assert decision.action == "regenerate"
         assert "TB_ORDERS" in decision.critique
 
-    def test_web_search_verdict(self) -> None:
-        llm = _make_llm({"grounded": False, "critique": "No relevant context.", "action": "web_search"})
+    def test_insufficient_context_emits_regenerate(self) -> None:
+        llm = _make_llm({
+            "grounded": False,
+            "critique": "I don't have enough information in the knowledge graph to answer this question with confidence.",
+            "action": "regenerate",
+        })
         decision = grade_answer("Obscure query?", "I don't know.", [], llm)
-        assert decision.action == "web_search"
+        assert decision.action == "regenerate"
+        assert "knowledge graph" in decision.critique
 
     def test_llm_failure_defaults_to_pass(self) -> None:
         llm = MagicMock()
