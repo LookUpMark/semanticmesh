@@ -12,6 +12,8 @@ Three possible verdicts:
 - `"regenerate"` — specific unsupported claims found; inject critique and retry generation.
 - `"web_search"` — context is entirely irrelevant; fall back to external search.
 
+On JSON parse failure or Pydantic `ValidationError`, the grader triggers a self-reflection retry via `REFLECTION_TEMPLATE` (PT-05) up to `max_reflection_attempts` times (default 3) before defaulting to `grounded=True, action="pass"` — never blocking the pipeline on grader malfunction.
+
 A `QueryState.iteration_count` guard in the Query Graph prevents infinite regeneration loops.
 
 ---
@@ -19,8 +21,9 @@ A `QueryState.iteration_count` guard in the Query Graph prevents infinite regene
 ## 2. Prerequisites
 
 - `src/models/schemas.py` — `RetrievedChunk`, `GraderDecision` (step 5)
-- `src/prompts/templates.py` — `GRADER_SYSTEM`, `GRADER_USER` (step 7)
+- `src/prompts/templates.py` — `GRADER_SYSTEM`, `GRADER_USER`, `REFLECTION_TEMPLATE` (step 7)
 - `src/config/logging.py` — `get_logger`
+- `src/config/settings.py` — `get_settings`
 
 ---
 
@@ -45,17 +48,21 @@ Returns a GraderDecision driving the Query Graph routing.
 from __future__ import annotations
 
 import json
-import logging
+from typing import TYPE_CHECKING
 
 from langchain_core.messages import HumanMessage, SystemMessage
-
-from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 
 from src.config.logging import get_logger
+from src.config.settings import get_settings
 from src.generation.answer_generator import format_context
-from src.models.schemas import GraderDecision, RetrievedChunk
-from src.prompts.templates import GRADER_SYSTEM, GRADER_USER
+from src.prompts.templates import GRADER_SYSTEM, GRADER_USER, REFLECTION_TEMPLATE
+
+if TYPE_CHECKING:
+    import logging
+
+    from src.config.llm_client import LLMProtocol
+    from src.models.schemas import GraderDecision, RetrievedChunk
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -68,14 +75,10 @@ def grade_answer(
 ) -> GraderDecision:
     """Audit a generated answer for unsupported claims against the context chunks.
 
-    The grader LLM receives:
-    - The user's original question.
-    - The generated answer to audit.
-    - All context chunks in numbered format (same representation as the generator).
-
-    It must return a JSON object matching ``GraderDecision``.  On any parse or
-    validation error the grader defaults to ``grounded=True, action="pass"``
-    to avoid blocking the pipeline on grader malfunction.
+    The grader LLM receives the user's original question, the generated answer,
+    and all context chunks in numbered format. It returns a JSON object matching
+    ``GraderDecision``. On any parse or validation error the grader defaults to
+    ``grounded=True, action="pass"`` to avoid blocking the pipeline.
 
     Args:
         query:   The user's natural-language question.
@@ -86,11 +89,16 @@ def grade_answer(
     Returns:
         ``GraderDecision`` with ``grounded``, ``critique``, and ``action`` fields.
     """
+    from src.models.schemas import GraderDecision  # noqa: PLC0415
+
+    _pass = GraderDecision(grounded=True, critique=None, action="pass")
+    _fmt = '{"grounded": <bool>, "critique": "<str|null>", "action": "<pass|regenerate|web_search>"}'
+
     context_block = format_context(chunks)
     user_prompt = GRADER_USER.format(
-        context=context_block,
-        question=query,
-        answer=answer,
+        context_chunks=context_block,
+        generated_answer=answer,
+        user_query=query,
     )
 
     try:
@@ -102,34 +110,49 @@ def grade_answer(
         )
         raw_json: str = response.content.strip()
     except Exception as exc:
-        logger.warning(
-            "Grader LLM call failed (%s) — defaulting to pass.", exc
-        )
-        return GraderDecision(grounded=True, critique=None, action="pass")
+        logger.warning("Grader LLM call failed (%s) — defaulting to pass.", exc)
+        return _pass
 
-    try:
-        data: dict = json.loads(raw_json)
-        decision = GraderDecision(**data)
-    except (json.JSONDecodeError, ValidationError) as exc:
-        logger.warning(
-            "Grader response parse error (%s) — defaulting to pass.", exc
-        )
-        return GraderDecision(grounded=True, critique=None, action="pass")
+    settings = get_settings()
+    max_attempts: int = settings.max_reflection_attempts
 
-    # Consistency check: grounded=True must have action="pass"
-    if decision.grounded and decision.action != "pass":
-        logger.warning(
-            "Grader inconsistency (grounded=True but action=%s) — forcing pass.",
-            decision.action,
-        )
-        return GraderDecision(grounded=True, critique=None, action="pass")
+    for attempt in range(1, max_attempts + 1):
+        try:
+            data: dict = json.loads(raw_json)
+            decision = GraderDecision(**data)
+        except (json.JSONDecodeError, ValidationError) as exc:
+            logger.warning(
+                "Grader response parse/validation error (attempt %d/%d): %s",
+                attempt, max_attempts, exc,
+            )
+            if attempt == max_attempts:
+                return _pass
+            raw_json = llm.invoke([
+                HumanMessage(content=REFLECTION_TEMPLATE.format(
+                    role="strict factual auditor",
+                    output_format=f"JSON object matching {_fmt}",
+                    error_or_critique=str(exc),
+                    original_input=raw_json,
+                ))
+            ]).content.strip()
+            continue
 
-    logger.info(
-        "Grader verdict: grounded=%s, action=%s, critique=%r.",
-        decision.grounded, decision.action,
-        (decision.critique or "")[:120],
-    )
-    return decision
+        # Consistency check: grounded=True must have action="pass"
+        if decision.grounded and decision.action != "pass":
+            logger.warning(
+                "Grader inconsistency (grounded=True but action=%s) — forcing pass.",
+                decision.action,
+            )
+            return _pass
+
+        logger.info(
+            "Grader verdict: grounded=%s, action=%s, critique=%r.",
+            decision.grounded, decision.action,
+            (decision.critique or "")[:120],
+        )
+        return decision
+
+    return _pass
 ```
 
 ---

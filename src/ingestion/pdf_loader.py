@@ -1,7 +1,7 @@
-"""PDF loading and semantic chunking.
+"""Document loading (PDF and plain text) and semantic chunking.
 
-EP-02: loads PDF pages into Document objects, then splits them into
-fixed-size Chunks using RecursiveCharacterTextSplitter.  No LLM involved.
+EP-02: loads PDF pages or plain text files into Document objects, then splits
+them into fixed-size Chunks using RecursiveCharacterTextSplitter. No LLM involved.
 """
 
 from __future__ import annotations
@@ -24,24 +24,44 @@ _TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
 
 class IngestionError(Exception):
-    """Raised when a PDF cannot be loaded (corrupt, encrypted, missing)."""
+    """Raised when a document (PDF or text file) cannot be loaded."""
 
 
 def load_pdf(path: Path) -> list[Document]:
-    """Extract text from every page of a PDF file.
+    """Extract text from every page of a PDF file or load a plain text file.
 
     Args:
-        path: Absolute or relative path to the PDF file.
+        path: Absolute or relative path to the PDF or text file.
 
     Returns:
-        List of ``Document`` objects, one per page, preserving page number.
+        List of ``Document`` objects, one per page for PDFs, one document for text files.
 
     Raises:
         IngestionError: If the file does not exist, is encrypted, or is corrupt.
     """
     if not path.exists():
-        raise IngestionError(f"PDF file not found: {path}")
+        raise IngestionError(f"File not found: {path}")
 
+    # Handle plain text files (.txt)
+    if path.suffix.lower() == ".txt":
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read().strip()
+            if not text:
+                logger.debug("Empty text file: %s — skipping", path.name)
+                return []
+            documents = [
+                Document(
+                    text=text,
+                    metadata={"source": path.name, "page": "1"},
+                )
+            ]
+            logger.info("Loaded text file '%s'", path.name)
+            return documents
+        except Exception as exc:
+            raise IngestionError(f"Failed to read text file: {path}") from exc
+
+    # Handle PDF files
     try:
         pdf = fitz.open(str(path))
     except fitz.FileDataError as exc:

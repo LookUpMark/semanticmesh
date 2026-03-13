@@ -5,16 +5,17 @@
 **Epic:** EP-03 SLM Triplet Extraction  
 **US-03-01** — Triplet Extraction Node
 
-Uses a Small Language Model (SLM) in JSON mode to extract `(subject, predicate, object, provenance_text, confidence)` triplets from each text chunk. The SLM is called per-chunk at `temperature=0.0`; malformed outputs are caught with Pydantic and logged, never crashing the pipeline.
+Uses a Small Language Model (SLM) in JSON mode to extract `(subject, predicate, object, provenance_text, confidence)` triplets from each text chunk. The SLM is called per-chunk at `temperature=0.0`. On JSON parse failure or Pydantic `ValidationError`, the extractor triggers a self-reflection retry via `REFLECTION_TEMPLATE` (PT-05) up to `max_reflection_attempts` times (default 3) before returning `[]` — never crashing the pipeline.
 
 ---
 
 ## 2. Prerequisites
 
 - `src/models/schemas.py` — `Chunk`, `Triplet`, `TripletExtractionResponse` (step 3)
-- `src/prompts/templates.py` — `EXTRACTION_SYSTEM`, `EXTRACTION_USER` (step 7)
+- `src/prompts/templates.py` — `EXTRACTION_SYSTEM`, `EXTRACTION_USER`, `REFLECTION_TEMPLATE` (step 7)
 - `src/config/llm_factory.py` — `get_extraction_llm` (step 4)
 - `src/config/logging.py` — `get_logger`, `NodeTimer`
+- `src/config/settings.py` — `get_settings`
 
 ---
 
@@ -41,18 +42,51 @@ on any parsing failure.
 from __future__ import annotations
 
 import json
-import logging
+from typing import TYPE_CHECKING
 
 from langchain_core.messages import HumanMessage, SystemMessage
-
-from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 
 from src.config.logging import NodeTimer, get_logger
+from src.config.settings import get_settings
 from src.models.schemas import Chunk, Triplet, TripletExtractionResponse
-from src.prompts.templates import EXTRACTION_SYSTEM, EXTRACTION_USER
+from src.prompts.templates import EXTRACTION_SYSTEM, EXTRACTION_USER, REFLECTION_TEMPLATE
+
+if TYPE_CHECKING:
+    import logging
+
+    from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
+
+
+def _reflect_on_json(
+    raw_json: str,
+    error: str,
+    llm: "LLMProtocol",
+) -> str:
+    """Ask the LLM to self-correct a malformed JSON extraction output.
+
+    Uses ``REFLECTION_TEMPLATE`` (PT-05) to inject the original raw response
+    and the parse/validation error, requesting a corrected JSON string.
+
+    Args:
+        raw_json: The original (broken) LLM output string.
+        error:    The ``json.JSONDecodeError`` or ``ValidationError`` message.
+        llm:      Extraction LLM instance.
+
+    Returns:
+        Corrected raw JSON string from the LLM.
+    """
+    reflection_prompt = REFLECTION_TEMPLATE.format(
+        role="strict information extraction engine",
+        output_format="JSON object matching {\"triplets\": [...]}",
+        error_or_critique=error,
+        original_input=raw_json,
+    )
+    response = llm.invoke([HumanMessage(content=reflection_prompt)])
+    content = response.content
+    return content.strip() if isinstance(content, str) else ""
 
 
 def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
@@ -77,7 +111,15 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
                     HumanMessage(content=user_prompt),
                 ]
             )
-            raw_json: str = response.content.strip()
+            # AIMessage.content can be str | list[str | dict[Any, Any]]
+            content = response.content
+            if not isinstance(content, str):
+                logger.warning(
+                    "LLM returned non-string content for chunk %d — returning empty triplet list.",
+                    chunk.chunk_index,
+                )
+                return []
+            raw_json: str = content.strip()
         except Exception as exc:
             logger.warning(
                 "LLM call failed for chunk %d (source=%s): %s — returning empty triplet list.",
@@ -93,24 +135,54 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
         timer.elapsed_ms,
     )
 
-    # Step 1: JSON parse
-    try:
-        data = json.loads(raw_json)
-    except json.JSONDecodeError as exc:
-        logger.warning(
-            "Non-JSON response for chunk %d: %s. Raw response: %r",
-            chunk.chunk_index, exc, raw_json[:200],
-        )
+    settings = get_settings()
+    max_attempts: int = settings.max_reflection_attempts
+
+    # Step 1: JSON parse (with self-reflection on failure)
+    data: dict | None = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            data = json.loads(raw_json)
+            break
+        except json.JSONDecodeError as exc:
+            logger.warning(
+                "Non-JSON response for chunk %d (attempt %d/%d): %s. Raw response: %r",
+                chunk.chunk_index,
+                attempt,
+                max_attempts,
+                exc,
+                raw_json[:200],
+            )
+            if attempt == max_attempts:
+                return []
+            raw_json = _reflect_on_json(raw_json, str(exc), llm)
+
+    if data is None:
         return []
 
-    # Step 2: Pydantic validation
-    try:
-        parsed = TripletExtractionResponse(**data)
-    except ValidationError as exc:
-        logger.warning(
-            "Pydantic validation failed for chunk %d: %s",
-            chunk.chunk_index, exc,
-        )
+    # Step 2: Pydantic validation (with self-reflection on failure)
+    parsed: TripletExtractionResponse | None = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            parsed = TripletExtractionResponse(**data)
+            break
+        except ValidationError as exc:
+            logger.warning(
+                "Pydantic validation failed for chunk %d (attempt %d/%d): %s",
+                chunk.chunk_index,
+                attempt,
+                max_attempts,
+                exc,
+            )
+            if attempt == max_attempts:
+                return []
+            raw_json = _reflect_on_json(json.dumps(data), str(exc), llm)
+            try:
+                data = json.loads(raw_json)
+            except json.JSONDecodeError:
+                return []
+
+    if parsed is None:
         return []
 
     # Attach source chunk index to each triplet

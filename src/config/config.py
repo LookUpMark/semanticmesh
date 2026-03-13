@@ -24,15 +24,22 @@ class AppConfig:
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
 
+    # ── LLM Provider ───────────────────────────────────────────────────────────
+    # LM Studio OpenAI-compatible local endpoint (override via LMSTUDIO_BASE_URL)
+    lmstudio_base_url: str = "http://localhost:1234/v1"
+
     # ── LLM Models ─────────────────────────────────────────────────────────────
-    # Model names (OpenRouter / compatible providers)
-    llm_model_reasoning: str = "openai/gpt-oss-120b:free"
-    llm_model_extraction: str = "openai/gpt-oss-20b:free"
+    # Model identifiers as shown in LM Studio (override via LLM_MODEL_* env vars)
+    llm_model_reasoning: str = "local-model"
+    llm_model_extraction: str = "local-model"
 
     # Temperature settings
     llm_temperature_extraction: float = 0.0
     llm_temperature_reasoning: float = 0.0
     llm_temperature_generation: float = 0.3
+
+    # Max output tokens for extraction (16k to avoid truncated JSON)
+    llm_max_tokens_extraction: int = 16384
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = "BAAI/bge-m3"

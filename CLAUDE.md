@@ -115,6 +115,9 @@ tests/
 - Never construct LLM instances directly in pipeline nodes
 - Type annotate as `llm: LLMProtocol` (provider-agnostic)
 - The factory returns `InstrumentedLLM` wrappers with retry and logging
+- **Provider:** `ChatOpenAI` → LM Studio local endpoint (`http://localhost:1234/v1` by default)
+  - Set `LMSTUDIO_BASE_URL`, `LLM_MODEL_REASONING`, `LLM_MODEL_EXTRACTION` in `.env` to customise
+  - To switch provider: replace `ChatOpenAI` with any `BaseChatModel` in `llm_factory.py` only
 
 ### Neo4j Cypher Conventions
 - Always use `MERGE`, never bare `CREATE` (idempotent upserts)
@@ -163,8 +166,17 @@ Settings boolean flags to disable pipeline components:
 - Reciprocal Rank Fusion merges results without tuning weights
 - Final reranking with cross-encoder (bge-reranker-large)
 
+### Self-Reflection Loops
+All JSON-producing LLM nodes implement self-reflection on parse/validation failure using `REFLECTION_TEMPLATE` (PT-05). Retries are bounded by `settings.max_reflection_attempts` (default 3). Nodes with self-reflection:
+- `triplet_extractor.py` — via `_reflect_on_json()` helper
+- `rag_mapper.py` — inline REFLECTION_TEMPLATE retry
+- `llm_judge.py` — inline REFLECTION_TEMPLATE retry  
+- `hallucination_grader.py` — inline REFLECTION_TEMPLATE retry
+- `validator.py` (Actor-Critic) — explicit reflection loop (pre-existing)
+- `cypher_healer.py` — Cypher-specific reflection loop (pre-existing)
+
 ### LLM Routing Architecture
-- Replace `ChatOpenRouter` in `llm_factory.py` to switch providers
+- Replace `ChatOpenAI` in `llm_factory.py` to switch providers
 - Valid drop-ins: `ChatOpenAI`, `ChatAnthropic`, `ChatOllama`, `ChatHuggingFace`
 - All pipeline nodes use `LLMProtocol` structural type — no code changes needed
 
@@ -210,7 +222,7 @@ The application uses a two-tier configuration system:
    - Can be overridden via environment variables
 
 2. **`.env` file** — Sensitive values only
-   - API keys (`OPENROUTER_API_KEY`)
+   - API keys (none required for LM Studio)
    - Passwords (`NEO4J_PASSWORD`)
 
 ### Accessing Configuration
@@ -231,13 +243,13 @@ Sensitive values in `.env`:
 | Category | Key Variables |
 |----------|---------------|
 | **Neo4j** | `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` |
-| **LLM** | `OPENROUTER_API_KEY` |
+| **LLM** | `LMSTUDIO_BASE_URL` (default: `http://localhost:1234/v1`) |
 
 Non-sensitive defaults (in `config.py`, overrideable via env):
 
 | Category | Key Variables |
 |----------|---------------|
-| **LLM** | `LLM_MODEL_REASONING`, `LLM_MODEL_EXTRACTION`, `LLM_TEMPERATURE_*` |
+| **LLM** | `LLM_MODEL_REASONING`, `LLM_MODEL_EXTRACTION`, `LLM_TEMPERATURE_*`, `LLM_MAX_TOKENS_EXTRACTION` |
 | **Embeddings** | `EMBEDDING_MODEL`, `RERANKER_MODEL` |
 | **Entity Resolution** | `ER_BLOCKING_TOP_K`, `ER_SIMILARITY_THRESHOLD` |
 | **Thresholds** | `CONFIDENCE_THRESHOLD`, `MAX_REFLECTION_ATTEMPTS`, `MAX_CYPHER_HEALING_ATTEMPTS` |

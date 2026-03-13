@@ -7,12 +7,14 @@
 
 For each physical table, retrieves the most relevant business entities using a Map-Reduce RAG pattern (one retrieval + one LLM call per table), then produces a `MappingProposal`. Few-shot examples from the validated example bank are injected to guide the LLM toward the expected output format.
 
+On JSON parse failure or Pydantic `ValidationError`, the mapper triggers a self-reflection retry via `REFLECTION_TEMPLATE` (PT-05) up to `max_reflection_attempts` times (default 3) before returning a null mapping — never crashing the pipeline.
+
 ---
 
 ## 2. Prerequisites
 
 - `src/models/schemas.py` — `TableSchema`, `EnrichedTableSchema`, `Entity`, `MappingProposal`, `MappingExample` (step 3)
-- `src/prompts/templates.py` — `MAPPING_SYSTEM`, `MAPPING_USER` (step 7)
+- `src/prompts/templates.py` — `MAPPING_SYSTEM`, `MAPPING_USER`, `REFLECTION_TEMPLATE` (step 7)
 - `src/prompts/few_shot.py` — `load_mapping_examples`, `format_mapping_examples` (step 8)
 - `src/config/logging.py` — `get_logger`, `NodeTimer`
 
@@ -41,25 +43,26 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import TYPE_CHECKING
 
 import numpy as np
 from langchain_core.embeddings import Embeddings
 from langchain_core.messages import HumanMessage, SystemMessage
-
-from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 from sklearn.metrics.pairwise import cosine_similarity
 
 from src.config.logging import NodeTimer, get_logger
 from src.config.settings import get_settings
 from src.models.schemas import (
-    Entity,
     EnrichedTableSchema,
-    MappingExample,
+    Entity,
     MappingProposal,
     TableSchema,
 )
-from src.prompts.templates import MAPPING_SYSTEM, MAPPING_USER
+from src.prompts.templates import MAPPING_SYSTEM, MAPPING_USER, REFLECTION_TEMPLATE
+
+if TYPE_CHECKING:
+    from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
 _settings = get_settings()
@@ -212,30 +215,63 @@ def propose_mapping(
         table.table_name, timer.elapsed_ms,
     )
 
-    # Parse and validate
-    try:
-        data = json.loads(raw_json)
-    except json.JSONDecodeError:
-        logger.warning("Non-JSON mapping response for '%s'", table.table_name)
-        return MappingProposal(
-            table_name=table.table_name, mapped_concept=None, confidence=0.0,
-            reasoning="JSON parse error.",
-        )
+    # Parse and validate — with self-reflection on failure
+    settings = get_settings()
+    max_attempts: int = settings.max_reflection_attempts
 
-    try:
-        proposal = MappingProposal(**data)
-    except ValidationError as exc:
-        logger.warning("Pydantic validation error for mapping of '%s': %s", table.table_name, exc)
-        return MappingProposal(
-            table_name=table.table_name, mapped_concept=None, confidence=0.0,
-            reasoning=f"Pydantic validation error: {exc}",
-        )
+    for attempt in range(1, max_attempts + 1):
+        try:
+            data = json.loads(raw_json)
+        except json.JSONDecodeError as exc:
+            logger.warning(
+                "Non-JSON mapping response for '%s' (attempt %d/%d): %s",
+                table.table_name, attempt, max_attempts, exc,
+            )
+            if attempt == max_attempts:
+                return MappingProposal(
+                    table_name=table.table_name, mapped_concept=None, confidence=0.0,
+                    reasoning="JSON parse error after self-reflection exhausted.",
+                )
+            raw_json = llm.invoke([
+                HumanMessage(content=REFLECTION_TEMPLATE.format(
+                    role="senior data governance expert",
+                    output_format='JSON object matching {"table_name":…,"mapped_concept":…,"confidence":…,"reasoning":…,"alternative_concepts":[…]}',
+                    error_or_critique=str(exc),
+                    original_input=raw_json,
+                ))
+            ]).content.strip()
+            continue
 
-    logger.info(
-        "Proposed mapping: '%s' → '%s' (confidence=%.2f)",
-        table.table_name, proposal.mapped_concept, proposal.confidence,
-    )
-    return proposal
+        try:
+            proposal = MappingProposal(**data)
+        except ValidationError as exc:
+            logger.warning(
+                "Pydantic validation error for mapping of '%s' (attempt %d/%d): %s",
+                table.table_name, attempt, max_attempts, exc,
+            )
+            if attempt == max_attempts:
+                return MappingProposal(
+                    table_name=table.table_name, mapped_concept=None, confidence=0.0,
+                    reasoning=f"Pydantic validation error after self-reflection exhausted: {exc}",
+                )
+            raw_json = llm.invoke([
+                HumanMessage(content=REFLECTION_TEMPLATE.format(
+                    role="senior data governance expert",
+                    output_format='JSON object matching {"table_name":…,"mapped_concept":…,"confidence":…,"reasoning":…,"alternative_concepts":[…]}',
+                    error_or_critique=str(exc),
+                    original_input=json.dumps(data),
+                ))
+            ]).content.strip()
+            continue
+
+        logger.info(
+            "Proposed mapping: '%s' → '%s' (confidence=%.2f)",
+            table.table_name, proposal.mapped_concept, proposal.confidence,
+        )
+        return proposal
+
+    # Unreachable — loop always returns
+    return MappingProposal(table_name=table.table_name, mapped_concept=None, confidence=0.0, reasoning="Exhausted.")
 ```
 
 ---

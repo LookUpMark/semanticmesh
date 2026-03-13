@@ -19,9 +19,10 @@ class Settings(BaseSettings):
 
     Environment variables:
         NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
-        OPENROUTER_API_KEY
+        LMSTUDIO_BASE_URL (default: http://localhost:1234/v1)
         LLM_MODEL_REASONING, LLM_MODEL_EXTRACTION
         LLM_TEMPERATURE_EXTRACTION, LLM_TEMPERATURE_REASONING, LLM_TEMPERATURE_GENERATION
+        LLM_MAX_TOKENS_EXTRACTION (default: 16384)
         EMBEDDING_MODEL, RERANKER_MODEL
         ER_BLOCKING_TOP_K, ER_SIMILARITY_THRESHOLD
         CONFIDENCE_THRESHOLD, MAX_REFLECTION_ATTEMPTS, MAX_CYPHER_HEALING_ATTEMPTS
@@ -46,12 +47,13 @@ class Settings(BaseSettings):
     neo4j_password: SecretStr = SecretStr("neo4j")  # Override via NEO4J_PASSWORD
 
     # ── LLM ─────────────────────────────────────────────────────────────────────
-    openrouter_api_key: SecretStr = SecretStr("")  # Override via OPENROUTER_API_KEY
+    lmstudio_base_url: str = DEFAULT_CONFIG.lmstudio_base_url
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
     llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
     llm_temperature_reasoning: float = DEFAULT_CONFIG.llm_temperature_reasoning
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
+    llm_max_tokens_extraction: int = DEFAULT_CONFIG.llm_max_tokens_extraction
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = DEFAULT_CONFIG.embedding_model
