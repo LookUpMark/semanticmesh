@@ -9,13 +9,16 @@ For each `EntityCluster` produced by Stage 1 (blocking), calls an LLM judge to d
 
 The provenance texts from the original triplets are the critical disambiguation signal — without them, "Apple" (company) vs "Apple" (fruit) cannot be distinguished.
 
+On JSON parse failure or Pydantic `ValidationError`, the judge triggers a self-reflection retry via `REFLECTION_TEMPLATE` (PT-05) up to `max_reflection_attempts` times (default 3) before returning the conservative no-merge default — never crashing the pipeline.
+
 ---
 
 ## 2. Prerequisites
 
 - `src/models/schemas.py` — `Triplet`, `EntityCluster`, `CanonicalEntityDecision`, `Entity` (step 3)
-- `src/prompts/templates.py` — `ER_JUDGE_SYSTEM`, `ER_JUDGE_USER` (step 7)
+- `src/prompts/templates.py` — `ER_JUDGE_SYSTEM`, `ER_JUDGE_USER`, `REFLECTION_TEMPLATE` (step 7)
 - `src/config/logging.py` — `get_logger`, `NodeTimer`
+- `src/config/settings.py` — `get_settings`
 - LLM arg: caller passes `LLMProtocol` from `src/config/llm_client` (see step 4b)
 
 ---
@@ -43,22 +46,26 @@ Returns CanonicalEntityDecision (merge/keep separate + canonical name).
 from __future__ import annotations
 
 import json
-import logging
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 from langchain_core.messages import HumanMessage, SystemMessage
-
-from src.config.llm_client import LLMProtocol
 from pydantic import ValidationError
 
 from src.config.logging import NodeTimer, get_logger
+from src.config.settings import get_settings
 from src.models.schemas import (
     CanonicalEntityDecision,
     Entity,
     EntityCluster,
     Triplet,
 )
-from src.prompts.templates import ER_JUDGE_SYSTEM, ER_JUDGE_USER
+from src.prompts.templates import ER_JUDGE_SYSTEM, ER_JUDGE_USER, REFLECTION_TEMPLATE
+
+if TYPE_CHECKING:
+    import logging
+
+    from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -124,7 +131,18 @@ def judge_cluster(
                     HumanMessage(content=user_prompt),
                 ]
             )
-            raw_json: str = response.content.strip()
+            content = response.content
+            if not isinstance(content, str):
+                logger.warning(
+                    "LLM returned non-string content for cluster %s — returning no-merge decision.",
+                    cluster.canonical_candidate,
+                )
+                return CanonicalEntityDecision(
+                    merge=False,
+                    canonical_name=cluster.canonical_candidate,
+                    reasoning="LLM returned non-string content — conservative no-merge default.",
+                )
+            raw_json: str = content.strip()
         except Exception as exc:
             logger.warning(
                 "LLM judge call failed for cluster %s: %s — defaulting to no-merge.",
@@ -141,33 +159,63 @@ def judge_cluster(
         cluster.canonical_candidate, timer.elapsed_ms,
     )
 
-    # Parse JSON
-    try:
-        data = json.loads(raw_json)
-    except json.JSONDecodeError as exc:
-        logger.warning("Non-JSON ER judge response: %s — defaulting to no-merge.", exc)
-        return CanonicalEntityDecision(
-            merge=False,
-            canonical_name=cluster.canonical_candidate,
-            reasoning="JSON parse error — conservative no-merge default.",
-        )
-
-    # Validate with Pydantic
-    try:
-        decision = CanonicalEntityDecision(**data)
-    except ValidationError as exc:
-        logger.warning("Pydantic validation failed for ER judge response: %s", exc)
-        return CanonicalEntityDecision(
-            merge=False,
-            canonical_name=cluster.canonical_candidate,
-            reasoning="Pydantic validation error — conservative no-merge default.",
-        )
-
-    logger.info(
-        "ER judge: cluster '%s' → merge=%s, canonical='%s'",
-        cluster.canonical_candidate, decision.merge, decision.canonical_name,
+    _no_merge = CanonicalEntityDecision(
+        merge=False,
+        canonical_name=cluster.canonical_candidate,
+        reasoning="Conservative no-merge default.",
     )
-    return decision
+
+    # Parse JSON + Pydantic validation with self-reflection on failure
+    settings = get_settings()
+    max_attempts: int = settings.max_reflection_attempts
+    _fmt = '{"merge": <bool>, "canonical_name": "<str>", "reasoning": "<str>"}'
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            data = json.loads(raw_json)
+        except json.JSONDecodeError as exc:
+            logger.warning(
+                "Non-JSON ER judge response for cluster '%s' (attempt %d/%d): %s",
+                cluster.canonical_candidate, attempt, max_attempts, exc,
+            )
+            if attempt == max_attempts:
+                return _no_merge
+            raw_json = llm.invoke([
+                HumanMessage(content=REFLECTION_TEMPLATE.format(
+                    role="semantic disambiguation expert",
+                    output_format=f"JSON object matching {_fmt}",
+                    error_or_critique=str(exc),
+                    original_input=raw_json,
+                ))
+            ]).content.strip()
+            continue
+
+        try:
+            decision = CanonicalEntityDecision(**data)
+        except ValidationError as exc:
+            logger.warning(
+                "Pydantic validation failed for ER judge cluster '%s' (attempt %d/%d): %s",
+                cluster.canonical_candidate, attempt, max_attempts, exc,
+            )
+            if attempt == max_attempts:
+                return _no_merge
+            raw_json = llm.invoke([
+                HumanMessage(content=REFLECTION_TEMPLATE.format(
+                    role="semantic disambiguation expert",
+                    output_format=f"JSON object matching {_fmt}",
+                    error_or_critique=str(exc),
+                    original_input=json.dumps(data),
+                ))
+            ]).content.strip()
+            continue
+
+        logger.info(
+            "ER judge: cluster '%s' → merge=%s, canonical='%s'",
+            cluster.canonical_candidate, decision.merge, decision.canonical_name,
+        )
+        return decision
+
+    return _no_merge
 
 
 def cluster_to_entity(

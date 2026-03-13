@@ -1,79 +1,381 @@
 DATA DICTIONARY — E-COMMERCE DATABASE
+========================================
 
-Table: CUSTOMER_MASTER
-Description: Master record for all registered platform customers. Each row represents one customer account.
-Key Columns:
-  - CUST_ID (INT, PK): Unique numeric identifier for the customer.
-  - FULL_NAME (VARCHAR 200): Customer's full legal name.
-  - EMAIL (VARCHAR 150): Primary contact email address. Must be unique.
-  - REGION_CODE (VARCHAR 10): Geographic region code (ISO 3166-2 subdivision).
-  - CREATED_AT (DATETIME): Timestamp of account creation.
-  - IS_ACTIVE (BOOLEAN): Whether the customer account is active.
+This document describes the physical database schema implementing the e-commerce platform's data model. All tables are in the ECOM_SCHEMA schema unless otherwise noted.
 
-Table: TB_PRODUCT
-Description: Master catalogue of all products available for sale on the platform.
-Key Columns:
-  - PRODUCT_ID (INT, PK): Unique numeric product identifier.
-  - SKU (VARCHAR 50, UNIQUE): Stock Keeping Unit — human-readable product code.
-  - PRODUCT_NAME (VARCHAR 300): Full product title.
-  - CATEGORY_ID (INT, FK -> TB_CATEGORY): The category this product belongs to.
-  - UNIT_PRICE (DECIMAL 10,2): Current selling price per unit.
-  - IS_ACTIVE (BOOLEAN): Whether the product is currently listed for sale.
+────────────────────────────────────────────────────────────
+CUSTOMER_MASTER
+────────────────────────────────────────────────────────────
+Description: Master record for all registered platform customers. Each row represents one customer account. This table contains the customer's core identity and account information.
 
-Table: SALES_ORDER_HDR
-Description: Header record for each customer sales order. One row per order.
-Key Columns:
-  - ORDER_ID (BIGINT, PK): Unique order identifier.
-  - CUST_ID (INT, FK -> CUSTOMER_MASTER): The customer who placed the order.
-  - ORDER_DATE (DATE): Date the order was placed.
-  - TOTAL_AMT (DECIMAL 12,2): Total monetary value of the order.
-  - STATUS_CODE (VARCHAR 20): Order status — PENDING, CONFIRMED, SHIPPED, or CANCELLED.
+Primary Key: CUST_ID (INT, auto-increment)
 
-Table: ORDER_LINE_ITEM
-Description: Individual product lines within a sales order.
-Key Columns:
-  - LINE_ID (INT, PK): Unique line item identifier.
-  - ORDER_ID (BIGINT, FK -> SALES_ORDER_HDR): Parent order.
-  - PRODUCT_ID (INT, FK -> TB_PRODUCT): The product ordered.
-  - QUANTITY (INT): Number of units ordered.
-  - UNIT_PRICE (DECIMAL 10,2): Price per unit at time of order.
+Table Type: Transaction table (high frequency of reads and writes)
 
-Table: TB_CATEGORY
-Description: Hierarchical product category tree.
-Key Columns:
-  - CATEGORY_ID (INT, PK): Unique category identifier.
-  - CATEGORY_NAME (VARCHAR 200): Human-readable category name.
-  - PARENT_CATEGORY_ID (INT, FK -> TB_CATEGORY): Parent category (NULL for root categories).
+Retention: Customer records are retained for 7 years after last purchase, then archived.
 
-Table: CUST_ADDRESS
-Description: Delivery and billing addresses for customers.
-Key Columns:
-  - ADDRESS_ID (INT, PK): Unique address identifier.
-  - CUST_ID (INT, FK -> CUSTOMER_MASTER): Owning customer.
-  - ADDRESS_TYPE (VARCHAR 20): DELIVERY or BILLING.
-  - STREET (VARCHAR 300): Street address.
-  - CITY (VARCHAR 100): City name.
-  - POSTAL_CODE (VARCHAR 20): Postal/ZIP code.
-  - COUNTRY_CODE (CHAR 2): ISO 3166-1 alpha-2 country code.
-  - IS_PRIMARY (BOOLEAN): Whether this is the customer's primary address.
+Column Details:
+  - CUST_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique numeric identifier for the customer. System-generated sequential number starting from 100001.
+  - FULL_NAME (VARCHAR(200), NOT NULL): Customer's full legal name. Combined first and last name. Used in order confirmations and shipping labels.
+  - EMAIL (VARCHAR(150), NOT NULL, UNIQUE): Primary contact email address. Must be unique across all customers. Used for login and order notifications.
+  - REGION_CODE (VARCHAR(10), NOT NULL): Geographic region code using ISO 3166-2 subdivision format. Examples: "US-CA" for California, "IT-25" for Lombardy. Used for tax calculation and routing.
+  - CREATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp of account creation. Automatically set by the database.
+  - IS_ACTIVE (BOOLEAN, NOT NULL, DEFAULT TRUE): Whether the customer account is active. Inactive customers cannot place new orders but historical data is preserved.
+  - LAST_LOGIN (DATETIME, NULL): Timestamp of the most recent successful login. NULL for customers who have never logged in.
+  - EMAIL_VERIFIED (BOOLEAN, NOT NULL, DEFAULT FALSE): Whether the customer's email address has been verified through confirmation link.
 
-Table: INVENTORY
-Description: Real-time stock levels per product per warehouse location.
-Key Columns:
-  - INVENTORY_ID (INT, PK): Unique record identifier.
-  - PRODUCT_ID (INT, FK -> TB_PRODUCT): The stocked product.
-  - WAREHOUSE_CODE (VARCHAR 20): Warehouse location identifier.
-  - QUANTITY_ON_HAND (INT): Number of units currently in stock.
-  - LAST_UPDATED (DATETIME): Timestamp of last stock level update.
+Indexes:
+  - PRIMARY KEY on CUST_ID
+  - UNIQUE INDEX on EMAIL (idx_customer_email)
+  - INDEX on REGION_CODE (idx_customer_region) for regional reporting
+  - INDEX on IS_ACTIVE (idx_customer_active) for active customer queries
+  - INDEX on CREATED_AT (idx_customer_created) for customer acquisition analytics
 
-Table: SYS_AUDIT_LOG
-Description: SYSTEM TABLE — Records all data modification events for compliance auditing. Contains no business data. Should NOT be mapped to any business concept.
-Key Columns:
-  - LOG_ID (BIGINT, PK, AUTO_INCREMENT): Unique log entry.
-  - ACTION_TYPE (VARCHAR 50): INSERT, UPDATE, or DELETE.
-  - TABLE_NAME (VARCHAR 100): Name of the affected table.
-  - RECORD_ID (VARCHAR 100): Primary key of the affected record (as string).
-  - CHANGED_BY (VARCHAR 100): Username that performed the change.
-  - CHANGED_AT (DATETIME): Timestamp of the change.
-  - OLD_VALUES (JSON): Previous values (for UPDATE/DELETE).
-  - NEW_VALUES (JSON): New values (for INSERT/UPDATE).
+Foreign Keys: None (this is a master table)
+
+Business Concept Mapping: This table stores the Customer business concept.
+
+────────────────────────────────────────────────────────────
+TB_PRODUCT
+────────────────────────────────────────────────────────────
+Description: Master catalogue of all products available for sale on the platform. Contains product master data including pricing, categorization, and status.
+
+Primary Key: PRODUCT_ID (INT, auto-increment)
+
+Table Type: Master data table (moderate frequency of reads, low frequency of writes)
+
+Column Details:
+  - PRODUCT_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique numeric product identifier. System-generated.
+  - SKU (VARCHAR(50), NOT NULL, UNIQUE): Stock Keeping Unit — human-readable product code. Format: 3-letter category code + 6-digit sequential number. Example: "ELE-001234". Used in barcodes and inventory systems.
+  - PRODUCT_NAME (VARCHAR(300), NOT NULL): Full product title as displayed to customers. Includes brand, model, and key specifications.
+  - CATEGORY_ID (INT, NOT NULL, FK -> TB_CATEGORY.CATEGORY_ID): The category this product belongs to. Determines navigation and search filters.
+  - UNIT_PRICE (DECIMAL(10,2), NOT NULL): Current selling price per unit in EUR. Prices are updated daily based on market conditions.
+  - IS_ACTIVE (BOOLEAN, NOT NULL, DEFAULT TRUE): Whether the product is currently listed for sale. Inactive products remain in database but are not displayed.
+  - DESCRIPTION (TEXT, NULL): Detailed product description including features, specifications, and usage instructions. Displayed on product detail page.
+  - WEIGHT_KG (DECIMAL(8,3), NULL): Product weight in kilograms. NULL for digital products. Used for shipping calculations.
+  - CREATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp when product record was created.
+  - UPDATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP): Timestamp of last product information update.
+
+Indexes:
+  - PRIMARY KEY on PRODUCT_ID
+  - UNIQUE INDEX on SKU (idx_product_sku)
+  - INDEX on CATEGORY_ID (idx_product_category) for category browsing
+  - INDEX on IS_ACTIVE (idx_product_active) for storefront queries
+  - INDEX on UNIT_PRICE (idx_product_price) for price range searches
+  - FULLTEXT INDEX on PRODUCT_NAME, DESCRIPTION (idx_product_search) for search
+
+Foreign Keys:
+  - CATEGORY_ID references TB_CATEGORY(CATEGORY_ID)
+
+Business Concept Mapping: This table stores the Product business concept.
+
+────────────────────────────────────────────────────────────
+SALES_ORDER_HDR
+────────────────────────────────────────────────────────────
+Description: Header record for each customer sales order. One row per order. Contains order-level information including customer, dates, totals, and status.
+
+Primary Key: ORDER_ID (BIGINT, auto-increment)
+
+Table Type: Transaction table (high frequency of inserts, moderate frequency of updates)
+
+Retention: Order data retained for 10 years for compliance and analytics, then archived.
+
+Column Details:
+  - ORDER_ID (BIGINT, PK, NOT NULL, AUTO_INCREMENT): Unique order identifier. System-generated sequential number.
+  - CUST_ID (INT, NOT NULL, FK -> CUSTOMER_MASTER.CUST_ID): The customer who placed the order. All orders must be associated with a registered customer.
+  - ORDER_DATE (DATE, NOT NULL): Date the order was placed. Determines order aging and fulfillment priority.
+  - TOTAL_AMT (DECIMAL(12,2), NOT NULL): Total monetary value of the order including all line items, taxes, and shipping. Cannot be negative.
+  - STATUS_CODE (VARCHAR(20), NOT NULL, DEFAULT 'PENDING'): Order status. Valid values: 'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'. Status workflow enforces business rules.
+  - DELIVERY_ADDRESS_ID (INT, NULL, FK -> CUST_ADDRESS.ADDRESS_ID): The delivery address for this order. Must be a valid address belonging to the order's customer.
+  - BILLING_ADDRESS_ID (INT, NULL, FK -> CUST_ADDRESS.ADDRESS_ID): The billing address for this order. Must be a valid address belonging to the order's customer.
+  - PAYMENT_METHOD (VARCHAR(50), NULL): Payment method used. Examples: 'CREDIT_CARD', 'PAYPAL', 'BANK_TRANSFER'.
+  - PAYMENT_CONFIRMED_AT (DATETIME, NULL): Timestamp when payment was confirmed. NULL for unpaid orders.
+  - SHIPPED_AT (DATETIME, NULL): Timestamp when order was shipped. NULL for unshipped orders.
+  - DELIVERED_AT (DATETIME, NULL): Timestamp when order was delivered. NULL for undelivered orders.
+  - CREATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp when order was created.
+  - UPDATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP): Timestamp of last order update.
+
+Indexes:
+  - PRIMARY KEY on ORDER_ID
+  - INDEX on CUST_ID (idx_order_customer) for customer order history
+  - INDEX on ORDER_DATE (idx_order_date) for date-based reporting
+  - INDEX on STATUS_CODE (idx_order_status) for order fulfillment queries
+  - INDEX on (CUST_ID, ORDER_DATE) composite index for customer order sorting
+
+Foreign Keys:
+  - CUST_ID references CUSTOMER_MASTER(CUST_ID)
+  - DELIVERY_ADDRESS_ID references CUST_ADDRESS(ADDRESS_ID)
+  - BILLING_ADDRESS_ID references CUST_ADDRESS(ADDRESS_ID)
+
+Business Concept Mapping: This table stores the SalesOrder business concept.
+
+────────────────────────────────────────────────────────────
+ORDER_LINE_ITEM
+────────────────────────────────────────────────────────────
+Description: Individual product lines within a sales order. Each row represents one product on an order with quantity and price details. A sales order must contain at least one line item.
+
+Primary Key: LINE_ID (INT, auto-increment)
+
+Alternate Key: (ORDER_ID, LINE_NUMBER) - unique combination
+
+Table Type: Transaction table (high frequency of inserts, rarely updated)
+
+Column Details:
+  - LINE_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique line item identifier. System-generated.
+  - ORDER_ID (BIGINT, NOT NULL, FK -> SALES_ORDER_HDR.ORDER_ID): Parent order. Each line item belongs to exactly one order.
+  - LINE_NUMBER (INT, NOT NULL): Sequential line number within the order (1, 2, 3, ...). Used for display order.
+  - PRODUCT_ID (INT, NOT NULL, FK -> TB_PRODUCT.PRODUCT_ID): The product ordered. References the product master for current product information.
+  - QUANTITY (INT, NOT NULL): Number of units ordered. Must be positive integer. Validated against available inventory.
+  - UNIT_PRICE (DECIMAL(10,2), NOT NULL): Price per unit at time of order. This is the historical price, not current price. Important for order accuracy and returns.
+  - LINE_AMT (DECIMAL(12,2), NOT NULL): Extended amount for this line item. Calculated as QUANTITY × UNIT_PRICE.
+  - PRODUCT_NAME_AT_ORDER (VARCHAR(300), NULL): Product name as it appeared when the order was placed. Preserved for historical accuracy if product name changes.
+  - CREATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp when line item was created.
+
+Indexes:
+  - PRIMARY KEY on LINE_ID
+  - UNIQUE INDEX on (ORDER_ID, LINE_NUMBER) (idx_line_order_num)
+  - INDEX on ORDER_ID (idx_line_order) for order line retrieval
+  - INDEX on PRODUCT_ID (idx_line_product) for product sales analytics
+  - INDEX on (ORDER_ID, PRODUCT_ID) composite index for order product lookup
+
+Foreign Keys:
+  - ORDER_ID references SALES_ORDER_HDR(ORDER_ID)
+  - PRODUCT_ID references TB_PRODUCT(PRODUCT_ID)
+
+Business Concept Mapping: This table stores the OrderLineItem business concept.
+
+────────────────────────────────────────────────────────────
+TB_CATEGORY
+────────────────────────────────────────────────────────────
+Description: Hierarchical product category tree. Categories organize products for navigation, search, and reporting. Supports multi-level hierarchy.
+
+Primary Key: CATEGORY_ID (INT, auto-increment)
+
+Table Type: Master data table (low frequency of changes)
+
+Column Details:
+  - CATEGORY_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique category identifier. System-generated.
+  - CATEGORY_NAME (VARCHAR(200), NOT NULL): Human-readable category name. Displayed in navigation menus and search filters.
+  - PARENT_CATEGORY_ID (INT, NULL, FK -> TB_CATEGORY.CATEGORY_ID): Parent category. NULL for root-level categories. Forms the category hierarchy.
+  - CATEGORY_PATH (VARCHAR(1000), NULL): Full category path for display. Example: "Electronics > Computers > Laptops". Computed by trigger.
+  - SORT_ORDER (INT, NOT NULL, DEFAULT 0): Display order within sibling categories. Lower numbers appear first.
+  - IS_VISIBLE (BOOLEAN, NOT NULL, DEFAULT TRUE): Whether category is visible in storefront navigation. Hidden categories exist for organizational purposes.
+  - CREATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp when category was created.
+  - UPDATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP): Timestamp of last category update.
+
+Indexes:
+  - PRIMARY KEY on CATEGORY_ID
+  - INDEX on PARENT_CATEGORY_ID (idx_category_parent) for hierarchy queries
+  - INDEX on CATEGORY_NAME (idx_category_name) for category search
+  - INDEX on IS_VISIBLE (idx_category_visible) for storefront queries
+
+Foreign Keys:
+  - PARENT_CATEGORY_ID references TB_CATEGORY(CATEGORY_ID) (self-referential)
+
+Business Concept Mapping: This table stores the Category business concept.
+
+────────────────────────────────────────────────────────────
+CUST_ADDRESS
+────────────────────────────────────────────────────────────
+Description: Delivery and billing addresses for customers. Supports multiple addresses per customer with type designation and primary selection.
+
+Primary Key: ADDRESS_ID (INT, auto-increment)
+
+Table Type: Transaction table (moderate frequency of reads and writes)
+
+Column Details:
+  - ADDRESS_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique address identifier. System-generated.
+  - CUST_ID (INT, NOT NULL, FK -> CUSTOMER_MASTER.CUST_ID): Owning customer. All addresses must belong to a registered customer.
+  - ADDRESS_TYPE (VARCHAR(20), NOT NULL): Type of address. Valid values: 'DELIVERY', 'BILLING'. Determines usage in orders.
+  - STREET (VARCHAR(300), NOT NULL): Street address including house number and street name. May include apartment or suite information.
+  - CITY (VARCHAR(100), NOT NULL): City name. Used for routing and regional analysis.
+  - STATE_PROVINCE (VARCHAR(100), NULL): State or province name. Optional, used for countries with state/province divisions.
+  - POSTAL_CODE (VARCHAR(20), NOT NULL): Postal or ZIP code. Validated against country-specific formats.
+  - COUNTRY_CODE (CHAR(2), NOT NULL): ISO 3166-1 alpha-2 country code. Examples: 'US', 'IT', 'GB', 'DE'. Used for shipping and tax calculation.
+  - IS_PRIMARY (BOOLEAN, NOT NULL, DEFAULT FALSE): Whether this is the customer's primary address. Only one address of each type can be primary per customer. Enforced by application logic.
+  - CREATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp when address was added.
+
+Indexes:
+  - PRIMARY KEY on ADDRESS_ID
+  - INDEX on CUST_ID (idx_address_customer) for customer address retrieval
+  - INDEX on (CUST_ID, ADDRESS_TYPE) composite index for typed address lookup
+  - INDEX on (CUST_ID, IS_PRIMARY) composite index for primary address lookup
+
+Foreign Keys:
+  - CUST_ID references CUSTOMER_MASTER(CUST_ID)
+
+Business Concept Mapping: This table stores the CustomerAddress business concept.
+
+────────────────────────────────────────────────────────────
+INVENTORY
+────────────────────────────────────────────────────────────
+Description: Real-time stock levels per product per warehouse location. Each row represents the inventory count for one product in one warehouse.
+
+Primary Key: INVENTORY_ID (INT, auto-increment)
+
+Alternate Key: (PRODUCT_ID, WAREHOUSE_CODE) - unique combination
+
+Table Type: Transaction table (very high frequency of reads and updates)
+
+Column Details:
+  - INVENTORY_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique record identifier. System-generated.
+  - PRODUCT_ID (INT, NOT NULL, FK -> TB_PRODUCT.PRODUCT_ID): The stocked product. References product master.
+  - WAREHOUSE_CODE (VARCHAR(20), NOT NULL): Warehouse location identifier. Examples: 'WH-EU-01', 'WH-US-NY'. References warehouse master table in logistics system.
+  - QUANTITY_ON_HAND (INT, NOT NULL, DEFAULT 0): Number of units currently in stock. Updated in real-time with order confirmations and restocking. Cannot be negative.
+  - REORDER_LEVEL (INT, NOT NULL, DEFAULT 10): Minimum quantity before reorder is triggered. When quantity falls below this level, automatic reorder notification is sent.
+  - REORDER_QUANTITY (INT, NOT NULL, DEFAULT 100): Standard reorder quantity. Suggested quantity for restocking orders.
+  - LAST_UPDATED (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP): Timestamp of last stock level update. Used for inventory synchronization.
+  - LAST_COUNTED_AT (DATETIME, NULL): Timestamp of last physical inventory count. NULL if never counted manually.
+
+Indexes:
+  - PRIMARY KEY on INVENTORY_ID
+  - UNIQUE INDEX on (PRODUCT_ID, WAREHOUSE_CODE) (idx_inventory_product_warehouse)
+  - INDEX on PRODUCT_ID (idx_inventory_product) for total product inventory queries
+  - INDEX on WAREHOUSE_CODE (idx_inventory_warehouse) for warehouse stock reports
+  - INDEX on QUANTITY_ON_HAND (idx_inventory_quantity) for low stock queries
+
+Foreign Keys:
+  - PRODUCT_ID references TB_PRODUCT(PRODUCT_ID)
+
+Business Concept Mapping: This table stores the Inventory business concept.
+
+────────────────────────────────────────────────────────────
+TB_WAREHOUSE
+────────────────────────────────────────────────────────────
+Description: Master table of warehouse locations. Defines physical storage facilities where inventory is stored and from which orders are fulfilled.
+
+Primary Key: WAREHOUSE_CODE (VARCHAR(20))
+
+Table Type: Master data table (low frequency of changes)
+
+Column Details:
+  - WAREHOUSE_CODE (VARCHAR(20), PK, NOT NULL): Unique warehouse location identifier. Human-readable code. Examples: 'WH-EU-01', 'WH-US-NY'.
+  - WAREHOUSE_NAME (VARCHAR(200), NOT NULL): Full warehouse name. Example: 'European Distribution Center - Milan'.
+  - STREET (VARCHAR(300), NOT NULL): Street address of the warehouse facility.
+  - CITY (VARCHAR(100), NOT NULL): City where warehouse is located.
+  - STATE_PROVINCE (VARCHAR(100), NULL): State or province.
+  - POSTAL_CODE (VARCHAR(20), NOT NULL): Postal code.
+  - COUNTRY_CODE (CHAR(2), NOT NULL): ISO 3166-1 alpha-2 country code.
+  - IS_ACTIVE (BOOLEAN, NOT NULL, DEFAULT TRUE): Whether warehouse is currently operational. Inactive warehouses do not receive new inventory.
+  - OPENED_DATE (DATE, NOT NULL): Date when warehouse began operations.
+  - MANAGER_NAME (VARCHAR(200), NULL): Name of warehouse manager.
+
+Indexes:
+  - PRIMARY KEY on WAREHOUSE_CODE
+  - INDEX on COUNTRY_CODE (idx_warehouse_country) for regional warehouse lookup
+  - INDEX on IS_ACTIVE (idx_warehouse_active) for active warehouse queries
+
+Foreign Keys: None (this is a master table)
+
+Business Concept Mapping: This table stores the Warehouse business concept.
+
+────────────────────────────────────────────────────────────
+TB_REGION
+────────────────────────────────────────────────────────────
+Description: Geographic regions for tax calculation, shipping routing, and reporting. Regions represent sales territories and operational zones.
+
+Primary Key: REGION_CODE (VARCHAR(10))
+
+Table Type: Master data table (rarely changes)
+
+Column Details:
+  - REGION_CODE (VARCHAR(10), PK, NOT NULL): Unique region identifier. ISO 3166-2 subdivision format. Examples: 'US-CA', 'IT-25', 'DE-BW'.
+  - REGION_NAME (VARCHAR(200), NOT NULL): Human-readable region name. Example: 'California', 'Lombardy', 'Baden-Württemberg'.
+  - COUNTRY_CODE (CHAR(2), NOT NULL): ISO 3166-1 alpha-2 country code. Links region to country.
+  - TAX_RATE (DECIMAL(5,4), NOT NULL, DEFAULT 0.0000): Default tax rate for this region. Expressed as decimal (0.2000 = 20%). Can be overridden at product level.
+  - DEFAULT_WAREHOUSE (VARCHAR(20), NULL): Default warehouse for orders in this region. Used for order routing.
+
+Indexes:
+  - PRIMARY KEY on REGION_CODE
+  - INDEX on COUNTRY_CODE (idx_region_country)
+  - INDEX on DEFAULT_WAREHOUSE (idx_region_warehouse)
+
+Foreign Keys:
+  - DEFAULT_WAREHOUSE references TB_WAREHOUSE(WAREHOUSE_CODE)
+
+Business Concept Mapping: This table stores the Region business concept.
+
+────────────────────────────────────────────────────────────
+SYS_AUDIT_LOG
+────────────────────────────────────────────────────────────
+Description: SYSTEM TABLE — Records all data modification events for compliance auditing. This is a technical table with no direct business concept mapping. Should NOT be mapped to business concepts in the knowledge graph.
+
+Primary Key: LOG_ID (BIGINT, auto-increment)
+
+Table Type: System log table (append-only, high volume)
+
+Retention: Log entries retained for 2 years, then archived to cold storage.
+
+Column Details:
+  - LOG_ID (BIGINT, PK, NOT NULL, AUTO_INCREMENT): Unique log entry identifier. System-generated sequential number.
+  - ACTION_TYPE (VARCHAR(50), NOT NULL): Type of database operation. Valid values: 'INSERT', 'UPDATE', 'DELETE'.
+  - TABLE_NAME (VARCHAR(100), NOT NULL): Name of the affected table. Exact table name from schema.
+  - RECORD_ID (VARCHAR(100), NOT NULL): Primary key of the affected record, stored as string. Used to identify the specific record that changed.
+  - CHANGED_BY (VARCHAR(100), NOT NULL): Username or system identifier that performed the change. 'SYSTEM' for automated processes.
+  - CHANGED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp of the change. Captured at time of database operation.
+  - OLD_VALUES (JSON, NULL): Previous values for UPDATE and DELETE operations. Contains complete row data before change. NULL for INSERT operations.
+  - NEW_VALUES (JSON, NULL): New values for INSERT and UPDATE operations. Contains complete row data after change. NULL for DELETE operations.
+  - IP_ADDRESS (VARCHAR(45), NULL): IP address of the client that made the change. NULL for system operations.
+  - SESSION_ID (VARCHAR(100), NULL): Database session identifier. Used for grouping related changes.
+
+Indexes:
+  - PRIMARY KEY on LOG_ID
+  - INDEX on TABLE_NAME (idx_audit_table) for table-specific audit queries
+  - INDEX on CHANGED_BY (idx_audit_user) for user activity tracking
+  - INDEX on CHANGED_AT (idx_audit_timestamp) for time-based audit reports
+  - INDEX on (TABLE_NAME, RECORD_ID) composite index for record history queries
+
+Foreign Keys: None (this is a system table)
+
+Business Concept Mapping: None — this is a technical system table for compliance only.
+
+════════════════════════════════════════════════════════════
+
+RELATIONSHIP SUMMARY
+════════════════════════════════════════════════════════════
+
+Primary Key → Foreign Key Relationships:
+
+CUSTOMER_MASTER.CUST_ID
+  ├── SALES_ORDER_HDR.CUST_ID
+  └── CUST_ADDRESS.CUST_ID
+
+TB_PRODUCT.PRODUCT_ID
+  ├── ORDER_LINE_ITEM.PRODUCT_ID
+  └── INVENTORY.PRODUCT_ID
+
+SALES_ORDER_HDR.ORDER_ID
+  └── ORDER_LINE_ITEM.ORDER_ID
+
+SALES_ORDER_HDR.DELIVERY_ADDRESS_ID → CUST_ADDRESS.ADDRESS_ID
+SALES_ORDER_HDR.BILLING_ADDRESS_ID → CUST_ADDRESS.ADDRESS_ID
+
+TB_CATEGORY.CATEGORY_ID
+  ├── TB_PRODUCT.CATEGORY_ID
+  └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference)
+
+TB_WAREHOUSE.WAREHOUSE_CODE
+  ├── INVENTORY.WAREHOUSE_CODE
+  └── TB_REGION.DEFAULT_WAREHOUSE
+
+TB_REGION.REGION_CODE
+  └── CUSTOMER_MASTER.REGION_CODE
+
+════════════════════════════════════════════════════════════
+
+BUSINESS CONCEPT TO TABLE MAPPING
+════════════════════════════════════════════════════════════
+
+Business Concept      → Physical Table(s)
+────────────────────────────────────────────
+Customer             → CUSTOMER_MASTER
+Product              → TB_PRODUCT
+SalesOrder           → SALES_ORDER_HDR
+OrderLineItem        → ORDER_LINE_ITEM
+Category             → TB_CATEGORY
+CustomerAddress      → CUST_ADDRESS
+Inventory            → INVENTORY
+Warehouse            → TB_WAREHOUSE
+Region               → TB_REGION
+
+Technical/No Mapping → SYS_AUDIT_LOG

@@ -4,17 +4,17 @@
 
 **Epic:** EP-01 — US-01-01
 
-**Architectural design:** The factory is the single seam that selects a concrete `BaseChatModel` implementation. All pipeline nodes depend only on `LLMProtocol` (see `04b-llm-client.md`) — they never import a provider class directly. Swapping from `ChatOpenRouter` to `ChatOpenAI`, `ChatAnthropic`, `ChatOllama`, or any other LangChain chat-model requires changing one import line and one constructor call here, with zero changes elsewhere.
+**Architectural design:** The factory is the single seam that selects a concrete `BaseChatModel` implementation. All pipeline nodes depend only on `LLMProtocol` (see `04b-llm-client.md`) — they never import a provider class directly. Swapping from `ChatOpenAI` to `ChatOpenRouter`, `ChatAnthropic`, `ChatOllama`, or any other LangChain chat-model requires changing one import line and one constructor call here, with zero changes elsewhere.
 
-**Thesis constraint (zero budget, no local GPU):** All three factories return `InstrumentedLLM`-wrapped `ChatOpenRouter` instances backed by OpenRouter Free Tier. `ChatOpenRouter` (from `langchain-openrouter`) reads `OPENROUTER_API_KEY` from the environment automatically — no `base_url` wiring required.
+**Thesis constraint:** All three factories return `InstrumentedLLM`-wrapped `ChatOpenAI` instances pointed at a local LM Studio endpoint (OpenAI-compatible API). `ChatOpenAI` (from `langchain-openai`) connects to the URL configured in `LMSTUDIO_BASE_URL` (default: `http://localhost:1234/v1`). The API key is the literal string `"lm-studio"` — LM Studio ignores authentication.
 
 Three distinct LLM roles exist because they use different temperatures and model slugs:
 
 | Factory | Model setting | Temperature | Used by |
 |---|---|---|---|
-| `get_reasoning_llm()` | `llm_model_reasoning` (`qwen/qwen3-coder:free`) | `0.0` | Mapping, Cypher Gen, ER judge, Critic, Grader, Enrichment |
-| `get_extraction_llm()` | `llm_model_extraction` (`qwen/qwen3-next-80b-a3b-instruct:free`) | `0.0` | Triplet Extractor (SLM — replaces NuExtract) |
-| `get_generation_llm()` | `llm_model_reasoning` (`qwen/qwen3-coder:free`) | `0.3` | Answer Generator |
+| `get_reasoning_llm()` | `llm_model_reasoning` (`"local-model"`, override via `LLM_MODEL_REASONING`) | `0.0` | Mapping, Cypher Gen, ER judge, Critic, Grader, Enrichment |
+| `get_extraction_llm()` | `llm_model_extraction` (`"local-model"`, override via `LLM_MODEL_EXTRACTION`) | `0.0` | Triplet Extractor (SLM); `max_tokens=16384` to prevent JSON truncation; `enable_thinking=False` disables chain-of-thought on Qwen3-style thinking models |
+| `get_generation_llm()` | `llm_model_reasoning` (`"local-model"`, override via `LLM_MODEL_REASONING`) | `0.3` | Answer Generator |
 
 ---
 
@@ -42,37 +42,46 @@ All three are `@lru_cache(maxsize=1)` — calling them multiple times returns th
 ```python
 """EP-01: LLM client factory.
 
-Builds InstrumentedLLM-wrapped ChatOpenRouter instances from settings.
+Builds InstrumentedLLM-wrapped ChatOpenAI instances pointed at a local
+LM Studio endpoint (OpenAI-compatible API).
 All callers import from here — no pipeline node constructs an LLM object directly.
 
-Architecture: replace `ChatOpenRouter` with any LangChain BaseChatModel subclass
-(ChatOpenAI, ChatAnthropic, ChatOllama, ChatHuggingFace, …) to switch provider.
+Architecture: replace `ChatOpenAI` with any LangChain BaseChatModel subclass
+(ChatOpenRouter, ChatAnthropic, ChatOllama, …) to switch provider.
 Only this file changes — all pipeline nodes depend on LLMProtocol.
 
-Thesis: ChatOpenRouter @ OpenRouter Free Tier.  OPENROUTER_API_KEY must be set.
+Thesis: ChatOpenAI → LM Studio @ http://localhost:1234/v1 (local model).
+Set LMSTUDIO_BASE_URL, LLM_MODEL_REASONING, LLM_MODEL_EXTRACTION via env/.env
+to customise the endpoint and model names.
 """
 
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
-from langchain_openrouter import ChatOpenRouter
+from langchain_openai import ChatOpenAI
 
 from src.config.llm_client import InstrumentedLLM, LLMProtocol
 from src.config.settings import settings
+
+if TYPE_CHECKING:
+    from langchain_core.embeddings import Embeddings
 
 
 @lru_cache(maxsize=1)
 def get_reasoning_llm() -> LLMProtocol:
     """Return a cached LLM for reasoning tasks (mapping, Cypher, grading).
 
-    Thesis   : ChatOpenRouter @ qwen/qwen3-coder:free, T=0.0
-    Swap to  : ChatOpenAI(model="gpt-4o") | ChatAnthropic(model="claude-3-5-sonnet-20241022")
+    Thesis   : ChatOpenAI → LM Studio, T=0.0
+    Swap to  : ChatOpenRouter | ChatAnthropic | ChatOllama
     """
     return InstrumentedLLM(
-        ChatOpenRouter(
+        ChatOpenAI(
             model=settings.llm_model_reasoning,
             temperature=settings.llm_temperature_reasoning,
+            base_url=settings.lmstudio_base_url,
+            api_key="lm-studio",  # LM Studio ignores auth; any non-empty string works
         ),
         name="reasoning",
         max_retries=settings.max_llm_retries,
@@ -83,14 +92,22 @@ def get_reasoning_llm() -> LLMProtocol:
 def get_extraction_llm() -> LLMProtocol:
     """Return a cached SLM for JSON-mode extraction.
 
-    Thesis   : ChatOpenRouter @ qwen/qwen3-next-80b-a3b-instruct:free, T=0.0
+    Thesis   : ChatOpenAI → LM Studio, T=0.0, max_tokens=16384
     Originally designed for NuExtract (local GPU); any instruction-tuned
     model with JSON-mode support is a valid drop-in.
+
+    Note: ``max_tokens`` is set high (16k) to prevent JSON truncation.
+    ``chat_template_kwargs: {enable_thinking: false}`` disables chain-of-thought
+    on Qwen3-style thinking models in LM Studio; silently ignored by non-thinking models.
     """
     return InstrumentedLLM(
-        ChatOpenRouter(
+        ChatOpenAI(
             model=settings.llm_model_extraction,
             temperature=settings.llm_temperature_extraction,
+            max_tokens=settings.llm_max_tokens_extraction,
+            base_url=settings.lmstudio_base_url,
+            api_key="lm-studio",
+            model_kwargs={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
         ),
         name="extraction",
         max_retries=settings.max_llm_retries,
@@ -101,13 +118,15 @@ def get_extraction_llm() -> LLMProtocol:
 def get_generation_llm() -> LLMProtocol:
     """Return a cached LLM for natural-language answer generation.
 
-    Thesis   : ChatOpenRouter @ qwen/qwen3-coder:free, T=0.3
+    Thesis   : ChatOpenAI → LM Studio, T=0.3
     Same model as reasoning but higher temperature for fluency.
     """
     return InstrumentedLLM(
-        ChatOpenRouter(
+        ChatOpenAI(
             model=settings.llm_model_reasoning,
             temperature=settings.llm_temperature_generation,
+            base_url=settings.lmstudio_base_url,
+            api_key="lm-studio",
         ),
         name="generation",
         max_retries=settings.max_llm_retries,
