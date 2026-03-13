@@ -149,8 +149,8 @@ def heal_cypher(
         )
 
         if attempt == limit:
-            logger.critical(
-                "Cypher healing exhausted for table '%s'. Marking as failed.",
+            logger.warning(
+                "Cypher healing exhausted for table '%s'. Falling back to deterministic builder.",
                 mapping.table_name,
             )
             return None

@@ -11,7 +11,6 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from langchain_core.embeddings import Embeddings
 from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -41,33 +40,6 @@ logger: logging.Logger = get_logger(__name__)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Temporary Embeddings Stub (until TASK-23)
-# ─────────────────────────────────────────────────────────────────────────────
-
-class _MockEmbeddings(Embeddings):
-    """Minimal mock embeddings implementation for builder_graph.
-
-    TODO: Replace with proper BGE-M3 implementation in TASK-23.
-    """
-
-    def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        """Return zero vectors for all documents (1024-dim for BGE-M3)."""
-        return [[0.0] * 1024 for _ in texts]
-
-    def embed_query(self, text: str) -> list[float]:
-        """Return zero vector for query (1024-dim for BGE-M3)."""
-        return [0.0] * 1024
-
-
-def _get_embeddings() -> Embeddings:
-    """Get embeddings instance.
-
-    Temporary stub returning mock embeddings until TASK-23 is implemented.
-    """
-    return _MockEmbeddings()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Node Implementations
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -81,7 +53,7 @@ def _node_extract_triplets(state: BuilderState) -> dict[str, Any]:
 
 def _node_entity_resolution(state: BuilderState) -> dict[str, Any]:
     """Resolve extracted triplets into canonical entities."""
-    embeddings = _get_embeddings()
+    embeddings = get_embeddings()
     llm = get_reasoning_llm()
     triplets = state.get("triplets") or []
     source_doc = state.get("source_doc", "unknown")
@@ -110,7 +82,7 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
     """Generate RAG-augmented mapping proposal for current table."""
     settings = get_settings()
     llm = get_reasoning_llm()
-    embeddings = _get_embeddings()
+    embeddings = get_embeddings()
     enriched_tables = state.get("enriched_tables") or []
     entities: list[Entity] = state.get("entities") or []
     reflection_prompt: str | None = state.get("reflection_prompt")
@@ -243,7 +215,7 @@ def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
         )
 
     if healed is None:
-        logger.critical("Cypher permanently failed for table '%s'.", proposal.table_name)
+        logger.warning("Cypher healing failed for table '%s' — using deterministic builder.", proposal.table_name)
         return {"cypher_failed": True, "current_cypher": None}
 
     return {"current_cypher": healed, "cypher_failed": False}

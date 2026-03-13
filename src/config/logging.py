@@ -35,6 +35,10 @@ def _configure_root_logger() -> None:
     handler.setFormatter(formatter)
     root.addHandler(handler)
 
+    # Suppress Neo4j driver schema notifications (verbose GqlStatusObject spam).
+    # These are INFO-level "constraint already exists" messages with no actionable info.
+    logging.getLogger("neo4j.notifications").setLevel(logging.WARNING)
+
 
 # Configure root logger at module import time
 _configure_root_logger()

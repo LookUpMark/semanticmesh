@@ -79,7 +79,7 @@ Your task: given one SQL table definition and a set of business concept definiti
 Output format:
 {
   "table_name": "<table name from the DDL>",
-  "mapped_concept": "<name of the best matching business concept, or null if no match>",
+  "mapped_concept": "<short noun phrase (2-5 words) naming the business concept, e.g. 'Customer', 'Sales Order', 'Registered Account'. NOT a sentence. NOT a definition.>",
   "confidence": <float between 0.0 and 1.0>,
   "reasoning": "<two to three sentences explaining the mapping decision>",
   "alternative_concepts": ["<second best>", "<third best>"]
@@ -87,6 +87,7 @@ Output format:
 
 Rules:
 - Output ONLY valid JSON. No markdown. No preamble.
+- mapped_concept MUST be a concise noun phrase (2-5 words max). It will be used as a graph node name. Examples: "Customer", "Sales Order Header", "Product Catalogue", "Registered User".
 - If no business concept matches the table with confidence > 0.5, set mapped_concept to null. Do NOT invent a concept.
 - Base the mapping on column names, data types, table comments, and concept definitions/provenance.
 - confidence >= 0.9: near-certain | 0.7-0.9: probable | 0.5-0.7: possible | < 0.5: no match.
@@ -186,25 +187,32 @@ Is this mapping logically sound? Return the audit JSON."""
 
 REFLECTION_TEMPLATE = """You are a {role}.
 
-Your previous attempt to generate a {output_format} failed with the following error:
+Your previous attempt to generate a {output_format} was rejected with the following critique:
 
-<previous_error>
+<critique>
 {error_or_critique}
-</previous_error>
+</critique>
 
-The original input you must process is:
+The original input you must re-process is:
 
 <original_input>
 {original_input}
 </original_input>
 
-Generate a corrected {output_format} that fully resolves the error above.
+How to fix this:
+1. Read the critique carefully — it identifies a SPECIFIC problem (wrong concept name, semantic mismatch, unjustified confidence, etc.).
+2. Change the field(s) explicitly mentioned in the critique. Do NOT keep the same values.
+3. If the critique suggests an alternative concept name, USE it in mapped_concept.
+4. Adjust confidence to match your actual certainty after reconsidering.
+5. Update reasoning to reflect your corrected analysis.
+
+Generate a corrected {output_format} that fully resolves every point in the critique above.
 
 Rules:
 - Output ONLY a valid {output_format}. No markdown. No explanation. No preamble.
-- DO NOT repeat the same mistake.
-- Address EVERY point mentioned in the error.
-- If the error mentions a specific entity, column, or field, handle it explicitly in your output."""
+- mapped_concept MUST be a short noun phrase (2-5 words), NOT a sentence or definition.
+- DO NOT repeat the same mapped_concept or reasoning from your previous attempt.
+- Address EVERY specific issue mentioned in the critique."""
 
 
 # ── PT-06: Cypher Generation ──────────────────────────────────────────────────

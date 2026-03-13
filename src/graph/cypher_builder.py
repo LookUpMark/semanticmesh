@@ -12,6 +12,8 @@ LLM output quality.
 
 from __future__ import annotations
 
+import json
+
 from src.models.schemas import EnrichedTableSchema, MappingProposal
 
 # ── Parameterized MERGE template ─────────────────────────────────────────────
@@ -61,7 +63,9 @@ def build_upsert_cypher(
         ``Neo4jClient.execute_cypher(cypher, params)``.
     """
     column_names = [c.name for c in table.columns]
-    column_types = {c.name: c.data_type for c in table.columns}
+    # Neo4j property values must be primitives or arrays — Map is not supported.
+    # Serialize column_types dict as a JSON string for storage.
+    column_types = json.dumps({c.name: c.data_type for c in table.columns})
 
     params: dict = {
         "concept_name": proposal.mapped_concept or "Unknown",

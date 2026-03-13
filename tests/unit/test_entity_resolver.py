@@ -357,3 +357,61 @@ class TestResolveEntities:
         # Conservative no-merge → cluster preserved but not crashed
         assert len(result) >= 1
 
+
+# ── Regression: zero-vector embeddings produce zero clusters ──────────────────
+# This documents Bug 3: _MockEmbeddings returned [0.0]*1024 for all entities.
+# cosine_similarity([0,0,...], [0,0,...]) → NaN/0 → no pair exceeds threshold
+# → 0 clusters → ER is completely blind.
+
+class TestZeroVectorRegressionBug3:
+    """Regression guard for the mock-embeddings bug in entity resolution.
+
+    When all embedding vectors are zero, cosine similarity is undefined (0/0)
+    and sklearn returns 0.0 for all pairs. No pair exceeds the blocking
+    threshold, so entity resolution produces 0 clusters regardless of how
+    semantically similar the entity strings are.
+
+    Real BGE-M3 embeddings produce unit-norm vectors where cosine similarity
+    correctly reflects semantic similarity.
+    """
+
+    def _make_zero_embeddings(self) -> MagicMock:
+        emb = MagicMock()
+        emb.embed_documents.side_effect = lambda texts: [[0.0] * 4 for _ in texts]
+        return emb
+
+    def _make_similar_embeddings(self) -> MagicMock:
+        """'Customer' and 'Customers' share the same vector — cos sim = 1.0."""
+        emb = MagicMock()
+        vectors = {
+            "Customer":   [1.0, 0.0, 0.0, 0.0],
+            "Customers":  [1.0, 0.0, 0.0, 0.0],  # identical → should cluster
+            "Order":      [0.0, 1.0, 0.0, 0.0],  # orthogonal → no cluster
+        }
+        emb.embed_documents.side_effect = lambda texts: [vectors[t] for t in texts]
+        return emb
+
+    def test_zero_vectors_produce_zero_clusters(self) -> None:
+        """Demonstrates the original bug: zero vectors → no clusters ever form."""
+        entities = ["Customer", "Customers", "Order"]
+        clusters = block_entities(entities, self._make_zero_embeddings(), threshold=0.85)
+        assert clusters == [], "Zero vectors must produce 0 clusters (bug demonstration)"
+
+    def test_real_similar_vectors_produce_clusters(self) -> None:
+        """Fix verification: meaningful vectors → similar entities cluster correctly."""
+        entities = ["Customer", "Customers", "Order"]
+        clusters = block_entities(entities, self._make_similar_embeddings(), threshold=0.85)
+        assert len(clusters) == 1
+        assert set(clusters[0].variants) == {"Customer", "Customers"}
+
+    def test_node_entity_resolution_calls_get_embeddings_not_mock(self) -> None:
+        """Regression: _node_entity_resolution must use get_embeddings(), not _MockEmbeddings."""
+        import src.graph.builder_graph as bg
+        # _MockEmbeddings and _get_embeddings must not exist in the module
+        assert not hasattr(bg, "_MockEmbeddings"), (
+            "_MockEmbeddings still present in builder_graph — Bug 3 not fixed"
+        )
+        assert not hasattr(bg, "_get_embeddings"), (
+            "_get_embeddings still present in builder_graph — Bug 3 not fixed"
+        )
+
