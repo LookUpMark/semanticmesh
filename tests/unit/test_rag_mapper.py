@@ -110,9 +110,15 @@ class TestBuildRetrievalQuery:
 
 class TestRetrieveTopEntities:
     def _make_embeddings(self, query_vec: list, entity_vecs: list[list]) -> MagicMock:
+        """Mock embedder: single-text calls → query_vec, multi-text calls → entity_vecs."""
         emb = MagicMock()
-        emb.embed_query.return_value = query_vec
-        emb.embed_documents.return_value = entity_vecs
+
+        def encode(texts: list, **kw: object) -> np.ndarray:
+            if len(texts) == 1:
+                return np.array([query_vec])
+            return np.array(entity_vecs)
+
+        emb.encode.side_effect = encode
         return emb
 
     def test_returns_top_k(self) -> None:

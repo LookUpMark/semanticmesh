@@ -5,6 +5,7 @@ and src/resolution/entity_resolver.py (UT-06).
 from __future__ import annotations
 
 import json
+import numpy as np
 from unittest.mock import MagicMock
 
 from src.models.schemas import CanonicalEntityDecision, Entity, EntityCluster, Triplet
@@ -29,13 +30,9 @@ def _make_triplet(subject: str, obj: str, confidence: float = 0.9) -> Triplet:
 
 
 def _make_embeddings(vectors: dict[str, list[float]]) -> MagicMock:
-    """Mock Embeddings that returns fixed vectors for each entity string."""
+    """Mock embedder that returns fixed vectors for each entity string."""
     emb = MagicMock()
-
-    def embed_documents(texts: list[str]) -> list[list[float]]:
-        return [vectors[t] for t in texts]
-
-    emb.embed_documents.side_effect = embed_documents
+    emb.encode.side_effect = lambda texts, **kw: np.array([vectors[t] for t in texts])
     return emb
 
 
@@ -260,26 +257,22 @@ def _make_embeddings_orthogonal(entities: list[str]) -> MagicMock:
     emb = MagicMock()
     dim = max(len(entities), 2)
 
-    def embed_documents(texts: list[str]) -> list[list[float]]:
+    def encode(texts: list[str], **kw: object) -> np.ndarray:
         vecs = []
         for i, _t in enumerate(texts):
             v = [0.0] * dim
             v[i % dim] = 1.0
             vecs.append(v)
-        return vecs
+        return np.array(vecs)
 
-    emb.embed_documents.side_effect = embed_documents
+    emb.encode.side_effect = encode
     return emb
 
 
 def _make_embeddings_identical(entities: list[str]) -> MagicMock:
     """All entities share the same vector — max clustering."""
     emb = MagicMock()
-
-    def embed_documents(texts: list[str]) -> list[list[float]]:
-        return [[1.0, 0.0]] * len(texts)
-
-    emb.embed_documents.side_effect = embed_documents
+    emb.encode.side_effect = lambda texts, **kw: np.array([[1.0, 0.0]] * len(texts))
     return emb
 
 
@@ -377,7 +370,7 @@ class TestZeroVectorRegressionBug3:
 
     def _make_zero_embeddings(self) -> MagicMock:
         emb = MagicMock()
-        emb.embed_documents.side_effect = lambda texts: [[0.0] * 4 for _ in texts]
+        emb.encode.side_effect = lambda texts, **kw: np.array([[0.0] * 4 for _ in texts])
         return emb
 
     def _make_similar_embeddings(self) -> MagicMock:
@@ -388,7 +381,7 @@ class TestZeroVectorRegressionBug3:
             "Customers":  [1.0, 0.0, 0.0, 0.0],  # identical → should cluster
             "Order":      [0.0, 1.0, 0.0, 0.0],  # orthogonal → no cluster
         }
-        emb.embed_documents.side_effect = lambda texts: [vectors[t] for t in texts]
+        emb.encode.side_effect = lambda texts, **kw: np.array([vectors[t] for t in texts])
         return emb
 
     def test_zero_vectors_produce_zero_clusters(self) -> None:

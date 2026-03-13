@@ -8,15 +8,15 @@ Only clusters with >= 2 variants proceed to the LLM judge (Stage 2).
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from langchain_core.embeddings import Embeddings  # noqa: TC002 (used at runtime)
 from sklearn.metrics.pairwise import cosine_similarity
 
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.models.schemas import EntityCluster, Triplet
+from src.retrieval.embeddings import embed_texts
 
 if TYPE_CHECKING:
     import logging
@@ -47,7 +47,7 @@ def extract_unique_entities(triplets: list[Triplet]) -> list[str]:
 
 def block_entities(
     entities: list[str],
-    embeddings: Embeddings,
+    embeddings: Any,
     threshold: float | None = None,
     top_k: int | None = None,
 ) -> list[EntityCluster]:
@@ -80,7 +80,7 @@ def block_entities(
 
     # Embed all entities in one batch call
     logger.info("Embedding %d entities for blocking...", len(entities))
-    vectors = np.array(embeddings.embed_documents(entities), dtype=np.float32)
+    vectors = np.array(embed_texts(entities, model=embeddings), dtype=np.float32)
 
     # Full cosine similarity matrix
     sim_matrix = cosine_similarity(vectors)  # shape: (N, N)
