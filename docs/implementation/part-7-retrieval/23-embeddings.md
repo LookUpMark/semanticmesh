@@ -75,7 +75,8 @@ def get_embeddings():
     logger.info("Loading embedding model '%s'...", model_name)
     model = FlagModel(
         model_name,
-        use_fp16=True,        # halves VRAM usage; negligible accuracy loss
+        use_fp16=False,       # CPU-safe; avoids CUDA OOM when GPU is shared with LM Studio
+        devices=["cpu"],      # force CPU to prevent GPU OOM on shared hardware
         query_instruction_for_retrieval="Represent this sentence for retrieval: ",
     )
     logger.info("Embedding model loaded.")
@@ -99,7 +100,7 @@ def embed_texts(
         return []
     if model is None:
         model = get_embeddings()
-    embeddings = model.encode(texts, batch_size=32, show_progress_bar=False)
+    embeddings = model.encode(texts, batch_size=32)
     return embeddings.tolist()
 
 

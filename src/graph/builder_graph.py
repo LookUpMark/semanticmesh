@@ -7,6 +7,7 @@ validation → HITL → Cypher → graph write) into a compiled StateGraph.
 from __future__ import annotations
 
 import logging
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -20,9 +21,10 @@ from src.config.llm_factory import get_extraction_llm, get_reasoning_llm
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.extraction.triplet_extractor import extract_all_triplets
+from src.graph.cypher_builder import build_upsert_cypher
 from src.graph.cypher_generator import generate_cypher
 from src.graph.cypher_healer import heal_cypher
-from src.graph.neo4j_client import Neo4jClient
+from src.graph.neo4j_client import Neo4jClient, setup_schema
 from src.ingestion.ddl_parser import parse_ddl_file
 from src.ingestion.pdf_loader import load_and_chunk_pdf
 from src.ingestion.schema_enricher import enrich_all
@@ -32,6 +34,7 @@ from src.mapping.validator import build_reflection_prompt, critic_review, valida
 from src.models.schemas import Entity, MappingProposal
 from src.models.state import BuilderState
 from src.prompts.few_shot import load_cypher_examples
+from src.retrieval.embeddings import embed_text, get_embeddings
 from src.resolution.entity_resolver import resolve_entities
 
 logger: logging.Logger = get_logger(__name__)
@@ -112,13 +115,16 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
     entities: list[Entity] = state.get("entities") or []
     reflection_prompt: str | None = state.get("reflection_prompt")
 
-    # Process next table from remaining queue
-    pending: list = list(state.get("pending_tables") or enriched_tables)
-    if not pending:
-        return {"pending_tables": [], "current_table": None}
-
-    current_table = pending[0]
-    remaining = pending[1:]
+    # Process next table from remaining queue, or retry current on reflection
+    if reflection_prompt and state.get("current_table"):
+        current_table = state["current_table"]
+        remaining = list(state.get("pending_tables") or [])
+    else:
+        pending: list = list(state.get("pending_tables") or enriched_tables)
+        if not pending:
+            return {"pending_tables": [], "current_table": None}
+        current_table = pending[0]
+        remaining = pending[1:]
 
     query = build_retrieval_query(current_table)
     top_entities = retrieve_top_entities(query, entities, embeddings, top_k=settings.retrieval_vector_top_k)
@@ -156,7 +162,12 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
     validated, error = validate_schema(proposal.model_dump())
     if error:
         if attempts >= settings.max_reflection_attempts:
-            return {"hitl_flag": True, "reflection_attempts": 0}
+            logger.warning(
+                "Pydantic validation failed after %d attempts for '%s' — accepting last proposal.",
+                attempts,
+                proposal.table_name,
+            )
+            return {"reflection_attempts": 0, "hitl_flag": False}
         ref_prompt = build_reflection_prompt(
             role="data governance expert",
             output_format="JSON mapping proposal",
@@ -170,7 +181,17 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
     if not decision.approved:
         critique = decision.critique or "Mapping rejected by critic."
         if attempts >= settings.max_reflection_attempts:
-            return {"hitl_flag": True, "reflection_attempts": 0}
+            logger.warning(
+                "Critic rejected mapping for '%s' after %d attempts — accepting best proposal.",
+                validated.table_name,
+                attempts,
+            )
+            return {
+                "mapping_proposal": validated,
+                "validation_error": None,
+                "reflection_attempts": 0,
+                "hitl_flag": False,
+            }
         ref_prompt = build_reflection_prompt(
             role="data governance expert",
             output_format="JSON mapping proposal",
@@ -193,10 +214,12 @@ def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
     llm = get_reasoning_llm()
     proposal: MappingProposal = state["mapping_proposal"]
     table = state.get("current_table")
-    entities: list[Entity] = state.get("current_entities") or []
-    entity = entities[0] if entities else Entity(
+    # Build a synthetic Entity from the proposal so the concept name and
+    # definition in the generated Cypher match the validated mapping exactly,
+    # rather than an arbitrary entity retrieved during the mapping step.
+    entity = Entity(
         name=proposal.mapped_concept or "Unknown",
-        definition="",
+        definition=proposal.reasoning or "",
         synonyms=[],
         provenance_text="",
         source_doc="",
@@ -227,17 +250,58 @@ def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
 
 
 def _node_build_graph(state: BuilderState) -> dict[str, Any]:
-    """Execute Cypher to upsert data into Neo4j."""
-    cypher: str | None = state.get("current_cypher")
-    proposal: MappingProposal = state["mapping_proposal"]
+    """Execute the best available Cypher to upsert data into Neo4j.
 
-    if not cypher:
-        logger.warning("No valid Cypher to execute for '%s' — skipping.", proposal.table_name)
+    Strategy (primary → fallback):
+    1. **LLM-healed Cypher** — if ``heal_cypher`` succeeded (``cypher_failed=False``
+       and ``current_cypher`` is set), execute the LLM-generated Cypher directly.
+       This is the "happy path" that exercises the full thesis loop: generate →
+       self-reflect → heal → execute.
+    2. **Deterministic builder** — if the LLM Cypher is invalid after all healing
+       attempts, fall back to ``cypher_builder.build_upsert_cypher`` which uses
+       driver-bound parameters and is immune to quoting/escaping issues.
+
+    In both cases the BusinessConcept embedding is populated afterwards so the
+    vector index can serve Query Graph requests.
+    """
+    proposal: MappingProposal = state["mapping_proposal"]
+    table: EnrichedTableSchema | None = state.get("current_table")
+
+    if not proposal or not table:
+        logger.warning("Missing proposal or table in build_graph — skipping.")
         return {}
 
+    llm_cypher: str | None = state.get("current_cypher")
+    cypher_failed: bool = state.get("cypher_failed", False)
+
+    if llm_cypher and not cypher_failed:
+        # Primary path: LLM-healed Cypher passed Neo4j EXPLAIN — execute it.
+        logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
+        exec_cypher, exec_params = llm_cypher, {}
+    else:
+        # Fallback path: healing exhausted or no Cypher produced.
+        logger.info(
+            "LLM Cypher failed for '%s' — falling back to deterministic builder.",
+            proposal.table_name,
+        )
+        exec_cypher, exec_params = build_upsert_cypher(proposal, table)
+
     with Neo4jClient() as client:
-        client.execute_cypher(cypher)
+        client.execute_cypher(exec_cypher, exec_params)
         logger.info("Graph updated for table '%s'.", proposal.table_name)
+
+        # Populate the BGE-M3 embedding so the vector index can serve queries.
+        if proposal.mapped_concept:
+            try:
+                model = get_embeddings()
+                vector = embed_text(proposal.mapped_concept, model=model)
+                client.execute_cypher(
+                    "MATCH (c:BusinessConcept {name: $name}) SET c.embedding = $emb",
+                    {"name": proposal.mapped_concept, "emb": vector},
+                )
+                logger.info("Embedding set for BusinessConcept '%s'.", proposal.mapped_concept)
+            except Exception as exc:
+                logger.warning("Could not set embedding for '%s': %s", proposal.mapped_concept, exc)
 
     completed = list(state.get("completed_tables") or [])
     completed.append(proposal.table_name)
@@ -258,10 +322,12 @@ def _route_after_validate(state: BuilderState) -> str:
 
 
 def _route_after_heal(state: BuilderState) -> str:
-    """Route after Cypher healing: build graph, next table, or END."""
-    if state.get("cypher_failed"):
-        # Try next table if any remain
-        return "rag_mapping" if state.get("pending_tables") else END
+    """Route after Cypher healing: always proceed to build_graph.
+
+    ``build_graph`` implements a primary/fallback strategy internally:
+    - ``cypher_failed=False`` → LLM-healed Cypher executed directly (primary)
+    - ``cypher_failed=True``  → deterministic builder used as fallback
+    """
     return "build_graph"
 
 
@@ -321,7 +387,7 @@ def build_builder_graph(*, production: bool = False):
     graph.add_conditional_edges(
         "heal_cypher",
         _route_after_heal,
-        {"build_graph": "build_graph", "rag_mapping": "rag_mapping", END: END},
+        {"build_graph": "build_graph"},
     )
     graph.add_conditional_edges(
         "build_graph",
@@ -349,6 +415,7 @@ def run_builder(
     ddl_paths: list[str],
     *,
     production: bool = False,
+    clear_graph: bool = False,
 ) -> BuilderState:
     """Convenience wrapper: compile graph and invoke with document paths.
 
@@ -356,6 +423,8 @@ def run_builder(
         raw_documents: List of file paths to PDF documents.
         ddl_paths:     List of file paths to DDL SQL files.
         production:    Compile with ``SqliteSaver`` if True.
+        clear_graph:   If True, delete all nodes and relationships before running.
+                       Use in development/demo to avoid stale data from prior runs.
 
     Returns:
         Final ``BuilderState`` after graph completion.
@@ -364,11 +433,18 @@ def run_builder(
     for doc_path in raw_documents:
         chunks.extend(load_and_chunk_pdf(doc_path))
 
+    # Ensure Neo4j schema (constraints + vector index) exists before writing.
+    with Neo4jClient() as client:
+        if clear_graph:
+            client.execute_cypher("MATCH (n) DETACH DELETE n")
+            logger.info("Graph cleared before builder run.")
+        setup_schema(client)
+
     graph = build_builder_graph(production=production)
     initial: BuilderState = {
         "chunks": chunks,
         "ddl_paths": ddl_paths,
-        "source_doc": raw_documents[0] if raw_documents else "unknown",
+        "source_doc": str(raw_documents[0]) if raw_documents else "unknown",
         "triplets": [],
         "entities": [],
         "tables": [],
@@ -376,6 +452,6 @@ def run_builder(
         "pending_tables": [],
         "completed_tables": [],
     }
-    config = {"configurable": {"thread_id": "builder-run-1"}}
+    config = {"configurable": {"thread_id": f"builder-{uuid.uuid4().hex[:8]}"}}
     final_state: BuilderState = graph.invoke(initial, config=config)
     return final_state

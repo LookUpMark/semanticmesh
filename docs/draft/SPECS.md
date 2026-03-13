@@ -213,6 +213,7 @@ class BuilderState(TypedDict, total=False):
 
     # Control
     hitl_flag: bool                   # triggers Human-in-the-Loop breakpoint
+    completed_tables: list[str]       # tables successfully written to Neo4j
     failed_mappings: list[str]
     ingestion_errors: list[str]
 

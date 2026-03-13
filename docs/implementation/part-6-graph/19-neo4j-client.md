@@ -80,8 +80,8 @@ _SCHEMA_STATEMENTS: list[str] = [
         "CREATE VECTOR INDEX businessconcept_embedding IF NOT EXISTS "
         "FOR (n:BusinessConcept) ON n.embedding "
         "OPTIONS {indexConfig: {"
-        "'vector.dimensions': %d, "
-        "'vector.similarity_function': 'cosine'"
+        "`vector.dimensions`: %d, "
+        "`vector.similarity_function`: 'cosine'"
         "}}"
     ) % _EMBEDDING_DIMENSION,
 ]

@@ -16,7 +16,7 @@ from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.generation.answer_generator import generate_answer, web_search_fallback
 from src.generation.hallucination_grader import grade_answer
-from src.graph.neo4j_client import Neo4jClient
+from src.graph.neo4j_client import Neo4jClient, setup_schema
 from src.models.schemas import GraderDecision, RetrievedChunk
 from src.models.state import QueryState
 from src.retrieval.embeddings import get_embeddings
@@ -184,6 +184,9 @@ def run_query(user_query: str) -> dict[str, Any]:
     """
     graph = build_query_graph()
     config = {"configurable": {"thread_id": "query-run-1"}}
+    # Ensure schema (vector index) exists before querying.
+    with Neo4jClient() as client:
+        setup_schema(client)
     initial: QueryState = {
         "user_query": user_query,
         "iteration_count": 0,

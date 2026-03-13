@@ -41,18 +41,19 @@ class TestRouteAfterHeal:
         state = {"cypher_failed": False}
         assert _route_after_heal(state) == "build_graph"
 
-    def test_routes_to_rag_mapping_if_pending_tables(self) -> None:
+    def test_routes_to_build_even_on_failed_cypher(self) -> None:
+        # heal_cypher may fail, but build_graph now uses the deterministic
+        # parameterized builder so we always attempt the write.
         state = {"cypher_failed": True, "pending_tables": [MagicMock()]}
-        assert _route_after_heal(state) == "rag_mapping"
+        assert _route_after_heal(state) == "build_graph"
 
-    def test_routes_to_end_if_no_pending_tables(self) -> None:
+    def test_routes_to_build_with_no_pending_tables(self) -> None:
         state = {"cypher_failed": True, "pending_tables": []}
-        assert _route_after_heal(state) == END
+        assert _route_after_heal(state) == "build_graph"
 
     def test_handles_missing_pending_tables_gracefully(self) -> None:
         state = {"cypher_failed": True}
-        # Missing pending_tables key should be treated as empty
-        assert _route_after_heal(state) == END
+        assert _route_after_heal(state) == "build_graph"
 
 
 class TestRouteAfterBuild:

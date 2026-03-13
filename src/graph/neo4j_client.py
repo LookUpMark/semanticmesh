@@ -35,13 +35,11 @@ _SCHEMA_STATEMENTS: list[str] = [
     "FOR (c:Chunk) ON (c.source_doc)",
 
     # Vector index for BGE-M3 embeddings on BusinessConcept nodes
+    # Note: indexConfig keys require backtick quoting in Cypher map literals.
     (
         "CREATE VECTOR INDEX businessconcept_embedding IF NOT EXISTS "
         "FOR (n:BusinessConcept) ON n.embedding "
-        "OPTIONS {indexConfig: {"
-        "'vector.dimensions': %d, "
-        "'vector.similarity_function': 'cosine'"
-        "}}"
+        "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
     ) % _EMBEDDING_DIMENSION,
 ]
 
