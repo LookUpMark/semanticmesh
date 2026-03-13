@@ -104,6 +104,22 @@ def get_settings() -> Settings:
     return Settings()
 
 
+def reload_settings() -> Settings:
+    """Clear the settings cache and return a fresh Settings instance.
+
+    Call this after changing ``os.environ`` in notebooks or tests so that
+    model names, API keys, and other parameters are re-read.
+    Updates the module-level ``settings`` singleton in-place.
+    """
+    get_settings.cache_clear()
+    new = get_settings()
+    # Update the module-level alias so existing ``from src.config.settings import settings``
+    # references in already-imported modules continue to work after reload.
+    import src.config.settings as _self  # noqa: PLC0415
+    _self.settings = new
+    return new
+
+
 # Module-level singleton — import with:
 #   from src.config.settings import settings
 settings: Settings = get_settings()
