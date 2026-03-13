@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from langchain_core.embeddings import Embeddings
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 from sklearn.metrics.pairwise import cosine_similarity
@@ -25,6 +24,7 @@ from src.models.schemas import (
     TableSchema,
 )
 from src.prompts.templates import MAPPING_SYSTEM, MAPPING_USER, REFLECTION_TEMPLATE
+from src.retrieval.embeddings import embed_text, embed_texts
 
 if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
@@ -74,7 +74,7 @@ def build_retrieval_query(table: EnrichedTableSchema) -> str:
 def retrieve_top_entities(
     query: str,
     entities: list[Entity],
-    embeddings: Embeddings,
+    embeddings: Any,
     top_k: int | None = None,
 ) -> list[Entity]:
     """Retrieve the most semantically relevant entities for a given table query.
@@ -96,10 +96,10 @@ def retrieve_top_entities(
     if not entities:
         return []
 
-    query_vec = np.array(embeddings.embed_query(query), dtype=np.float32).reshape(1, -1)
+    query_vec = np.array(embed_text(query, model=embeddings), dtype=np.float32).reshape(1, -1)
 
     entity_texts = [f"{e.name}: {e.definition}" if e.definition else e.name for e in entities]
-    entity_vecs = np.array(embeddings.embed_documents(entity_texts), dtype=np.float32)
+    entity_vecs = np.array(embed_texts(entity_texts, model=embeddings), dtype=np.float32)
 
     sims = cosine_similarity(query_vec, entity_vecs)[0]
     top_indices = np.argsort(sims)[::-1][:k]

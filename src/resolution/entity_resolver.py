@@ -6,9 +6,7 @@ to produce a deduplicated, canonical list of Entity objects.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from langchain_core.embeddings import Embeddings  # noqa: TC002 (used at runtime)
+from typing import TYPE_CHECKING, Any
 
 from src.config.logging import get_logger
 from src.models.schemas import Entity, Triplet
@@ -29,7 +27,7 @@ logger: logging.Logger = get_logger(__name__)
 
 def resolve_entities(
     triplets: list[Triplet],
-    embeddings: Embeddings,
+    embeddings: Any,
     llm: LLMProtocol,
     source_doc: str = "",
 ) -> list[Entity]:
