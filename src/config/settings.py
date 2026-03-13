@@ -48,12 +48,15 @@ class Settings(BaseSettings):
 
     # ── LLM ─────────────────────────────────────────────────────────────────────
     lmstudio_base_url: str = DEFAULT_CONFIG.lmstudio_base_url
+    openrouter_base_url: str = DEFAULT_CONFIG.openrouter_base_url
+    openrouter_api_key: SecretStr = SecretStr("")  # Override via OPENROUTER_API_KEY
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
     llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
     llm_temperature_reasoning: float = DEFAULT_CONFIG.llm_temperature_reasoning
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
     llm_max_tokens_extraction: int = DEFAULT_CONFIG.llm_max_tokens_extraction
+    llm_max_tokens_reasoning: int = DEFAULT_CONFIG.llm_max_tokens_reasoning
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = DEFAULT_CONFIG.embedding_model

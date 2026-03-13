@@ -1,7 +1,7 @@
 """Query LangGraph — EP-15 / US-15-01.
 
 Wires hybrid retrieval → reranking → answer generation → hallucination grader
-(with regeneration loop and web-search fallback) into a compiled StateGraph.
+(with regeneration loop) into a compiled StateGraph.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from langgraph.graph import END, StateGraph
 from src.config.llm_factory import get_reasoning_llm
 from src.config.logging import get_logger
 from src.config.settings import get_settings
-from src.generation.answer_generator import generate_answer, web_search_fallback
+from src.generation.answer_generator import generate_answer
 from src.generation.hallucination_grader import grade_answer
 from src.graph.neo4j_client import Neo4jClient, setup_schema
 from src.models.schemas import GraderDecision, RetrievedChunk
@@ -86,13 +86,13 @@ def _node_hallucination_grader(state: QueryState) -> dict[str, Any]:
     chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
     iteration: int = state.get("iteration_count", 0)
 
-    # Loop guard — force web_search after max retries
+    # Loop guard — accept answer after max retries to avoid infinite loop
     if iteration >= settings.max_hallucination_retries:
-        logger.warning("Max hallucination retries reached — forcing web_search.")
+        logger.warning("Max hallucination retries reached — accepting current answer.")
         decision = GraderDecision(
-            grounded=False,
-            critique="Max retries exceeded.",
-            action="web_search",
+            grounded=True,
+            critique=None,
+            action="pass",
         )
     else:
         decision = grade_answer(query, answer, chunks, llm)
@@ -101,12 +101,6 @@ def _node_hallucination_grader(state: QueryState) -> dict[str, Any]:
     if decision.action == "regenerate":
         update["last_critique"] = decision.critique
     return update
-
-
-def _node_web_search(state: QueryState) -> dict[str, Any]:
-    query: str = state["user_query"]
-    result = web_search_fallback(query)
-    return {"final_answer": result, "sources": ["web_search"]}
 
 
 def _node_finalise(state: QueryState) -> dict[str, Any]:
@@ -122,14 +116,10 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
 def _route_after_grader(state: QueryState) -> str:
     """Route based on grader decision action."""
     decision: GraderDecision | None = state.get("grader_decision")
-    if decision is None:
-        return "finalise"
-    if decision.action == "pass":
+    if decision is None or decision.action == "pass":
         return "finalise"
     if decision.action == "regenerate":
         return "answer_generation"
-    if decision.action == "web_search":
-        return "web_search"
     return "finalise"
 
 
@@ -149,7 +139,6 @@ def build_query_graph():
     graph.add_node("reranking", _node_reranking)
     graph.add_node("answer_generation", _node_answer_generation)
     graph.add_node("hallucination_grader", _node_hallucination_grader)
-    graph.add_node("web_search", _node_web_search)
     graph.add_node("finalise", _node_finalise)
 
     graph.set_entry_point("hybrid_retrieval")
@@ -157,7 +146,6 @@ def build_query_graph():
     graph.add_edge("hybrid_retrieval", "reranking")
     graph.add_edge("reranking", "answer_generation")
     graph.add_edge("answer_generation", "hallucination_grader")
-    graph.add_edge("web_search", END)
     graph.add_edge("finalise", END)
 
     graph.add_conditional_edges(
@@ -166,7 +154,6 @@ def build_query_graph():
         {
             "finalise": "finalise",
             "answer_generation": "answer_generation",
-            "web_search": "web_search",
         },
     )
 

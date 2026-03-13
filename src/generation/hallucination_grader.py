@@ -52,7 +52,7 @@ def grade_answer(
     from src.models.schemas import GraderDecision  # noqa: PLC0415
 
     _pass = GraderDecision(grounded=True, critique=None, action="pass")
-    _fmt = '{"grounded": <bool>, "critique": "<str|null>", "action": "<pass|regenerate|web_search>"}'
+    _fmt = '{"grounded": <bool>, "critique": "<str|null>", "action": "<pass|regenerate>"}'
 
     context_block = format_context(chunks)
     user_prompt = GRADER_USER.format(

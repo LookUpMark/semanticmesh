@@ -20,7 +20,7 @@ from src.config.llm_factory import get_extraction_llm, get_reasoning_llm
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.extraction.triplet_extractor import extract_all_triplets
-from src.graph.cypher_builder import build_upsert_cypher
+from src.graph.cypher_builder import build_fk_cypher, build_upsert_cypher
 from src.graph.cypher_generator import generate_cypher
 from src.graph.cypher_healer import heal_cypher
 from src.graph.neo4j_client import Neo4jClient, setup_schema
@@ -261,6 +261,18 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     with Neo4jClient() as client:
         client.execute_cypher(exec_cypher, exec_params)
         logger.info("Graph updated for table '%s'.", proposal.table_name)
+
+        # Write FK edges: PhysicalTable -[:REFERENCES]-> PhysicalTable
+        fk_statements = build_fk_cypher(table)
+        for fk_cypher, fk_params in fk_statements:
+            try:
+                client.execute_cypher(fk_cypher, fk_params)
+                logger.info(
+                    "FK edge: %s.%s -> %s",
+                    table.table_name, fk_params["fk_column"], fk_params["tgt_table"],
+                )
+            except Exception as exc:
+                logger.warning("Could not write FK edge for %s.%s: %s", table.table_name, fk_params["fk_column"], exc)
 
         # Populate the BGE-M3 embedding so the vector index can serve queries.
         if proposal.mapped_concept:

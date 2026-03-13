@@ -84,6 +84,7 @@ class TestTemplateFormatting:
     def test_cypher_system_bans_bare_create(self) -> None:
         assert "Never use bare CREATE" in templates.CYPHER_SYSTEM
 
-    def test_grader_system_has_all_three_actions(self) -> None:
-        for action in ("pass", "regenerate", "web_search"):
+    def test_grader_system_has_two_actions(self) -> None:
+        for action in ("pass", "regenerate"):
             assert action in templates.GRADER_SYSTEM
+        assert "web_search" not in templates.GRADER_SYSTEM

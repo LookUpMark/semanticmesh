@@ -53,6 +53,7 @@ Output format:
 
 Rules:
 - Output ONLY valid JSON. No markdown. No explanation outside the JSON.
+- Keep "reasoning" to ONE sentence maximum. Do not write essays.
 - Base your decision SOLELY on the provenance_text context, not on the names alone.
 - If variants appear in completely different contexts, merge=false.
 - "canonical_name" should be the most precise, unambiguous form of the entity name."""
@@ -86,12 +87,13 @@ Output format:
 }
 
 Rules:
-- Output ONLY valid JSON. No markdown. No preamble.
+- Output ONLY valid JSON. No markdown. No preamble. Do not write any text outside the JSON object.
 - mapped_concept MUST be a concise noun phrase (2-5 words max). It will be used as a graph node name. Examples: "Customer", "Sales Order Header", "Product Catalogue", "Registered User".
 - If no business concept matches the table with confidence > 0.5, set mapped_concept to null. Do NOT invent a concept.
 - Base the mapping on column names, data types, table comments, and concept definitions/provenance.
 - confidence >= 0.9: near-certain | 0.7-0.9: probable | 0.5-0.7: possible | < 0.5: no match.
-- alternative_concepts may be empty if there is a clear single winner."""
+- alternative_concepts may be empty if there is a clear single winner.
+- "reasoning" must be 1-2 sentences maximum."""
 
 MAPPING_USER = """Map the following SQL table to the most appropriate business concept.
 
@@ -160,9 +162,9 @@ Output format:
 }
 
 Rules:
-- Output ONLY valid JSON. No markdown.
+- Output ONLY valid JSON. No markdown. Do not write any text outside the JSON object.
 - Be strict. If there is any reasonable doubt, set approved=false.
-- "critique" must name specific columns or concept attributes that conflict.
+- "critique" must name specific columns or concept attributes that conflict. 1-2 sentences maximum.
 - Generic critiques like "the mapping seems wrong" are NOT acceptable.
 - If approved=true, set critique and suggested_correction to null."""
 
@@ -329,13 +331,15 @@ Output format:
 {
   "grounded": <true | false>,
   "critique": "<specific natural-language critique naming unsupported entities, or null if grounded>",
-  "action": "<'pass' | 'regenerate' | 'web_search'>"
+  "action": "<'pass' | 'regenerate'>"
 }
 
 Action rules:
 - "pass": the answer is fully grounded in the retrieved context.
-- "regenerate": the answer contains unsupported claims but the context is relevant - the generator should retry with the critique.
-- "web_search": the retrieved context is entirely unrelated to the question.
+- "regenerate": the answer contains unsupported claims OR the context is insufficient.
+  When context is insufficient, set critique to: "The retrieved context does not contain
+  enough information to answer this question. Reformulate the answer acknowledging the
+  limitation: state clearly what is known from the context and what cannot be determined."
 
 Critique rules (when grounded=false):
 - Name the SPECIFIC entity, table, or concept in the answer that is NOT present in the context.

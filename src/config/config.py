@@ -24,13 +24,16 @@ class AppConfig:
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
 
-    # ── LLM Provider ───────────────────────────────────────────────────────────
-    # LM Studio OpenAI-compatible local endpoint (override via LMSTUDIO_BASE_URL)
+    # ── LLM Providers ──────────────────────────────────────────────────────────
+    # LM Studio — local endpoint for extraction SLM
     lmstudio_base_url: str = "http://localhost:1234/v1"
+    # OpenRouter — cloud endpoint for reasoning/generation LLM
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # ── LLM Models ─────────────────────────────────────────────────────────────
-    # Model identifiers as shown in LM Studio (override via LLM_MODEL_* env vars)
-    llm_model_reasoning: str = "local-model"
+    # Reasoning + generation: OpenRouter (override via LLM_MODEL_REASONING)
+    llm_model_reasoning: str = "openai/gpt-oss-120b:free"
+    # Extraction SLM: LM Studio local model (override via LLM_MODEL_EXTRACTION)
     llm_model_extraction: str = "local-model"
 
     # Temperature settings
@@ -41,6 +44,9 @@ class AppConfig:
     # Max output tokens for extraction (16k to avoid truncated JSON)
     llm_max_tokens_extraction: int = 16384
 
+    # Max output tokens for reasoning LLM (caps thinking+output; JSON payloads rarely need >4k)
+    llm_max_tokens_reasoning: int = 16384
+
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = "BAAI/bge-m3"
     reranker_model: str = "BAAI/bge-reranker-large"
@@ -48,7 +54,7 @@ class AppConfig:
 
     # ── Entity Resolution ──────────────────────────────────────────────────────
     er_blocking_top_k: int = 10
-    er_similarity_threshold: float = 0.85
+    er_similarity_threshold: float = 0.75
 
     # ── Confidence & Loop Guards ───────────────────────────────────────────────
     confidence_threshold: float = 0.90

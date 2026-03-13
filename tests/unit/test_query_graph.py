@@ -26,8 +26,9 @@ class TestRouteAfterGrader:
     def test_regenerate_routes_to_answer_generation(self) -> None:
         assert _route_after_grader(_state("regenerate", grounded=False)) == "answer_generation"
 
-    def test_web_search_routes_to_web_search(self) -> None:
-        assert _route_after_grader(_state("web_search", grounded=False)) == "web_search"
+    def test_web_search_routes_to_finalise(self) -> None:
+        # web_search action no longer exists; unknown actions fall through to finalise
+        assert _route_after_grader(_state("web_search", grounded=False)) == "finalise"
 
     def test_none_decision_routes_to_finalise(self) -> None:
         assert _route_after_grader({"grader_decision": None}) == "finalise"
