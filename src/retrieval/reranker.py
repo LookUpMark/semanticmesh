@@ -43,7 +43,18 @@ def get_reranker():
     settings = get_settings()
     model_name: str = settings.reranker_model
     logger.info("Loading reranker model '%s'...", model_name)
-    reranker = FlagReranker(model_name, use_fp16=False, device="cpu")
+    # Temporarily hide CUDA devices during init so PyTorch doesn't try to
+    # allocate GPU memory even when device="cpu" is requested.
+    import os as _os
+    _saved = _os.environ.get("CUDA_VISIBLE_DEVICES")
+    _os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    try:
+        reranker = FlagReranker(model_name, use_fp16=False, device="cpu")
+    finally:
+        if _saved is None:
+            _os.environ.pop("CUDA_VISIBLE_DEVICES", None)
+        else:
+            _os.environ["CUDA_VISIBLE_DEVICES"] = _saved
     logger.info("Reranker model loaded.")
     return reranker
 

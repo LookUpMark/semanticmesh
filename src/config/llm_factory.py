@@ -21,7 +21,7 @@ from functools import lru_cache
 from langchain_openai import ChatOpenAI
 
 from src.config.llm_client import InstrumentedLLM, LLMProtocol
-from src.config.settings import settings
+from src.config.settings import get_settings, reload_settings
 
 # ── Provider auto-detection ────────────────────────────────────────────────────
 
@@ -87,8 +87,8 @@ def make_llm(
     provider = detect_provider(model)
 
     if provider == "openrouter":
-        _api_key = openrouter_api_key or settings.openrouter_api_key.get_secret_value()
-        _base_url = openrouter_base_url or settings.openrouter_base_url
+        _api_key = openrouter_api_key or get_settings().openrouter_api_key.get_secret_value()
+        _base_url = openrouter_base_url or get_settings().openrouter_base_url
         chat = ChatOpenAI(
             model=model,
             temperature=temperature,
@@ -129,11 +129,11 @@ def make_llm(
                 api_key=_api_key,
             ),
             name=role,
-            max_retries=settings.max_llm_retries,
+            max_retries=get_settings().max_llm_retries,
         )
 
     else:  # lmstudio
-        _base_url = lmstudio_base_url or settings.lmstudio_base_url
+        _base_url = lmstudio_base_url or get_settings().lmstudio_base_url
         _kwargs = extra_model_kwargs or {"chat_template_kwargs": {"enable_thinking": False}}
         chat = ChatOpenAI(
             model=model,
@@ -144,17 +144,18 @@ def make_llm(
             model_kwargs={"extra_body": _kwargs},
         )
 
-    return InstrumentedLLM(chat, name=role, max_retries=settings.max_llm_retries)
+    return InstrumentedLLM(chat, name=role, max_retries=get_settings().max_llm_retries)
 
 
 # ── Cached pipeline factories ─────────────────────────────────────────────────
 
 def reconfigure_from_env() -> None:
-    """Clear all cached LLM instances so they re-read from ``settings`` on next call.
+    """Clear all cached instances so they re-read from ``os.environ`` on next call.
 
     Call this from the notebook after changing ``os.environ`` to pick up new
     model names or API keys without restarting the kernel.
     """
+    reload_settings()           # re-reads os.environ into a fresh Settings object
     get_reasoning_llm.cache_clear()
     get_extraction_llm.cache_clear()
     get_generation_llm.cache_clear()
@@ -174,34 +175,48 @@ def get_reasoning_llm() -> LLMProtocol:
     very long thinking runs.
     """
     return make_llm(
-        model=settings.llm_model_reasoning,
-        temperature=settings.llm_temperature_reasoning,
-        max_tokens=settings.llm_max_tokens_reasoning,
+        model=get_settings().llm_model_reasoning,
+        temperature=get_settings().llm_temperature_reasoning,
+        max_tokens=get_settings().llm_max_tokens_reasoning,
         role="reasoning",
     )
 
 
 @lru_cache(maxsize=1)
 def get_extraction_llm() -> LLMProtocol:
-    """Extraction SLM — LM Studio local model, T=0.0, JSON mode.
+    """Extraction SLM — provider auto-detected from model name, T=0.0.
 
     Used for: triplet extraction from PDF chunks.
 
-    Note: ``max_tokens=16384`` prevents truncated JSON.
-    ``enable_thinking: false`` disables Qwen3 chain-of-thought; silently
-    ignored by non-thinking models.
+    - LM Studio local models (e.g. ``local-model``, ``qwen3-8b``): JSON mode,
+      ``enable_thinking: false`` to disable Qwen3 chain-of-thought.
+    - OpenRouter models (e.g. ``openai/gpt-oss-20b:free``): routed to OpenRouter.
+    - OpenAI direct (e.g. ``gpt-4o-mini``): routed to OpenAI.
     """
-    return InstrumentedLLM(
-        ChatOpenAI(
-            model=settings.llm_model_extraction,
-            temperature=settings.llm_temperature_extraction,
-            max_tokens=settings.llm_max_tokens_extraction,
-            base_url=settings.lmstudio_base_url,
-            api_key="lm-studio",  # LM Studio ignores auth
-            model_kwargs={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-        ),
-        name="extraction",
-        max_retries=settings.max_llm_retries,
+    s = get_settings()
+    provider = detect_provider(s.llm_model_extraction)
+
+    if provider == "lmstudio":
+        # Local model: pass LM Studio-specific chat template kwargs
+        return InstrumentedLLM(
+            ChatOpenAI(
+                model=s.llm_model_extraction,
+                temperature=s.llm_temperature_extraction,
+                max_tokens=s.llm_max_tokens_extraction,
+                base_url=s.lmstudio_base_url,
+                api_key="lm-studio",
+                model_kwargs={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
+            ),
+            name="extraction",
+            max_retries=s.max_llm_retries,
+        )
+
+    # Cloud model (OpenRouter, OpenAI, Anthropic): use make_llm for provider routing
+    return make_llm(
+        model=s.llm_model_extraction,
+        temperature=s.llm_temperature_extraction,
+        max_tokens=s.llm_max_tokens_extraction,
+        role="extraction",
     )
 
 
@@ -214,8 +229,8 @@ def get_generation_llm() -> LLMProtocol:
     field so the content returned is always clean prose.
     """
     return make_llm(
-        model=settings.llm_model_reasoning,
-        temperature=settings.llm_temperature_generation,
-        max_tokens=settings.llm_max_tokens_reasoning,
+        model=get_settings().llm_model_reasoning,
+        temperature=get_settings().llm_temperature_generation,
+        max_tokens=get_settings().llm_max_tokens_reasoning,
         role="generation",
     )

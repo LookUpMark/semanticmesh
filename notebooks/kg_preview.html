@@ -88,8 +88,8 @@
                   
 
                   // parsing and collecting nodes and edges from the python
-                  nodes = new vis.DataSet([]);
-                  edges = new vis.DataSet([]);
+                  nodes = new vis.DataSet([{"color": "#0f3460", "font": {"color": "white"}, "id": "4:704a1032-f95d-4a6b-84ad-7bbe19bd0bb2:0", "label": "CUST_MASTER", "shape": "dot", "size": 20, "title": "[PhysicalTable]\n/* Smoke test DDL: minimal two-table schema */ /* Purpose: verify pipeline end-to-end with the smallest possible input *"}, {"color": "#e94560", "font": {"color": "white"}, "id": "4:704a1032-f95d-4a6b-84ad-7bbe19bd0bb2:1", "label": "Sales Order", "shape": "dot", "size": 28, "title": "[BusinessConcept]\nThe table stores order identifiers, customer reference, order date, total amount, and status, matching the definition of"}, {"color": "#0f3460", "font": {"color": "white"}, "id": "4:704a1032-f95d-4a6b-84ad-7bbe19bd0bb2:2", "label": "SALES_ORD", "shape": "dot", "size": 20, "title": "[PhysicalTable]\nCREATE TABLE SALES_ORD (ORD_ID INT NOT NULL PRIMARY KEY, CUST_ID INT NOT NULL REFERENCES CUST_MASTER (CUST_ID), ORD_DATE"}, {"color": "#e94560", "font": {"color": "white"}, "id": "4:704a1032-f95d-4a6b-84ad-7bbe19bd0bb2:3", "label": "Customer", "shape": "dot", "size": 28, "title": "[BusinessConcept]\nThe table contains a primary key, full name, email, and region code, matching the definition of a customer master record"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": "#a8a8b3", "from": "4:704a1032-f95d-4a6b-84ad-7bbe19bd0bb2:1", "label": "MAPPED_TO (95%)", "to": "4:704a1032-f95d-4a6b-84ad-7bbe19bd0bb2:2"}, {"arrows": "to", "color": "#a8a8b3", "from": "4:704a1032-f95d-4a6b-84ad-7bbe19bd0bb2:3", "label": "MAPPED_TO (95%)", "to": "4:704a1032-f95d-4a6b-84ad-7bbe19bd0bb2:0"}]);
 
                   nodeColors = {};
                   allNodes = nodes.get({ returnType: "Object" });
