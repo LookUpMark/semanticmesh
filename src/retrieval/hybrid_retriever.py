@@ -229,7 +229,94 @@ def graph_traversal(
     return chunks
 
 
-# ── Result Merging ─────────────────────────────────────────────────────────────
+# ── All-Concepts Fallback ──────────────────────────────────────────────────────
+
+def fetch_all_concepts(client: Neo4jClient) -> list[RetrievedChunk]:
+    """Return every BusinessConcept node with a low baseline score.
+
+    Used as a safety net so that broad, meta queries ("what entities exist?")
+    always have all concepts in the reranker pool, even when vector similarity
+    to individual concept names is very low.
+
+    The baseline score (0.05) is intentionally below any real vector or BM25
+    score, so ``merge_results`` will prefer those when they are available.
+
+    Args:
+        client: Active ``Neo4jClient``.
+
+    Returns:
+        One ``RetrievedChunk`` per ``BusinessConcept`` node.
+    """
+    records = client.execute_cypher(
+        "MATCH (n:BusinessConcept) "
+        "RETURN n.name AS name, n.definition AS definition"
+    )
+    chunks: list[RetrievedChunk] = []
+    for rec in records:
+        name = rec.get("name") or ""
+        definition = rec.get("definition") or ""
+        chunks.append(
+            RetrievedChunk(
+                node_id=name,
+                node_type="BusinessConcept",
+                text=f"{name}: {definition}",
+                score=0.05,
+                source_type="graph",
+                metadata={},
+            )
+        )
+    logger.debug("fetch_all_concepts: %d concepts fetched.", len(chunks))
+    return chunks
+
+
+# ── FK Relationship Retrieval ──────────────────────────────────────────────────
+
+def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
+    """Return all FK :REFERENCES edges as human-readable text chunks.
+
+    Converts each ``(:PhysicalTable)-[:REFERENCES]->(:PhysicalTable)`` edge into
+    a descriptive sentence so the LLM can cite foreign-key relationships when
+    answering questions about how tables are related.
+
+    The baseline score (0.1) is above the ``fetch_all_concepts`` baseline but
+    below real retrieval scores, ensuring FK edges appear in the reranker pool
+    without dominating it.
+
+    Args:
+        client: Active ``Neo4jClient``.
+
+    Returns:
+        One ``RetrievedChunk`` per ``[:REFERENCES]`` edge.
+    """
+    records = client.execute_cypher(
+        "MATCH (src:PhysicalTable)-[r:REFERENCES]->(tgt:PhysicalTable) "
+        "RETURN src.table_name AS src_table, tgt.table_name AS tgt_table, "
+        "r.column AS fk_column, r.references_column AS ref_column"
+    )
+    chunks: list[RetrievedChunk] = []
+    for rec in records:
+        src = rec.get("src_table") or ""
+        tgt = rec.get("tgt_table") or ""
+        fk_col = rec.get("fk_column") or ""
+        ref_col = rec.get("ref_column") or ""
+        node_id = f"{src}→{tgt}"
+        ref_part = f" (column {fk_col} → {tgt}.{ref_col})" if fk_col else ""
+        text = (
+            f"The table {src} references {tgt} via a foreign key{ref_part}. "
+            f"This means each record in {src} is linked to a record in {tgt}."
+        )
+        chunks.append(
+            RetrievedChunk(
+                node_id=node_id,
+                node_type="FKRelationship",
+                text=text,
+                score=0.1,
+                source_type="graph",
+                metadata={"src_table": src, "tgt_table": tgt, "fk_column": fk_col},
+            )
+        )
+    logger.debug("fetch_fk_relationships: %d FK edges fetched.", len(chunks))
+    return chunks
 
 def merge_results(
     vector: list[RetrievedChunk],

@@ -50,7 +50,7 @@ class AppConfig:
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = "BAAI/bge-m3"
     reranker_model: str = "BAAI/bge-reranker-large"
-    reranker_top_k: int = 5
+    reranker_top_k: int = 10
 
     # ── Entity Resolution ──────────────────────────────────────────────────────
     er_blocking_top_k: int = 10
@@ -64,8 +64,9 @@ class AppConfig:
     max_llm_retries: int = 3
 
     # ── Chunking ───────────────────────────────────────────────────────────────
-    chunk_size: int = 512
-    chunk_overlap: int = 64
+    chunk_size: int = 256
+    chunk_overlap: int = 32
+    extraction_concurrency: int = 10  # parallel LLM calls during extraction
 
     # ── Retrieval ──────────────────────────────────────────────────────────────
     retrieval_vector_top_k: int = 20

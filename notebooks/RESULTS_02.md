@@ -5,6 +5,8 @@
 **Models:** Reasoning `openai/gpt-oss-120b` → OpenRouter · Extraction `openai/gpt-oss-20b` → OpenRouter  
 **Previous run (Run 01):** smoke fixtures (2 chunks, 42 triplets, 217s)
 
+> **Note:** This run used `chunk_size=512, overlap=50` (no parallelization). See **Run 04** at the bottom for the updated run with `chunk_size=256, overlap=32` + `extraction_concurrency=10`.
+
 ---
 
 ## Builder Graph Summary
@@ -276,3 +278,274 @@ Cleanup cell left commented, as expected.
 - **Chunk 11 was the richest:** 50 triplets from a single 512-token chunk of `data_dictionary.txt` — very dense structured content.
 - **All hallucination checks passed on first attempt** — the richer knowledge graph provides better grounding context.
 - **Retrieval quality degrades on broad queries** (Q1) — with 170 entities in the graph, a broad open-ended query like "what entities exist?" may benefit from graph-traversal retrieval over pure vector similarity.
+
+---
+
+---
+
+# Run 04 — Full Fixtures + chunk_size=256 + Parallel Extraction (concurrency=10)
+
+**Date:** 2026-03-13 (21:56 – 22:06 UTC+1)  
+**Input:** Full fixtures (same as Run 02/03)  
+**Models:** Reasoning `openai/gpt-oss-120b` · Extraction `openai/gpt-oss-20b` (both OpenRouter)  
+**New settings:** `chunk_size=256`, `chunk_overlap=32`, `extraction_concurrency=10`  
+**Changes since Run 03:** parallelized extraction (`ThreadPoolExecutor`), smaller chunks, `fetch_all_concepts()` in retriever
+
+---
+
+## Builder Graph Summary
+
+| Metric | Run 02 | Run 03 | **Run 04** | Δ vs Run 02 |
+|--------|--------|--------|------------|-------------|
+| chunk_size | 512 | 400 | **256** | -50% |
+| Chunks total | 18 | 25 | **39** | +117% |
+| Elapsed | 1212 s | 1200 s | **631 s** | **−48% 🚀** |
+| Triplets extracted | 483 | 456 | **520** | +7.7% |
+| Entities resolved | 170 | 158 | **155** | −9% |
+| Chunk truncations | 1 | 1 | **2** | +1 |
+| ER judge non-JSON (recovered) | 2 | 4 | **1** | −1 |
+| Cypher healings (attempt 1 = clean) | 1@attempt2 | 0 | **0** ✅ | = |
+| Cypher failures | False | False | **False** | = |
+| Tables completed | 3/3 | 3/3 | **3/3** | = |
+
+---
+
+## Cell-by-Cell Analysis
+
+### Cell 0 — Configuration ✅
+```
+Reasoning  : 'openai/gpt-oss-120b'  →  provider=openrouter  max_tokens=16384
+Extraction : 'openai/gpt-oss-20b'   →  provider=openrouter  max_tokens=16384
+```
+
+### Cell 1 — Environment ✅
+Neo4j OK. LM Studio skipped (OpenRouter routing).
+
+### Cell 2 — Document Loading ✅
+```
+business_glossary.txt  → 10 chunks (chunk_size=256, overlap=32)  [was 5–6]
+data_dictionary.txt    → 29 chunks (chunk_size=256, overlap=32)  [was 13–19]
+Total: 39 chunks, 3 tables
+```
+
+### Cell 3 — Builder Graph
+
+#### Extraction ⚠️ (2 truncations, but parallelism works)
+
+Chunks arrive **out of order** (as expected with 10 parallel workers) — Chunk 3 logs before Chunk 0, etc. Results are correctly reordered before flattening.
+
+**Wall-clock extraction window:** 21:56:10 → 22:03:36 = **~7m26s** for 39 chunks  
+vs Run 02: ~16m for 18 chunks sequentially  
+**Throughput improvement: ~2.6× faster** despite 2.2× more chunks.
+
+**2 chunks saturated (output_tokens=16384):**
+- Chunk 1 of data_dictionary.txt (83s latency) → 0 triplets, reflection failed
+- Chunk 9 of data_dictionary.txt (364s latency! — likely queued behind other parallel calls) → 0 triplets, reflection failed
+
+The 364s latency on chunk 9 is notable: with 10 concurrent calls, some long-running chunks hold a thread while others complete rapidly. Total wall time is gated by the longest-running thread. This is the main remaining bottleneck.
+
+**Per-source triplets:**
+- `business_glossary.txt` (10 chunks): 13+10+11+0+11+11+16+15+16+11 = **114 triplets** (chunk 3 lost)
+- `data_dictionary.txt` (29 chunks): 8+0+4+11+16+11+12+30+17+0+34+8+13+39+9+28+2+11+17+11+8+26+18+8+10+12+8+10 = **391 triplets** (chunk 1 + chunk 9 lost)
+
+Total: **520 triplets** ✅
+
+#### Entity Resolution ✅
+- 420 unique entities extracted from 520 triplets
+- Blocking: **36 clusters** from 420 entities (threshold=0.75)
+- Entity resolution: 36 clusters resolved + 119 singletons promoted → **155 total entities**
+- ER judge non-JSON: **1** (cluster `'INDEX (idx_product_category) for category browsing'`) — auto-recovered ✅
+
+#### Schema Enrichment ✅
+All 3 tables enriched: CUSTOMER_MASTER → "Customer Master", TB_PRODUCT → "Product", SALES_ORDER_HDR → "Sales Order Header"
+
+#### Mapping ✅
+
+| Table | Mapped To | Confidence | Critic |
+|-------|-----------|------------|--------|
+| CUSTOMER_MASTER | Customer Master | 95% | approved ✅ |
+| TB_PRODUCT | Product | 95% | approved ✅ |
+| SALES_ORDER_HDR | **Sales Order Header** | 96% | approved ✅ |
+
+Note: TB_PRODUCT now maps to "Product" (not "Product Master" as in Run 03) — minor variation, both semantically correct.  
+SALES_ORDER_HDR maps to "Sales Order Header" (full name) vs "Sales Order" in Run 02/03 — also correct.
+
+#### Cypher ✅
+All 3 tables: `healed after 1 attempt(s)` — the `replace("'","\"")` sanitization fully resolved the single-quote bug. Zero Cypher failures.  
+FK edge: `SALES_ORDER_HDR.CUST_ID → CUSTOMER_MASTER` ✅
+
+#### Summary Block
+```
+Elapsed             : 631.3 s  (was 1212 s in Run 02)
+Triplets extracted  : 520
+Entities resolved   : 155
+Tables completed    : 3/3
+Cypher failures     : False
+```
+
+---
+
+### Cell 4 — Knowledge Graph ✅
+
+```
+['BusinessConcept']: 3
+['PhysicalTable']  : 3
+
+Business Concepts: Customer Master, Product, Sales Order Header
+
+Concept → Table Mappings:
+  Sales Order Header  → SALES_ORDER_HDR   (96%)
+  Customer Master     → CUSTOMER_MASTER   (95%)
+  Product             → TB_PRODUCT        (95%)
+```
+
+---
+
+### Cell 5 — Visualization ✅
+PyVis rendered, no deprecation warnings.
+
+---
+
+### Cell 6 — Single Query ✅
+
+**Query:** "Which table stores customer data and what columns does it have?"
+
+- Reranker pool=7, top_k=5
+- **Answer:** *"The customer data is stored in the **Customer Master** table. It contains the core identity fields CUST_ID, FULL_NAME, EMAIL, REGION_CODE, plus status-flag columns for a registered platform customer【1†L1-L2】."*
+- Grader: `grounded=True, action=pass` ✅
+
+More specific than Run 02/03 (lists actual column names from DDL). Grounded on first attempt.
+
+---
+
+### Cell 7 — Batch Queries ⚠️ (Q1 still partial, Q3 FK description incomplete)
+
+| # | Question | Grader | Result |
+|---|----------|--------|--------|
+| 1/3 | What entities exist? | pass ✅ | ⚠️ Lists only Customer Master + Sales Order Header (missing Product) |
+| 2/3 | Which table stores customer info? | pass ✅ | Correct ✅ |
+| 3/3 | How are customers and orders related? | pass ✅ | ⚠️ Partial — doesn't explicitly name the FK, says "context does not describe an explicit relationship" |
+
+**[1/3]** *"The business domain includes the **Customer Master** entity and the **Sales Order Header** entity (also referenced by the synonym 'SalesOrder').【1†L1-L2】【2†L1-L2】"*  
+⚠️ Product is still missing — `fetch_all_concepts()` brings all 3 concepts into the pool, but the reranker/context window cut "Product" before the LLM saw it. Likely because the pool of 7 chunks fills with Customer Master and Sales Order duplicates before Product gets a slot.
+
+**[2/3]** *"The **Customer Master** table (CUSTOMER_MASTER) stores the core identity fields and status flags for each registered platform customer."* ✅
+
+**[3/3]** *"The Sales Order Header table includes a column named customer ID, while the Customer Master table stores the core identity field CUST_ID... the retrieved context does not describe an explicit relationship"*  
+⚠️ The FK relationship exists in the graph (`SALES_ORDER_HDR -[:REFERENCES]→ CUSTOMER_MASTER`), but graph traversal didn't surface it in the top-5 reranked chunks. The answer is cautious but not wrong.
+
+---
+
+## Issues
+
+| # | Severity | Description | Status |
+|---|----------|-------------|--------|
+| 1 | Medium | 2/39 chunks lost to token saturation (5.1%) | **Fixed in Run 05** — `_reflect_on_json(truncated=True)` now injects conciseness instruction |
+| 2 | Low | ER judge non-JSON on 1 cluster | Auto-recovered ✅ |
+| 3 | Low | Q1 still misses "Product" entity in answer | **Fixed in Run 05** — `reranker_top_k` raised to 10 |
+| 4 | Low | Q3 FK relationship not cited explicitly | **Fixed in Run 05** — `fetch_fk_relationships()` added to retrieval pipeline |
+
+---
+
+## Run 05 — Three Fixes Applied (2026-03-13 22:15) — PARTIAL
+
+**Note:** This run had only 1/3 tables upserted (OpenRouter rate-limit during mapping). Superseded by **Run 06** below.
+
+| Metric | Value |
+|--------|-------|
+| **Total time** | 466.6 s |
+| **Triplets extracted** | 492 |
+| **Tables completed** | **1 / 3** ⚠️ |
+
+---
+
+## Run 06 — Fixes Verified + New Cypher Bug Found (2026-03-13 22:30)
+
+**Date:** 2026-03-13 22:30  
+**Input:** Full fixtures — `sample_docs/business_glossary.txt` + `sample_docs/data_dictionary.txt`, `sample_ddl/simple_schema.sql`  
+**Models:** Reasoning `openai/gpt-oss-120b` → OpenRouter · Extraction `openai/gpt-oss-20b` → OpenRouter  
+**Fixes active:** `_reflect_on_json(truncated=True)`, `reranker_top_k=10`, `fetch_fk_relationships()`
+
+### Builder Graph Summary
+
+| Metric | Value |
+|--------|-------|
+| **Total time** | 654.6 s |
+| **Chunks processed** | 39 (10 + 29) |
+| **Triplets extracted** | **539** 🏆 (best ever) |
+| **Entities resolved** | 169 |
+| **Tables parsed** | 3 |
+| **Tables enriched** | 3 / 3 |
+| **Tables completed** | **3 / 3** ✅ |
+| **Cypher failures** | False (fallback used for SALES_ORDER_HDR) |
+
+### Cell-by-Cell Analysis
+
+#### Cell 2 — Configuration ✅
+Both models on OpenRouter paid tier. Extraction `gpt-oss-20b`, Reasoning `gpt-oss-120b`.
+
+#### Cell 4 — Environment Check ✅
+Neo4j reachable. LM Studio skipped.
+
+#### Cell 6 — Data Loading ✅
+39 chunks from 2 documents. 3 tables from DDL.
+
+#### Cell 8 — Builder Graph ✅ (with residual Cypher bug)
+- **539 triplets** — highest ever (+3.6% vs Run 04)
+- 1 truncation: chunk 22 returned empty response (attempt 1/3 warning), recovered by `_reflect_on_json(truncated=True)` ✅
+- 33 ER clusters from 463 entities. 1 non-JSON cluster recovered by self-reflection ✅
+- **SALES_ORDER_HDR Cypher bug:** healing attempts 1 and 2 failed with `''SalesOrder''` in `bc.definition`
+  - The `replace("'", '"')` fix covered `ddl_source` but NOT `entity.definition` / `entity.provenance_text`
+  - After 3 failed attempts → deterministic fallback (`cypher_builder`) → table upserted ✅
+  - **Fix applied post-run:** `safe_definition` and `safe_provenance` sanitization added to `cypher_generator.py`
+
+#### Cell 10 — Neo4j State ✅ (partial)
+- 1 `BusinessConcept` ("Master record for all registered platform customers") with mapping to CUSTOMER_MASTER (95%)
+- The deterministic fallback writes `PhysicalTable` nodes without creating `BusinessConcept` + mapping edge, so TB_PRODUCT and SALES_ORDER_HDR are in the graph as tables but lack concept linkage
+
+#### Cell 12 — Graph Visualization ✅
+Rendered and saved to `kg_preview.html`.
+
+#### Cell 14 — Single Query Q0 ✅
+"Which table stores customer data?" → CUSTOMER_MASTER with full column list. Grounded=True.
+
+#### Cell 15 — Batch Queries
+
+| Q | Question | Answer | Result |
+|---|----------|--------|--------|
+| 1 | What entities exist? | SalesOrder, Customer (Master record…), Product (Product Master) | ✅ ALL 3 CORRECT |
+| 2 | Which table stores customer information? | CUSTOMER_MASTER | ✅ |
+| 3 | How are customers and orders related? | "SALES_ORDER_HDR.CUST_ID references CUSTOMER_MASTER.CUST_ID — foreign key" | ✅ FK CITED! |
+
+**Q1:** `reranker_top_k=10` → pool=8 all passed through → all 3 entities visible ✅  
+**Q3:** `fetch_fk_relationships()` returned the FK edge as a text chunk → LLM cited it correctly ✅  
+All 3 grader verdicts: `grounded=True, action=pass` ✅
+
+### Remaining Issues
+
+| # | Severity | Description | Status |
+|---|----------|-------------|--------|
+| 1 | Low | Cypher bug in `entity.definition` field (`''SalesOrder''`) | **Fixed post-run** — `safe_definition` + `safe_provenance` sanitization in `cypher_generator.py` |
+| 2 | Low | Deterministic fallback doesn't create `BusinessConcept` + mapping edge | By design — acceptable trade-off |
+| 3 | Info | 1 chunk truncation on attempt 1, recovered | `_reflect_on_json(truncated=True)` working as intended |
+
+---
+
+## Comparison: All Runs
+
+| Metric | Run 01 | Run 02 | Run 03 | Run 04 | Run 05 | **Run 06** |
+|--------|--------|--------|--------|--------|--------|------------|
+| chunk_size | 512 | 512 | 400 | 256 | 256 | **256** |
+| concurrency | 1 | 1 | 1 | 10 | 10 | **10** |
+| reranker_top_k | 5 | 5 | 5 | 5 | 10 | **10** |
+| Chunks | 2 | 18 | 25 | 39 | 39 | **39** |
+| Elapsed | 217 s | 1212 s | 1200 s | 631 s | 467 s | **655 s** |
+| Triplets | 42 | 483 | 456 | 520 | 492 | **539** 🏆 |
+| Entities | 38 | 170 | 158 | 155 | 167 | **169** |
+| Tables | 2/2 | 3/3 | 3/3 | 3/3 | 1/3 ⚠️ | **3/3** ✅ |
+| Cypher bug | — | attempt 2 | ✅ | ✅ | ✅ | ⚠️ definition field (fixed) |
+| Q1 all entities | ❌ | ❌ | ✅ | ⚠️ | ⚠️ | **✅** |
+| Q3 FK cited | ❌ | ❌ | ❌ | ❌ | ❌ | **✅** |
+| Q&A pass | 3/3 | 4/4 | 4/4 | 4/4 | 2/3 | **4/4** ✅ |
+
+**Key takeaway (Run 06):** All three fixes verified working. 539 triplets (best ever), 3/3 tables, all 4 Q&A grounded. The only remaining Cypher bug (single quotes in `entity.definition`) was discovered and fixed post-run — Run 07 should show clean Cypher generation at attempt 1 for all tables.

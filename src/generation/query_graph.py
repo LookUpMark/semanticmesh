@@ -23,6 +23,8 @@ from src.retrieval.embeddings import get_embeddings
 from src.retrieval.hybrid_retriever import (
     bm25_search,
     build_node_index,
+    fetch_all_concepts,
+    fetch_fk_relationships,
     graph_traversal,
     merge_results,
     vector_search,
@@ -54,9 +56,11 @@ def _node_hybrid_retrieval(state: QueryState) -> dict[str, Any]:
             client=client,
             depth=settings.retrieval_graph_depth,
         )
+        all_concepts = fetch_all_concepts(client)
+        fk_chunks = fetch_fk_relationships(client)
 
     bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
-    merged = merge_results(vec_results, bm25_results, trav_results)
+    merged = merge_results(vec_results, bm25_results, trav_results + all_concepts + fk_chunks)
     return {"retrieved_chunks": merged}
 
 

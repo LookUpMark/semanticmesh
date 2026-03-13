@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     # ── Chunking ───────────────────────────────────────────────────────────────
     chunk_size: int = DEFAULT_CONFIG.chunk_size
     chunk_overlap: int = DEFAULT_CONFIG.chunk_overlap
+    extraction_concurrency: int = DEFAULT_CONFIG.extraction_concurrency
 
     # ── Retrieval ──────────────────────────────────────────────────────────────
     retrieval_vector_top_k: int = DEFAULT_CONFIG.retrieval_vector_top_k

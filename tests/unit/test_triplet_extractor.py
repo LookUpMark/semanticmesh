@@ -125,3 +125,39 @@ class TestExtractAllTriplets:
         result = extract_all_triplets(chunks, llm)
         # chunks 0 and 2 succeed → 2 triplets
         assert len(result) == 2
+
+    def test_parallel_max_workers_override(self) -> None:
+        """max_workers kwarg is accepted and results are still correct."""
+        chunks = [_make_chunk(index=i, text=f"Fact {i}.") for i in range(5)]
+        llm = _make_llm([VALID_TRIPLET])
+        result = extract_all_triplets(chunks, llm, max_workers=3)
+        assert len(result) == 5  # 1 triplet per chunk × 5 chunks
+
+    def test_results_in_chunk_order(self) -> None:
+        """Triplets are returned in chunk index order regardless of completion order."""
+        import threading
+        chunks = [_make_chunk(index=i, text=f"Fact {i}.") for i in range(4)]
+        lock = threading.Lock()
+        completion_order: list[int] = []
+
+        def side_effect(messages):
+            # Find chunk index from message content
+            content = messages[1].content
+            idx = next(
+                (c.chunk_index for c in chunks if f"Fact {c.chunk_index}." in content),
+                0,
+            )
+            with lock:
+                completion_order.append(idx)
+            resp = MagicMock()
+            resp.content = json.dumps({"triplets": [
+                {**VALID_TRIPLET, "subject": f"Entity{idx}"}
+            ]})
+            return resp
+
+        llm = MagicMock()
+        llm.invoke.side_effect = side_effect
+        result = extract_all_triplets(chunks, llm, max_workers=4)
+        # subjects should come out in chunk order: Entity0, Entity1, Entity2, Entity3
+        subjects = [t.subject for t in result]
+        assert subjects == ["Entity0", "Entity1", "Entity2", "Entity3"]

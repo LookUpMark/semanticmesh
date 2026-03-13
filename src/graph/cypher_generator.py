@@ -88,13 +88,20 @@ def generate_cypher(
         RuntimeError: If the LLM call fails (caller should handle and retry).
     """
     few_shot_block = _format_few_shot(few_shot)
+    # Replace single quotes with double quotes in all string fields that the LLM
+    # will embed verbatim inside Cypher string literals. Without this, a value
+    # like "includes a 'SalesOrder' concept" becomes ''SalesOrder'' in Cypher,
+    # which is a syntax error.
+    safe_ddl = (table.ddl_source or "").replace("'", '"')
+    safe_definition = (entity.definition or "").replace("'", '"')
+    safe_provenance = (entity.provenance_text or "").replace("'", '"')
     user_prompt = CYPHER_USER.format(
         few_shot_examples=few_shot_block,
-        table_ddl=table.ddl_source,
+        table_ddl=safe_ddl,
         concept_name=entity.name,
-        concept_definition=entity.definition,
+        concept_definition=safe_definition,
         synonyms=", ".join(entity.synonyms) if entity.synonyms else "none",
-        provenance_text=entity.provenance_text or "",
+        provenance_text=safe_provenance,
         source_doc=entity.source_doc or "",
         mapping_confidence=mapping.confidence,
         validated_by="llm_judge",  # Fixed: template expects this
