@@ -537,15 +537,66 @@ All 3 grader verdicts: `grounded=True, action=pass` ✅
 |--------|--------|--------|--------|--------|--------|------------|
 | chunk_size | 512 | 512 | 400 | 256 | 256 | **256** |
 | concurrency | 1 | 1 | 1 | 10 | 10 | **10** |
-| reranker_top_k | 5 | 5 | 5 | 5 | 10 | **10** |
-| Chunks | 2 | 18 | 25 | 39 | 39 | **39** |
-| Elapsed | 217 s | 1212 s | 1200 s | 631 s | 467 s | **655 s** |
-| Triplets | 42 | 483 | 456 | 520 | 492 | **539** 🏆 |
-| Entities | 38 | 170 | 158 | 155 | 167 | **169** |
-| Tables | 2/2 | 3/3 | 3/3 | 3/3 | 1/3 ⚠️ | **3/3** ✅ |
-| Cypher bug | — | attempt 2 | ✅ | ✅ | ✅ | ⚠️ definition field (fixed) |
-| Q1 all entities | ❌ | ❌ | ✅ | ⚠️ | ⚠️ | **✅** |
-| Q3 FK cited | ❌ | ❌ | ❌ | ❌ | ❌ | **✅** |
-| Q&A pass | 3/3 | 4/4 | 4/4 | 4/4 | 2/3 | **4/4** ✅ |
+| reranker_top_k | 5 | 5 | 5 | 5 | 10 | 10 | **10** |
+| Chunks | 2 | 18 | 25 | 39 | 39 | 39 | **39** |
+| Elapsed | 217 s | 1212 s | 1200 s | 631 s | 467 s | 655 s | **433 s** |
+| Triplets | 42 | 483 | 456 | 520 | 492 | 539 | **504** |
+| Entities | 38 | 170 | 158 | 155 | 167 | 169 | **154** |
+| Tables | 2/2 | 3/3 | 3/3 | 3/3 | 1/3 ⚠️ | 3/3 ✅ | **0/3** ⚠️ |
+| Cypher bug | — | attempt 2 | ✅ | ✅ | ✅ | ⚠️ definition (fixed) | N/A |
+| Critic too strict | — | — | — | — | — | — | ⚠️ **fixed** |
+| Q1 all entities | ❌ | ❌ | ✅ | ⚠️ | ⚠️ | ✅ | ❌ (empty graph) |
+| Q3 FK cited | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ (empty graph) |
+| Q&A pass | 3/3 | 4/4 | 4/4 | 4/4 | 2/3 | 4/4 ✅ | **0/4** ⚠️ |
 
-**Key takeaway (Run 06):** All three fixes verified working. 539 triplets (best ever), 3/3 tables, all 4 Q&A grounded. The only remaining Cypher bug (single quotes in `entity.definition`) was discovered and fixed post-run — Run 07 should show clean Cypher generation at attempt 1 for all tables.
+**Key takeaway (Run 06):** All three retrieval/extraction fixes verified working. 539 triplets (best ever), 3/3 tables, 4/4 Q&A grounded. Residual Cypher bug in `entity.definition` field fixed post-run.
+
+**Key takeaway (Run 07):** New regression — Actor-Critic too strict. `entities[:10]` cut high-level concept names out of critic context → critic rejected "Customer", "Registered Customer", "Customer" (×2), accepted only "Customer Account" on 4th try → then 0 tables completed (Cypher step for TB_PRODUCT and SALES_ORDER_HDR never reached). **Fix applied:** sorted entities by name length (concepts are shorter) and raised limit 10→20 in `validator.py`. Run 08 expected to show 3/3 tables at attempt 1 with clean Cypher.
+
+---
+
+## Run 07 — Critic Regression (2026-03-13 22:47)
+
+**Date:** 2026-03-13 22:47  
+**Fixes active:** all previous + `safe_definition`/`safe_provenance` in cypher_generator  
+**New bug found:** `entities[:10]` in critic passes only attribute-level entities → critic rejects valid concept mappings  
+**Fix applied post-run:** `sorted(entities, key=lambda e: len(e.name))[:20]` in `validator.py`
+
+### Builder Graph Summary
+
+| Metric | Value |
+|--------|-------|
+| **Total time** | 432.9 s |
+| **Triplets extracted** | 504 |
+| **Entities resolved** | 154 |
+| **Tables parsed / enriched** | 3 / 3 |
+| **Tables completed** | **0 / 3** ⚠️ |
+| **Cypher failures** | False |
+
+### Root Cause Analysis
+
+The Actor-Critic loop for `CUSTOMER_MASTER` ran **4 reflection cycles**:
+
+| Attempt | Proposed concept | Critic verdict |
+|---------|-----------------|----------------|
+| 1 | `Customer` (conf=0.96) | ❌ "not in business_entities list" |
+| 2 | `Registered Customer` (conf=0.78) | ❌ "not defined in the provided taxonomy" |
+| 3 | `Customer` (conf=0.86) | ❌ "no explicit 'Customer' entity definition" |
+| 4 | `Customer Account` (conf=0.78) | ✅ approved |
+
+The critic saw only attribute-level entities (`unique numeric identifier`, `active flag`, `region`, `email`) — `entities[:10]` sliced before reaching concept-level names (`Customer`, `Product`, `SalesOrder`). So it correctly rejected mappings to names not in its context, causing 4 wasted LLM calls per table.
+
+`TB_PRODUCT` and `SALES_ORDER_HDR` were never reached (builder timeout or mapping loop exhausted retries for CUSTOMER_MASTER and did not continue).
+
+**Fix:** `sorted(entities, key=lambda e: len(e.name))[:20]` — shorter names (concept-level) sort first, so critic sees `Customer`, `Product`, `SalesOrder` at the top of the list.
+
+### Q&A Results
+
+All answers: `"I cannot find this information in the knowledge graph."` — correct behavior given empty graph. Hallucination grader correctly flagged first answer as ungrounded, triggered regenerate, second attempt passed (honest "I don't know").
+
+### Issues Fixed Post-Run
+
+| # | Fix | File |
+|---|-----|------|
+| 1 | `entities[:10]` → `sorted(entities, key=len_name)[:20]` | `src/mapping/validator.py` |
+| 2 | Test updated to match new limit of 20 | `tests/unit/test_validator.py` |

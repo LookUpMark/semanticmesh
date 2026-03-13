@@ -127,20 +127,20 @@ class TestCriticReview:
         decision = critic_review(proposal, table, [], llm)
         assert decision.approved is True
 
-    def test_limits_entities_to_10(self) -> None:
+    def test_limits_entities_to_20(self) -> None:
         table = _make_table()
-        entities = [_make_entity(f"Entity{i}") for i in range(20)]
+        entities = [_make_entity(f"Entity{i}") for i in range(30)]
         llm = _make_critic_llm(approved=True)
         proposal = MappingProposal(**_valid_dict())
 
         critic_review(proposal, table, entities, llm)
 
-        # Check that only 10 entities were passed to the LLM
+        # Check that at most 20 entities were passed to the LLM
         call_args = llm.invoke.call_args
         user_message = call_args[0][0][1]  # Second message is HumanMessage
         content = user_message.content
         # Count how many "name" fields appear in the entities_json
-        assert content.count('"name"') <= 10  # At most 10 entities serialized
+        assert content.count('"name"') <= 20  # At most 20 entities serialized
 
 
 # ── build_reflection_prompt ───────────────────────────────────────────────────

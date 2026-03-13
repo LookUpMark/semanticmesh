@@ -73,8 +73,12 @@ def critic_review(
         On any failure, returns ``approved=True`` to avoid infinite retry loops
         (the pipeline logs the failure as a warning).
     """
+    # Sort by name length so high-level concept names (short, e.g. "Customer")
+    # appear before attribute-level entries (long, e.g. "unique numeric identifier
+    # for the customer") in the critic context window. Take top 20 for coverage.
+    sorted_entities = sorted(entities, key=lambda e: len(e.name))[:20]
     entities_json = json.dumps(
-        [{"name": e.name, "definition": e.definition, "synonyms": e.synonyms} for e in entities[:10]]
+        [{"name": e.name, "definition": e.definition, "synonyms": e.synonyms} for e in sorted_entities]
     )
     user_prompt = CRITIC_USER.format(
         proposal_json=proposal.model_dump_json(indent=2),
