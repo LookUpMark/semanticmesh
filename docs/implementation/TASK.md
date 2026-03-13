@@ -1,8 +1,8 @@
 # Implementation Task List
 
-> **Project:** Multi-Agent Framework for Semantic Discovery & GraphRAG  
-> **Author:** Marc'Antonio Lopez  
-> **Status:** Phase 1 in progress — TASK-25 completed.  
+> **Project:** Multi-Agent Framework for Semantic Discovery & GraphRAG
+> **Author:** Marc'Antonio Lopez
+> **Status:** All tasks completed — Phase 1 (Implementation) and Phase 2 (Integration Tests).
 > **Last updated:** March 2026
 
 Follow the tasks in the numbered order below. Each task lists its prerequisites, the file(s) to implement, the corresponding test file(s), and the documentation references to anchor the implementation.
@@ -452,8 +452,8 @@ Implement the Cypher Healing loop: attempt dry-run execution against Neo4j sandb
 - `src/graph/cypher_healer.py` ✅
 
 **Test file(s):**
-- `tests/unit/test_cypher_healer.py` (UT-13) ✅ — 12 tests
-- `tests/integration/test_cypher_healing.py` (IT-04) — not implemented
+- `tests/unit/test_cypher_healer.py` ✅ — 12 tests
+- `tests/integration/test_cypher_healing.py` ✅ — IT-04 (5 tests for healing loop)
 
 **Documentation references:**
 - `docs/implementation/part-6-graph/21-cypher-healer.md` — healing loop logic
@@ -473,8 +473,8 @@ Wire the complete Builder Graph as a LangGraph `StateGraph` using `BuilderState`
 
 **Test file(s):**
 - `tests/unit/test_builder_graph.py` ✅ — 10 tests (routing + graph compilation)
-- `tests/integration/test_builder_graph.py` (IT-01, IT-02, IT-03, IT-05) — not implemented
-- `tests/integration/test_incremental_update.py` (IT-08) — not implemented
+- `tests/integration/test_builder_graph.py` ✅ — IT-01, IT-02, IT-03, IT-05 (4 test classes)
+- `tests/integration/test_incremental_update.py` ✅ — IT-08 (incremental delta update tests)
 
 **Documentation references:**
 - `docs/implementation/part-6-graph/22-builder-graph.md` — full `StateGraph` wiring code
@@ -608,10 +608,10 @@ Implement `grade_answer(answer: str, chunks: list[Chunk], llm) -> HallucinationG
 Wire the complete Query Graph as a LangGraph `StateGraph` using `QueryState`. Nodes: `Hybrid_Retrieval` → `Cross_Encoder_Reranking` → `Answer_Generation_LLM` → `Hallucination_Grader` → conditional routing to `Web_Search_Fallback` or output. Loop guard on `iteration_count`. Compile and expose `query_graph: CompiledGraph`.
 
 **File(s) to implement:**
-- `src/generation/query_graph.py`
+- `src/generation/query_graph.py` ✅
 
 **Test file(s):**
-- `tests/integration/test_query_graph.py` (IT-06, IT-07)
+- `tests/integration/test_query_graph.py` ✅ — IT-06, IT-07 (3 test classes for end-to-end query + hallucination grader loop)
 
 **Documentation references:**
 - `docs/implementation/part-8-generation/28-query-graph.md` — full Query Graph wiring
@@ -686,14 +686,17 @@ Implement `run_ablation(experiment_id: str) -> dict[str, float]` that toggles th
 
 ---
 
-### TASK-F1 — `tests/conftest.py`
+### [DONE] TASK-F1 — `tests/conftest.py`
 
 **Prerequisites:** TASK-02, TASK-19
 
-Implement shared pytest fixtures: `test_settings` (overrides env to safe test values), `mock_llm` (returns fixed JSON from `tests/fixtures/mock_responses/`), `neo4j_container` (session-scoped `testcontainers.Neo4jContainer`), `neo4j_client` (connected to test container). All integration tests depend on this.
+Implement shared pytest fixtures: `test_settings` (overrides env to safe test values), `mock_llm` (returns fixed JSON from `tests/fixtures/mock_responses/`), `neo4j_container` (session-scoped `testcontainers.Neo4jContainer`), `neo4j_client` (connected to test container), `mock_embeddings` (1024-dim vectors for testing), `get_graph_snapshot` (helper for idempotency tests). All integration tests depend on this.
 
 **File(s) to implement:**
-- `tests/conftest.py`
+- `tests/conftest.py` ✅
+
+**Test file(s):**
+- All integration tests depend on these fixtures
 
 **Documentation references:**
 - `docs/draft/TEST_PLAN.md` §2.4 — core fixture definitions
