@@ -57,6 +57,7 @@ class BuilderState(TypedDict, total=False):
 
     # Control
     hitl_flag: bool
+    skip_hitl: bool   # True in non-production runs — bypasses interrupt()
     failed_mappings: list[str]
     ingestion_errors: list[str]
     completed_tables: list[str]

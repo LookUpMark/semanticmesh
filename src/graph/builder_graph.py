@@ -72,6 +72,11 @@ def _node_parse_ddl(state: BuilderState) -> dict[str, Any]:
 
 def _node_enrich_schema(state: BuilderState) -> dict[str, Any]:
     """Enrich table schemas with acronym expansion and descriptions."""
+    settings = get_settings()
+    if not settings.enable_schema_enrichment:
+        tables = state.get("tables") or []
+        logger.info("Schema enrichment disabled — forwarding raw parsed tables.")
+        return {"enriched_tables": tables}
     llm = get_reasoning_llm()
     tables = state.get("tables") or []
     enriched = enrich_all(tables, llm)
@@ -153,6 +158,16 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
     if best_proposal is None or (validated.confidence or 0.0) > (best_proposal.confidence or 0.0):
         best_proposal = validated
 
+    # Optional ablation: skip critic and accept Pydantic-valid proposal directly.
+    if not settings.enable_critic_validation:
+        return {
+            "mapping_proposal": validated,
+            "best_proposal": None,
+            "validation_error": None,
+            "reflection_attempts": 0,
+            "hitl_flag": validated.confidence < settings.confidence_threshold,
+        }
+
     # Layer 2: LLM Critic
     decision = critic_review(validated, table, entities, llm)
     if not decision.approved:
@@ -216,6 +231,9 @@ def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
 def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
     """Validate and heal Cypher via dry-run + LLM reflection loop."""
     settings = get_settings()
+    if not settings.enable_cypher_healing:
+        logger.info("Cypher healing disabled — using deterministic builder fallback.")
+        return {"cypher_failed": True, "current_cypher": None}
     llm = get_reasoning_llm()
     cypher: str = state.get("current_cypher") or ""
     proposal: MappingProposal = state["mapping_proposal"]
@@ -310,7 +328,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
 
 def _route_after_validate(state: BuilderState) -> str:
     """Route after validation: HITL, retry mapping, or proceed to Cypher."""
-    if state.get("hitl_flag"):
+    if state.get("hitl_flag") and not state.get("skip_hitl"):
         return "hitl"
     if state.get("reflection_prompt"):
         return "rag_mapping"  # retry with reflection
@@ -403,7 +421,7 @@ def build_builder_graph(*, production: bool = False):
     else:
         checkpointer = MemorySaver()
 
-    return graph.compile(checkpointer=checkpointer, interrupt_before=["hitl"])
+    return graph.compile(checkpointer=checkpointer, interrupt_before=["hitl"] if production else [])
 
 
 def run_builder(
@@ -447,6 +465,7 @@ def run_builder(
         "enriched_tables": [],
         "pending_tables": [],
         "completed_tables": [],
+        "skip_hitl": not production,  # bypass interrupt() in non-production runs
     }
     config = {"configurable": {"thread_id": f"builder-{uuid.uuid4().hex[:8]}"}}
     final_state: BuilderState = graph.invoke(initial, config=config)
