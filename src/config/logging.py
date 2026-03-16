@@ -9,9 +9,79 @@ from __future__ import annotations
 import logging
 import os
 import time
+import warnings
 from typing import Any
 
 from pythonjsonlogger import jsonlogger
+
+# Suppress IProgress / pydantic_settings warnings at import time so they never
+# appear regardless of calling order in notebooks.
+warnings.filterwarnings("ignore", message="IProgress not found", category=UserWarning)
+warnings.filterwarnings("ignore", message='directory.*does not exist', category=UserWarning)
+
+
+# ── Notebook formatter ─────────────────────────────────────────────────────────
+
+class _NotebookFormatter(logging.Formatter):
+    """Compact human-readable formatter for Jupyter notebook output.
+
+    Output format:
+        HH:MM:SS  logger.name                     message
+        HH:MM:SS  [WARN] logger.name              warning message
+    """
+
+    def format(self, record: logging.LogRecord) -> str:  # noqa: A003
+        ts = self.formatTime(record, "%H:%M:%S")
+        parts = record.name.split(".")
+        short = ".".join(parts[-2:]) if len(parts) > 1 else record.name
+        msg = record.getMessage()
+        if record.levelno >= logging.WARNING:
+            tag = f"[{record.levelname[:4]}]"
+            return f"{ts}  {tag:<7}  {short:<32}  {msg}"
+        return f"{ts}  {short:<32}  {msg}"
+
+
+def setup_notebook_logging() -> None:
+    """Replace the JSON formatter with a human-readable one for Jupyter notebooks.
+
+    - Suppresses noisy third-party loggers (httpx, pydantic_settings, transformers).
+    - Suppresses repetitive internal loggers (neo4j schema setup).
+    - Keeps all ``src.*`` loggers at INFO for pipeline observability.
+
+    Call once from the environment-setup cell, after ``reconfigure_from_env()``.
+    """
+    root = logging.getLogger()
+
+    # Replace all existing handlers with a single clean-format stream handler.
+    for h in root.handlers[:]:
+        root.removeHandler(h)
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(_NotebookFormatter())
+    root.addHandler(handler)
+    root.setLevel(logging.INFO)
+
+    # Suppress noisy third-party loggers.
+    _SILENT = (
+        "httpx", "httpcore", "urllib3", "requests",
+        "pydantic_settings", "pydantic",
+        "LiteLLM", "openai", "anthropic",
+    )
+    for name in _SILENT:
+        logging.getLogger(name).setLevel(logging.WARNING)
+
+    # Schema setup is printed twice per query — mute at INFO, keep errors visible.
+    logging.getLogger("src.graph.neo4j_client").setLevel(logging.WARNING)
+
+    # neo4j driver GqlStatusObject spam.
+    logging.getLogger("neo4j.notifications").setLevel(logging.WARNING)
+
+    # HuggingFace tokenizer "fast tokenizer" INFO prints.
+    try:
+        import transformers  # type: ignore[import]
+        transformers.logging.set_verbosity_error()
+    except ImportError:
+        pass
 
 
 def _configure_root_logger() -> None:

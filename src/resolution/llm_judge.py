@@ -8,6 +8,7 @@ Returns CanonicalEntityDecision (merge/keep separate + canonical name).
 from __future__ import annotations
 
 import json
+import re
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
@@ -30,6 +31,18 @@ if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
+
+# Matches optional triple-backtick markdown fences (with or without language tag)
+_FENCE_RE = re.compile(r"^```[a-zA-Z]*\n?|```$", re.MULTILINE)
+
+
+def _clean_json(raw: str) -> str:
+    """Strip markdown fences and leading/trailing whitespace from LLM output.
+
+    Many models wrap JSON in ```json ... ``` despite instructions. This strips
+    those fences so ``json.loads`` can parse the payload cleanly.
+    """
+    return _FENCE_RE.sub("", raw).strip()
 
 
 def build_provenance_map(triplets: list[Triplet]) -> dict[str, list[str]]:
@@ -134,7 +147,7 @@ def judge_cluster(
 
     for attempt in range(1, max_attempts + 1):
         try:
-            data = json.loads(raw_json)
+            data = json.loads(_clean_json(raw_json))
         except json.JSONDecodeError as exc:
             logger.warning(
                 "Non-JSON ER judge response for cluster '%s' (attempt %d/%d): %s",
