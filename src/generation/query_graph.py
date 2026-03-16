@@ -46,21 +46,30 @@ def _node_hybrid_retrieval(state: QueryState) -> dict[str, Any]:
     query: str = state["user_query"]
     model = get_embeddings()
 
+    retrieval_mode = (settings.retrieval_mode or "hybrid").lower()
     with Neo4jClient() as client:
         all_nodes = build_node_index(client)
-        vec_results = vector_search(
-            query, client, top_k=settings.retrieval_vector_top_k, model=model
-        )
-        trav_results = graph_traversal(
-            seed_names=[c.node_id for c in vec_results[:5]],
-            client=client,
-            depth=settings.retrieval_graph_depth,
-        )
-        all_concepts = fetch_all_concepts(client)
-        fk_chunks = fetch_fk_relationships(client)
-
-    bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
-    merged = merge_results(vec_results, bm25_results, trav_results + all_concepts + fk_chunks)
+        if retrieval_mode == "vector":
+            vec_results = vector_search(
+                query, client, top_k=settings.retrieval_vector_top_k, model=model
+            )
+            merged = vec_results
+        elif retrieval_mode == "bm25":
+            bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
+            merged = bm25_results
+        else:
+            vec_results = vector_search(
+                query, client, top_k=settings.retrieval_vector_top_k, model=model
+            )
+            trav_results = graph_traversal(
+                seed_names=[c.node_id for c in vec_results[:5]],
+                client=client,
+                depth=settings.retrieval_graph_depth,
+            )
+            all_concepts = fetch_all_concepts(client)
+            fk_chunks = fetch_fk_relationships(client)
+            bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
+            merged = merge_results(vec_results, bm25_results, trav_results + all_concepts + fk_chunks)
     return {"retrieved_chunks": merged}
 
 
@@ -68,6 +77,8 @@ def _node_reranking(state: QueryState) -> dict[str, Any]:
     settings = get_settings()
     query: str = state["user_query"]
     chunks: list[RetrievedChunk] = state.get("retrieved_chunks") or []
+    if not settings.enable_reranker:
+        return {"reranked_chunks": chunks[: settings.reranker_top_k]}
     reranked = rerank(query, chunks, top_k=settings.reranker_top_k)
     return {"reranked_chunks": reranked}
 
@@ -84,6 +95,8 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
 
 def _node_hallucination_grader(state: QueryState) -> dict[str, Any]:
     settings = get_settings()
+    if not settings.enable_hallucination_grader:
+        return {"grader_decision": GraderDecision(grounded=True, critique=None, action="pass")}
     llm = get_reasoning_llm()
     query: str = state["user_query"]
     answer: str = state.get("current_answer") or ""

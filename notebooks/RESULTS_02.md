@@ -600,3 +600,48 @@ All answers: `"I cannot find this information in the knowledge graph."` — corr
 |---|-----|------|
 | 1 | `entities[:10]` → `sorted(entities, key=len_name)[:20]` | `src/mapping/validator.py` |
 | 2 | Test updated to match new limit of 20 | `tests/unit/test_validator.py` |
+
+---
+
+## Testing Branch (`testing`) — Campaign 2026-03-16 (Run 01 → Run 04)
+
+**Objective:** validate robustness with current constraints (**only gpt-oss models**), identify remaining blockers, and stop after **3 positive runs in a row**.
+
+**Fixed configuration for this campaign**
+- Reasoning: `openai/gpt-oss-120b`
+- Extraction: `openai/gpt-oss-20b`
+- chunk_size: `256`
+- overlap: `32`
+- extraction_concurrency: `5`
+
+### Run-by-run summary
+
+| Run | Builder elapsed | Triplets | Entities | Tables completed | Query elapsed | Grounded | Verdict |
+|-----|------------------|----------|----------|------------------|---------------|----------|---------|
+| Run 01 | 741.2 s | 440 | 155 | 1 / 3 | 40.0 s | 0 / 4 | ❌ NEGATIVE |
+| Run 02 | 562.0 s | 576 | 175 | 3 / 3 | 43.4 s | 4 / 4 | ✅ POSITIVE |
+| Run 03 | 452.8 s | 533 | 151 | 3 / 3 | 41.8 s | 4 / 4 | ✅ POSITIVE |
+| Run 04 | 583.0 s | 483 | 164 | 3 / 3 | 36.9 s | 4 / 4 | ✅ POSITIVE |
+
+### Root cause of Run 01 failure
+
+- Builder stopped at `1/3` tables due to **HITL interrupt triggered in non-production flow** when confidence dropped below threshold.
+- In this mode, the graph should proceed automatically (no human resume expected), but `interrupt_before=["hitl"]` halted execution.
+- Consequence: partial graph, then Q&A degraded to `0/4`.
+
+### Fixes applied during testing campaign
+
+1. **HITL bypass in non-production**
+   - Added `skip_hitl` flag in `BuilderState`
+   - Route logic updated: go to `hitl` only if `hitl_flag=True` **and** `skip_hitl=False`
+   - `build_builder_graph()` now uses `interrupt_before=["hitl"]` **only in production**
+   - `run_builder()` initializes `skip_hitl = not production`
+
+2. **Headless runner output correctness**
+   - `scripts/pipeline_run.py` corrected to read `final_answer` from `run_query()`
+   - Fixed grounded computation in the runner summary
+
+### Campaign outcome
+
+- After the fixes: **Run 02, Run 03, Run 04 all positive consecutively** ✅✅✅
+- Final stop condition reached exactly as planned: **3 positive runs in a row**.
