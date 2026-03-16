@@ -41,8 +41,8 @@ class AppConfig:
     llm_temperature_reasoning: float = 0.0
     llm_temperature_generation: float = 0.3
 
-    # Max output tokens for extraction (16k to avoid truncated JSON)
-    llm_max_tokens_extraction: int = 16384
+    # Max output tokens for extraction (8k balances chunk coverage vs truncation risk)
+    llm_max_tokens_extraction: int = 8192
 
     # Max output tokens for reasoning LLM (caps thinking+output; JSON payloads rarely need >4k)
     llm_max_tokens_reasoning: int = 16384

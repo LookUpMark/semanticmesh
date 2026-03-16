@@ -46,6 +46,7 @@ class BuilderState(TypedDict, total=False):
     current_table: EnrichedTableSchema | None
     current_entities: list[Entity]
     mapping_proposal: MappingProposal | None
+    best_proposal: MappingProposal | None   # highest-confidence proposal seen so far
     reflection_prompt: str | None
     reflection_attempts: int
 

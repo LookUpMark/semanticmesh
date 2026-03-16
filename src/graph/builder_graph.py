@@ -126,6 +126,7 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
     table = state.get("current_table")
     entities: list[Entity] = state.get("current_entities") or []
     attempts: int = state.get("reflection_attempts", 0)
+    best_proposal: MappingProposal | None = state.get("best_proposal")
 
     if proposal is None:
         return {"reflection_attempts": attempts + 1}
@@ -135,7 +136,7 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
     if error:
         if attempts >= settings.max_reflection_attempts:
             logger.warning(
-                "Pydantic validation failed after %d attempts for '%s' — accepting last proposal.",
+                "Pydantic validation failed after %d attempts for '%s' — accepting best proposal.",
                 attempts,
                 proposal.table_name,
             )
@@ -148,18 +149,24 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
         )
         return {"reflection_prompt": ref_prompt, "reflection_attempts": attempts + 1}
 
+    # Track the highest-confidence valid proposal across all critic retries
+    if best_proposal is None or (validated.confidence or 0.0) > (best_proposal.confidence or 0.0):
+        best_proposal = validated
+
     # Layer 2: LLM Critic
     decision = critic_review(validated, table, entities, llm)
     if not decision.approved:
         critique = decision.critique or "Mapping rejected by critic."
         if attempts >= settings.max_reflection_attempts:
             logger.warning(
-                "Critic rejected mapping for '%s' after %d attempts — accepting best proposal.",
-                validated.table_name,
-                attempts,
+                "Critic rejected mapping for '%s' after %d attempts — accepting best proposal "
+                "(concept='%s', confidence=%.2f).",
+                validated.table_name, attempts,
+                best_proposal.mapped_concept, best_proposal.confidence or 0.0,
             )
             return {
-                "mapping_proposal": validated,
+                "mapping_proposal": best_proposal,
+                "best_proposal": None,   # reset for next table
                 "validation_error": None,
                 "reflection_attempts": 0,
                 "hitl_flag": False,
@@ -170,10 +177,15 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
             error=critique,
             original_input=proposal.model_dump_json(),
         )
-        return {"reflection_prompt": ref_prompt, "reflection_attempts": attempts + 1}
+        return {
+            "reflection_prompt": ref_prompt,
+            "best_proposal": best_proposal,
+            "reflection_attempts": attempts + 1,
+        }
 
     return {
         "mapping_proposal": validated,
+        "best_proposal": None,   # reset for next table
         "validation_error": None,
         "reflection_attempts": 0,
         "hitl_flag": validated.confidence < settings.confidence_threshold,

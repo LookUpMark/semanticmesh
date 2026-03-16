@@ -142,6 +142,18 @@ tests/
 - Nodes receive full state, return fields to update: `return {"triplets": new_triplets}`
 - Use `NodeTimer` context manager for timing node execution
 
+### Actor-Critic Best-Proposal Tracking
+- `BuilderState` carries a `best_proposal: MappingProposal | None` field alongside `mapping_proposal`
+- `_node_validate_mapping` updates `best_proposal` whenever a Pydantic-valid proposal with higher confidence is seen
+- On critic exhaustion (`attempts >= max_reflection_attempts`), the node returns `best_proposal` (highest confidence seen across all retries) instead of the last rejected proposal
+- Logged at WARNING level with concept name and confidence for observability
+
+### Critic Entity Context Ordering
+- `critic_review()` in `validator.py` sorts entities by name length ascending before slicing to `[:20]`
+- Shorter names = concept-level (e.g. "Customer", "Product") → appear first in critic context
+- Longer names = attribute-level (e.g. "unique numeric identifier for the customer") → cut off
+- Prevents false rejections when the critic cannot find the concept name in its context window
+
 ### HITL (Human-in-the-Loop)
 - Confidence threshold controlled by `settings.confidence_threshold` (default 0.90)
 - Below threshold → `state["hitl_required"] = True`, triggers `interrupt()`
@@ -188,9 +200,9 @@ Settings boolean flags to disable pipeline components:
 
 ### Self-Reflection Loops
 All JSON-producing LLM nodes implement self-reflection on parse/validation failure using `REFLECTION_TEMPLATE` (PT-05). Retries are bounded by `settings.max_reflection_attempts` (default 3). Nodes with self-reflection:
-- `triplet_extractor.py` — via `_reflect_on_json()` helper
-- `rag_mapper.py` — inline REFLECTION_TEMPLATE retry
-- `llm_judge.py` — inline REFLECTION_TEMPLATE retry  
+- `triplet_extractor.py` — via `_reflect_on_json()` helper; when `raw_json==""` (token cap hit) uses `truncated=True` variant that instructs "extract at most 10 triplets, be concise"
+- `rag_mapper.py` — inline `_clean_json()` + REFLECTION_TEMPLATE retry; markdown fences stripped before `json.loads`
+- `llm_judge.py` — inline `_clean_json()` + REFLECTION_TEMPLATE retry; markdown fences stripped before `json.loads`
 - `hallucination_grader.py` — inline REFLECTION_TEMPLATE retry; emits only `pass | regenerate` (`web_search` action removed); after `max_hallucination_retries`, forces `action="pass"` (accepts current answer)
 - `validator.py` (Actor-Critic) — explicit reflection loop (pre-existing)
 - `cypher_healer.py` — Cypher-specific reflection loop (pre-existing)

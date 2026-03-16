@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -31,6 +32,14 @@ if TYPE_CHECKING:
 
 logger: logging.Logger = get_logger(__name__)
 _settings = get_settings()
+
+# Matches optional triple-backtick markdown fences (with or without language tag)
+_FENCE_RE = re.compile(r"^```[a-zA-Z]*\n?|```$", re.MULTILINE)
+
+
+def _clean_json(raw: str) -> str:
+    """Strip markdown fences from LLM output before JSON parsing."""
+    return _FENCE_RE.sub("", raw).strip()
 
 
 def build_retrieval_query(table: EnrichedTableSchema) -> str:
@@ -186,7 +195,7 @@ def propose_mapping(
 
     for attempt in range(1, max_attempts + 1):
         try:
-            data = json.loads(raw_json)
+            data = json.loads(_clean_json(raw_json))
         except json.JSONDecodeError as exc:
             logger.warning(
                 "Non-JSON mapping response for '%s' (attempt %d/%d): %s",
