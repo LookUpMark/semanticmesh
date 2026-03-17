@@ -46,3 +46,7 @@ coverage.xml
 # Logs
 *.log
 logs/
+
+# Generated evaluation & ablation reports
+evaluation_reports/
+ablation_reports/
