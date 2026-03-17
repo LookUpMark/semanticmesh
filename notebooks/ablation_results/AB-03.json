@@ -1,0 +1,21 @@
+{
+  "run_id": 3,
+  "builder_elapsed_s": 1024.3,
+  "query_elapsed_s": 22.4,
+  "total_elapsed_s": 1046.7,
+  "triplets": 481,
+  "entities": 162,
+  "tables_parsed": 3,
+  "tables_enriched": 3,
+  "tables_completed": 3,
+  "cypher_failed": false,
+  "grounded_count": 4,
+  "question_count": 4,
+  "positive": true,
+  "ragas": {
+    "faithfulness": 0.09619047619047619,
+    "answer_relevancy": 0.27055660500910933,
+    "context_precision": 0.13776984126197633,
+    "context_recall": 0.08680555555555557
+  }
+}

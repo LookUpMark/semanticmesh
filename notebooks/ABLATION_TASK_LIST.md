@@ -33,11 +33,10 @@ Included:
   - `CONFIDENCE_THRESHOLD=0.90`, `ENABLE_CYPHER_HEALING=true`, `ENABLE_HALLUCINATION_GRADER=true`
 
 - [x] AB-01 Retrieval mode = vector (`RETRIEVAL_MODE=vector`)
-- [ ] AB-02 Retrieval mode = bm25 (`RETRIEVAL_MODE=bm25`) *(attempted; timed out, rerun pending)*
-
-- [ ] AB-03 Reranker OFF (`ENABLE_RERANKER=false`)
-- [ ] AB-04 Reranker top_k = 5 (`RERANKER_TOP_K=5`)
-- [ ] AB-05 Reranker top_k = 20 (`RERANKER_TOP_K=20`)
+- [x] AB-02 Retrieval mode = bm25 (`RETRIEVAL_MODE=bm25`)
+- [x] AB-03 Reranker OFF (`ENABLE_RERANKER=false`) *(with RAGAS — completed)*
+- [x] AB-04 Reranker top_k = 5 (`RERANKER_TOP_K=5`)
+- [ ] AB-05 Reranker top_k = 20 (`RERANKER_TOP_K=20`) *(running, resumed 2026-03-17)*
 
 - [ ] AB-06 Chunking 128/16 (`CHUNK_SIZE=128`, `CHUNK_OVERLAP=16`)
 - [ ] AB-07 Chunking 384/48 (`CHUNK_SIZE=384`, `CHUNK_OVERLAP=48`)
@@ -65,11 +64,15 @@ Included:
 |---|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---|
 | AB-00 | DONE | 1041.0 | 33.7 | 1074.7 | 449 | 144 | 3/3 | 4/4 | ✅ | N/A | N/A | N/A | N/A | Baseline post-wiring completed successfully (`AB-00.json`). |
 | AB-01 | DONE (NEGATIVE) | 1337.2 | 25.1 | 1362.3 | 448 | 158 | 3/3 | 3/4 | ❌ | N/A | N/A | N/A | N/A | Vector-only retrieval failed Q3 ("I cannot find this information"), run valid (`AB-01.json`). |
-| AB-02 | TIMEOUT | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | Run interrupted manually after prolonged stall post-extraction (rerun required with timebox). |
+| AB-02 | DONE | 1025.1 | 29.5 | 1054.6 | 473 | 158 | 3/3 | 4/4 | ✅ | N/A | N/A | N/A | N/A | BM25-only retrieval positive; Q3 FK relationship answered correctly via text match. Interesting contrast with AB-01 vector failure. |
+| AB-03 | DONE | 1024.3 | 22.4 | 1046.7 | 481 | 162 | 3/3 | 4/4 | ✅ | 0.096 | 0.271 | 0.138 | 0.087 | Reranker OFF: pipeline passes but RAGAS drops sharply — reranker critical for retrieval quality. |
 
 ## Operational notes
 
-- RAGAS currently not reliable in this campaign environment:
-  - one run failed with missing evaluator API key (`OPENAI_API_KEY` required by default evaluator stack),
-  - full 50-sample RAGAS pass is also significantly costly in wall-clock and tokens.
-- For now, campaign proceeds with core pipeline metrics; RAGAS can be re-enabled later with a dedicated evaluator configuration.
+- **RAGAS now working via OpenRouter** (2026-03-16 fix):
+  - `ragas_runner.py` updated to use `ragas.metrics.collections` per-metric `.score()` API (RAGAS 0.4.x)
+  - Uses `AsyncOpenAI` client pointed at OpenRouter with `gpt-oss-20b` evaluator + `text-embedding-3-small`
+  - Smoke-tested: faithfulness=1.0, AR=0.84, CP=1.0, CR=1.0
+  - RAGAS requested for all remaining runs from AB-05 onward (resume 2026-03-17).
+- **AB-02 insight**: BM25-only retrieval passed all 4 questions (including FK relationship Q3), in contrast to AB-01 (vector-only) which failed Q3. BM25 matched the FK keyword text chunk that vector missed.
+- **Ablation runner**: Sequential execution managed via background script `/tmp/run_ablations.sh`; AB-03 running now.

@@ -1,0 +1,16 @@
+{
+  "run_id": 2,
+  "builder_elapsed_s": 1025.1,
+  "query_elapsed_s": 29.5,
+  "total_elapsed_s": 1054.6,
+  "triplets": 473,
+  "entities": 158,
+  "tables_parsed": 3,
+  "tables_enriched": 3,
+  "tables_completed": 3,
+  "cypher_failed": false,
+  "grounded_count": 4,
+  "question_count": 4,
+  "positive": true,
+  "ragas": null
+}

@@ -79,7 +79,7 @@ def sep(char: str = "─", n: int = 60) -> str:
     return char * n
 
 
-def run_pipeline(run_id: int = 1, run_ragas: bool = False) -> dict[str, object]:
+def run_pipeline(run_id: int = 1, run_ragas: bool = False, ragas_samples: int | None = None) -> dict[str, object]:
     """Execute one full pipeline run and return a structured summary."""
     print()
     print(sep("═"))
@@ -156,7 +156,7 @@ def run_pipeline(run_id: int = 1, run_ragas: bool = False) -> dict[str, object]:
     if run_ragas:
         try:
             from src.evaluation.ragas_runner import run_ragas_evaluation
-            ragas_metrics = run_ragas_evaluation(evaluator_model="openai/gpt-oss-20b")
+            ragas_metrics = run_ragas_evaluation(evaluator_model="openai/gpt-oss-20b", max_samples=ragas_samples)
             print("\n    RAGAS metrics")
             print(f"      faithfulness      : {ragas_metrics.get('faithfulness', 0.0):.4f}")
             print(f"      answer_relevancy  : {ragas_metrics.get('answer_relevancy', 0.0):.4f}")
@@ -205,6 +205,13 @@ def main() -> None:
         help="Run RAGAS evaluation after the pipeline run",
     )
     parser.add_argument(
+        "--ragas-samples",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Limit RAGAS evaluation to first N samples (default: all 50)",
+    )
+    parser.add_argument(
         "--json-out",
         type=str,
         default="",
@@ -219,7 +226,7 @@ def main() -> None:
     if args.set:
         reconfigure_from_env()
 
-    summary = run_pipeline(run_id=args.run_id, run_ragas=args.run_ragas)
+    summary = run_pipeline(run_id=args.run_id, run_ragas=args.run_ragas, ragas_samples=args.ragas_samples)
     if args.json_out:
         out = Path(args.json_out)
         out.parent.mkdir(parents=True, exist_ok=True)

@@ -201,6 +201,7 @@ def _compute_ragas_metrics(
 def run_ragas_evaluation(
     dataset_path: Path | None = None,
     evaluator_model: str = _DEFAULT_EVALUATOR_MODEL,
+    max_samples: int | None = None,
 ) -> dict[str, float]:
     """Run RAGAS evaluation on the gold-standard QA dataset.
 
@@ -209,6 +210,7 @@ def run_ragas_evaluation(
             Defaults to tests/fixtures/gold_standard.json.
         evaluator_model: OpenRouter model string used as RAGAS evaluator judge.
             Defaults to ``openai/gpt-oss-20b``.
+        max_samples: Limit evaluation to first N samples. None = all 50.
 
     Returns:
         Dict with keys: faithfulness, answer_relevancy,
@@ -216,6 +218,8 @@ def run_ragas_evaluation(
     """
     path = dataset_path or _DEFAULT_DATASET
     dataset = _load_dataset(path)
+    if max_samples is not None:
+        dataset = dataset[:max_samples]
     logger.info("Loaded %d QA samples from %s", len(dataset), path)
 
     results: list[dict[str, Any]] = []
