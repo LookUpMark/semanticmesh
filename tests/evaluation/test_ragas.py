@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path  # noqa: TC003
 from unittest.mock import patch
 
@@ -19,9 +20,11 @@ from src.evaluation.ragas_runner import (
     _compute_ragas_metrics,
     _load_dataset,
     _run_pipeline_on_sample,
+    main,
     run_ragas_evaluation,
+    save_report,
 )
-from src.models.schemas import MappingProposal
+from src.models.schemas import EvaluationReport, MappingProposal
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -168,12 +171,100 @@ class TestRunRagasEvaluation:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# save_report
+# ─────────────────────────────────────────────────────────────────────────────
+
+_REPORT = EvaluationReport(
+    timestamp=datetime(2026, 3, 17, 12, 0, 0, tzinfo=UTC),
+    num_samples=5,
+    faithfulness=0.9,
+    context_precision=0.85,
+    context_recall=0.88,
+    answer_relevancy=0.80,
+    cypher_healing_rate=0.0,
+    hitl_confidence_agreement=0.0,
+    failed_samples=[],
+)
+
+
+class TestSaveReport:
+    def test_creates_file_in_output_dir(self, tmp_path: Path) -> None:
+        path = save_report(_REPORT, output_dir=tmp_path)
+        assert path.exists()
+        assert path.suffix == ".json"
+
+    def test_filename_contains_timestamp(self, tmp_path: Path) -> None:
+        path = save_report(_REPORT, output_dir=tmp_path)
+        assert "20260317T120000Z" in path.name
+
+    def test_file_contains_valid_json(self, tmp_path: Path) -> None:
+        path = save_report(_REPORT, output_dir=tmp_path)
+        data = json.loads(path.read_text())
+        assert data["faithfulness"] == pytest.approx(0.9)
+        assert data["num_samples"] == 5
+
+    def test_output_dir_created_if_missing(self, tmp_path: Path) -> None:
+        nested = tmp_path / "new" / "nested" / "dir"
+        assert not nested.exists()
+        save_report(_REPORT, output_dir=nested)
+        assert nested.exists()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# main (CLI entry point)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_PATCH_RUN_EVAL = "src.evaluation.ragas_runner.run_ragas_evaluation"
+_PATCH_SAVE_REPORT = "src.evaluation.ragas_runner.save_report"
+
+
+class TestMain:
+    def test_main_calls_run_ragas_evaluation(self, gold_dataset: Path, tmp_path: Path) -> None:
+        with (
+            patch(_PATCH_RUN_EVAL, return_value=_ZERO_METRICS) as mock_eval,
+            patch(_PATCH_SAVE_REPORT, return_value=tmp_path / "report.json"),
+            patch(
+                "sys.argv",
+                ["ragas-eval", "--dataset", str(gold_dataset), "--output", str(tmp_path)],
+            ),
+        ):
+            main()
+        mock_eval.assert_called_once()
+
+    def test_main_calls_save_report(self, gold_dataset: Path, tmp_path: Path) -> None:
+        with (
+            patch(_PATCH_RUN_EVAL, return_value=_ZERO_METRICS),
+            patch(_PATCH_SAVE_REPORT, return_value=tmp_path / "report.json") as mock_save,
+            patch(
+                "sys.argv",
+                ["ragas-eval", "--dataset", str(gold_dataset), "--output", str(tmp_path)],
+            ),
+        ):
+            main()
+        mock_save.assert_called_once()
+
+    def test_main_passes_max_samples(self, gold_dataset: Path, tmp_path: Path) -> None:
+        with (
+            patch(_PATCH_RUN_EVAL, return_value=_ZERO_METRICS) as mock_eval,
+            patch(_PATCH_SAVE_REPORT, return_value=tmp_path / "report.json"),
+            patch(
+                "sys.argv",
+                ["ragas-eval", "--dataset", str(gold_dataset), "--max-samples", "3"],
+            ),
+        ):
+            main()
+        call_kwargs = mock_eval.call_args
+        assert call_kwargs.kwargs.get("max_samples") == 3
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # cypher_healing_rate
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestCypherHealingRate:
     def test_empty_list(self) -> None:
         assert cypher_healing_rate([]) == 0.0
+
 
     def test_all_initial_success(self) -> None:
         results = [

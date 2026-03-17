@@ -8,13 +8,21 @@ Implements run_ablation(experiment_id) which:
   5. Restores the original environment and clears the cache again
   6. Returns a dict[str, float] of measured metrics
 
+Also provides:
+  - run_all_ablations() — runs every experiment in ABLATION_MATRIX
+  - save_ablation_report() — persists results to a JSON file
+  - main() — CLI entry point for ``python -m src.evaluation.ablation_runner``
+
 See docs/draft/ABLATION.md for the full experiment plan.
 """
 
 from __future__ import annotations
 
+import json
 import os
 from contextlib import contextmanager
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from src.config.logging import get_logger
@@ -24,7 +32,6 @@ from src.evaluation.ragas_runner import run_ragas_evaluation
 if TYPE_CHECKING:
     import logging
     from collections.abc import Generator
-    from pathlib import Path
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -133,3 +140,102 @@ def run_ablation(
 
     logger.info("Ablation %s complete: %s", experiment_id, metrics)
     return metrics
+
+
+def run_all_ablations(
+    dataset_path: Path | None = None,
+) -> dict[str, dict[str, float]]:
+    """Run every experiment in ABLATION_MATRIX and return all results.
+
+    Args:
+        dataset_path: Path to the gold-standard QA JSON file.
+            Defaults to tests/fixtures/gold_standard.json.
+
+    Returns:
+        Mapping of experiment_id -> metric dict, ordered AB-01 ... AB-06.
+    """
+    results: dict[str, dict[str, float]] = {}
+    for experiment_id in ABLATION_MATRIX:
+        logger.info("Running ablation experiment %s ...", experiment_id)
+        results[experiment_id] = run_ablation(experiment_id, dataset_path=dataset_path)
+    logger.info("All ablation experiments complete.")
+    return results
+
+
+def save_ablation_report(
+    results: dict[str, dict[str, float]],
+    output_dir: Path | str = "ablation_reports",
+) -> Path:
+    """Persist ablation results to a timestamped JSON file.
+
+    Args:
+        results: Mapping of experiment_id -> metric dict.
+        output_dir: Directory in which to write the report.
+            Created automatically if it does not exist.
+
+    Returns:
+        Path to the written file.
+    """
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
+    file_path = out / f"ablation_report_{ts}.json"
+    payload: dict[str, Any] = {
+        "timestamp": ts,
+        "experiments": results,
+    }
+    file_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    logger.info("Ablation report saved to '%s'.", file_path)
+    return file_path
+
+
+# ---------------------------------------------------------------------------
+# CLI entry point
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    """CLI entry point for running ablation studies.
+
+    Usage::
+
+        python -m src.evaluation.ablation_runner [--ablation AB-05] [--dataset PATH] [--output DIR]
+    """
+    import argparse  # noqa: PLC0415
+
+    parser = argparse.ArgumentParser(
+        description="Run GraphRAG ablation studies using RAGAS.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--ablation",
+        default="all",
+        choices=[*sorted(ABLATION_MATRIX), "all"],
+        help="Ablation experiment ID to run, or 'all' for the full suite.",
+    )
+    parser.add_argument(
+        "--dataset",
+        default=None,
+        help="Path to the gold-standard JSON dataset file.",
+    )
+    parser.add_argument(
+        "--output",
+        default="ablation_reports",
+        help="Directory for saving the ablation report.",
+    )
+    args = parser.parse_args()
+
+    dataset_path: Path | None = Path(args.dataset) if args.dataset else None
+
+    if args.ablation == "all":
+        results = run_all_ablations(dataset_path=dataset_path)
+    else:
+        metrics = run_ablation(args.ablation, dataset_path=dataset_path)
+        results = {args.ablation: metrics}
+
+    report_path = save_ablation_report(results, output_dir=args.output)
+    print(f"Ablation report saved: {report_path}")
+    print(json.dumps(results, indent=2))
+
+
+if __name__ == "__main__":
+    main()

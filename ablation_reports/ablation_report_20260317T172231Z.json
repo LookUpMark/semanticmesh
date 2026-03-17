@@ -1,0 +1,11 @@
+{
+  "timestamp": "20260317T172231Z",
+  "experiments": {
+    "AB-05": {
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.0,
+      "context_precision": 0.0,
+      "context_recall": 0.0
+    }
+  }
+}

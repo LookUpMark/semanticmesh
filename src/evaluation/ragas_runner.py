@@ -9,6 +9,8 @@ to avoid dependency on a native OpenAI key.
 
 Public API:
     run_ragas_evaluation(dataset_path, evaluator_model) -> dict[str, float]
+    save_report(report, output_dir) -> Path
+    main() -> None  (CLI entry point for ``ragas-eval`` console script)
 """
 
 from __future__ import annotations
@@ -240,7 +242,7 @@ def run_ragas_evaluation(
 
     metrics = _compute_ragas_metrics(results, evaluator_model=evaluator_model)
 
-    _ = EvaluationReport(
+    report = EvaluationReport(
         timestamp=datetime.now(tz=UTC),
         num_samples=len(results),
         faithfulness=metrics["faithfulness"],
@@ -251,6 +253,95 @@ def run_ragas_evaluation(
         hitl_confidence_agreement=0.0,
         failed_samples=failed_samples,
     )
-
     logger.info("RAGAS evaluation complete: %s", metrics)
+    logger.debug("EvaluationReport: %s", report.model_dump_json())
     return metrics
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Report persistence
+# ─────────────────────────────────────────────────────────────────────────────
+
+def save_report(report: EvaluationReport, output_dir: Path | str = "evaluation_reports") -> Path:
+    """Persist an EvaluationReport to a timestamped JSON file.
+
+    Args:
+        report: The evaluation report to save.
+        output_dir: Directory in which to write the JSON file.
+            Created automatically if it does not exist.
+
+    Returns:
+        Path to the written file.
+    """
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    ts = report.timestamp.strftime("%Y%m%dT%H%M%SZ")
+    file_path = out / f"ragas_report_{ts}.json"
+    file_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+    logger.info("EvaluationReport saved to '%s'.", file_path)
+    return file_path
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CLI entry point  (ragas-eval console script)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def main() -> None:
+    """CLI entry point for the ``ragas-eval`` console script.
+
+    Usage::
+
+        ragas-eval [--dataset PATH] [--output DIR] [--model MODEL] [--max-samples N]
+    """
+    import argparse  # noqa: PLC0415
+
+    parser = argparse.ArgumentParser(
+        description="Run RAGAS evaluation on the gold-standard QA dataset.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--dataset",
+        default=str(_DEFAULT_DATASET),
+        help="Path to the gold-standard JSON dataset file.",
+    )
+    parser.add_argument(
+        "--output",
+        default="evaluation_reports",
+        help="Directory for saving the evaluation report.",
+    )
+    parser.add_argument(
+        "--model",
+        default=_DEFAULT_EVALUATOR_MODEL,
+        help="OpenRouter model slug used as RAGAS evaluator judge.",
+    )
+    parser.add_argument(
+        "--max-samples",
+        type=int,
+        default=None,
+        dest="max_samples",
+        help="Limit evaluation to the first N samples (None = all).",
+    )
+    args = parser.parse_args()
+
+    dataset_path = Path(args.dataset)
+    metrics = run_ragas_evaluation(
+        dataset_path=dataset_path,
+        evaluator_model=args.model,
+        max_samples=args.max_samples,
+    )
+
+    # Build and persist the report so results survive the process
+    report = EvaluationReport(
+        timestamp=datetime.now(tz=UTC),
+        num_samples=0,  # already logged inside run_ragas_evaluation
+        faithfulness=metrics["faithfulness"],
+        context_precision=metrics["context_precision"],
+        context_recall=metrics["context_recall"],
+        answer_relevancy=metrics["answer_relevancy"],
+        cypher_healing_rate=0.0,
+        hitl_confidence_agreement=0.0,
+        failed_samples=[],
+    )
+    report_path = save_report(report, output_dir=args.output)
+    print(f"Report saved: {report_path}")
+    print(json.dumps(metrics, indent=2))
