@@ -16,8 +16,9 @@ Part 9 implements the full evaluation layer of the thesis: automated RAGAS bench
 | `negative` | "Is there an invoice entity in the schema?" |
 
 **Pipeline per sample:**
-1. `_run_pipeline_on_sample(sample)` — calls `run_query(question)` from the Query Graph, collects `final_answer` + `sources` (node IDs); falls back to `ground_truth_contexts` if the graph returns no sources
-2. Exceptions are caught per-sample and logged; failed samples are tracked in `failed_samples` without aborting the run
+1. `_run_pipeline_on_sample(sample)` — calls `run_query(question)` from the Query Graph, collects `final_answer` + `retrieved_contexts` (full reranked chunk texts)
+2. If `retrieved_contexts` is empty, the runner falls back to `ground_truth_contexts` and logs a warning
+3. Exceptions are caught per-sample and logged; failed samples are tracked in `failed_samples` without aborting the run
 
 **RAGAS metrics** (computed in `_compute_ragas_metrics`):
 
@@ -61,18 +62,25 @@ Returns the **Pearson correlation** between the two vectors (pure Python, no sci
 
 ## TASK-31: Ablation Runner
 
-`src/evaluation/ablation_runner.py` implements `run_ablation(experiment_id, dataset_path=None) -> dict[str, float]`.
+`src/evaluation/ablation_runner.py` implements `run_ablation(experiment_id, dataset_path=None, run_ragas=None, doc_paths=None, ddl_paths=None) -> dict[str, float]`.
 
-### Ablation Matrix (all 6 experiments)
+### Ablation Matrix (AB-00 … AB-20)
 
-| ID | Component Ablated | Setting Toggled | Primary Metric |
-|---|---|---|---|
-| AB-01 | Schema Enrichment | `ENABLE_SCHEMA_ENRICHMENT=false` | `context_precision` |
-| AB-02 | Hybrid Retrieval | `RETRIEVAL_MODE=vector` + `ENABLE_RERANKER=false` | `context_precision` |
-| AB-03 | Cypher Healing | `ENABLE_CYPHER_HEALING=false` | `faithfulness` |
-| AB-04 | Actor-Critic Validation | `ENABLE_CRITIC_VALIDATION=false` | `context_precision` |
-| AB-05 | Cross-Encoder Reranker | `ENABLE_RERANKER=false` | `context_precision` |
-| AB-06 | Hallucination Grader | `ENABLE_HALLUCINATION_GRADER=false` | `faithfulness` |
+The current matrix contains **21 studies**:
+
+| Group | IDs | Focus |
+|---|---|---|
+| Baseline | AB-00 | Full default pipeline |
+| Retrieval mode | AB-01, AB-02 | Vector-only vs BM25-only |
+| Reranker | AB-03, AB-04, AB-05 | Disable reranker / top-k variants |
+| Chunking | AB-06, AB-07, AB-08 | Chunk size + overlap |
+| Extraction budget | AB-09, AB-10 | `LLM_MAX_TOKENS_EXTRACTION` |
+| Entity resolution | AB-11, AB-12, AB-13, AB-14 | Similarity threshold + blocking top-k |
+| Mapping validation | AB-15, AB-16 | Schema enrichment / critic validation |
+| Confidence threshold | AB-17, AB-18 | HITL threshold sensitivity |
+| Generation safeguards | AB-19, AB-20 | Cypher healing / hallucination grader |
+
+Source of truth: `ABLATION_MATRIX` in `src/evaluation/ablation_runner.py`.
 
 ### Settings Override via `_settings_override(env_overrides)`
 
@@ -89,8 +97,9 @@ This ensures clean isolation between ablation runs and that no leaked overrides 
 `run_ablation(experiment_id)`:
 1. Validates the ID against `ABLATION_MATRIX` → raises `ValueError` on unknown ID
 2. Applies env overrides via `_settings_override`
-3. Calls `run_ragas_evaluation(dataset_path)` inside the override context
-4. Returns the 4-metric dict
+3. Runs builder graph on fixture docs + DDL (default: `complex_schema.sql`)
+4. Optionally calls `run_ragas_evaluation(dataset_path)` depending on matrix/run flag
+5. Returns RAGAS metrics plus builder counters (`triplets`, `entities`, `tables_parsed`, `tables_completed`, `cypher_failed`)
 
 ---
 
@@ -102,9 +111,9 @@ The three modules fill complementary roles:
 |---|---|---|
 | `ragas_runner.py` | End-to-end answer quality (RAGAS 4-metric suite) | After each system update |
 | `custom_metrics.py` | Builder-graph specific behavior (healing, HITL calibration) | After builder pipeline runs |
-| `ablation_runner.py` | Per-component contribution (6 AB experiments) | Full evaluation chapter run |
+| `ablation_runner.py` | Per-component contribution (21 AB experiments) | Full evaluation chapter run |
 
-Together these form the quantitative backbone of the thesis evaluation chapter, providing RAGAS metrics measured under 7 distinct conditions (1 baseline + 6 ablations).
+Together these form the quantitative backbone of the thesis evaluation chapter, providing RAGAS metrics measured across baseline and targeted ablation conditions.
 
 ---
 

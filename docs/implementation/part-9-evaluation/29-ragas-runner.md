@@ -1,5 +1,16 @@
 # Part 9 — `src/evaluation/ragas_runner.py`
 
+## Status Update (Current Implementation)
+
+RAGAS context metrics now consume `retrieved_contexts` (full reranked chunk text) returned by `run_query()`, not `sources` node IDs.
+
+Current fallback behavior:
+
+1. If `retrieved_contexts` is empty for a sample, fallback to `ground_truth_contexts`
+2. Fallback is explicitly logged to make evaluation degradation visible
+
+This change is critical for meaningful `context_precision` and `context_recall`.
+
 ## 1. Purpose & Context
 
 **Epic:** EP-16 RAGAS Evaluation Pipeline  

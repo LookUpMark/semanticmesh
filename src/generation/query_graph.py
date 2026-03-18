@@ -80,10 +80,24 @@ def _node_reranking(state: QueryState) -> dict[str, Any]:
     settings = get_settings()
     query: str = state["user_query"]
     chunks: list[RetrievedChunk] = state.get("retrieved_chunks") or []
+    min_score_raw = getattr(settings, "retrieval_min_score", 0.0)
+    try:
+        min_score = float(min_score_raw)
+    except (TypeError, ValueError):
+        min_score = 0.0
+
     if not settings.enable_reranker:
-        return {"reranked_chunks": chunks[: settings.reranker_top_k]}
-    reranked = rerank(query, chunks, top_k=settings.reranker_top_k)
-    return {"reranked_chunks": reranked}
+        candidates = chunks[: settings.reranker_top_k]
+    else:
+        candidates = rerank(query, chunks, top_k=settings.reranker_top_k)
+
+    filtered = [
+        c for c in candidates if c.node_id.strip() and c.text.strip() and float(c.score) >= min_score
+    ]
+    if not filtered and candidates:
+        # Keep the strongest candidate to avoid generating with zero context.
+        filtered = [candidates[0]]
+    return {"reranked_chunks": filtered}
 
 
 def _node_answer_generation(state: QueryState) -> dict[str, Any]:
@@ -125,8 +139,11 @@ def _node_hallucination_grader(state: QueryState) -> dict[str, Any]:
 
 def _node_finalise(state: QueryState) -> dict[str, Any]:
     answer: str = state.get("current_answer") or ""
-    sources: list[str] = [c.node_id for c in (state.get("reranked_chunks") or [])]
-    return {"final_answer": answer, "sources": sources}
+    reranked: list[RetrievedChunk] = state.get("reranked_chunks") or []
+    sources: list[str] = [c.node_id for c in reranked]
+    # retrieved_contexts: full texts used by RAGAS evaluation
+    retrieved_contexts: list[str] = [c.text for c in reranked if c.text]
+    return {"final_answer": answer, "sources": sources, "retrieved_contexts": retrieved_contexts}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -189,7 +206,7 @@ def run_query(user_query: str) -> dict[str, Any]:
         user_query: Natural-language question.
 
     Returns:
-        ``{"final_answer": str, "sources": list[str]}``.
+        ``{"final_answer": str, "sources": list[str], "retrieved_contexts": list[str]}``.
     """
     graph = build_query_graph()
     config = {"configurable": {"thread_id": "query-run-1"}}
@@ -206,6 +223,11 @@ def run_query(user_query: str) -> dict[str, Any]:
         "grader_decision": None,
         "final_answer": "",
         "sources": [],
+        "retrieved_contexts": [],
     }
     result = graph.invoke(initial, config=config)
-    return {"final_answer": result.get("final_answer", ""), "sources": result.get("sources", [])}
+    return {
+        "final_answer": result.get("final_answer", ""),
+        "sources": result.get("sources", []),
+        "retrieved_contexts": result.get("retrieved_contexts", []),
+    }

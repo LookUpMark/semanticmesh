@@ -182,6 +182,27 @@ class TestVectorSearch:
         results = vector_search("nothing", client, top_k=5, model=self._model())
         assert results == []
 
+    def test_skips_records_with_empty_name(self) -> None:
+        client = _make_client(
+            [
+                {
+                    "name": "",
+                    "definition": "bad",
+                    "score": 0.9,
+                    "node_type": "BusinessConcept",
+                },
+                {
+                    "name": "Customer",
+                    "definition": "A buyer",
+                    "score": 0.8,
+                    "node_type": "BusinessConcept",
+                },
+            ]
+        )
+        results = vector_search("customer", client, top_k=5, model=self._model())
+        assert len(results) == 1
+        assert results[0].node_id == "Customer"
+
 
 # ── TestBm25Search ─────────────────────────────────────────────────────────────
 
@@ -290,3 +311,17 @@ class TestMergeResults:
 
     def test_empty_inputs_returns_empty(self) -> None:
         assert merge_results([], [], []) == []
+
+    def test_skips_invalid_chunks(self) -> None:
+        invalid = RetrievedChunk(
+            node_id="",
+            node_type="BusinessConcept",
+            text="",
+            score=0.9,
+            source_type="vector",
+            metadata={},
+        )
+        valid = _chunk("Customer", 0.8, "vector")
+        merged = merge_results([invalid, valid], [], [])
+        assert len(merged) == 1
+        assert merged[0].node_id == "Customer"

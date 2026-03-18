@@ -1,5 +1,24 @@
 # Part 9 — `src/evaluation/ablation_runner.py`
 
+## Status Update (Current Implementation)
+
+This guide originally documented the early 6-experiment layout. The current codebase uses a larger matrix and two execution entry points:
+
+1. `src/evaluation/ablation_runner.py` (programmatic runner): AB-00 … AB-20 (`ABLATION_MATRIX`, 21 studies)
+2. `scripts/run_ablation_full.py` (full pipeline CLI): builder + query + optional RAGAS, with per-study logs and JSON outputs
+
+Current output directory is:
+
+- `notebooks/ablation/ablation_results/`
+
+Canonical per-study artifacts are flat files in that directory:
+
+- `AB-XX.log`
+- `AB-XX.json`
+- `ablation_summary.json`
+
+Use `src/evaluation/ablation_runner.py` as the source of truth for study IDs, env overrides, and which studies enable RAGAS.
+
 ## 1. Purpose & Context
 
 **Epic:** EP-17 Ablation Study  

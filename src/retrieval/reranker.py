@@ -90,19 +90,29 @@ def rerank(
     if not chunks:
         return []
 
+    valid_chunks = [c for c in chunks if c.node_id.strip() and c.text.strip()]
+    if not valid_chunks:
+        logger.warning("rerank: all chunks dropped as invalid (empty node_id/text).")
+        return []
+    if len(valid_chunks) < len(chunks):
+        logger.info(
+            "rerank: dropped %d invalid chunks before scoring.",
+            len(chunks) - len(valid_chunks),
+        )
+
     if reranker is None:
         reranker = get_reranker()
 
-    pairs: list[tuple[str, str]] = [(query, chunk.text) for chunk in chunks]
+    pairs: list[tuple[str, str]] = [(query, chunk.text) for chunk in valid_chunks]
 
     try:
         scores: list[float] = reranker.compute_score(pairs, normalize=True)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Reranker scoring failed (%s) — returning chunks unranked.", exc)
-        return chunks[:k]
+        return valid_chunks[:k]
 
     scored: list[RetrievedChunk] = []
-    for chunk, score in zip(chunks, scores, strict=False):
+    for chunk, score in zip(valid_chunks, scores, strict=False):
         updated_meta = {**chunk.metadata, "reranker_score": float(score)}
         scored.append(chunk.model_copy(update={"metadata": updated_meta, "score": float(score)}))
 
@@ -111,7 +121,7 @@ def rerank(
         "rerank: top chunk '%s' score=%.4f (pool=%d, top_k=%d).",
         reranked[0].node_id if reranked else "N/A",
         reranked[0].score if reranked else 0.0,
-        len(chunks),
+        len(valid_chunks),
         k,
     )
     return reranked

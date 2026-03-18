@@ -1,25 +1,25 @@
 {
   "study_id": "AB-00",
   "success": true,
-  "builder_elapsed_s": 489.6,
-  "query_elapsed_s": 47.9,
-  "total_elapsed_s": 537.4,
-  "triplets": 370,
-  "entities": 137,
-  "tables_parsed": 8,
-  "tables_enriched": 8,
-  "tables_completed": 8,
+  "builder_elapsed_s": 704.0,
+  "query_elapsed_s": 39.0,
+  "total_elapsed_s": 742.9,
+  "triplets": 416,
+  "entities": 142,
+  "tables_parsed": 10,
+  "tables_enriched": 10,
+  "tables_completed": 10,
   "cypher_failed": false,
-  "grounded_count": 4,
+  "grounded_count": 3,
   "question_count": 4,
-  "positive": true,
+  "positive": false,
   "ragas": {
-    "faithfulness": 0.41583333333333333,
-    "answer_relevancy": 0.6198199525103549,
-    "context_precision": 0.32361111108970303,
-    "context_recall": 0.475
+    "faithfulness": 0.665,
+    "answer_relevancy": 0.4371935165351461,
+    "context_precision": 0.46666666662208334,
+    "context_recall": 0.36666666666666664
   },
   "env_overrides": {},
   "run_ragas": true,
-  "timestamp": "2026-03-18T11:50:06.880216+00:00"
+  "timestamp": "2026-03-18T18:52:15.139666+00:00"
 }

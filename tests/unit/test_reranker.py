@@ -81,6 +81,25 @@ class TestRerank:
         assert call_args[0] == ("what is a customer?", "Customer: some definition text")
         assert call_args[1] == ("what is a customer?", "Product: some definition text")
 
+    def test_invalid_chunks_are_dropped_before_scoring(self) -> None:
+        valid = _chunk("Customer")
+        invalid = RetrievedChunk(
+            node_id="",
+            node_type="BusinessConcept",
+            text="",
+            score=0.1,
+            source_type="vector",
+            metadata={},
+        )
+        reranker = _make_reranker([0.9])
+
+        result = rerank("query", [invalid, valid], reranker=reranker, top_k=5)
+
+        assert len(result) == 1
+        assert result[0].node_id == "Customer"
+        call_args = reranker.compute_score.call_args[0][0]
+        assert call_args == [("query", "Customer: some definition text")]
+
 
 # ── TestGetReranker ───────────────────────────────────────────────────────────
 

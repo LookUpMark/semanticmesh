@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         ER_BLOCKING_TOP_K, ER_SIMILARITY_THRESHOLD
         CONFIDENCE_THRESHOLD, MAX_REFLECTION_ATTEMPTS, MAX_CYPHER_HEALING_ATTEMPTS
         CHUNK_SIZE, CHUNK_OVERLAP
-        RETRIEVAL_VECTOR_TOP_K, RETRIEVAL_BM25_TOP_K, RETRIEVAL_GRAPH_DEPTH
+        RETRIEVAL_VECTOR_TOP_K, RETRIEVAL_BM25_TOP_K, RETRIEVAL_GRAPH_DEPTH, RETRIEVAL_MIN_SCORE
         FEW_SHOT_CYPHER_EXAMPLES
         ENABLE_SCHEMA_ENRICHMENT, RETRIEVAL_MODE
         ENABLE_CYPHER_HEALING, ENABLE_CRITIC_VALIDATION, ENABLE_RERANKER, ENABLE_HALLUCINATION_GRADER
@@ -83,6 +83,7 @@ class Settings(BaseSettings):
     retrieval_vector_top_k: int = DEFAULT_CONFIG.retrieval_vector_top_k
     retrieval_bm25_top_k: int = DEFAULT_CONFIG.retrieval_bm25_top_k
     retrieval_graph_depth: int = DEFAULT_CONFIG.retrieval_graph_depth
+    retrieval_min_score: float = DEFAULT_CONFIG.retrieval_min_score
 
     # ── Few-Shot ───────────────────────────────────────────────────────────────
     few_shot_cypher_examples: int = DEFAULT_CONFIG.few_shot_cypher_examples

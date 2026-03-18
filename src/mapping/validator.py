@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 import logging
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from typing import TYPE_CHECKING
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -21,6 +23,7 @@ if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
+_CRITIC_TIMEOUT_SECONDS = 120
 
 
 # ── Layer 1: Pydantic Schema Validation ───────────────────────────────────────
@@ -78,7 +81,8 @@ def critic_review(
     # Sort by name length so high-level concept names (short, e.g. "Customer")
     # appear before attribute-level entries (long, e.g. "unique numeric identifier
     # for the customer") in the critic context window. Take top 20 for coverage.
-    sorted_entities = sorted(entities, key=lambda e: len(e.name))[:20]
+    safe_entities = entities or []
+    sorted_entities = sorted(safe_entities, key=lambda e: len(getattr(e, "name", "")))[:20]
     entities_json = json.dumps(
         [
             {"name": e.name, "definition": e.definition, "synonyms": e.synonyms}
@@ -91,21 +95,41 @@ def critic_review(
         entities_json=entities_json,
     )
 
+    logger.info(
+        "Critic call start for '%s' (entities=%d, prompt_chars=%d)",
+        table.table_name,
+        len(sorted_entities),
+        len(user_prompt),
+    )
+    start = time.perf_counter()
     try:
-        response = llm.invoke(
-            [
-                SystemMessage(content=CRITIC_SYSTEM),
-                HumanMessage(content=user_prompt),
-            ]
-        )
+        messages = [
+            SystemMessage(content=CRITIC_SYSTEM),
+            HumanMessage(content=user_prompt),
+        ]
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(llm.invoke, messages)
+            response = future.result(timeout=_CRITIC_TIMEOUT_SECONDS)
         raw_json: str = response.content.strip()
-    except Exception as exc:
+    except FutureTimeoutError:
+        elapsed = time.perf_counter() - start
         logger.warning(
-            "Critic LLM call failed for table '%s': %s — approving by default.",
+            "Critic LLM timeout for table '%s' after %.1fs — approving by default.",
             table.table_name,
+            elapsed,
+        )
+        return CriticDecision(approved=True)
+    except Exception as exc:
+        elapsed = time.perf_counter() - start
+        logger.warning(
+            "Critic LLM call failed for table '%s' after %.1fs: %s — approving by default.",
+            table.table_name,
+            elapsed,
             exc,
         )
         return CriticDecision(approved=True)
+    elapsed = time.perf_counter() - start
+    logger.info("Critic call end for '%s' in %.1fs", table.table_name, elapsed)
 
     try:
         data = json.loads(raw_json)

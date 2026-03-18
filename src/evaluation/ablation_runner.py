@@ -268,7 +268,7 @@ def run_ablation(
         if ddl_paths is None:
             root = Path(__file__).parent.parent.parent
             fixture_dir = root / "tests" / "fixtures"
-            ddl_paths = [fixture_dir / "sample_ddl" / "simple_schema.sql"]
+            ddl_paths = [fixture_dir / "sample_ddl" / "complex_schema.sql"]
 
         # Run the builder graph
         logger.info("Running builder graph...")

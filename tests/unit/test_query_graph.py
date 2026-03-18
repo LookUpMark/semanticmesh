@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from src.generation.query_graph import _route_after_grader
-from src.models.schemas import GraderDecision
+from src.generation.query_graph import _node_reranking, _route_after_grader
+from src.models.schemas import GraderDecision, RetrievedChunk
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -55,3 +55,49 @@ class TestBuildQueryGraph:
         ):
             graph = build_query_graph()
             assert graph is not None
+
+
+class TestNodeReranking:
+    def _chunk(self, name: str, score: float) -> RetrievedChunk:
+        return RetrievedChunk(
+            node_id=name,
+            node_type="BusinessConcept",
+            text=f"{name}: definition",
+            score=score,
+            source_type="vector",
+            metadata={},
+        )
+
+    def test_applies_min_score_filter(self) -> None:
+        settings = MagicMock()
+        settings.enable_reranker = True
+        settings.reranker_top_k = 5
+        settings.retrieval_min_score = 0.5
+
+        with (
+            patch("src.generation.query_graph.get_settings", return_value=settings),
+            patch(
+                "src.generation.query_graph.rerank",
+                return_value=[self._chunk("A", 0.9), self._chunk("B", 0.2)],
+            ),
+        ):
+            state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
+            out = _node_reranking(state)
+            assert [c.node_id for c in out["reranked_chunks"]] == ["A"]
+
+    def test_keeps_top_candidate_when_filter_removes_all(self) -> None:
+        settings = MagicMock()
+        settings.enable_reranker = True
+        settings.reranker_top_k = 5
+        settings.retrieval_min_score = 0.95
+
+        with (
+            patch("src.generation.query_graph.get_settings", return_value=settings),
+            patch(
+                "src.generation.query_graph.rerank",
+                return_value=[self._chunk("A", 0.9), self._chunk("B", 0.2)],
+            ),
+        ):
+            state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
+            out = _node_reranking(state)
+            assert [c.node_id for c in out["reranked_chunks"]] == ["A"]

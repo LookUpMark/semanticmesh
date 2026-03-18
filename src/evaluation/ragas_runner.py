@@ -36,6 +36,15 @@ _DEFAULT_DATASET: Path = (
 # Cheap model used as RAGAS evaluator judge (via OpenRouter)
 _DEFAULT_EVALUATOR_MODEL: str = "openai/gpt-4o-mini"
 _OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+_TRACE_PREVIEW_CHARS: int = 240
+
+
+def _preview(text: str, max_chars: int = _TRACE_PREVIEW_CHARS) -> str:
+    """Return a single-line preview string for logs and traces."""
+    compact = " ".join((text or "").split())
+    if len(compact) <= max_chars:
+        return compact
+    return compact[: max_chars - 1] + "…"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -57,21 +66,58 @@ def _run_pipeline_on_sample(
 ) -> dict[str, Any]:
     """Run the Query Graph on one QA sample; return answer + context strings."""
     question: str = sample["question"]
+    used_fallback_contexts = False
     try:
         result = run_query(question)
         answer: str = result.get("final_answer", "")
-        # sources are node IDs; fall back to ground_truth_contexts for RAGAS
-        contexts: list[str] = result.get("sources", [])
+        sources: list[str] = list(result.get("sources", []))
+
+        # ── Use retrieved_contexts (actual chunk texts) for RAGAS evaluation ──
+        # `sources` contains only node IDs (e.g. "Customer", "CUSTOMER_MASTER")
+        # which are not meaningful context strings for RAGAS metrics.
+        # `retrieved_contexts` contains the full text of each reranked chunk.
+        contexts: list[str] = result.get("retrieved_contexts", [])
         if not contexts:
+            # Fallback: gold context strings if the pipeline returned nothing
             contexts = list(sample.get("ground_truth_contexts", []))
+            used_fallback_contexts = True
+            logger.warning(
+                "No retrieved_contexts in result for '%s' — falling back to gold contexts",
+                question[:60],
+            )
+        else:
+            logger.debug(
+                "Using %d retrieved context(s) for RAGAS: %s",
+                len(contexts),
+                [c[:60] for c in contexts[:3]],
+            )
     except Exception:  # noqa: BLE001
         logger.exception("Query Graph failed for: %s", question[:80])
         answer = ""
+        sources = []
         contexts = list(sample.get("ground_truth_contexts", []))
+        used_fallback_contexts = True
+
+    logger.info(
+        "Pipeline sample q='%s' answer_chars=%d contexts=%d fallback=%s",
+        question[:60],
+        len(answer),
+        len(contexts),
+        used_fallback_contexts,
+    )
+    logger.debug("Pipeline answer preview: %s", _preview(answer))
+    if contexts:
+        logger.debug(
+            "Pipeline first contexts: %s",
+            [_preview(c, 120) for c in contexts[:3]],
+        )
+
     return {
         "question": question,
         "answer": answer,
         "contexts": contexts,
+        "sources": sources,
+        "used_fallback_contexts": used_fallback_contexts,
         "ground_truth": sample["ground_truth"],
     }
 
@@ -182,6 +228,7 @@ async def _score_single_sample(
 async def _compute_ragas_metrics_async(
     results: list[dict[str, Any]],
     evaluator_model: str = _DEFAULT_EVALUATOR_MODEL,
+    trace_rows: list[dict[str, Any]] | None = None,
 ) -> dict[str, float]:
     """Async wrapper for RAGAS metrics computation."""
     try:
@@ -221,7 +268,8 @@ async def _compute_ragas_metrics_async(
     for i, r in enumerate(results):
         q = r["question"]
         ans = r["answer"]
-        ctxs = r["contexts"] if r["contexts"] else [""]
+        ctxs = r["contexts"] if r["contexts"] else []
+        srcs = r.get("sources", [])
         ref = r["ground_truth"]
         try:
             sample_scores = await _score_single_sample(
@@ -239,9 +287,51 @@ async def _compute_ragas_metrics_async(
             scores["answer_relevancy"].append(sample_scores["answer_relevancy"])
             scores["context_precision"].append(sample_scores["context_precision"])
             scores["context_recall"].append(sample_scores["context_recall"])
-            logger.info("RAGAS sample %d/%d done", i + 1, len(results))
+            logger.info(
+                "RAGAS sample %d/%d done | f=%.4f ar=%.4f cp=%.4f cr=%.4f",
+                i + 1,
+                len(results),
+                sample_scores["faithfulness"],
+                sample_scores["answer_relevancy"],
+                sample_scores["context_precision"],
+                sample_scores["context_recall"],
+            )
+            if trace_rows is not None:
+                trace_rows.append(
+                    {
+                        "sample_index": i,
+                        "question": q,
+                        "ground_truth": ref,
+                        "model_answer": ans,
+                        "answer_preview": _preview(ans),
+                        "sources": srcs,
+                        "retrieved_contexts": ctxs,
+                        "retrieved_context_previews": [_preview(c, 160) for c in ctxs[:5]],
+                        "context_count": len(ctxs),
+                        "used_fallback_contexts": bool(r.get("used_fallback_contexts", False)),
+                        "ragas_scores": sample_scores,
+                        "ragas_error": None,
+                    }
+                )
         except Exception:  # noqa: BLE001
             logger.exception("RAGAS scoring failed for sample %d — skipping", i)
+            if trace_rows is not None:
+                trace_rows.append(
+                    {
+                        "sample_index": i,
+                        "question": q,
+                        "ground_truth": ref,
+                        "model_answer": ans,
+                        "answer_preview": _preview(ans),
+                        "sources": srcs,
+                        "retrieved_contexts": ctxs,
+                        "retrieved_context_previews": [_preview(c, 160) for c in ctxs[:5]],
+                        "context_count": len(ctxs),
+                        "used_fallback_contexts": bool(r.get("used_fallback_contexts", False)),
+                        "ragas_scores": None,
+                        "ragas_error": "scoring_failed",
+                    }
+                )
 
     def _mean(vals: list[float]) -> float:
         return sum(vals) / len(vals) if vals else 0.0
@@ -257,6 +347,7 @@ async def _compute_ragas_metrics_async(
 def _compute_ragas_metrics(
     results: list[dict[str, Any]],
     evaluator_model: str = _DEFAULT_EVALUATOR_MODEL,
+    trace_rows: list[dict[str, Any]] | None = None,
 ) -> dict[str, float]:
     """Compute RAGAS metrics using nest_asyncio for robust event loop handling.
 
@@ -281,17 +372,34 @@ def _compute_ragas_metrics(
             logger.debug("Running in async context, using ThreadPoolExecutor")
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(
-                    asyncio.run, _compute_ragas_metrics_async(results, evaluator_model)
+                    asyncio.run,
+                    _compute_ragas_metrics_async(
+                        results,
+                        evaluator_model,
+                        trace_rows=trace_rows,
+                    ),
                 )
                 return future.result(timeout=1800)  # 30 min total timeout
         else:
             # No running loop, safe to run directly
             logger.debug("No running loop, using asyncio.run()")
-            return asyncio.run(_compute_ragas_metrics_async(results, evaluator_model))
+            return asyncio.run(
+                _compute_ragas_metrics_async(
+                    results,
+                    evaluator_model,
+                    trace_rows=trace_rows,
+                )
+            )
     except RuntimeError:
         # No loop exists, create new one
         logger.debug("No loop exists, creating new one with asyncio.run()")
-        return asyncio.run(_compute_ragas_metrics_async(results, evaluator_model))
+        return asyncio.run(
+            _compute_ragas_metrics_async(
+                results,
+                evaluator_model,
+                trace_rows=trace_rows,
+            )
+        )
     except Exception as exc:
         logger.warning("RAGAS computation failed: %s — returning zero metrics", exc)
         return dict(_ZERO_METRICS)
@@ -307,6 +415,8 @@ def run_ragas_evaluation(
     evaluator_model: str = _DEFAULT_EVALUATOR_MODEL,
     run_ragas: bool = True,
     max_samples: int | None = None,
+    trace_output_path: Path | None = None,
+    trace_verbose: bool = False,
 ) -> dict[str, float]:
     """Run RAGAS evaluation on the gold-standard QA dataset.
 
@@ -319,6 +429,9 @@ def run_ragas_evaluation(
             Useful for ablation studies where RAGAS is not needed.
         max_samples: Maximum number of samples to evaluate. If None, evaluates all.
             Useful for faster ablation iterations (e.g., 20 instead of 50).
+        trace_output_path: Optional JSONL path for per-sample trace rows (question,
+            model answer, retrieved contexts, fallback usage, and per-metric scores).
+        trace_verbose: If True, logs per-sample answer/context previews at INFO.
 
     Returns:
         Dict with keys: faithfulness, answer_relevancy,
@@ -346,16 +459,57 @@ def run_ragas_evaluation(
             sample.get("question", "")[:60],
         )
         try:
-            results.append(_run_pipeline_on_sample(sample))
+            row = _run_pipeline_on_sample(sample)
+            results.append(row)
+            if trace_verbose:
+                logger.info(
+                    "Trace sample %d answer='%s' contexts=%d",
+                    i,
+                    _preview(row["answer"], 160),
+                    len(row["contexts"]),
+                )
         except Exception:  # noqa: BLE001
             logger.exception("Skipping sample %d after unexpected error", i)
             failed_samples.append({"index": i, "question": sample.get("question", "")})
 
+    trace_rows: list[dict[str, Any]] = []
     if not run_ragas:
         logger.info("RAGAS evaluation skipped (run_ragas=False)")
         metrics = dict(_ZERO_METRICS)
+        for i, r in enumerate(results):
+            trace_rows.append(
+                {
+                    "sample_index": i,
+                    "question": r["question"],
+                    "ground_truth": r["ground_truth"],
+                    "model_answer": r["answer"],
+                    "answer_preview": _preview(r["answer"]),
+                    "sources": r.get("sources", []),
+                    "retrieved_contexts": r["contexts"],
+                    "retrieved_context_previews": [_preview(c, 160) for c in r["contexts"][:5]],
+                    "context_count": len(r["contexts"]),
+                    "used_fallback_contexts": bool(r.get("used_fallback_contexts", False)),
+                    "ragas_scores": None,
+                    "ragas_error": "ragas_skipped",
+                }
+            )
     else:
-        metrics = _compute_ragas_metrics(results, evaluator_model=evaluator_model)
+        metrics = _compute_ragas_metrics(
+            results,
+            evaluator_model=evaluator_model,
+            trace_rows=trace_rows,
+        )
+
+    if trace_output_path is not None:
+        trace_output_path.parent.mkdir(parents=True, exist_ok=True)
+        with trace_output_path.open("w", encoding="utf-8") as f:
+            for row in trace_rows:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        logger.info(
+            "Wrote RAGAS per-sample trace: %s (%d rows)",
+            trace_output_path,
+            len(trace_rows),
+        )
 
     _ = EvaluationReport(
         timestamp=datetime.now(tz=UTC),

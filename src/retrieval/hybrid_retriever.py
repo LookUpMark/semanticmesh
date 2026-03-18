@@ -88,13 +88,16 @@ def vector_search(
 
     chunks: list[RetrievedChunk] = []
     for rec in records:
-        name = rec.get("name") or ""
+        name = (rec.get("name") or "").strip()
         definition = rec.get("definition") or ""
+        if not name:
+            continue
+        text = f"{name}: {definition}" if definition else name
         chunks.append(
             RetrievedChunk(
                 node_id=name,
                 node_type=rec.get("node_type", "BusinessConcept"),
-                text=f"{name}: {definition}",
+                text=text,
                 score=float(rec.get("score", 0.0)),
                 source_type="vector",
                 metadata={
@@ -159,13 +162,16 @@ def bm25_search(
     chunks: list[RetrievedChunk] = []
     for idx, score in indexed:
         node = all_nodes[idx]
-        name = node.get("name") or ""
+        name = (node.get("name") or "").strip()
         definition = node.get("definition") or ""
+        if not name:
+            continue
+        text = f"{name}: {definition}" if definition else name
         chunks.append(
             RetrievedChunk(
                 node_id=name,
                 node_type=node.get("node_type", "BusinessConcept"),
-                text=f"{name}: {definition}",
+                text=text,
                 score=score,
                 source_type="bm25",
                 metadata={
@@ -214,16 +220,19 @@ def graph_traversal(
     seen: set[str] = set()
     chunks: list[RetrievedChunk] = []
     for rec in records:
-        name = rec.get("name") or ""
+        name = (rec.get("name") or "").strip()
         if name in seen or name in seed_names:
+            continue
+        if not name:
             continue
         seen.add(name)
         definition = rec.get("definition") or ""
+        text = f"{name}: {definition}" if definition else name
         chunks.append(
             RetrievedChunk(
                 node_id=name,
                 node_type=rec.get("node_type", "Unknown"),
-                text=f"{name}: {definition}",
+                text=text,
                 score=0.5,  # graph neighbours get a neutral baseline score
                 source_type="graph",
                 metadata={"rel_type": rec.get("rel_type")},
@@ -257,13 +266,16 @@ def fetch_all_concepts(client: Neo4jClient) -> list[RetrievedChunk]:
     )
     chunks: list[RetrievedChunk] = []
     for rec in records:
-        name = rec.get("name") or ""
+        name = (rec.get("name") or "").strip()
         definition = rec.get("definition") or ""
+        if not name:
+            continue
+        text = f"{name}: {definition}" if definition else name
         chunks.append(
             RetrievedChunk(
                 node_id=name,
                 node_type="BusinessConcept",
-                text=f"{name}: {definition}",
+                text=text,
                 score=0.05,
                 source_type="graph",
                 metadata={},
@@ -300,8 +312,10 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
     )
     chunks: list[RetrievedChunk] = []
     for rec in records:
-        src = rec.get("src_table") or ""
-        tgt = rec.get("tgt_table") or ""
+        src = (rec.get("src_table") or "").strip()
+        tgt = (rec.get("tgt_table") or "").strip()
+        if not src or not tgt:
+            continue
         fk_col = rec.get("fk_column") or ""
         ref_col = rec.get("ref_column") or ""
         node_id = f"{src}→{tgt}"
@@ -344,6 +358,8 @@ def merge_results(
     """
     best: dict[str, RetrievedChunk] = {}
     for chunk in vector + bm25 + graph:
+        if not chunk.node_id.strip() or not chunk.text.strip():
+            continue
         nid = chunk.node_id
         if nid not in best or chunk.score > best[nid].score:
             best[nid] = chunk

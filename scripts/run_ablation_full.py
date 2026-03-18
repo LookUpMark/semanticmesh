@@ -1,6 +1,6 @@
 """Automated ablation study runner - Full pipeline with RAGAS.
 
-This script runs all 20 ablation studies (AB-00 through AB-20) sequentially,
+This script runs all 21 ablation studies (AB-00 through AB-20) sequentially,
 following the same pattern as pipeline_run.py but with environment variable overrides
 for each study.
 
@@ -10,7 +10,7 @@ Each study:
 3. Runs the Query Graph with 4 test questions
 4. Optionally runs RAGAS evaluation on the gold-standard dataset
 
-Results are saved to notebooks/ablation_results/AB-XX.json and AB-XX.log
+Results are saved to notebooks/ablation/ablation_results/AB-XX.json and AB-XX.log
 """
 
 from __future__ import annotations
@@ -202,9 +202,14 @@ def run_ablation_study(
 
             grounded_count = 0
             results = []
+            query_trace_file = RESULTS_DIR / f"{study_id}.query_trace.jsonl"
+            with query_trace_file.open("w", encoding="utf-8") as qtf:
+                pass
             for i, q in enumerate(TEST_QUESTIONS, 1):
                 r = run_query(q)
                 answer = r.get("final_answer", "")
+                sources = list(r.get("sources", []))
+                retrieved_contexts = list(r.get("retrieved_contexts", []))
                 grounded = bool(
                     answer
                     and answer.strip()
@@ -216,10 +221,37 @@ def run_ablation_study(
                 results.append((q, answer, grounded))
                 print(f"\n    [{i}/{len(TEST_QUESTIONS)}] {mark}  Q: {q}")
                 print(f"         A: {answer[:120]}{'…' if len(answer) > 120 else ''}")
+                logger.info(
+                    "Query trace %d/%d | q='%s' | answer_chars=%d | sources=%d | contexts=%d",
+                    i,
+                    len(TEST_QUESTIONS),
+                    q[:80],
+                    len(answer),
+                    len(sources),
+                    len(retrieved_contexts),
+                )
+                with query_trace_file.open("a", encoding="utf-8") as qtf:
+                    qtf.write(
+                        json.dumps(
+                            {
+                                "study_id": study_id,
+                                "index": i,
+                                "question": q,
+                                "final_answer": answer,
+                                "sources": sources,
+                                "retrieved_contexts": retrieved_contexts,
+                                "grounded": grounded,
+                                "timestamp": datetime.now(tz=UTC).isoformat(),
+                            },
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
 
             query_elapsed = time.time() - t1
             print(f"\n    Query elapsed   : {query_elapsed:.1f} s")
             print(f"    Grounded        : {grounded_count} / {len(TEST_QUESTIONS)}")
+            print(f"    Query trace     : {query_trace_file}")
 
             # ── 3. RAGAS Evaluation (optional) ─────────────────────────────────
             ragas_metrics = None
@@ -228,7 +260,13 @@ def run_ablation_study(
                     from src.evaluation.ragas_runner import run_ragas_evaluation  # noqa: E402
 
                     print("\n[RAGAS] Running RAGAS evaluation...")
-                    ragas_metrics = run_ragas_evaluation(run_ragas=True, max_samples=20)
+                    ragas_trace_file = RESULTS_DIR / f"{study_id}.ragas_trace.jsonl"
+                    ragas_metrics = run_ragas_evaluation(
+                        run_ragas=True,
+                        max_samples=20,
+                        trace_output_path=ragas_trace_file,
+                        trace_verbose=True,
+                    )
                     print("\n    RAGAS metrics")
                     print(f"      faithfulness      : {ragas_metrics.get('faithfulness', 0.0):.4f}")
                     print(
@@ -240,6 +278,7 @@ def run_ablation_study(
                     print(
                         f"      context_recall    : {ragas_metrics.get('context_recall', 0.0):.4f}"
                     )
+                    print(f"      trace file        : {ragas_trace_file}")
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("RAGAS evaluation failed: %s", exc)
 

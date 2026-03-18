@@ -76,16 +76,21 @@ class TestRunPipelineOnSample:
             mock_rq.return_value = {
                 "final_answer": "CUSTOMER_MASTER",
                 "sources": ["node_1", "node_2"],
+                "retrieved_contexts": ["customer record text", "master table text"],
             }
             result = _run_pipeline_on_sample(_SAMPLE)
         assert result["answer"] == "CUSTOMER_MASTER"
-        assert result["contexts"] == ["node_1", "node_2"]
+        assert result["contexts"] == ["customer record text", "master table text"]
         assert result["question"] == _SAMPLE["question"]
         assert result["ground_truth"] == _SAMPLE["ground_truth"]
 
-    def test_empty_sources_fallback_to_gold_contexts(self) -> None:
+    def test_empty_retrieved_contexts_fallback_to_gold_contexts(self) -> None:
         with patch(_PATCH_RUNQUERY) as mock_rq:
-            mock_rq.return_value = {"final_answer": "ok", "sources": []}
+            mock_rq.return_value = {
+                "final_answer": "ok",
+                "sources": ["node_1"],
+                "retrieved_contexts": [],
+            }
             result = _run_pipeline_on_sample(_SAMPLE)
         assert result["contexts"] == _SAMPLE["ground_truth_contexts"]
 

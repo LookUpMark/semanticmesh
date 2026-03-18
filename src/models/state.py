@@ -81,6 +81,7 @@ class QueryState(TypedDict, total=False):
     # Output
     final_answer: str
     sources: list[str]
+    retrieved_contexts: list[str]  # full texts of reranked chunks — used by RAGAS evaluation
 
     # Control
     iteration_count: int
