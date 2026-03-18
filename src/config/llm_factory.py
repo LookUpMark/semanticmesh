@@ -135,10 +135,16 @@ def make_llm(
         if is_free and enable_fallback and model != paid_model:
             primary_chat = _create_openrouter_chat(model)
             fallback_chat = _create_openrouter_chat(paid_model)
-            return FallbackLLM(
+            fallback_llm = FallbackLLM(
                 primary=primary_chat,
                 fallback=fallback_chat,
                 name=role,
+            )
+            # Instrument the fallback wrapper too, so all nodes get the same wrapper type.
+            return InstrumentedLLM(
+                fallback_llm,
+                name=role,
+                max_retries=get_settings().max_llm_retries,
             )
         # Single model (non-free or fallback disabled)
         chat = _create_openrouter_chat(model)

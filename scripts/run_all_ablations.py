@@ -49,7 +49,7 @@ logger = logging.getLogger("run_all_ablations")
 
 # ── Configuration ───────────────────────────────────────────────────────────────
 
-RESULTS_DIR = ROOT / "notebooks" / "ablation_results"
+RESULTS_DIR = ROOT / "notebooks" / "ablation" / "ablation_results"
 STATE_FILE = RESULTS_DIR / "ablation_state.json"
 
 # Studies with RAGAS enabled (high impact on metrics)

@@ -268,6 +268,18 @@ class FallbackLLM:
         self._using_fallback = False
         self._logger: logging.Logger = get_logger(f"llm.{name}")
 
+    def __getattr__(self, item: str) -> Any:
+        # Delegate attribute access to the currently active model (primary or fallback)
+        return getattr(self._get_current_model(), item)
+
+    @property
+    def temperature(self) -> float:
+        return getattr(self._get_current_model(), "temperature")
+
+    @property
+    def model(self) -> str:
+        return getattr(self._get_current_model(), "model")
+
     def _should_use_fallback(self) -> bool:
         """Check if we should use the fallback model based on past rate limits."""
         return self._using_fallback

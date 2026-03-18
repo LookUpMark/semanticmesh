@@ -78,7 +78,7 @@ TEST_QUESTIONS = [
 from src.evaluation.ablation_runner import ABLATION_MATRIX  # noqa: E402
 
 # ── Results directory ───────────────────────────────────────────────────────────
-RESULTS_DIR = ROOT / "notebooks" / "ablation_results"
+RESULTS_DIR = ROOT / "notebooks" / "ablation" / "ablation_results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
