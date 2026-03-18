@@ -53,11 +53,7 @@ def _format_few_shot(examples: list[CypherExample]) -> str:
         return "(no examples provided)"
     parts: list[str] = []
     for i, ex in enumerate(examples, start=1):
-        parts.append(
-            f"Example {i}:\n"
-            f"DDL:\n{ex.ddl_snippet}\n\n"
-            f"Cypher:\n{ex.cypher}"
-        )
+        parts.append(f"Example {i}:\nDDL:\n{ex.ddl_snippet}\n\nCypher:\n{ex.cypher}")
     return "\n\n---\n\n".join(parts)
 
 
@@ -107,7 +103,9 @@ def generate_cypher(
         validated_by="llm_judge",  # Fixed: template expects this
     )
 
-    logger.debug("Generating Cypher for table '%s' → '%s'.", table.table_name, mapping.mapped_concept)
+    logger.debug(
+        "Generating Cypher for table '%s' → '%s'.", table.table_name, mapping.mapped_concept
+    )
     try:
         response = llm.invoke(
             [
@@ -121,6 +119,7 @@ def generate_cypher(
     cypher = strip_cypher_fence(raw)
     logger.info(
         "Cypher generated for '%s' (%d chars).",
-        table.table_name, len(cypher),
+        table.table_name,
+        len(cypher),
     )
     return cypher

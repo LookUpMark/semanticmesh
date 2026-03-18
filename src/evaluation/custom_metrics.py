@@ -14,6 +14,7 @@ from src.models.schemas import MappingProposal  # noqa: TC001
 # Data types
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class HealingResult:
     """Result of one Cypher generation attempt (with optional healing retries)."""
 
@@ -38,6 +39,7 @@ class GoldMapping:
 # Metric implementations
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def cypher_healing_rate(results: list[HealingResult]) -> float:
     """Fraction of initially-failed Cypher statements recovered by healing.
 
@@ -50,12 +52,8 @@ def cypher_healing_rate(results: list[HealingResult]) -> float:
     Returns 0.0 when there are no healing attempts (all first-try successes or
     the list is empty).
     """
-    healed = sum(
-        1 for r in results if not r.initial_success and r.final_success
-    )
-    failed = sum(
-        1 for r in results if not r.initial_success and not r.final_success
-    )
+    healed = sum(1 for r in results if not r.initial_success and r.final_success)
+    failed = sum(1 for r in results if not r.initial_success and not r.final_success)
     total_attempts = healed + failed
     if total_attempts == 0:
         return 0.0
@@ -75,17 +73,13 @@ def hitl_confidence_agreement(
     Returns the Pearson r between those two vectors.
     Returns 0.0 if fewer than 2 matched proposals are found.
     """
-    gold_dict: dict[str, str] = {
-        g.table_name: g.correct_concept for g in gold
-    }
+    gold_dict: dict[str, str] = {g.table_name: g.correct_concept for g in gold}
     confidences: list[float] = []
     accuracies: list[float] = []
     for proposal in proposals:
         if proposal.table_name in gold_dict:
             confidences.append(proposal.confidence)
-            correct = float(
-                proposal.mapped_concept == gold_dict[proposal.table_name]
-            )
+            correct = float(proposal.mapped_concept == gold_dict[proposal.table_name])
             accuracies.append(correct)
     if len(confidences) < 2:
         return 0.0

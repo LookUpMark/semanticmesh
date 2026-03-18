@@ -10,8 +10,8 @@ import pytest
 from src.models.schemas import RetrievedChunk
 from src.retrieval.reranker import rerank
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def _chunk(name: str, score: float = 0.5) -> RetrievedChunk:
     return RetrievedChunk(
@@ -31,6 +31,7 @@ def _make_reranker(scores: list[float]) -> MagicMock:
 
 
 # ── TestRerank ────────────────────────────────────────────────────────────────
+
 
 class TestRerank:
     def test_empty_chunks_returns_empty(self) -> None:
@@ -82,6 +83,7 @@ class TestRerank:
 
 
 # ── TestGetReranker ───────────────────────────────────────────────────────────
+
 
 class TestGetReranker:
     def test_import_error_raises_helpful_message(self) -> None:

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from langgraph.graph import END
 
 from src.graph.builder_graph import (
@@ -15,8 +13,8 @@ from src.graph.builder_graph import (
     build_builder_graph,
 )
 
-
 # ── Conditional edge routing ───────────────────────────────────────────────────
+
 
 class TestRouteAfterValidate:
     def test_routes_to_hitl_when_flag(self) -> None:
@@ -72,6 +70,7 @@ class TestRouteAfterBuild:
 
 
 # ── build_builder_graph ────────────────────────────────────────────────────────
+
 
 class TestBuildBuilderGraph:
     @patch("src.graph.builder_graph.get_settings")

@@ -66,7 +66,7 @@ class AppConfig:
     # ── Chunking ───────────────────────────────────────────────────────────────
     chunk_size: int = 256
     chunk_overlap: int = 32
-    extraction_concurrency: int = 10  # parallel LLM calls during extraction
+    extraction_concurrency: int = 5  # parallel LLM calls during extraction
 
     # ── Retrieval ──────────────────────────────────────────────────────────────
     retrieval_vector_top_k: int = 20

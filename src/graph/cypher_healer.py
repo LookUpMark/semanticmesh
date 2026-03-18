@@ -9,7 +9,6 @@ EP-09 / US-09-02 and US-09-03:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 
 import neo4j.exceptions
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -26,6 +25,7 @@ logger: logging.Logger = get_logger(__name__)
 
 
 # ── Dry-Run Validation ─────────────────────────────────────────────────────────
+
 
 def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
     """Validate a Cypher statement without executing any writes.
@@ -61,6 +61,7 @@ def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
 
 
 # ── One-Shot LLM Fix ──────────────────────────────────────────────────────────
+
 
 def fix_cypher(
     cypher: str,
@@ -102,6 +103,7 @@ def fix_cypher(
 
 # ── Full Healing Loop ─────────────────────────────────────────────────────────
 
+
 def heal_cypher(
     cypher: str,
     mapping: MappingProposal,
@@ -139,13 +141,17 @@ def heal_cypher(
         if ok:
             logger.info(
                 "Cypher healed for '%s' after %d attempt(s).",
-                mapping.table_name, attempt,
+                mapping.table_name,
+                attempt,
             )
             return current
 
         logger.warning(
             "Cypher attempt %d/%d failed for '%s': %s",
-            attempt, limit, mapping.table_name, error,
+            attempt,
+            limit,
+            mapping.table_name,
+            error,
         )
 
         if attempt == limit:

@@ -41,6 +41,7 @@ logger: logging.Logger = get_logger(__name__)
 # Node Implementations
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _node_hybrid_retrieval(state: QueryState) -> dict[str, Any]:
     settings = get_settings()
     query: str = state["user_query"]
@@ -69,7 +70,9 @@ def _node_hybrid_retrieval(state: QueryState) -> dict[str, Any]:
             all_concepts = fetch_all_concepts(client)
             fk_chunks = fetch_fk_relationships(client)
             bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
-            merged = merge_results(vec_results, bm25_results, trav_results + all_concepts + fk_chunks)
+            merged = merge_results(
+                vec_results, bm25_results, trav_results + all_concepts + fk_chunks
+            )
     return {"retrieved_chunks": merged}
 
 
@@ -130,6 +133,7 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
 # Conditional Edge
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _route_after_grader(state: QueryState) -> str:
     """Route based on grader decision action."""
     decision: GraderDecision | None = state.get("grader_decision")
@@ -143,6 +147,7 @@ def _route_after_grader(state: QueryState) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # Graph Factory
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def build_query_graph():
     """Compile and return the Query StateGraph.

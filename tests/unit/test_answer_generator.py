@@ -9,10 +9,15 @@ from src.models.schemas import RetrievedChunk
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _chunk(name: str, text: str, score: float = 0.9) -> RetrievedChunk:
     return RetrievedChunk(
-        node_id=name, node_type="BusinessConcept",
-        text=text, score=score, source_type="vector", metadata={},
+        node_id=name,
+        node_type="BusinessConcept",
+        text=text,
+        score=score,
+        source_type="vector",
+        metadata={},
     )
 
 
@@ -25,6 +30,7 @@ def _make_llm(response: str) -> MagicMock:
 
 
 # ── format_context ────────────────────────────────────────────────────────────
+
 
 class TestFormatContext:
     def test_numbered_list(self) -> None:
@@ -46,6 +52,7 @@ class TestFormatContext:
 
 
 # ── generate_answer ───────────────────────────────────────────────────────────
+
 
 class TestGenerateAnswer:
     def test_returns_string(self) -> None:
@@ -82,8 +89,8 @@ class TestGenerateAnswer:
 
     def test_system_message_is_first(self) -> None:
         from langchain_core.messages import SystemMessage
+
         llm = _make_llm("answer")
         generate_answer("?", [], llm)
         call_args = llm.invoke.call_args[0][0]
         assert isinstance(call_args[0], SystemMessage)
-

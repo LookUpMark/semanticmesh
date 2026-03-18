@@ -20,7 +20,7 @@ from functools import lru_cache
 
 from langchain_openai import ChatOpenAI
 
-from src.config.llm_client import InstrumentedLLM, LLMProtocol
+from src.config.llm_client import FallbackLLM, InstrumentedLLM, LLMProtocol
 from src.config.settings import get_settings, reload_settings
 
 # ── Provider auto-detection ────────────────────────────────────────────────────
@@ -54,6 +54,27 @@ def detect_provider(model: str) -> str:
     return "lmstudio"
 
 
+def _strip_free_suffix(model: str) -> str:
+    """Remove the :free suffix from a model name if present.
+
+    Examples:
+        >>> _strip_free_suffix("openai/gpt-oss-120b:free")
+        "openai/gpt-oss-120b"
+        >>> _strip_free_suffix("meta-llama/llama-3.3-70b-instruct:free")
+        "meta-llama/llama-3.3-70b-instruct"
+        >>> _strip_free_suffix("openai/gpt-oss-120b")
+        "openai/gpt-oss-120b"
+    """
+    if model.endswith(":free"):
+        return model[:-5]
+    return model
+
+
+def _is_free_model(model: str) -> bool:
+    """Check if a model name has the :free suffix."""
+    return model.endswith(":free")
+
+
 def make_llm(
     model: str,
     temperature: float = 0.0,
@@ -66,6 +87,7 @@ def make_llm(
     openai_api_key: str | None = None,
     lmstudio_base_url: str | None = None,
     extra_model_kwargs: dict | None = None,
+    enable_fallback: bool = True,
 ) -> LLMProtocol:
     """Create an instrumented LLM, auto-detecting the provider from *model*.
 
@@ -76,27 +98,51 @@ def make_llm(
     - ``claude-*`` (no slash) → Anthropic direct (requires ``langchain-anthropic``)
     - anything else → LM Studio local endpoint
 
+    Automatic free→paid fallback
+    ----------------------------
+    If *enable_fallback* is True (default) and the model name ends with ``:free``,
+    a FallbackLLM is created that automatically switches to the paid version when
+    rate limits (HTTP 429) are encountered. This provides seamless operation without
+    manual intervention.
+
     Examples
     --------
-    >>> make_llm("openai/gpt-oss-120b:free")          # → OpenRouter
-    >>> make_llm("gpt-4o")                            # → OpenAI
-    >>> make_llm("claude-3-5-sonnet-20241022")        # → Anthropic
-    >>> make_llm("local-model")                       # → LM Studio
-    >>> make_llm("qwen3-8b-instruct")                 # → LM Studio
+    >>> make_llm("openai/gpt-oss-120b:free")          # → FallbackLLM (free→paid)
+    >>> make_llm("gpt-4o")                            # → InstrumentedLLM (OpenAI)
+    >>> make_llm("claude-3-5-sonnet-20241022")        # → InstrumentedLLM (Anthropic)
+    >>> make_llm("local-model")                       # → InstrumentedLLM (LM Studio)
+    >>> make_llm("openai/gpt-oss-120b:free", enable_fallback=False)  # → No fallback
     """
     provider = detect_provider(model)
+    is_free = _is_free_model(model)
+    paid_model = _strip_free_suffix(model) if is_free else model
 
-    if provider == "openrouter":
+    # Helper to create a ChatOpenAI instance for OpenRouter
+    def _create_openrouter_chat(model_name: str) -> ChatOpenAI:
         _api_key = openrouter_api_key or get_settings().openrouter_api_key.get_secret_value()
         _base_url = openrouter_base_url or get_settings().openrouter_base_url
-        chat = ChatOpenAI(
-            model=model,
+        return ChatOpenAI(
+            model=model_name,
             temperature=temperature,
             max_tokens=max_tokens,
             base_url=_base_url,
             api_key=_api_key,
             **({"model_kwargs": extra_model_kwargs} if extra_model_kwargs else {}),
         )
+
+    if provider == "openrouter":
+        # Create fallback pair for free models
+        if is_free and enable_fallback and model != paid_model:
+            primary_chat = _create_openrouter_chat(model)
+            fallback_chat = _create_openrouter_chat(paid_model)
+            return FallbackLLM(
+                primary=primary_chat,
+                fallback=fallback_chat,
+                name=role,
+            )
+        # Single model (non-free or fallback disabled)
+        chat = _create_openrouter_chat(model)
+        return InstrumentedLLM(chat, name=role, max_retries=get_settings().max_llm_retries)
 
     elif provider == "openai":
         import os
@@ -109,6 +155,7 @@ def make_llm(
             api_key=_api_key,
             **({"model_kwargs": extra_model_kwargs} if extra_model_kwargs else {}),
         )
+        return InstrumentedLLM(chat, name=role, max_retries=get_settings().max_llm_retries)
 
     elif provider == "anthropic":
         try:
@@ -143,11 +190,11 @@ def make_llm(
             api_key="lm-studio",
             model_kwargs={"extra_body": _kwargs},
         )
-
-    return InstrumentedLLM(chat, name=role, max_retries=get_settings().max_llm_retries)
+        return InstrumentedLLM(chat, name=role, max_retries=get_settings().max_llm_retries)
 
 
 # ── Cached pipeline factories ─────────────────────────────────────────────────
+
 
 def reconfigure_from_env() -> None:
     """Clear all cached instances so they re-read from ``os.environ`` on next call.
@@ -155,7 +202,7 @@ def reconfigure_from_env() -> None:
     Call this from the notebook after changing ``os.environ`` to pick up new
     model names or API keys without restarting the kernel.
     """
-    reload_settings()           # re-reads os.environ into a fresh Settings object
+    reload_settings()  # re-reads os.environ into a fresh Settings object
     get_reasoning_llm.cache_clear()
     get_extraction_llm.cache_clear()
     get_generation_llm.cache_clear()

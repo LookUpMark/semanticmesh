@@ -46,7 +46,7 @@ class BuilderState(TypedDict, total=False):
     current_table: EnrichedTableSchema | None
     current_entities: list[Entity]
     mapping_proposal: MappingProposal | None
-    best_proposal: MappingProposal | None   # highest-confidence proposal seen so far
+    best_proposal: MappingProposal | None  # highest-confidence proposal seen so far
     reflection_prompt: str | None
     reflection_attempts: int
 
@@ -57,7 +57,7 @@ class BuilderState(TypedDict, total=False):
 
     # Control
     hitl_flag: bool
-    skip_hitl: bool   # True in non-production runs — bypasses interrupt()
+    skip_hitl: bool  # True in non-production runs — bypasses interrupt()
     failed_mappings: list[str]
     ingestion_errors: list[str]
     completed_tables: list[str]

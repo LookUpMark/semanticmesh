@@ -136,6 +136,7 @@ class TestExtractAllTriplets:
     def test_results_in_chunk_order(self) -> None:
         """Triplets are returned in chunk index order regardless of completion order."""
         import threading
+
         chunks = [_make_chunk(index=i, text=f"Fact {i}.") for i in range(4)]
         lock = threading.Lock()
         completion_order: list[int] = []
@@ -150,9 +151,7 @@ class TestExtractAllTriplets:
             with lock:
                 completion_order.append(idx)
             resp = MagicMock()
-            resp.content = json.dumps({"triplets": [
-                {**VALID_TRIPLET, "subject": f"Entity{idx}"}
-            ]})
+            resp.content = json.dumps({"triplets": [{**VALID_TRIPLET, "subject": f"Entity{idx}"}]})
             return resp
 
         llm = MagicMock()

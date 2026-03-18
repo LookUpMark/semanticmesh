@@ -13,7 +13,7 @@ import pytest
 
 from src.graph.builder_graph import build_builder_graph
 from src.graph.neo4j_client import Neo4jClient
-from src.models.schemas import Chunk, TableSchema
+from src.models.schemas import Chunk
 from src.models.state import BuilderState
 
 pytestmark = pytest.mark.integration
@@ -38,10 +38,10 @@ class TestIncrementalUpdate:
         - Not delete or duplicate existing nodes
         """
         # Create a temporary DDL file for TABLE_A
-        import tempfile
         import os
+        import tempfile
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".sql", delete=False) as f:
             table_a_ddl = f.name
             f.write("""
                 CREATE TABLE TABLE_A (
@@ -50,7 +50,7 @@ class TestIncrementalUpdate:
                 );
             """)
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".sql", delete=False) as f:
             table_b_ddl = f.name
             f.write("""
                 CREATE TABLE TABLE_B (
@@ -68,28 +68,38 @@ class TestIncrementalUpdate:
             )
 
             responses_a = {
-                "extraction": json.dumps({
-                    "triplets": [{
-                        "subject": "TableA",
-                        "predicate": "stores",
-                        "object": "Data",
-                        "provenance_text": "Table A stores data",
+                "extraction": json.dumps(
+                    {
+                        "triplets": [
+                            {
+                                "subject": "TableA",
+                                "predicate": "stores",
+                                "object": "Data",
+                                "provenance_text": "Table A stores data",
+                                "confidence": 0.95,
+                            }
+                        ]
+                    }
+                ),
+                "judge": json.dumps(
+                    {"merge": True, "canonical_name": "TableA", "reasoning": "Same"}
+                ),
+                "enrichment": json.dumps(
+                    {
+                        "enriched_table_name": "Table A",
+                        "enriched_columns": [{"original": "ID", "enriched": "Identifier"}],
+                        "table_description": "First table",
+                    }
+                ),
+                "mapping": json.dumps(
+                    {
+                        "table_name": "TABLE_A",
+                        "mapped_concept": "TableA",
                         "confidence": 0.95,
-                    }]
-                }),
-                "judge": json.dumps({"merge": True, "canonical_name": "TableA", "reasoning": "Same"}),
-                "enrichment": json.dumps({
-                    "enriched_table_name": "Table A",
-                    "enriched_columns": [{"original": "ID", "enriched": "Identifier"}],
-                    "table_description": "First table",
-                }),
-                "mapping": json.dumps({
-                    "table_name": "TABLE_A",
-                    "mapped_concept": "TableA",
-                    "confidence": 0.95,
-                    "reasoning": "Direct mapping",
-                    "alternative_concepts": [],
-                }),
+                        "reasoning": "Direct mapping",
+                        "alternative_concepts": [],
+                    }
+                ),
                 "critic": json.dumps({"approved": True, "critique": None}),
                 "cypher": """
 MERGE (c:BusinessConcept {name: 'TableA'})
@@ -103,10 +113,11 @@ SET r.mapping_confidence = 0.95
 
             mock_llm_a = self._create_mock_llm(responses_a)
 
-            with patch("src.graph.builder_graph.get_settings") as mock_settings_fn, \
-                 patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn, \
-                 patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn:
-
+            with (
+                patch("src.graph.builder_graph.get_settings") as mock_settings_fn,
+                patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
+                patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
+            ):
                 mock_settings = MagicMock()
                 mock_settings.confidence_threshold = 0.90
                 mock_settings.max_reflection_attempts = 3
@@ -149,28 +160,38 @@ SET r.mapping_confidence = 0.95
             )
 
             responses_b = {
-                "extraction": json.dumps({
-                    "triplets": [{
-                        "subject": "TableB",
-                        "predicate": "stores",
-                        "object": "Value",
-                        "provenance_text": "Table B stores value",
+                "extraction": json.dumps(
+                    {
+                        "triplets": [
+                            {
+                                "subject": "TableB",
+                                "predicate": "stores",
+                                "object": "Value",
+                                "provenance_text": "Table B stores value",
+                                "confidence": 0.95,
+                            }
+                        ]
+                    }
+                ),
+                "judge": json.dumps(
+                    {"merge": True, "canonical_name": "TableB", "reasoning": "Same"}
+                ),
+                "enrichment": json.dumps(
+                    {
+                        "enriched_table_name": "Table B",
+                        "enriched_columns": [{"original": "ID", "enriched": "Identifier"}],
+                        "table_description": "Second table",
+                    }
+                ),
+                "mapping": json.dumps(
+                    {
+                        "table_name": "TABLE_B",
+                        "mapped_concept": "TableB",
                         "confidence": 0.95,
-                    }]
-                }),
-                "judge": json.dumps({"merge": True, "canonical_name": "TableB", "reasoning": "Same"}),
-                "enrichment": json.dumps({
-                    "enriched_table_name": "Table B",
-                    "enriched_columns": [{"original": "ID", "enriched": "Identifier"}],
-                    "table_description": "Second table",
-                }),
-                "mapping": json.dumps({
-                    "table_name": "TABLE_B",
-                    "mapped_concept": "TableB",
-                    "confidence": 0.95,
-                    "reasoning": "Direct mapping",
-                    "alternative_concepts": [],
-                }),
+                        "reasoning": "Direct mapping",
+                        "alternative_concepts": [],
+                    }
+                ),
                 "critic": json.dumps({"approved": True, "critique": None}),
                 "cypher": """
 MERGE (c:BusinessConcept {name: 'TableB'})
@@ -184,10 +205,11 @@ SET r.mapping_confidence = 0.95
 
             mock_llm_b = self._create_mock_llm(responses_b)
 
-            with patch("src.graph.builder_graph.get_settings") as mock_settings_fn, \
-                 patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn, \
-                 patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn:
-
+            with (
+                patch("src.graph.builder_graph.get_settings") as mock_settings_fn,
+                patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
+                patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
+            ):
                 mock_settings = MagicMock()
                 mock_settings.confidence_threshold = 0.90
                 mock_settings.max_reflection_attempts = 3
@@ -223,8 +245,9 @@ SET r.mapping_confidence = 0.95
                 count_after = get_graph_snapshot(neo4j_client)
 
             # Verify: new node added, original not deleted
-            assert count_after["node_count"] > count_before["node_count"], \
+            assert count_after["node_count"] > count_before["node_count"], (
                 f"Expected more nodes after delta update: before={count_before['node_count']}, after={count_after['node_count']}"
+            )
 
             # Verify TABLE_A still exists
             with neo4j_client:
@@ -249,13 +272,13 @@ SET r.mapping_confidence = 0.95
 
     def test_incremental_update_is_idempotent(
         self,
-        neo4j_client: Neo4j_client,
+        neo4j_client: Neo4jClient,
     ) -> None:
         """Running the same delta update twice should not create duplicates."""
-        import tempfile
         import os
+        import tempfile
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".sql", delete=False) as f:
             table_c_ddl = f.name
             f.write("""
                 CREATE TABLE TABLE_C (
@@ -272,28 +295,38 @@ SET r.mapping_confidence = 0.95
             )
 
             responses = {
-                "extraction": json.dumps({
-                    "triplets": [{
-                        "subject": "TableC",
-                        "predicate": "stores",
-                        "object": "Description",
-                        "provenance_text": "Table C stores descriptions",
+                "extraction": json.dumps(
+                    {
+                        "triplets": [
+                            {
+                                "subject": "TableC",
+                                "predicate": "stores",
+                                "object": "Description",
+                                "provenance_text": "Table C stores descriptions",
+                                "confidence": 0.95,
+                            }
+                        ]
+                    }
+                ),
+                "judge": json.dumps(
+                    {"merge": True, "canonical_name": "TableC", "reasoning": "Same"}
+                ),
+                "enrichment": json.dumps(
+                    {
+                        "enriched_table_name": "Table C",
+                        "enriched_columns": [{"original": "ID", "enriched": "Identifier"}],
+                        "table_description": "Third table",
+                    }
+                ),
+                "mapping": json.dumps(
+                    {
+                        "table_name": "TABLE_C",
+                        "mapped_concept": "TableC",
                         "confidence": 0.95,
-                    }]
-                }),
-                "judge": json.dumps({"merge": True, "canonical_name": "TableC", "reasoning": "Same"}),
-                "enrichment": json.dumps({
-                    "enriched_table_name": "Table C",
-                    "enriched_columns": [{"original": "ID", "enriched": "Identifier"}],
-                    "table_description": "Third table",
-                }),
-                "mapping": json.dumps({
-                    "table_name": "TABLE_C",
-                    "mapped_concept": "TableC",
-                    "confidence": 0.95,
-                    "reasoning": "Direct mapping",
-                    "alternative_concepts": [],
-                }),
+                        "reasoning": "Direct mapping",
+                        "alternative_concepts": [],
+                    }
+                ),
                 "critic": json.dumps({"approved": True, "critique": None}),
                 "cypher": """
 MERGE (c:BusinessConcept {name: 'TableC'})
@@ -307,10 +340,11 @@ SET r.mapping_confidence = 0.95
 
             mock_llm = self._create_mock_llm(responses)
 
-            with patch("src.graph.builder_graph.get_settings") as mock_settings_fn, \
-                 patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn, \
-                 patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn:
-
+            with (
+                patch("src.graph.builder_graph.get_settings") as mock_settings_fn,
+                patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
+                patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
+            ):
                 mock_settings = MagicMock()
                 mock_settings.confidence_threshold = 0.90
                 mock_settings.max_reflection_attempts = 3
@@ -357,8 +391,9 @@ SET r.mapping_confidence = 0.95
                     )[0]["cnt"]
 
                 # Verify no duplicates (MERGE ensures idempotency)
-                assert count_1 == count_2, \
+                assert count_1 == count_2, (
                     f"Expected same count after duplicate run: first={count_1}, second={count_2}"
+                )
 
         finally:
             if os.path.exists(table_c_ddl):

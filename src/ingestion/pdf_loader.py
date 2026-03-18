@@ -45,7 +45,7 @@ def load_pdf(path: Path) -> list[Document]:
     # Handle plain text files (.txt)
     if path.suffix.lower() == ".txt":
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 text = f.read().strip()
             if not text:
                 logger.debug("Empty text file: %s — skipping", path.name)

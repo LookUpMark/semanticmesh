@@ -44,6 +44,7 @@ dev = [
 
 [project.scripts]
 ragas-eval = "src.evaluation.ragas_runner:main"
+ablation-run = "scripts.run_ablation_full:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -58,6 +59,11 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402", "E501"]  # E402: dotenv first, E501: borderline line length
+"src/prompts/templates.py" = ["E501"]  # Line too long (prompt strings can be long)
+"src/config/llm_client.py" = ["TC002"]  # Imports used for runtime type checking
 
 [tool.mypy]
 python_version = "3.11"

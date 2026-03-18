@@ -48,6 +48,7 @@ def gold_dataset(tmp_path: Path) -> Path:
 # _load_dataset
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestLoadDataset:
     def test_load_valid_json(self, gold_dataset: Path) -> None:
         data = _load_dataset(gold_dataset)
@@ -99,9 +100,11 @@ class TestRunPipelineOnSample:
 # _compute_ragas_metrics
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestComputeRagasMetrics:
     def test_returns_zeros_when_ragas_not_installed(self) -> None:
         import builtins
+
         real_import = builtins.__import__
 
         def block_ragas(name: str, *args, **kwargs):
@@ -171,6 +174,7 @@ class TestRunRagasEvaluation:
 # cypher_healing_rate
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestCypherHealingRate:
     def test_empty_list(self) -> None:
         assert cypher_healing_rate([]) == 0.0
@@ -199,9 +203,9 @@ class TestCypherHealingRate:
 
     def test_mixed(self) -> None:
         results = [
-            HealingResult(initial_success=True,  final_success=True),   # no attempt
-            HealingResult(initial_success=False, final_success=True),   # healed
-            HealingResult(initial_success=False, final_success=True),   # healed
+            HealingResult(initial_success=True, final_success=True),  # no attempt
+            HealingResult(initial_success=False, final_success=True),  # healed
+            HealingResult(initial_success=False, final_success=True),  # healed
             HealingResult(initial_success=False, final_success=False),  # failed
         ]
         # healed=2, failed=1 → 2/3
@@ -211,6 +215,7 @@ class TestCypherHealingRate:
 # ─────────────────────────────────────────────────────────────────────────────
 # hitl_confidence_agreement
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestHitlConfidenceAgreement:
     def test_no_matches_returns_zero(self) -> None:
@@ -245,9 +250,7 @@ class TestHitlConfidenceAgreement:
             MappingProposal(
                 table_name="B", mapped_concept="Concept_B", confidence=0.8, reasoning="r"
             ),
-            MappingProposal(
-                table_name="C", mapped_concept="WRONG", confidence=0.3, reasoning="r"
-            ),
+            MappingProposal(table_name="C", mapped_concept="WRONG", confidence=0.3, reasoning="r"),
         ]
         gold = [
             GoldMapping(table_name="A", correct_concept="Concept_A"),
@@ -273,6 +276,7 @@ class TestHitlConfidenceAgreement:
 # ─────────────────────────────────────────────────────────────────────────────
 # _pearson
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestPearson:
     def test_perfect_positive(self) -> None:

@@ -20,11 +20,13 @@ if TYPE_CHECKING:
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
+
 def _make_document(text: str, page: int = 1, source: str = "test.pdf") -> Document:
     return Document(text=text, metadata={"source": source, "page": str(page)})
 
 
 # ── load_pdf ──────────────────────────────────────────────────────────────────
+
 
 class TestLoadPdf:
     def test_file_not_found_raises(self, tmp_path: Path) -> None:
@@ -45,7 +47,6 @@ class TestLoadPdf:
     def test_returns_one_document_per_non_empty_page(self, tmp_path: Path) -> None:
         fake_pdf = tmp_path / "doc.pdf"
         fake_pdf.write_bytes(b"%PDF-1.4")
-
 
         with patch("fitz.open") as mock_open:
             page1 = MagicMock()
@@ -81,6 +82,7 @@ class TestLoadPdf:
 
 # ── chunk_documents ───────────────────────────────────────────────────────────
 
+
 class TestChunkDocuments:
     def test_empty_input_returns_empty(self) -> None:
         assert chunk_documents([]) == []
@@ -115,6 +117,7 @@ class TestChunkDocuments:
 
 # ── load_and_chunk_pdf convenience ───────────────────────────────────────────
 
+
 class TestLoadAndChunkPdf:
     def test_propagates_ingestion_error(self, tmp_path: Path) -> None:
         with pytest.raises(IngestionError):
@@ -124,7 +127,6 @@ class TestLoadAndChunkPdf:
         """Integration-style test using mocked fitz."""
         fake_pdf = tmp_path / "ok.pdf"
         fake_pdf.write_bytes(b"%PDF-1.4")
-
 
         with patch("fitz.open") as mock_open:
             page = MagicMock()

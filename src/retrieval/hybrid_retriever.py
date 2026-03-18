@@ -24,6 +24,7 @@ logger: logging.Logger = get_logger(__name__)
 
 # ── Node Dump ──────────────────────────────────────────────────────────────────
 
+
 def build_node_index(client: Neo4jClient) -> list[dict[str, Any]]:
     """Fetch all BusinessConcept and PhysicalTable nodes as plain dicts.
 
@@ -53,6 +54,7 @@ def build_node_index(client: Neo4jClient) -> list[dict[str, Any]]:
 
 
 # ── Dense Vector Search ────────────────────────────────────────────────────────
+
 
 def vector_search(
     query: str,
@@ -96,7 +98,8 @@ def vector_search(
                 score=float(rec.get("score", 0.0)),
                 source_type="vector",
                 metadata={
-                    key: val for key, val in rec.items()
+                    key: val
+                    for key, val in rec.items()
                     if key not in ("name", "definition", "score", "node_type")
                 },
             )
@@ -106,6 +109,7 @@ def vector_search(
 
 
 # ── BM25 Keyword Search ────────────────────────────────────────────────────────
+
 
 def _node_to_text(node: dict[str, Any]) -> str:
     """Flatten a node dict to a searchable string for BM25 tokenisation."""
@@ -165,8 +169,7 @@ def bm25_search(
                 score=score,
                 source_type="bm25",
                 metadata={
-                    key: val for key, val in node.items()
-                    if key not in ("name", "definition")
+                    key: val for key, val in node.items() if key not in ("name", "definition")
                 },
             )
         )
@@ -175,6 +178,7 @@ def bm25_search(
 
 
 # ── Graph Traversal ────────────────────────────────────────────────────────────
+
 
 def graph_traversal(
     seed_names: list[str],
@@ -231,6 +235,7 @@ def graph_traversal(
 
 # ── All-Concepts Fallback ──────────────────────────────────────────────────────
 
+
 def fetch_all_concepts(client: Neo4jClient) -> list[RetrievedChunk]:
     """Return every BusinessConcept node with a low baseline score.
 
@@ -248,8 +253,7 @@ def fetch_all_concepts(client: Neo4jClient) -> list[RetrievedChunk]:
         One ``RetrievedChunk`` per ``BusinessConcept`` node.
     """
     records = client.execute_cypher(
-        "MATCH (n:BusinessConcept) "
-        "RETURN n.name AS name, n.definition AS definition"
+        "MATCH (n:BusinessConcept) RETURN n.name AS name, n.definition AS definition"
     )
     chunks: list[RetrievedChunk] = []
     for rec in records:
@@ -270,6 +274,7 @@ def fetch_all_concepts(client: Neo4jClient) -> list[RetrievedChunk]:
 
 
 # ── FK Relationship Retrieval ──────────────────────────────────────────────────
+
 
 def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
     """Return all FK :REFERENCES edges as human-readable text chunks.
@@ -317,6 +322,7 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
         )
     logger.debug("fetch_fk_relationships: %d FK edges fetched.", len(chunks))
     return chunks
+
 
 def merge_results(
     vector: list[RetrievedChunk],

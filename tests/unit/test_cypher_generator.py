@@ -6,11 +6,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.models.schemas import CypherExample, Entity, MappingProposal, TableSchema
 from src.graph.cypher_generator import _format_few_shot, generate_cypher, strip_cypher_fence
-
+from src.models.schemas import CypherExample, Entity, MappingProposal, TableSchema
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def _make_example(
     ddl: str = "CREATE TABLE test (id INT)",
@@ -62,6 +62,7 @@ def _make_table(
     ddl: str = "CREATE TABLE TB_CST (id INT, name VARCHAR(100))",
 ) -> TableSchema:
     from src.models.schemas import ColumnSchema
+
     if columns is None:
         columns = [
             ColumnSchema(name="id", data_type="INT", nullable=False),
@@ -78,6 +79,7 @@ def _make_llm_response(content: str) -> MagicMock:
 
 
 # ── strip_cypher_fence ──────────────────────────────────────────────────────────
+
 
 class TestStripCypherFence:
     def test_removes_triple_backticks_with_cypher_lang(self) -> None:
@@ -138,6 +140,7 @@ class TestStripCypherFence:
 
 # ── _format_few_shot ───────────────────────────────────────────────────────────
 
+
 class TestFormatFewShot:
     def test_formats_single_example(self) -> None:
         examples = [_make_example("CREATE TABLE test (id INT)", "MERGE (n:test)")]
@@ -180,6 +183,7 @@ class TestFormatFewShot:
 
 
 # ── generate_cypher ────────────────────────────────────────────────────────────
+
 
 class TestGenerateCypher:
     def test_happy_path_returns_cypher(self) -> None:

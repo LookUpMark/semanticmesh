@@ -6,7 +6,6 @@ import json
 from unittest.mock import MagicMock
 
 import numpy as np
-import pytest
 
 from src.mapping.rag_mapper import (
     build_retrieval_query,
@@ -22,8 +21,8 @@ from src.models.schemas import (
     TableSchema,
 )
 
-
 # ── Test Helpers ─────────────────────────────────────────────────────────────
+
 
 def _make_table(name: str = "TB_CST", ddl: str = "") -> TableSchema:
     if not ddl:
@@ -57,18 +56,21 @@ def _make_entity(name: str, definition: str = "") -> Entity:
 def _make_llm_proposal(table_name: str, concept: str, confidence: float) -> MagicMock:
     llm = MagicMock()
     resp = MagicMock()
-    resp.content = json.dumps({
-        "table_name": table_name,
-        "mapped_concept": concept,
-        "confidence": confidence,
-        "reasoning": "test reasoning",
-        "alternative_concepts": [],
-    })
+    resp.content = json.dumps(
+        {
+            "table_name": table_name,
+            "mapped_concept": concept,
+            "confidence": confidence,
+            "reasoning": "test reasoning",
+            "alternative_concepts": [],
+        }
+    )
     llm.invoke.return_value = resp
     return llm
 
 
 # ── build_retrieval_query ─────────────────────────────────────────────────────
+
 
 class TestBuildRetrievalQuery:
     def test_uses_enriched_name_when_available(self) -> None:
@@ -96,8 +98,7 @@ class TestBuildRetrievalQuery:
         table = _make_table("TB_MANY")
         enriched = EnrichedTableSchema.from_table_schema(table)
         enriched.enriched_columns = [
-            EnrichedColumn(original_name=f"COL{i}", enriched_name=f"Column {i}")
-            for i in range(15)
+            EnrichedColumn(original_name=f"COL{i}", enriched_name=f"Column {i}") for i in range(15)
         ]
         query = build_retrieval_query(enriched)
         # Check that not all 15 columns are included
@@ -107,6 +108,7 @@ class TestBuildRetrievalQuery:
 
 
 # ── retrieve_top_entities ─────────────────────────────────────────────────────
+
 
 class TestRetrieveTopEntities:
     def _make_embeddings(self, query_vec: list, entity_vecs: list[list]) -> MagicMock:
@@ -160,6 +162,7 @@ class TestRetrieveTopEntities:
 
 # ── propose_mapping ───────────────────────────────────────────────────────────
 
+
 class TestProposeMapping:
     def test_happy_path_returns_proposal(self) -> None:
         table = _make_table("TB_CST")
@@ -207,19 +210,23 @@ class TestProposeMapping:
         entities = [_make_entity("Customer")]
         llm = MagicMock()
         resp = MagicMock()
-        resp.content = json.dumps({
-            "table_name": "TB_CST",
-            "mapped_concept": "Customer",
-            "confidence": 0.95,
-            "reasoning": "test",
-            "alternative_concepts": [],
-        })
+        resp.content = json.dumps(
+            {
+                "table_name": "TB_CST",
+                "mapped_concept": "Customer",
+                "confidence": 0.95,
+                "reasoning": "test",
+                "alternative_concepts": [],
+            }
+        )
         llm.invoke.return_value = resp
 
         few_shot = "Example few shot text"
         reflection = "Your previous attempt was wrong because..."
 
-        propose_mapping(table, entities, llm, few_shot_examples=few_shot, reflection_prompt=reflection)
+        propose_mapping(
+            table, entities, llm, few_shot_examples=few_shot, reflection_prompt=reflection
+        )
 
         # Verify the reflection was prepended
         call_args = llm.invoke.call_args

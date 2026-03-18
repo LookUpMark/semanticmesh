@@ -121,7 +121,8 @@ def judge_cluster(
         except Exception as exc:
             logger.warning(
                 "LLM judge call failed for cluster %s: %s — defaulting to no-merge.",
-                cluster.canonical_candidate, exc,
+                cluster.canonical_candidate,
+                exc,
             )
             return CanonicalEntityDecision(
                 merge=False,
@@ -131,7 +132,8 @@ def judge_cluster(
 
     logger.debug(
         "ER judge for cluster '%s' completed in %.0f ms",
-        cluster.canonical_candidate, timer.elapsed_ms,
+        cluster.canonical_candidate,
+        timer.elapsed_ms,
     )
 
     _no_merge = CanonicalEntityDecision(
@@ -151,18 +153,25 @@ def judge_cluster(
         except json.JSONDecodeError as exc:
             logger.warning(
                 "Non-JSON ER judge response for cluster '%s' (attempt %d/%d): %s",
-                cluster.canonical_candidate, attempt, max_attempts, exc,
+                cluster.canonical_candidate,
+                attempt,
+                max_attempts,
+                exc,
             )
             if attempt == max_attempts:
                 return _no_merge
-            raw_json = llm.invoke([
-                HumanMessage(content=REFLECTION_TEMPLATE.format(
-                    role="semantic disambiguation expert",
-                    output_format=f"JSON object matching {_fmt}",
-                    error_or_critique=str(exc),
-                    original_input=raw_json,
-                ))
-            ]).content.strip()
+            raw_json = llm.invoke(
+                [
+                    HumanMessage(
+                        content=REFLECTION_TEMPLATE.format(
+                            role="semantic disambiguation expert",
+                            output_format=f"JSON object matching {_fmt}",
+                            error_or_critique=str(exc),
+                            original_input=raw_json,
+                        )
+                    )
+                ]
+            ).content.strip()
             continue
 
         try:
@@ -170,23 +179,32 @@ def judge_cluster(
         except ValidationError as exc:
             logger.warning(
                 "Pydantic validation failed for ER judge cluster '%s' (attempt %d/%d): %s",
-                cluster.canonical_candidate, attempt, max_attempts, exc,
+                cluster.canonical_candidate,
+                attempt,
+                max_attempts,
+                exc,
             )
             if attempt == max_attempts:
                 return _no_merge
-            raw_json = llm.invoke([
-                HumanMessage(content=REFLECTION_TEMPLATE.format(
-                    role="semantic disambiguation expert",
-                    output_format=f"JSON object matching {_fmt}",
-                    error_or_critique=str(exc),
-                    original_input=json.dumps(data),
-                ))
-            ]).content.strip()
+            raw_json = llm.invoke(
+                [
+                    HumanMessage(
+                        content=REFLECTION_TEMPLATE.format(
+                            role="semantic disambiguation expert",
+                            output_format=f"JSON object matching {_fmt}",
+                            error_or_critique=str(exc),
+                            original_input=json.dumps(data),
+                        )
+                    )
+                ]
+            ).content.strip()
             continue
 
         logger.info(
             "ER judge: cluster '%s' → merge=%s, canonical='%s'",
-            cluster.canonical_candidate, decision.merge, decision.canonical_name,
+            cluster.canonical_candidate,
+            decision.merge,
+            decision.canonical_name,
         )
         return decision
 
@@ -219,8 +237,8 @@ def cluster_to_entity(
 
     return Entity(
         name=canonical,
-        definition="",          # filled by Schema Enrichment / HITL
+        definition="",  # filled by Schema Enrichment / HITL
         synonyms=synonyms,
         provenance_text=provenance_text[:1000],  # cap at 1000 chars for Neo4j property
-        source_doc="",          # filled by the node that calls this function
+        source_doc="",  # filled by the node that calls this function
     )

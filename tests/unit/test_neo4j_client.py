@@ -6,10 +6,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.graph.neo4j_client import Neo4jClient, setup_schema, _SCHEMA_STATEMENTS
-
+from src.graph.neo4j_client import _SCHEMA_STATEMENTS, Neo4jClient, setup_schema
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def _make_client(driver_mock: MagicMock) -> Neo4jClient:
     """Return a Neo4jClient with an injected driver mock."""
@@ -20,6 +20,7 @@ def _make_client(driver_mock: MagicMock) -> Neo4jClient:
 
 def _make_result_mock(records: list[dict]) -> MagicMock:
     """Create a mock Result that returns the given records when iterated."""
+
     def _make_record(d: dict) -> MagicMock:
         m = MagicMock()
         m.__iter__ = MagicMock(return_value=iter(d.items()))
@@ -47,6 +48,7 @@ def _make_session_mock(records: list[dict] | None = None) -> MagicMock:
 
 
 # ── Context Manager ────────────────────────────────────────────────────────────
+
 
 class TestNeo4jClientLifecycle:
     def test_enter_creates_driver(self) -> None:
@@ -84,6 +86,7 @@ class TestNeo4jClientLifecycle:
 
 
 # ── execute_cypher ─────────────────────────────────────────────────────────────
+
 
 class TestExecuteCypher:
     def test_returns_list_of_dicts(self) -> None:
@@ -130,6 +133,7 @@ class TestExecuteCypher:
 
 
 # ── execute_batch ──────────────────────────────────────────────────────────────
+
 
 class TestExecuteBatch:
     def test_empty_batch_is_noop(self) -> None:
@@ -181,6 +185,7 @@ class TestExecuteBatch:
 
 
 # ── setup_schema ──────────────────────────────────────────────────────────────
+
 
 class TestSetupSchema:
     def test_all_statements_executed(self) -> None:

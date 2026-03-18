@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from src.mapping.hitl import (
-    HumanAction,
     build_interrupt_payload,
     hitl_node,
     should_interrupt,
 )
 from src.models.schemas import Entity, MappingProposal
-
+from src.models.state import BuilderState
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def _proposal(concept: str = "Customer", confidence: float = 0.95, alternatives: list[str] | None = None) -> MappingProposal:
+
+def _proposal(
+    concept: str = "Customer", confidence: float = 0.95, alternatives: list[str] | None = None
+) -> MappingProposal:
     return MappingProposal(
         table_name="TB_CST",
         mapped_concept=concept,
@@ -38,6 +38,7 @@ def _entity(name: str, prov: str = "Source A") -> Entity:
 
 
 # ── should_interrupt ───────────────────────────────────────────────────────────
+
 
 class TestShouldInterrupt:
     def test_hitl_flag_true_triggers(self) -> None:
@@ -64,12 +65,19 @@ class TestShouldInterrupt:
 
 # ── build_interrupt_payload ────────────────────────────────────────────────────
 
+
 class TestBuildInterruptPayload:
     def test_required_keys_present(self) -> None:
         prop = _proposal()
         payload = build_interrupt_payload(prop, [_entity("Customer"), _entity("Client")])
-        for key in ("table_name", "proposed_concept", "confidence", "reasoning",
-                    "alternative_concepts", "provenance_text"):
+        for key in (
+            "table_name",
+            "proposed_concept",
+            "confidence",
+            "reasoning",
+            "alternative_concepts",
+            "provenance_text",
+        ):
             assert key in payload
 
     def test_proposed_excluded_from_alternatives(self) -> None:
@@ -101,6 +109,7 @@ class TestBuildInterruptPayload:
 
 # ── hitl_node ─────────────────────────────────────────────────────────────────
 
+
 class TestHitlNode:
     def _state_high_conf(self) -> BuilderState:
         return {  # type: ignore
@@ -126,7 +135,10 @@ class TestHitlNode:
         assert cmd.goto == "Generate_Cypher"
 
     def test_correct_updates_proposal(self) -> None:
-        with patch("src.mapping.hitl.interrupt", return_value={"action": "correct", "mapped_concept": "Account"}):
+        with patch(
+            "src.mapping.hitl.interrupt",
+            return_value={"action": "correct", "mapped_concept": "Account"},
+        ):
             cmd = hitl_node(self._state_low_conf())
         assert cmd.goto == "Generate_Cypher"
         assert cmd.update["mapping_proposal"].mapped_concept == "Account"

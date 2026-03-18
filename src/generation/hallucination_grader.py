@@ -83,18 +83,24 @@ def grade_answer(
         except (json.JSONDecodeError, ValidationError) as exc:
             logger.warning(
                 "Grader response parse/validation error (attempt %d/%d): %s",
-                attempt, max_attempts, exc,
+                attempt,
+                max_attempts,
+                exc,
             )
             if attempt == max_attempts:
                 return _pass
-            raw_json = llm.invoke([
-                HumanMessage(content=REFLECTION_TEMPLATE.format(
-                    role="strict factual auditor",
-                    output_format=f"JSON object matching {_fmt}",
-                    error_or_critique=str(exc),
-                    original_input=raw_json,
-                ))
-            ]).content.strip()
+            raw_json = llm.invoke(
+                [
+                    HumanMessage(
+                        content=REFLECTION_TEMPLATE.format(
+                            role="strict factual auditor",
+                            output_format=f"JSON object matching {_fmt}",
+                            error_or_critique=str(exc),
+                            original_input=raw_json,
+                        )
+                    )
+                ]
+            ).content.strip()
             continue
 
         # Consistency check: grounded=True must have action="pass"
@@ -107,7 +113,8 @@ def grade_answer(
 
         logger.info(
             "Grader verdict: grounded=%s, action=%s, critique=%r.",
-            decision.grounded, decision.action,
+            decision.grounded,
+            decision.action,
             (decision.critique or "")[:120],
         )
         return decision

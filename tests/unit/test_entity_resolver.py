@@ -5,8 +5,9 @@ and src/resolution/entity_resolver.py (UT-06).
 from __future__ import annotations
 
 import json
-import numpy as np
 from unittest.mock import MagicMock
+
+import numpy as np
 
 from src.models.schemas import CanonicalEntityDecision, Entity, EntityCluster, Triplet
 from src.resolution.blocking import block_entities, extract_unique_entities
@@ -18,6 +19,7 @@ from src.resolution.llm_judge import (
 )
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
+
 
 def _make_triplet(subject: str, obj: str, confidence: float = 0.9) -> Triplet:
     return Triplet(
@@ -38,6 +40,7 @@ def _make_embeddings(vectors: dict[str, list[float]]) -> MagicMock:
 
 # ── extract_unique_entities ───────────────────────────────────────────────────
 
+
 class TestExtractUniqueEntities:
     def test_deduplicates_subjects_and_objects(self) -> None:
         triplets = [
@@ -57,8 +60,11 @@ class TestExtractUniqueEntities:
 
     def test_strips_whitespace(self) -> None:
         t = Triplet(
-            subject="  Customer  ", predicate="is", object="  Entity  ",
-            provenance_text="x", confidence=0.9,
+            subject="  Customer  ",
+            predicate="is",
+            object="  Entity  ",
+            provenance_text="x",
+            confidence=0.9,
         )
         result = extract_unique_entities([t])
         assert "Customer" in result
@@ -67,13 +73,14 @@ class TestExtractUniqueEntities:
 
 # ── block_entities ────────────────────────────────────────────────────────────
 
+
 class TestBlockEntities:
     def test_identical_vectors_form_cluster(self) -> None:
         # Two entities with identical embeddings → cosine sim = 1.0
         vectors = {
             "Customer": [1.0, 0.0],
             "Customers": [1.0, 0.0],  # identical → should cluster
-            "Product": [0.0, 1.0],   # orthogonal → different cluster
+            "Product": [0.0, 1.0],  # orthogonal → different cluster
         }
         emb = _make_embeddings(vectors)
         clusters = block_entities(["Customer", "Customers", "Product"], emb, threshold=0.95)
@@ -84,7 +91,7 @@ class TestBlockEntities:
     def test_orthogonal_vectors_no_clusters(self) -> None:
         vectors = {
             "Customer": [1.0, 0.0],
-            "Product":  [0.0, 1.0],
+            "Product": [0.0, 1.0],
         }
         emb = _make_embeddings(vectors)
         clusters = block_entities(["Customer", "Product"], emb, threshold=0.95)
@@ -92,9 +99,9 @@ class TestBlockEntities:
 
     def test_cluster_canonical_is_longest_string(self) -> None:
         vectors = {
-            "Cust":      [1.0, 0.0],
-            "Customer":  [1.0, 0.0],
-            "CUST":      [1.0, 0.0],
+            "Cust": [1.0, 0.0],
+            "Customer": [1.0, 0.0],
+            "CUST": [1.0, 0.0],
         }
         emb = _make_embeddings(vectors)
         clusters = block_entities(["Cust", "Customer", "CUST"], emb, threshold=0.95)
@@ -119,6 +126,7 @@ class TestBlockEntities:
 
 # ── Fixtures for LLM Judge ───────────────────────────────────────────────────────
 
+
 def _make_cluster(*variants: str) -> EntityCluster:
     return EntityCluster(
         canonical_candidate=max(variants, key=len),
@@ -129,7 +137,9 @@ def _make_cluster(*variants: str) -> EntityCluster:
 
 def _make_triplet_with_provenance(subject: str, obj: str, provenance: str) -> Triplet:
     return Triplet(
-        subject=subject, predicate="is", object=obj,
+        subject=subject,
+        predicate="is",
+        object=obj,
         provenance_text=provenance,
         confidence=0.9,
     )
@@ -138,16 +148,19 @@ def _make_triplet_with_provenance(subject: str, obj: str, provenance: str) -> Tr
 def _make_merge_llm(merge: bool, canonical: str) -> MagicMock:
     llm = MagicMock()
     resp = MagicMock()
-    resp.content = json.dumps({
-        "merge": merge,
-        "canonical_name": canonical,
-        "reasoning": "test reasoning",
-    })
+    resp.content = json.dumps(
+        {
+            "merge": merge,
+            "canonical_name": canonical,
+            "reasoning": "test reasoning",
+        }
+    )
     llm.invoke.return_value = resp
     return llm
 
 
 # ── build_provenance_map ─────────────────────────────────────────────────────────
+
 
 class TestBuildProvenanceMap:
     def test_maps_subjects_and_objects(self) -> None:
@@ -170,6 +183,7 @@ class TestBuildProvenanceMap:
 
 
 # ── judge_cluster ─────────────────────────────────────────────────────────────────
+
 
 class TestJudgeCluster:
     def test_merge_true_decision(self) -> None:
@@ -206,6 +220,7 @@ class TestJudgeCluster:
 
 # ── cluster_to_entity ───────────────────────────────────────────────────────────
 
+
 class TestClusterToEntity:
     def test_canonical_name_from_decision(self) -> None:
         cluster = _make_cluster("Cust", "Customer", "CUST")
@@ -241,6 +256,7 @@ class TestClusterToEntity:
 
 
 # ── Fixtures for Entity Resolver ───────────────────────────────────────────────
+
 
 def _make_triplet_full(subject: str, obj: str, prov: str = "") -> Triplet:
     return Triplet(
@@ -293,6 +309,7 @@ def _make_llm_no_merge(canonical: str) -> MagicMock:
 
 
 # ── resolve_entities ───────────────────────────────────────────────────────────
+
 
 class TestResolveEntities:
     def test_empty_triplets_returns_empty(self) -> None:
@@ -356,6 +373,7 @@ class TestResolveEntities:
 # cosine_similarity([0,0,...], [0,0,...]) → NaN/0 → no pair exceeds threshold
 # → 0 clusters → ER is completely blind.
 
+
 class TestZeroVectorRegressionBug3:
     """Regression guard for the mock-embeddings bug in entity resolution.
 
@@ -377,9 +395,9 @@ class TestZeroVectorRegressionBug3:
         """'Customer' and 'Customers' share the same vector — cos sim = 1.0."""
         emb = MagicMock()
         vectors = {
-            "Customer":   [1.0, 0.0, 0.0, 0.0],
-            "Customers":  [1.0, 0.0, 0.0, 0.0],  # identical → should cluster
-            "Order":      [0.0, 1.0, 0.0, 0.0],  # orthogonal → no cluster
+            "Customer": [1.0, 0.0, 0.0, 0.0],
+            "Customers": [1.0, 0.0, 0.0, 0.0],  # identical → should cluster
+            "Order": [0.0, 1.0, 0.0, 0.0],  # orthogonal → no cluster
         }
         emb.encode.side_effect = lambda texts, **kw: np.array([vectors[t] for t in texts])
         return emb
@@ -400,6 +418,7 @@ class TestZeroVectorRegressionBug3:
     def test_node_entity_resolution_calls_get_embeddings_not_mock(self) -> None:
         """Regression: _node_entity_resolution must use get_embeddings(), not _MockEmbeddings."""
         import src.graph.builder_graph as bg
+
         # _MockEmbeddings and _get_embeddings must not exist in the module
         assert not hasattr(bg, "_MockEmbeddings"), (
             "_MockEmbeddings still present in builder_graph — Bug 3 not fixed"
@@ -407,4 +426,3 @@ class TestZeroVectorRegressionBug3:
         assert not hasattr(bg, "_get_embeddings"), (
             "_get_embeddings still present in builder_graph — Bug 3 not fixed"
         )
-

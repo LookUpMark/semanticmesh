@@ -36,9 +36,7 @@ def get_reranker():
     try:
         from FlagEmbedding import FlagReranker
     except ImportError as exc:
-        raise ImportError(
-            "FlagEmbedding is not installed. Run: pip install FlagEmbedding"
-        ) from exc
+        raise ImportError("FlagEmbedding is not installed. Run: pip install FlagEmbedding") from exc
 
     settings = get_settings()
     model_name: str = settings.reranker_model
@@ -46,6 +44,7 @@ def get_reranker():
     # Temporarily hide CUDA devices during init so PyTorch doesn't try to
     # allocate GPU memory even when device="cpu" is requested.
     import os as _os
+
     _saved = _os.environ.get("CUDA_VISIBLE_DEVICES")
     _os.environ["CUDA_VISIBLE_DEVICES"] = ""
     try:
@@ -99,17 +98,13 @@ def rerank(
     try:
         scores: list[float] = reranker.compute_score(pairs, normalize=True)
     except Exception as exc:  # noqa: BLE001
-        logger.warning(
-            "Reranker scoring failed (%s) — returning chunks unranked.", exc
-        )
+        logger.warning("Reranker scoring failed (%s) — returning chunks unranked.", exc)
         return chunks[:k]
 
     scored: list[RetrievedChunk] = []
     for chunk, score in zip(chunks, scores, strict=False):
         updated_meta = {**chunk.metadata, "reranker_score": float(score)}
-        scored.append(
-            chunk.model_copy(update={"metadata": updated_meta, "score": float(score)})
-        )
+        scored.append(chunk.model_copy(update={"metadata": updated_meta, "score": float(score)}))
 
     reranked = sorted(scored, key=lambda c: c.score, reverse=True)[:k]
     logger.info(

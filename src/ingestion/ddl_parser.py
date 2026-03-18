@@ -108,10 +108,14 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
             ref_table = reference.find(exp.Table)
             ref_schema = reference.find(exp.Schema)
             # Referenced columns are Identifiers in the Schema's expressions
-            ref_cols = [
-                e.name.upper() if hasattr(e, "name") else str(e.this).upper()
-                for e in ref_schema.expressions
-            ] if ref_schema else []
+            ref_cols = (
+                [
+                    e.name.upper() if hasattr(e, "name") else str(e.this).upper()
+                    for e in ref_schema.expressions
+                ]
+                if ref_schema
+                else []
+            )
             for i, fk_col_name in enumerate(fk_cols):
                 for column_schema in columns:
                     if column_schema.name == fk_col_name:

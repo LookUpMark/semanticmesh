@@ -10,7 +10,6 @@ import pytest
 from src.graph.cypher_healer import fix_cypher, heal_cypher, validate_cypher
 from src.models.schemas import MappingProposal
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 GOOD_CYPHER = "MERGE (bc:BusinessConcept {name: $name})"
@@ -56,6 +55,7 @@ def _make_llm(fixed_cypher: str) -> MagicMock:
 
 # ── validate_cypher ────────────────────────────────────────────────────────────
 
+
 class TestValidateCypher:
     def test_valid_cypher_returns_true(self) -> None:
         driver = _make_driver(should_fail=False)
@@ -93,6 +93,7 @@ class TestValidateCypher:
 
 # ── fix_cypher ────────────────────────────────────────────────────────────────
 
+
 class TestFixCypher:
     def test_returns_stripped_cypher(self) -> None:
         llm = _make_llm("```cypher\n" + GOOD_CYPHER + "\n```")
@@ -115,6 +116,7 @@ class TestFixCypher:
 
 
 # ── heal_cypher ───────────────────────────────────────────────────────────────
+
 
 class TestHealCypher:
     def test_passes_on_first_try(self) -> None:

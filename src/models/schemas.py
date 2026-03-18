@@ -13,8 +13,10 @@ from pydantic import BaseModel, Field
 
 # ── Ingestion ──────────────────────────────────────────────────────────────────
 
+
 class Document(BaseModel):
     """A raw page or section extracted from a PDF."""
+
     text: str
     metadata: dict[str, str] = Field(default_factory=dict)
     # metadata keys: source (filename), page (int)
@@ -22,6 +24,7 @@ class Document(BaseModel):
 
 class Chunk(BaseModel):
     """A text chunk produced by RecursiveCharacterTextSplitter."""
+
     text: str
     chunk_index: int
     metadata: dict[str, str] = Field(default_factory=dict)
@@ -30,39 +33,46 @@ class Chunk(BaseModel):
 
 # ── Extraction ─────────────────────────────────────────────────────────────────
 
+
 class Triplet(BaseModel):
     """A (subject, predicate, object) semantic fact + provenance."""
+
     subject: str
     predicate: str
     object: str
-    provenance_text: str          # verbatim sentence from the source chunk
+    provenance_text: str  # verbatim sentence from the source chunk
     confidence: float = Field(ge=0.0, le=1.0)
     source_chunk_index: int | None = None
 
 
 class TripletExtractionResponse(BaseModel):
     """SLM JSON-mode output schema for triplet extraction."""
+
     triplets: list[Triplet]
 
 
 # ── Entity Resolution ──────────────────────────────────────────────────────────
 
+
 class EntityCluster(BaseModel):
     """A group of near-duplicate entity strings produced by vector blocking."""
-    canonical_candidate: str      # most frequent / longest form
-    variants: list[str]           # all near-duplicate strings in the cluster
-    avg_similarity: float         # mean pairwise cosine similarity
+
+    canonical_candidate: str  # most frequent / longest form
+    variants: list[str]  # all near-duplicate strings in the cluster
+    avg_similarity: float  # mean pairwise cosine similarity
 
 
 class CanonicalEntityDecision(BaseModel):
     """LLM judge decision for a single EntityCluster."""
+
     merge: bool
     canonical_name: str
-    reasoning: str                # one sentence — logged only, not used downstream
+    reasoning: str  # one sentence — logged only, not used downstream
 
 
 class Entity(BaseModel):
     """A resolved, canonical business concept ready for RAG Mapping."""
+
     name: str
     definition: str
     synonyms: list[str] = Field(default_factory=list)
@@ -73,29 +83,33 @@ class Entity(BaseModel):
 
 # ── Schema Parsing ─────────────────────────────────────────────────────────────
 
+
 class ColumnSchema(BaseModel):
     """Metadata for a single DDL column."""
+
     name: str
     data_type: str
     is_primary_key: bool = False
     is_foreign_key: bool = False
-    references: str | None = None   # "other_table.col"
+    references: str | None = None  # "other_table.col"
     comment: str | None = None
 
 
 class TableSchema(BaseModel):
     """Parsed DDL output for a single SQL table."""
+
     table_name: str
     schema_name: str | None = None
     columns: list[ColumnSchema]
-    ddl_source: str                 # raw DDL string for this table
+    ddl_source: str  # raw DDL string for this table
     comment: str | None = None
 
 
 class EnrichedColumn(BaseModel):
     """Enriched column metadata produced by the LLM Schema Enrichment node."""
-    original_name: str              # e.g. "CUST_ID" — never changed
-    enriched_name: str              # e.g. "Customer ID" — human-readable
+
+    original_name: str  # e.g. "CUST_ID" — never changed
+    enriched_name: str  # e.g. "Customer ID" — human-readable
 
 
 class EnrichedTableSchema(TableSchema):
@@ -105,6 +119,7 @@ class EnrichedTableSchema(TableSchema):
     ddl_source, comment) so it is Liskov-substitutable wherever TableSchema is
     expected — avoids mypy --strict errors at call sites that accept either type.
     """
+
     # Enrichment-only fields (TableSchema fields are inherited)
     enriched_table_name: str | None = None
     enriched_columns: list[EnrichedColumn] = Field(default_factory=list)
@@ -118,10 +133,12 @@ class EnrichedTableSchema(TableSchema):
 
 # ── Mapping ────────────────────────────────────────────────────────────────────
 
+
 class MappingProposal(BaseModel):
     """LLM proposal aligning a PhysicalTable to a BusinessConcept."""
+
     table_name: str
-    mapped_concept: str | None        # null if no mapping found
+    mapped_concept: str | None  # null if no mapping found
     confidence: float = Field(ge=0.0, le=1.0)
     reasoning: str
     alternative_concepts: list[str] = Field(default_factory=list)
@@ -129,6 +146,7 @@ class MappingProposal(BaseModel):
 
 class CriticDecision(BaseModel):
     """LLM critic verdict on a MappingProposal."""
+
     approved: bool
     critique: str | None = None
     suggested_correction: str | None = None
@@ -136,6 +154,7 @@ class CriticDecision(BaseModel):
 
 class MappingExample(BaseModel):
     """A few-shot mapping example injected into the MAPPING_USER prompt."""
+
     ddl_snippet: str
     concept_name: str
     concept_definition: str
@@ -144,8 +163,10 @@ class MappingExample(BaseModel):
 
 # ── Cypher ─────────────────────────────────────────────────────────────────────
 
+
 class CypherExample(BaseModel):
     """A few-shot Cypher generation example injected into the CYPHER_USER prompt."""
+
     description: str
     ddl_snippet: str
     concept_name: str
@@ -154,18 +175,21 @@ class CypherExample(BaseModel):
 
 class CypherStatement(BaseModel):
     """A validated Cypher MERGE statement ready for Neo4j execution."""
+
     cypher: str
     params: dict[str, Any] = Field(default_factory=dict)
-    mapping_id: str                    # "{table_name}__{concept_name}"
+    mapping_id: str  # "{table_name}__{concept_name}"
 
 
 # ── Retrieval ──────────────────────────────────────────────────────────────────
 
+
 class RetrievedChunk(BaseModel):
     """A context chunk returned by any retrieval method."""
+
     node_id: str
-    node_type: str                     # "BusinessConcept" | "PhysicalTable"
-    text: str                          # formatted as "name: definition"
+    node_type: str  # "BusinessConcept" | "PhysicalTable"
+    text: str  # formatted as "name: definition"
     score: float
     source_type: Literal["vector", "bm25", "graph"]
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -174,8 +198,10 @@ class RetrievedChunk(BaseModel):
 
 # ── Generation ────────────────────────────────────────────────────────────────
 
+
 class GraderDecision(BaseModel):
     """Hallucination Grader verdict."""
+
     grounded: bool
     critique: str | None = None
     action: Literal["pass", "regenerate", "web_search"]
@@ -183,8 +209,10 @@ class GraderDecision(BaseModel):
 
 # ── Evaluation ────────────────────────────────────────────────────────────────
 
+
 class EvaluationReport(BaseModel):
     """RAGAS + system-specific evaluation results for one run."""
+
     timestamp: datetime
     num_samples: int
     faithfulness: float

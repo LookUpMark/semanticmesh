@@ -22,17 +22,18 @@ import time
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 CONTAINER_NAME = "neo4j-thesis"
-IMAGE          = "neo4j:5"
-NEO4J_AUTH     = "neo4j/test_password"
-HTTP_PORT      = 7474
-BOLT_PORT      = 7687
-VOLUME_NAME    = "neo4j-thesis-data"
+IMAGE = "neo4j:5"
+NEO4J_AUTH = "neo4j/test_password"
+HTTP_PORT = 7474
+BOLT_PORT = 7687
+VOLUME_NAME = "neo4j-thesis-data"
 
 # How long to wait for Neo4j to accept connections after start (seconds)
 STARTUP_TIMEOUT = 60
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, check=check)
@@ -52,6 +53,7 @@ def _container_status() -> str:
 def _wait_for_bolt(timeout: int = STARTUP_TIMEOUT) -> bool:
     """Poll until Neo4j Bolt port accepts connections or timeout expires."""
     import socket
+
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -63,6 +65,7 @@ def _wait_for_bolt(timeout: int = STARTUP_TIMEOUT) -> bool:
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def start_neo4j(register_stop_atexit: bool = True) -> None:
     """Start (or resume) the Neo4j Docker container.
@@ -87,15 +90,24 @@ def start_neo4j(register_stop_atexit: bool = True) -> None:
         _wait_ready()
     else:
         print("🚀 Creating Neo4j container …")
-        _run([
-            "docker", "run", "--detach",
-            "--name", CONTAINER_NAME,
-            "-p", f"{HTTP_PORT}:{HTTP_PORT}",
-            "-p", f"{BOLT_PORT}:{BOLT_PORT}",
-            "-e", f"NEO4J_AUTH={NEO4J_AUTH}",
-            "--volume", f"{VOLUME_NAME}:/data",
-            IMAGE,
-        ])
+        _run(
+            [
+                "docker",
+                "run",
+                "--detach",
+                "--name",
+                CONTAINER_NAME,
+                "-p",
+                f"{HTTP_PORT}:{HTTP_PORT}",
+                "-p",
+                f"{BOLT_PORT}:{BOLT_PORT}",
+                "-e",
+                f"NEO4J_AUTH={NEO4J_AUTH}",
+                "--volume",
+                f"{VOLUME_NAME}:/data",
+                IMAGE,
+            ]
+        )
         _wait_ready()
 
     if register_stop_atexit:
@@ -107,7 +119,9 @@ def _wait_ready() -> None:
     if _wait_for_bolt():
         print(f"  ready ✅  (bolt://localhost:{BOLT_PORT})")
     else:
-        print(f"\n⚠️  Neo4j did not become ready within {STARTUP_TIMEOUT}s — check `docker logs {CONTAINER_NAME}`")
+        print(
+            f"\n⚠️  Neo4j did not become ready within {STARTUP_TIMEOUT}s — check `docker logs {CONTAINER_NAME}`"
+        )
 
 
 def stop_neo4j() -> None:
@@ -118,4 +132,6 @@ def stop_neo4j() -> None:
         _run(["docker", "stop", CONTAINER_NAME], check=False)
         print("  stopped.")
     else:
-        print(f"ℹ️  Neo4j container is not running (status: '{status or 'absent'}') — nothing to stop.")
+        print(
+            f"ℹ️  Neo4j container is not running (status: '{status or 'absent'}') — nothing to stop."
+        )

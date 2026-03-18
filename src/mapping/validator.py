@@ -25,6 +25,7 @@ logger: logging.Logger = get_logger(__name__)
 
 # ── Layer 1: Pydantic Schema Validation ───────────────────────────────────────
 
+
 def validate_schema(
     proposal_dict: dict,
 ) -> tuple[MappingProposal | None, str | None]:
@@ -48,6 +49,7 @@ def validate_schema(
 
 
 # ── Layer 2: LLM Actor-Critic ─────────────────────────────────────────────────
+
 
 def critic_review(
     proposal: MappingProposal,
@@ -78,7 +80,10 @@ def critic_review(
     # for the customer") in the critic context window. Take top 20 for coverage.
     sorted_entities = sorted(entities, key=lambda e: len(e.name))[:20]
     entities_json = json.dumps(
-        [{"name": e.name, "definition": e.definition, "synonyms": e.synonyms} for e in sorted_entities]
+        [
+            {"name": e.name, "definition": e.definition, "synonyms": e.synonyms}
+            for e in sorted_entities
+        ]
     )
     user_prompt = CRITIC_USER.format(
         proposal_json=proposal.model_dump_json(indent=2),
@@ -97,7 +102,8 @@ def critic_review(
     except Exception as exc:
         logger.warning(
             "Critic LLM call failed for table '%s': %s — approving by default.",
-            table.table_name, exc,
+            table.table_name,
+            exc,
         )
         return CriticDecision(approved=True)
 
@@ -110,12 +116,15 @@ def critic_review(
 
     logger.info(
         "Critic for '%s' → approved=%s, critique=%r",
-        table.table_name, decision.approved, decision.critique,
+        table.table_name,
+        decision.approved,
+        decision.critique,
     )
     return decision
 
 
 # ── Reflection Prompt Builder ─────────────────────────────────────────────────
+
 
 def build_reflection_prompt(
     role: str,

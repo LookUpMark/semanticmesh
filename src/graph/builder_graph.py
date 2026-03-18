@@ -8,13 +8,10 @@ from __future__ import annotations
 
 import logging
 import uuid
-from pathlib import Path
 from typing import Any
 
-from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
-from langgraph.types import Command
 
 from src.config.llm_factory import get_extraction_llm, get_reasoning_llm
 from src.config.logging import get_logger
@@ -30,11 +27,11 @@ from src.ingestion.schema_enricher import enrich_all
 from src.mapping.hitl import hitl_node
 from src.mapping.rag_mapper import build_retrieval_query, propose_mapping, retrieve_top_entities
 from src.mapping.validator import build_reflection_prompt, critic_review, validate_schema
-from src.models.schemas import Entity, MappingProposal
+from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
 from src.models.state import BuilderState
 from src.prompts.few_shot import load_cypher_examples
-from src.retrieval.embeddings import embed_text, get_embeddings
 from src.resolution.entity_resolver import resolve_entities
+from src.retrieval.embeddings import embed_text, get_embeddings
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -42,6 +39,7 @@ logger: logging.Logger = get_logger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 # Node Implementations
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _node_extract_triplets(state: BuilderState) -> dict[str, Any]:
     """Extract semantic triplets from document chunks."""
@@ -104,11 +102,15 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
         remaining = pending[1:]
 
     query = build_retrieval_query(current_table)
-    top_entities = retrieve_top_entities(query, entities, embeddings, top_k=settings.retrieval_vector_top_k)
+    top_entities = retrieve_top_entities(
+        query, entities, embeddings, top_k=settings.retrieval_vector_top_k
+    )
 
     # If coming from a reflection retry, inject the critique into the proposal call
     proposal = propose_mapping(
-        current_table, top_entities, llm,
+        current_table,
+        top_entities,
+        llm,
         few_shot_examples="",  # TODO: Load from few_shot module
         reflection_prompt=reflection_prompt,
     )
@@ -176,12 +178,14 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
             logger.warning(
                 "Critic rejected mapping for '%s' after %d attempts — accepting best proposal "
                 "(concept='%s', confidence=%.2f).",
-                validated.table_name, attempts,
-                best_proposal.mapped_concept, best_proposal.confidence or 0.0,
+                validated.table_name,
+                attempts,
+                best_proposal.mapped_concept,
+                best_proposal.confidence or 0.0,
             )
             return {
                 "mapping_proposal": best_proposal,
-                "best_proposal": None,   # reset for next table
+                "best_proposal": None,  # reset for next table
                 "validation_error": None,
                 "reflection_attempts": 0,
                 "hitl_flag": False,
@@ -200,7 +204,7 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
 
     return {
         "mapping_proposal": validated,
-        "best_proposal": None,   # reset for next table
+        "best_proposal": None,  # reset for next table
         "validation_error": None,
         "reflection_attempts": 0,
         "hitl_flag": validated.confidence < settings.confidence_threshold,
@@ -240,12 +244,18 @@ def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
 
     with Neo4jClient() as client:
         healed = heal_cypher(
-            cypher, proposal, client.driver, llm,
+            cypher,
+            proposal,
+            client.driver,
+            llm,
             max_attempts=settings.max_cypher_healing_attempts,
         )
 
     if healed is None:
-        logger.warning("Cypher healing failed for table '%s' — using deterministic builder.", proposal.table_name)
+        logger.warning(
+            "Cypher healing failed for table '%s' — using deterministic builder.",
+            proposal.table_name,
+        )
         return {"cypher_failed": True, "current_cypher": None}
 
     return {"current_cypher": healed, "cypher_failed": False}
@@ -299,10 +309,17 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 client.execute_cypher(fk_cypher, fk_params)
                 logger.info(
                     "FK edge: %s.%s -> %s",
-                    table.table_name, fk_params["fk_column"], fk_params["tgt_table"],
+                    table.table_name,
+                    fk_params["fk_column"],
+                    fk_params["tgt_table"],
                 )
             except Exception as exc:
-                logger.warning("Could not write FK edge for %s.%s: %s", table.table_name, fk_params["fk_column"], exc)
+                logger.warning(
+                    "Could not write FK edge for %s.%s: %s",
+                    table.table_name,
+                    fk_params["fk_column"],
+                    exc,
+                )
 
         # Populate the BGE-M3 embedding so the vector index can serve queries.
         if proposal.mapped_concept:
@@ -325,6 +342,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
 # ─────────────────────────────────────────────────────────────────────────────
 # Conditional Edge Predicates
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _route_after_validate(state: BuilderState) -> str:
     """Route after validation: HITL, retry mapping, or proceed to Cypher."""
@@ -355,6 +373,7 @@ def _route_after_build(state: BuilderState) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # Graph Factory
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def build_builder_graph(*, production: bool = False):
     """Compile and return the full Builder StateGraph.
@@ -413,6 +432,7 @@ def build_builder_graph(*, production: bool = False):
     if production:
         try:
             from langgraph.checkpoint.sqlite import SqliteSaver
+
             settings = get_settings()
             checkpointer = SqliteSaver.from_conn_string(settings.sqlite_checkpoint_path)
         except ImportError:

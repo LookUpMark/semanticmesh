@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -108,8 +107,8 @@ from src.retrieval.hybrid_retriever import (  # noqa: E402
     vector_search,
 )
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def _chunk(name: str, score: float, source: str = "vector") -> RetrievedChunk:
     return RetrievedChunk(
@@ -129,6 +128,7 @@ def _make_client(records: list[dict]) -> MagicMock:
 
 
 # ── TestNodeToText ─────────────────────────────────────────────────────────────
+
 
 class TestNodeToText:
     def test_joins_all_fields(self) -> None:
@@ -152,25 +152,26 @@ class TestNodeToText:
 
 # ── TestVectorSearch ───────────────────────────────────────────────────────────
 
+
 class TestVectorSearch:
     def _model(self) -> MagicMock:
         model = MagicMock()
-        model.encode = MagicMock(
-            return_value=np.zeros((1, 1024), dtype="float32")
-        )
+        model.encode = MagicMock(return_value=np.zeros((1, 1024), dtype="float32"))
         return model
 
     def test_returns_retrieved_chunks(self) -> None:
-        client = _make_client([
-            {
-                "name": "Customer",
-                "definition": "A buyer",
-                "score": 0.95,
-                "node_type": "BusinessConcept",
-                "source_doc": "x.pdf",
-                "synonyms": ["Client"],
-            }
-        ])
+        client = _make_client(
+            [
+                {
+                    "name": "Customer",
+                    "definition": "A buyer",
+                    "score": 0.95,
+                    "node_type": "BusinessConcept",
+                    "source_doc": "x.pdf",
+                    "synonyms": ["Client"],
+                }
+            ]
+        )
         results = vector_search("customer", client, top_k=5, model=self._model())
         assert len(results) == 1
         assert results[0].source_type == "vector"
@@ -184,12 +185,31 @@ class TestVectorSearch:
 
 # ── TestBm25Search ─────────────────────────────────────────────────────────────
 
+
 class TestBm25Search:
     def _nodes(self) -> list[dict]:
         return [
-            {"name": "Customer", "definition": "A person who buys goods",        "synonyms": [],       "column_names": [], "node_type": "BusinessConcept"},
-            {"name": "Product",  "definition": "A sellable item in the inventory", "synonyms": ["Item"], "column_names": [], "node_type": "BusinessConcept"},
-            {"name": "Order",    "definition": "A purchase transaction",           "synonyms": [],       "column_names": [], "node_type": "BusinessConcept"},
+            {
+                "name": "Customer",
+                "definition": "A person who buys goods",
+                "synonyms": [],
+                "column_names": [],
+                "node_type": "BusinessConcept",
+            },
+            {
+                "name": "Product",
+                "definition": "A sellable item in the inventory",
+                "synonyms": ["Item"],
+                "column_names": [],
+                "node_type": "BusinessConcept",
+            },
+            {
+                "name": "Order",
+                "definition": "A purchase transaction",
+                "synonyms": [],
+                "column_names": [],
+                "node_type": "BusinessConcept",
+            },
         ]
 
     def test_top_result_is_most_relevant(self) -> None:
@@ -210,11 +230,19 @@ class TestBm25Search:
 
 # ── TestGraphTraversal ─────────────────────────────────────────────────────────
 
+
 class TestGraphTraversal:
     def test_returns_neighbours(self) -> None:
-        client = _make_client([
-            {"name": "Order", "definition": "A purchase", "node_type": "BusinessConcept", "rel_type": "RELATED_TO"},
-        ])
+        client = _make_client(
+            [
+                {
+                    "name": "Order",
+                    "definition": "A purchase",
+                    "node_type": "BusinessConcept",
+                    "rel_type": "RELATED_TO",
+                },
+            ]
+        )
         results = graph_traversal(["Customer"], client, depth=2)
         assert len(results) == 1
         assert results[0].source_type == "graph"
@@ -223,14 +251,22 @@ class TestGraphTraversal:
         assert graph_traversal([], _make_client([]), depth=2) == []
 
     def test_excludes_seed_names_from_results(self) -> None:
-        client = _make_client([
-            {"name": "Customer", "definition": "loop node", "node_type": "BC", "rel_type": "SELF"},
-        ])
+        client = _make_client(
+            [
+                {
+                    "name": "Customer",
+                    "definition": "loop node",
+                    "node_type": "BC",
+                    "rel_type": "SELF",
+                },
+            ]
+        )
         results = graph_traversal(["Customer"], client, depth=1)
         assert all(r.node_id != "Customer" for r in results)
 
 
 # ── TestMergeResults ───────────────────────────────────────────────────────────
+
 
 class TestMergeResults:
     def test_deduplicates_by_node_id(self) -> None:

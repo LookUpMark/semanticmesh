@@ -10,11 +10,15 @@ from src.models.schemas import RetrievedChunk
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _chunk(name: str) -> RetrievedChunk:
     return RetrievedChunk(
-        node_id=name, node_type="BusinessConcept",
-        text=f"{name}: definition text", score=0.85,
-        source_type="vector", metadata={},
+        node_id=name,
+        node_type="BusinessConcept",
+        text=f"{name}: definition text",
+        score=0.85,
+        source_type="vector",
+        metadata={},
     )
 
 
@@ -28,6 +32,7 @@ def _make_llm(decision: dict) -> MagicMock:
 
 # ── grade_answer ──────────────────────────────────────────────────────────────
 
+
 class TestGradeAnswer:
     def test_pass_verdict(self) -> None:
         llm = _make_llm({"grounded": True, "critique": None, "action": "pass"})
@@ -37,11 +42,13 @@ class TestGradeAnswer:
         assert decision.critique is None
 
     def test_regenerate_verdict(self) -> None:
-        llm = _make_llm({
-            "grounded": False,
-            "critique": "TB_ORDERS is not in any retrieved chunk.",
-            "action": "regenerate",
-        })
+        llm = _make_llm(
+            {
+                "grounded": False,
+                "critique": "TB_ORDERS is not in any retrieved chunk.",
+                "action": "regenerate",
+            }
+        )
         decision = grade_answer("Query?", "TB_ORDERS stores orders.", [_chunk("Customer")], llm)
         assert decision.grounded is False
         assert decision.action == "regenerate"
@@ -89,8 +96,8 @@ class TestGradeAnswer:
 
     def test_system_message_is_first(self) -> None:
         from langchain_core.messages import SystemMessage
+
         llm = _make_llm({"grounded": True, "critique": None, "action": "pass"})
         grade_answer("?", "Answer.", [], llm)
         call_args = llm.invoke.call_args[0][0]
         assert isinstance(call_args[0], SystemMessage)
-

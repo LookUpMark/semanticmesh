@@ -5,17 +5,15 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock
 
-import pytest
-
 from src.mapping.validator import (
     build_reflection_prompt,
     critic_review,
     validate_schema,
 )
-from src.models.schemas import ColumnSchema, CriticDecision, Entity, MappingProposal, TableSchema
-
+from src.models.schemas import ColumnSchema, Entity, MappingProposal, TableSchema
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
+
 
 def _valid_dict(concept: str = "Customer", confidence: float = 0.9) -> dict:
     return {
@@ -48,16 +46,19 @@ def _make_entity(name: str = "Customer") -> Entity:
 def _make_critic_llm(approved: bool, critique: str | None = None) -> MagicMock:
     llm = MagicMock()
     resp = MagicMock()
-    resp.content = json.dumps({
-        "approved": approved,
-        "critique": critique,
-        "suggested_correction": None,
-    })
+    resp.content = json.dumps(
+        {
+            "approved": approved,
+            "critique": critique,
+            "suggested_correction": None,
+        }
+    )
     llm.invoke.return_value = resp
     return llm
 
 
 # ── validate_schema ───────────────────────────────────────────────────────────
+
 
 class TestValidateSchema:
     def test_valid_proposal_returns_object(self) -> None:
@@ -89,6 +90,7 @@ class TestValidateSchema:
 
 
 # ── critic_review ─────────────────────────────────────────────────────────────
+
 
 class TestCriticReview:
     def test_approved_decision(self) -> None:
@@ -144,6 +146,7 @@ class TestCriticReview:
 
 
 # ── build_reflection_prompt ───────────────────────────────────────────────────
+
 
 class TestBuildReflectionPrompt:
     def test_all_placeholders_filled(self) -> None:

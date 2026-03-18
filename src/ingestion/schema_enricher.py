@@ -92,13 +92,15 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
         except Exception as exc:
             logger.warning(
                 "LLM call failed for table '%s': %s -- returning unenriched schema.",
-                table.table_name, exc,
+                table.table_name,
+                exc,
             )
             return EnrichedTableSchema.from_table_schema(table)
 
     logger.debug(
         "Schema enrichment LLM call for '%s' completed in %.0f ms",
-        table.table_name, timer.elapsed_ms,
+        table.table_name,
+        timer.elapsed_ms,
     )
 
     # Parse JSON response
@@ -107,7 +109,8 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
     except json.JSONDecodeError as exc:
         logger.warning(
             "Non-JSON response for table '%s': %s -- returning unenriched schema.",
-            table.table_name, exc,
+            table.table_name,
+            exc,
         )
         return EnrichedTableSchema.from_table_schema(table)
 

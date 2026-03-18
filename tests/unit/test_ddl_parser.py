@@ -45,6 +45,7 @@ CREATE TABLE public.tb_product (
 
 # ── parse_ddl basic ───────────────────────────────────────────────────────────
 
+
 class TestParseDdlBasic:
     def test_parses_single_table(self) -> None:
         tables = parse_ddl(SIMPLE_DDL)
@@ -114,6 +115,7 @@ class TestParseDdlErrorCases:
 
 
 # ── parse_ddl_file ────────────────────────────────────────────────────────────
+
 
 class TestParseDdlFile:
     def test_parses_simple_schema_fixture(self) -> None:

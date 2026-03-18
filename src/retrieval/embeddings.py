@@ -37,9 +37,7 @@ def get_embeddings():
     try:
         from FlagEmbedding import FlagModel
     except ImportError as exc:
-        raise ImportError(
-            "FlagEmbedding is not installed. Run: pip install FlagEmbedding"
-        ) from exc
+        raise ImportError("FlagEmbedding is not installed. Run: pip install FlagEmbedding") from exc
 
     settings = get_settings()
     model_name: str = settings.embedding_model

@@ -10,7 +10,7 @@ import logging
 from types import TracebackType
 from typing import Any
 
-from neo4j import GraphDatabase, ManagedTransaction, Result, Session
+from neo4j import GraphDatabase, ManagedTransaction, Result
 
 from src.config.logging import get_logger
 from src.config.settings import get_settings
@@ -25,22 +25,19 @@ _SCHEMA_STATEMENTS: list[str] = [
     # Uniqueness constraint on BusinessConcept name
     "CREATE CONSTRAINT businessconcept_name_unique IF NOT EXISTS "
     "FOR (n:BusinessConcept) REQUIRE n.name IS UNIQUE",
-
     # Uniqueness constraint on DataTable qualified name
     "CREATE CONSTRAINT datatable_qualified_unique IF NOT EXISTS "
     "FOR (n:DataTable) REQUIRE n.qualified_name IS UNIQUE",
-
     # Index for fast Chunk look-up by source document
-    "CREATE INDEX chunk_source_doc IF NOT EXISTS "
-    "FOR (c:Chunk) ON (c.source_doc)",
-
+    "CREATE INDEX chunk_source_doc IF NOT EXISTS FOR (c:Chunk) ON (c.source_doc)",
     # Vector index for BGE-M3 embeddings on BusinessConcept nodes
     # Note: indexConfig keys require backtick quoting in Cypher map literals.
     (
         "CREATE VECTOR INDEX businessconcept_embedding IF NOT EXISTS "
         "FOR (n:BusinessConcept) ON n.embedding "
         "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
-    ) % _EMBEDDING_DIMENSION,
+    )
+    % _EMBEDDING_DIMENSION,
 ]
 
 
@@ -67,15 +64,14 @@ class Neo4jClient:
         settings = get_settings()
         self._uri: str = uri or settings.neo4j_uri
         self._username: str = username or settings.neo4j_user
-        self._password: str = (
-            password
-            or (settings.neo4j_password.get_secret_value() if settings.neo4j_password else "")
+        self._password: str = password or (
+            settings.neo4j_password.get_secret_value() if settings.neo4j_password else ""
         )
         self._driver = None
 
     # ── Lifecycle ──────────────────────────────────────────────────────────────
 
-    def __enter__(self) -> "Neo4jClient":
+    def __enter__(self) -> Neo4jClient:
         self._driver = GraphDatabase.driver(
             self._uri,
             auth=(self._username, self._password),
@@ -97,7 +93,7 @@ class Neo4jClient:
     # ── Driver Property ────────────────────────────────────────────────────────
 
     @property
-    def driver(self) -> "GraphDatabase.driver":
+    def driver(self) -> GraphDatabase.driver:
         """Expose the underlying neo4j.Driver for callers that need raw access.
 
         Used by ``cypher_healer.test_cypher`` which requires the driver directly
@@ -168,6 +164,7 @@ class Neo4jClient:
 
 
 # ── Schema Initialisation ─────────────────────────────────────────────────────
+
 
 def setup_schema(client: Neo4jClient) -> None:
     """Create constraints and vector index if they do not already exist.

@@ -6,14 +6,12 @@ Tests: IT-06 (Query Graph End-to-End), IT-07 (Hallucination Grader Loop)
 from __future__ import annotations
 
 import json
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.generation.query_graph import build_query_graph
 from src.graph.neo4j_client import Neo4jClient
-from src.models.schemas import RetrievedChunk
 from src.models.state import QueryState
 
 pytestmark = pytest.mark.integration
@@ -150,16 +148,14 @@ class TestQueryGraphE2E:
         _populate_test_graph(neo4j_client)
 
         # Mock LLM responses
-        answer_response = json.dumps({
-            "answer": "The CUSTOMER_MASTER table stores customer data including name, email, and region.",
-            "sources": ["CUSTOMER_MASTER"]
-        })
+        answer_response = json.dumps(
+            {
+                "answer": "The CUSTOMER_MASTER table stores customer data including name, email, and region.",
+                "sources": ["CUSTOMER_MASTER"],
+            }
+        )
 
-        grader_response = json.dumps({
-            "grounded": True,
-            "critique": None,
-            "action": "pass"
-        })
+        grader_response = json.dumps({"grounded": True, "critique": None, "action": "pass"})
 
         mock_llm = MagicMock()
 
@@ -174,10 +170,11 @@ class TestQueryGraphE2E:
 
         mock_llm.invoke = _invoke
 
-        with patch("src.generation.query_graph.get_settings") as mock_settings_fn, \
-             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn, \
-             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn:
-
+        with (
+            patch("src.generation.query_graph.get_settings") as mock_settings_fn,
+            patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
+            patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
+        ):
             mock_settings = MagicMock()
             mock_settings.retrieval_vector_top_k = 10
             mock_settings.retrieval_bm25_top_k = 10
@@ -233,15 +230,13 @@ class TestQueryGraphE2E:
         _populate_test_graph(neo4j_client)
 
         # Mock responses - grader approves immediately
-        answer_response = json.dumps({
-            "answer": "Customer information is stored in CUSTOMER_MASTER.",
-        })
+        answer_response = json.dumps(
+            {
+                "answer": "Customer information is stored in CUSTOMER_MASTER.",
+            }
+        )
 
-        grader_response = json.dumps({
-            "grounded": True,
-            "critique": None,
-            "action": "pass"
-        })
+        grader_response = json.dumps({"grounded": True, "critique": None, "action": "pass"})
 
         mock_llm = MagicMock()
 
@@ -256,10 +251,11 @@ class TestQueryGraphE2E:
 
         mock_llm.invoke = _invoke
 
-        with patch("src.generation.query_graph.get_settings") as mock_settings_fn, \
-             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn, \
-             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn:
-
+        with (
+            patch("src.generation.query_graph.get_settings") as mock_settings_fn,
+            patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
+            patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
+        ):
             mock_settings = MagicMock()
             mock_settings.retrieval_vector_top_k = 10
             mock_settings.retrieval_bm25_top_k = 10
@@ -325,13 +321,17 @@ class TestHallucinationGraderLoop:
             generation_count[0] += 1
             result = MagicMock()
             if generation_count[0] == 1:
-                result.content = json.dumps({
-                    "answer": "The ORDERS table contains customer data.",
-                })
+                result.content = json.dumps(
+                    {
+                        "answer": "The ORDERS table contains customer data.",
+                    }
+                )
             else:
-                result.content = json.dumps({
-                    "answer": "The CUSTOMER_MASTER table stores customer data including name and email.",
-                })
+                result.content = json.dumps(
+                    {
+                        "answer": "The CUSTOMER_MASTER table stores customer data including name and email.",
+                    }
+                )
             return result
 
         # Grader rejects first, approves second
@@ -341,17 +341,15 @@ class TestHallucinationGraderLoop:
             grader_count[0] += 1
             result = MagicMock()
             if grader_count[0] == 1:
-                result.content = json.dumps({
-                    "grounded": False,
-                    "critique": "The answer mentions ORDERS table which is not in the context. Use CUSTOMER_MASTER.",
-                    "action": "regenerate"
-                })
+                result.content = json.dumps(
+                    {
+                        "grounded": False,
+                        "critique": "The answer mentions ORDERS table which is not in the context. Use CUSTOMER_MASTER.",
+                        "action": "regenerate",
+                    }
+                )
             else:
-                result.content = json.dumps({
-                    "grounded": True,
-                    "critique": None,
-                    "action": "pass"
-                })
+                result.content = json.dumps({"grounded": True, "critique": None, "action": "pass"})
             return result
 
         mock_llm = MagicMock()
@@ -365,10 +363,11 @@ class TestHallucinationGraderLoop:
 
         mock_llm.invoke = _invoke
 
-        with patch("src.generation.query_graph.get_settings") as mock_settings_fn, \
-             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn, \
-             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn:
-
+        with (
+            patch("src.generation.query_graph.get_settings") as mock_settings_fn,
+            patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
+            patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
+        ):
             mock_settings = MagicMock()
             mock_settings.retrieval_vector_top_k = 10
             mock_settings.retrieval_bm25_top_k = 10
@@ -421,19 +420,23 @@ class TestHallucinationGraderLoop:
         # Always return hallucinated answer
         def _mock_answer(*args, **kwargs):
             result = MagicMock()
-            result.content = json.dumps({
-                "answer": "The UNKNOWN_TABLE contains mysterious data.",
-            })
+            result.content = json.dumps(
+                {
+                    "answer": "The UNKNOWN_TABLE contains mysterious data.",
+                }
+            )
             return result
 
         # Always reject with hallucination
         def _mock_grader(*args, **kwargs):
             result = MagicMock()
-            result.content = json.dumps({
-                "grounded": False,
-                "critique": "UNKNOWN_TABLE is not mentioned in any context.",
-                "action": "regenerate"
-            })
+            result.content = json.dumps(
+                {
+                    "grounded": False,
+                    "critique": "UNKNOWN_TABLE is not mentioned in any context.",
+                    "action": "regenerate",
+                }
+            )
             return result
 
         mock_llm = MagicMock()
@@ -447,11 +450,12 @@ class TestHallucinationGraderLoop:
 
         mock_llm.invoke = _invoke
 
-        with patch("src.generation.query_graph.get_settings") as mock_settings_fn, \
-             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn, \
-             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn, \
-             patch("src.generation.query_graph.web_search_fallback") as mock_web_search:
-
+        with (
+            patch("src.generation.query_graph.get_settings") as mock_settings_fn,
+            patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
+            patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
+            patch("src.generation.query_graph.web_search_fallback") as mock_web_search,
+        ):
             mock_settings = MagicMock()
             mock_settings.retrieval_vector_top_k = 10
             mock_settings.retrieval_bm25_top_k = 10
@@ -469,7 +473,9 @@ class TestHallucinationGraderLoop:
             mock_embeddings.embed_query.return_value = [0.1] * 1024
             mock_embeddings_fn.return_value = mock_embeddings
 
-            mock_web_search.return_value = "[Source: Web Search] Customer data is stored in CUSTOMER_MASTER table."
+            mock_web_search.return_value = (
+                "[Source: Web Search] Customer data is stored in CUSTOMER_MASTER table."
+            )
 
             graph = build_query_graph()
 
@@ -505,18 +511,22 @@ class TestHallucinationGraderLoop:
 
         def _mock_answer(*args, **kwargs):
             result = MagicMock()
-            result.content = json.dumps({
-                "answer": "PRODUCT_XYZ is stored in the Products table.",
-            })
+            result.content = json.dumps(
+                {
+                    "answer": "PRODUCT_XYZ is stored in the Products table.",
+                }
+            )
             return result
 
         def _mock_grader(*args, **kwargs):
             result = MagicMock()
-            result.content = json.dumps({
-                "grounded": False,
-                "critique": "PRODUCT_XYZ is not mentioned in any retrieved context. Only TB_PRODUCT table is referenced.",
-                "action": "regenerate"
-            })
+            result.content = json.dumps(
+                {
+                    "grounded": False,
+                    "critique": "PRODUCT_XYZ is not mentioned in any retrieved context. Only TB_PRODUCT table is referenced.",
+                    "action": "regenerate",
+                }
+            )
             return result
 
         mock_llm = MagicMock()
@@ -530,10 +540,11 @@ class TestHallucinationGraderLoop:
 
         mock_llm.invoke = _invoke
 
-        with patch("src.generation.query_graph.get_settings") as mock_settings_fn, \
-             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn, \
-             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn:
-
+        with (
+            patch("src.generation.query_graph.get_settings") as mock_settings_fn,
+            patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
+            patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
+        ):
             mock_settings = MagicMock()
             mock_settings.retrieval_vector_top_k = 10
             mock_settings.retrieval_bm25_top_k = 10
@@ -573,5 +584,8 @@ class TestHallucinationGraderLoop:
             assert grader_decision is not None
 
             # Critique should mention specific problematic entity
-            if hasattr(grader_decision, 'critique') and grader_decision.critique:
-                assert "PRODUCT_XYZ" in grader_decision.critique or "TB_PRODUCT" in grader_decision.critique
+            if hasattr(grader_decision, "critique") and grader_decision.critique:
+                assert (
+                    "PRODUCT_XYZ" in grader_decision.critique
+                    or "TB_PRODUCT" in grader_decision.critique
+                )

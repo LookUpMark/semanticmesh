@@ -117,6 +117,7 @@ def reload_settings() -> Settings:
     # Update the module-level alias so existing ``from src.config.settings import settings``
     # references in already-imported modules continue to work after reload.
     import src.config.settings as _self  # noqa: PLC0415
+
     _self.settings = new
     return new
 

@@ -9,6 +9,7 @@ on any parsing failure.
 from __future__ import annotations
 
 import json
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
@@ -27,11 +28,23 @@ if TYPE_CHECKING:
 
 logger: logging.Logger = get_logger(__name__)
 
+# Matches optional triple-backtick markdown fences (with or without language tag)
+_FENCE_RE = re.compile(r"^```[a-zA-Z]*\n?|```$", re.MULTILINE)
+
+
+def _clean_json(raw: str) -> str:
+    """Strip markdown fences and leading/trailing whitespace from LLM output.
+
+    Many models wrap JSON in ```json ... ``` despite instructions. This strips
+    those fences so ``json.loads`` can parse the payload cleanly.
+    """
+    return _FENCE_RE.sub("", raw).strip()
+
 
 def _reflect_on_json(
     raw_json: str,
     error: str,
-    llm: "LLMProtocol",
+    llm: LLMProtocol,
     truncated: bool = False,
 ) -> str:
     """Ask the LLM to self-correct a malformed JSON extraction output.
@@ -60,8 +73,8 @@ def _reflect_on_json(
             "Your previous response was cut off because it exceeded the output token limit.\n"
             "Re-extract triplets from the text above, but limit yourself to the "
             "10 most important (subject, predicate, object) facts. "
-            "Output ONLY valid JSON: {\"triplets\": [{\"subject\": ..., \"predicate\": ..., "
-            "\"object\": ..., \"provenance_text\": ..., \"confidence\": 0.9}]}. "
+            'Output ONLY valid JSON: {"triplets": [{"subject": ..., "predicate": ..., '
+            '"object": ..., "provenance_text": ..., "confidence": 0.9}]}. '
             "No explanation, no markdown."
         )
     else:
@@ -106,7 +119,7 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
                     chunk.chunk_index,
                 )
                 return []
-            raw_json: str = content.strip()
+            raw_json: str = _clean_json(content)
         except Exception as exc:
             logger.warning(
                 "LLM call failed for chunk %d (source=%s): %s — returning empty triplet list.",
@@ -174,8 +187,7 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
 
     # Attach source chunk index to each triplet
     triplets = [
-        t.model_copy(update={"source_chunk_index": chunk.chunk_index})
-        for t in parsed.triplets
+        t.model_copy(update={"source_chunk_index": chunk.chunk_index}) for t in parsed.triplets
     ]
 
     logger.info(
@@ -223,8 +235,7 @@ def extract_all_triplets(
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         future_to_idx = {
-            pool.submit(extract_triplets, chunk, llm): chunk.chunk_index
-            for chunk in chunks
+            pool.submit(extract_triplets, chunk, llm): chunk.chunk_index for chunk in chunks
         }
         for future in as_completed(future_to_idx):
             idx = future_to_idx[future]

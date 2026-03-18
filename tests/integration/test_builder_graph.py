@@ -12,12 +12,10 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from langgraph.types import Command
 
-from src.config.settings import get_settings
 from src.graph.builder_graph import build_builder_graph
 from src.graph.neo4j_client import Neo4jClient
-from src.models.schemas import Chunk, EnrichedTableSchema, Entity, MappingProposal, TableSchema
+from src.models.schemas import Chunk
 from src.models.state import BuilderState
 
 pytestmark = pytest.mark.integration
@@ -133,53 +131,63 @@ class TestBuilderGraphE2E:
         ]
 
         # Setup mock LLM responses
-        extraction_response = json.dumps({
-            "triplets": [
-                {
-                    "subject": "Customer",
-                    "predicate": "places",
-                    "object": "SalesOrder",
-                    "provenance_text": "A Customer places one or more SalesOrders",
-                    "confidence": 0.95,
-                },
-                {
-                    "subject": "Product",
-                    "predicate": "ordered_in",
-                    "object": "SalesOrder",
-                    "provenance_text": "Products are ordered through SalesOrders",
-                    "confidence": 0.93,
-                },
-            ]
-        })
+        extraction_response = json.dumps(
+            {
+                "triplets": [
+                    {
+                        "subject": "Customer",
+                        "predicate": "places",
+                        "object": "SalesOrder",
+                        "provenance_text": "A Customer places one or more SalesOrders",
+                        "confidence": 0.95,
+                    },
+                    {
+                        "subject": "Product",
+                        "predicate": "ordered_in",
+                        "object": "SalesOrder",
+                        "provenance_text": "Products are ordered through SalesOrders",
+                        "confidence": 0.93,
+                    },
+                ]
+            }
+        )
 
-        judge_response = json.dumps({
-            "merge": True,
-            "canonical_name": "Customer",
-            "reasoning": "Same concept",
-        })
+        judge_response = json.dumps(
+            {
+                "merge": True,
+                "canonical_name": "Customer",
+                "reasoning": "Same concept",
+            }
+        )
 
-        enrichment_response = json.dumps({
-            "enriched_table_name": "Customer Master",
-            "enriched_columns": [
-                {"original": "CUST_ID", "enriched": "Customer ID"},
-                {"original": "FULL_NAME", "enriched": "Full Name"},
-            ],
-            "table_description": "Master customer data",
-        })
+        enrichment_response = json.dumps(
+            {
+                "enriched_table_name": "Customer Master",
+                "enriched_columns": [
+                    {"original": "CUST_ID", "enriched": "Customer ID"},
+                    {"original": "FULL_NAME", "enriched": "Full Name"},
+                ],
+                "table_description": "Master customer data",
+            }
+        )
 
-        mapping_response = json.dumps({
-            "table_name": "CUSTOMER_MASTER",
-            "mapped_concept": "Customer",
-            "confidence": 0.95,
-            "reasoning": "Table stores customer data",
-            "alternative_concepts": [],
-        })
+        mapping_response = json.dumps(
+            {
+                "table_name": "CUSTOMER_MASTER",
+                "mapped_concept": "Customer",
+                "confidence": 0.95,
+                "reasoning": "Table stores customer data",
+                "alternative_concepts": [],
+            }
+        )
 
-        critic_response = json.dumps({
-            "approved": True,
-            "critique": None,
-            "suggested_correction": None,
-        })
+        critic_response = json.dumps(
+            {
+                "approved": True,
+                "critique": None,
+                "suggested_correction": None,
+            }
+        )
 
         # Mock Cypher response - use MERGE for idempotency
         cypher_response = """
@@ -191,10 +199,11 @@ MERGE (c)-[r:MAPPED_TO]->(t)
 SET r.mapping_confidence = 0.95, r.reasoning = 'Table stores customer data'
 """
 
-        with patch("src.graph.builder_graph.get_settings") as mock_settings_fn, \
-             patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn, \
-             patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn:
-
+        with (
+            patch("src.graph.builder_graph.get_settings") as mock_settings_fn,
+            patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
+            patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
+        ):
             # Configure mocks
             mock_settings = MagicMock()
             mock_settings.confidence_threshold = 0.90
@@ -305,28 +314,36 @@ class TestBuilderGraphIdempotency:
 
         # Setup mock responses with proper MERGE Cypher
         responses = {
-            "extraction": json.dumps({
-                "triplets": [{
-                    "subject": "Customer",
-                    "predicate": "orders",
-                    "object": "Product",
-                    "provenance_text": "Customers place orders for products",
-                    "confidence": 0.95,
-                }]
-            }),
+            "extraction": json.dumps(
+                {
+                    "triplets": [
+                        {
+                            "subject": "Customer",
+                            "predicate": "orders",
+                            "object": "Product",
+                            "provenance_text": "Customers place orders for products",
+                            "confidence": 0.95,
+                        }
+                    ]
+                }
+            ),
             "judge": json.dumps({"merge": True, "canonical_name": "Customer", "reasoning": "Same"}),
-            "enrichment": json.dumps({
-                "enriched_table_name": "Customer Table",
-                "enriched_columns": [{"original": "CUST_ID", "enriched": "Customer ID"}],
-                "table_description": "Customer data",
-            }),
-            "mapping": json.dumps({
-                "table_name": "CUSTOMER_MASTER",
-                "mapped_concept": "Customer",
-                "confidence": 0.95,
-                "reasoning": "Maps correctly",
-                "alternative_concepts": [],
-            }),
+            "enrichment": json.dumps(
+                {
+                    "enriched_table_name": "Customer Table",
+                    "enriched_columns": [{"original": "CUST_ID", "enriched": "Customer ID"}],
+                    "table_description": "Customer data",
+                }
+            ),
+            "mapping": json.dumps(
+                {
+                    "table_name": "CUSTOMER_MASTER",
+                    "mapped_concept": "Customer",
+                    "confidence": 0.95,
+                    "reasoning": "Maps correctly",
+                    "alternative_concepts": [],
+                }
+            ),
             "critic": json.dumps({"approved": True, "critique": None}),
             "cypher": """
 MERGE (c:BusinessConcept:Entity {name: 'Customer'})
@@ -340,10 +357,11 @@ SET r.mapping_confidence = 0.95
 
         mock_llm = _create_mock_llm_factory(responses)
 
-        with patch("src.graph.builder_graph.get_settings") as mock_settings_fn, \
-             patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn, \
-             patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn:
-
+        with (
+            patch("src.graph.builder_graph.get_settings") as mock_settings_fn,
+            patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
+            patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
+        ):
             mock_settings = MagicMock()
             mock_settings.confidence_threshold = 0.90
             mock_settings.max_reflection_attempts = 3
@@ -416,22 +434,25 @@ class TestBuilderGraphSelfReflection:
             if mapping_calls[0] == 1:
                 result.content = "INVALID JSON"  # First attempt fails
             else:
-                result.content = json.dumps({
-                    "table_name": "CUSTOMER_MASTER",
-                    "mapped_concept": "Customer",
-                    "confidence": 0.95,
-                    "reasoning": "Valid mapping",
-                    "alternative_concepts": [],
-                })
+                result.content = json.dumps(
+                    {
+                        "table_name": "CUSTOMER_MASTER",
+                        "mapped_concept": "Customer",
+                        "confidence": 0.95,
+                        "reasoning": "Valid mapping",
+                        "alternative_concepts": [],
+                    }
+                )
             return result
 
         mock_llm = MagicMock()
         mock_llm.invoke = _mock_mapping
 
-        with patch("src.graph.builder_graph.get_settings") as mock_settings_fn, \
-             patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn, \
-             patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn:
-
+        with (
+            patch("src.graph.builder_graph.get_settings") as mock_settings_fn,
+            patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
+            patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
+        ):
             mock_settings = MagicMock()
             mock_settings.confidence_threshold = 0.90
             mock_settings.max_reflection_attempts = 3
@@ -461,11 +482,13 @@ class TestBuilderGraphSelfReflection:
                 elif "critic" in prompt.lower() or "review" in prompt.lower():
                     result.content = json.dumps({"approved": True, "critique": None})
                 elif "enrich" in prompt.lower():
-                    result.content = json.dumps({
-                        "enriched_table_name": "Customer Table",
-                        "enriched_columns": [],
-                        "table_description": "Customer data",
-                    })
+                    result.content = json.dumps(
+                        {
+                            "enriched_table_name": "Customer Table",
+                            "enriched_columns": [],
+                            "table_description": "Customer data",
+                        }
+                    )
                 else:
                     result.content = "MERGE (c:BusinessConcept {name: 'Customer'})"
                 return result
@@ -517,13 +540,15 @@ class TestBuilderGraphHITL:
         )
 
         # Low confidence mapping to trigger HITL
-        low_confidence_mapping = json.dumps({
-            "table_name": "CUSTOMER_MASTER",
-            "mapped_concept": "Customer",
-            "confidence": 0.75,  # Below threshold of 0.90
-            "reasoning": "Low confidence match",
-            "alternative_concepts": [],
-        })
+        low_confidence_mapping = json.dumps(
+            {
+                "table_name": "CUSTOMER_MASTER",
+                "mapped_concept": "Customer",
+                "confidence": 0.75,  # Below threshold of 0.90
+                "reasoning": "Low confidence match",
+                "alternative_concepts": [],
+            }
+        )
 
         mock_llm = MagicMock()
 
@@ -535,21 +560,24 @@ class TestBuilderGraphHITL:
             elif "critic" in prompt.lower() or "review" in prompt.lower():
                 result.content = json.dumps({"approved": True, "critique": None})
             elif "enrich" in prompt.lower():
-                result.content = json.dumps({
-                    "enriched_table_name": "Customer Table",
-                    "enriched_columns": [],
-                    "table_description": "Customer data",
-                })
+                result.content = json.dumps(
+                    {
+                        "enriched_table_name": "Customer Table",
+                        "enriched_columns": [],
+                        "table_description": "Customer data",
+                    }
+                )
             else:
                 result.content = "MERGE (c:BusinessConcept {name: 'Customer'})"
             return result
 
         mock_llm.invoke = _invoke
 
-        with patch("src.graph.builder_graph.get_settings") as mock_settings_fn, \
-             patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn, \
-             patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn:
-
+        with (
+            patch("src.graph.builder_graph.get_settings") as mock_settings_fn,
+            patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
+            patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
+        ):
             mock_settings = MagicMock()
             mock_settings.confidence_threshold = 0.90  # Higher than 0.75
             mock_settings.max_reflection_attempts = 3

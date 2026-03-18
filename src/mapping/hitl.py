@@ -24,6 +24,7 @@ HumanAction = Literal["approve", "correct", "reject"]
 
 # ── Pure Predicate ─────────────────────────────────────────────────────────────
 
+
 def should_interrupt(state: BuilderState) -> bool:
     """Return True if the HITL breakpoint must fire.
 
@@ -43,6 +44,7 @@ def should_interrupt(state: BuilderState) -> bool:
 
 
 # ── Payload Builder ────────────────────────────────────────────────────────────
+
 
 def build_interrupt_payload(
     proposal: MappingProposal,
@@ -68,9 +70,7 @@ def build_interrupt_payload(
     alternatives: list[str] = (proposal.alternative_concepts or []) + all_concept_names
     unique_alternatives: list[str] = list(dict.fromkeys(alternatives))[:4]
 
-    provenance_texts: list[str] = [
-        e.provenance_text for e in entities[:3] if e.provenance_text
-    ]
+    provenance_texts: list[str] = [e.provenance_text for e in entities[:3] if e.provenance_text]
 
     return {
         "table_name": proposal.table_name,
@@ -83,6 +83,7 @@ def build_interrupt_payload(
 
 
 # ── HITL LangGraph Node ────────────────────────────────────────────────────────
+
 
 def hitl_node(state: BuilderState) -> Command:
     """LangGraph node that suspends execution pending human review.
@@ -127,7 +128,8 @@ def hitl_node(state: BuilderState) -> Command:
     payload = build_interrupt_payload(proposal, entities)
     logger.info(
         "HITL interrupt fired for table '%s' (confidence=%.2f).",
-        proposal.table_name, proposal.confidence,
+        proposal.table_name,
+        proposal.confidence,
     )
 
     # ── Suspend and wait for human input ──────────────────────────────────────
@@ -152,7 +154,8 @@ def hitl_node(state: BuilderState) -> Command:
         )
         logger.info(
             "HITL: human corrected '%s' → '%s'.",
-            proposal.mapped_concept, corrected_concept,
+            proposal.mapped_concept,
+            corrected_concept,
         )
         return Command(
             update={"mapping_proposal": corrected_proposal},

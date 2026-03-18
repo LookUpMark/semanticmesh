@@ -25,9 +25,7 @@ def _make_table(name: str = "TB_CST", num_cols: int = 3) -> TableSchema:
 
 def _make_llm_response(table_name: str, num_cols: int) -> MagicMock:
     """Return a mock LLM that produces valid enrichment JSON."""
-    enriched_cols = [
-        {"original": f"COL_{i}", "enriched": f"Column {i}"} for i in range(num_cols)
-    ]
+    enriched_cols = [{"original": f"COL_{i}", "enriched": f"Column {i}"} for i in range(num_cols)]
     payload = {
         "enriched_table_name": "Customer Table",
         "enriched_columns": enriched_cols,
@@ -115,11 +113,13 @@ class TestEnrichAll:
             if call_count == 2:
                 raise RuntimeError("simulated failure")
             resp = MagicMock()
-            resp.content = json.dumps({
-                "enriched_table_name": "Good Table",
-                "enriched_columns": [],
-                "table_description": "desc",
-            })
+            resp.content = json.dumps(
+                {
+                    "enriched_table_name": "Good Table",
+                    "enriched_columns": [],
+                    "table_description": "desc",
+                }
+            )
             return resp
 
         llm = MagicMock()

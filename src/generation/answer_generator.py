@@ -25,6 +25,7 @@ logger: logging.Logger = get_logger(__name__)
 
 # ── Context Formatter ─────────────────────────────────────────────────────────
 
+
 def format_context(chunks: list[RetrievedChunk]) -> str:
     """Format reranked chunks as a numbered list for injection into the answer prompt.
 
@@ -46,6 +47,7 @@ def format_context(chunks: list[RetrievedChunk]) -> str:
 
 
 # ── Answer Generator ──────────────────────────────────────────────────────────
+
 
 def generate_answer(
     query: str,
@@ -84,7 +86,9 @@ def generate_answer(
 
     logger.debug(
         "generate_answer: query='%s', %d chunks, critique=%s.",
-        query[:60], len(chunks), "yes" if critique else "no",
+        query[:60],
+        len(chunks),
+        "yes" if critique else "no",
     )
     response = llm.invoke(
         [
@@ -95,4 +99,3 @@ def generate_answer(
     answer: str = response.content.strip()
     logger.info("Answer generated (%d chars).", len(answer))
     return answer
-

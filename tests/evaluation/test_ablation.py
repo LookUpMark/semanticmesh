@@ -26,6 +26,7 @@ _ZERO_METRICS = {
 # ABLATION_MATRIX
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestAblationMatrix:
     def test_all_six_experiments_defined(self) -> None:
         for exp_id in ("AB-01", "AB-02", "AB-03", "AB-04", "AB-05", "AB-06"):
@@ -42,6 +43,7 @@ class TestAblationMatrix:
 # ─────────────────────────────────────────────────────────────────────────────
 # _settings_override context manager
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestSettingsOverride:
     def test_env_var_set_inside_block(self) -> None:
@@ -66,6 +68,7 @@ class TestSettingsOverride:
 
     def test_cache_cleared_after_block(self) -> None:
         from src.config.settings import get_settings
+
         # Fill the cache
         _ = get_settings()
         with _settings_override({"_TEST_ABLATION_KEY": "x"}):
@@ -79,6 +82,7 @@ class TestSettingsOverride:
 # ─────────────────────────────────────────────────────────────────────────────
 # run_ablation
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestRunAblation:
     def test_invalid_experiment_id_raises(self) -> None:

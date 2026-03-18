@@ -5,8 +5,8 @@ from __future__ import annotations
 from src.graph.cypher_builder import build_fk_cypher, build_upsert_cypher
 from src.models.schemas import ColumnSchema, EnrichedTableSchema, MappingProposal
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_table(
     name: str,
@@ -42,6 +42,7 @@ def _proposal(concept: str = "Customer", confidence: float = 0.9) -> MappingProp
 
 
 # ── build_fk_cypher ───────────────────────────────────────────────────────────
+
 
 class TestBuildFkCypher:
     def test_no_fk_columns_returns_empty(self) -> None:
@@ -92,8 +93,10 @@ class TestBuildFkCypher:
     def test_fk_column_not_fk_is_ignored(self) -> None:
         """A column with is_foreign_key=False and references set is skipped."""
         col = ColumnSchema(
-            name="CUST_ID", data_type="INT",
-            is_primary_key=False, is_foreign_key=False,
+            name="CUST_ID",
+            data_type="INT",
+            is_primary_key=False,
+            is_foreign_key=False,
             references="CUSTOMERS.ID",
         )
         table = _make_table("ORDERS", [col])
@@ -101,6 +104,7 @@ class TestBuildFkCypher:
 
 
 # ── build_upsert_cypher (smoke test) ─────────────────────────────────────────
+
 
 class TestBuildUpsertCypher:
     def test_returns_cypher_and_params(self) -> None:

@@ -17,10 +17,11 @@ from pythonjsonlogger import jsonlogger
 # Suppress IProgress / pydantic_settings warnings at import time so they never
 # appear regardless of calling order in notebooks.
 warnings.filterwarnings("ignore", message="IProgress not found", category=UserWarning)
-warnings.filterwarnings("ignore", message='directory.*does not exist', category=UserWarning)
+warnings.filterwarnings("ignore", message="directory.*does not exist", category=UserWarning)
 
 
 # ── Notebook formatter ─────────────────────────────────────────────────────────
+
 
 class _NotebookFormatter(logging.Formatter):
     """Compact human-readable formatter for Jupyter notebook output.
@@ -63,9 +64,15 @@ def setup_notebook_logging() -> None:
 
     # Suppress noisy third-party loggers.
     _SILENT = (
-        "httpx", "httpcore", "urllib3", "requests",
-        "pydantic_settings", "pydantic",
-        "LiteLLM", "openai", "anthropic",
+        "httpx",
+        "httpcore",
+        "urllib3",
+        "requests",
+        "pydantic_settings",
+        "pydantic",
+        "LiteLLM",
+        "openai",
+        "anthropic",
     )
     for name in _SILENT:
         logging.getLogger(name).setLevel(logging.WARNING)
@@ -79,6 +86,7 @@ def setup_notebook_logging() -> None:
     # HuggingFace tokenizer "fast tokenizer" INFO prints.
     try:
         import transformers  # type: ignore[import]
+
         transformers.logging.set_verbosity_error()
     except ImportError:
         pass
@@ -161,7 +169,7 @@ def log_retry_event(
         extra={
             "node_name": node_name,
             "attempt_number": attempt_number,
-            "error_injected": error_injected[:500],   # cap to avoid log bloat
+            "error_injected": error_injected[:500],  # cap to avoid log bloat
             "correction_applied": correction_applied[:200],
         },
     )

@@ -9,15 +9,13 @@ from src.models.schemas import GraderDecision
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _state(action: str, grounded: bool = True) -> dict:
-    return {
-        "grader_decision": GraderDecision(
-            grounded=grounded, critique=None, action=action
-        )
-    }
+    return {"grader_decision": GraderDecision(grounded=grounded, critique=None, action=action)}
 
 
 # ── _route_after_grader ───────────────────────────────────────────────────────
+
 
 class TestRouteAfterGrader:
     def test_pass_routes_to_finalise(self) -> None:
@@ -43,8 +41,10 @@ class TestRouteAfterGrader:
 
 # ── build_query_graph ─────────────────────────────────────────────────────────
 
+
 class TestBuildQueryGraph:
     def test_graph_compiles(self) -> None:
         from src.generation.query_graph import build_query_graph
+
         graph = build_query_graph()
         assert graph is not None

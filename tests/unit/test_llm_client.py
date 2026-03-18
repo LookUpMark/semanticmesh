@@ -31,6 +31,7 @@ def _make_inner(return_value: AIMessage | None = None) -> MagicMock:
 
 # ── LLMProtocol ───────────────────────────────────────────────────────────────
 
+
 class TestLLMProtocol:
     def test_instrumented_llm_satisfies_protocol(self) -> None:
         inner = _make_inner()
@@ -45,12 +46,15 @@ class TestLLMProtocol:
 
 # ── InstrumentedLLM.invoke ────────────────────────────────────────────────────
 
+
 class TestInstrumentedLLMInvoke:
     def test_delegates_to_inner_model(self) -> None:
         inner = _make_inner()
         llm = InstrumentedLLM(inner, name="test")
         result = llm.invoke([])
-        inner.invoke.assert_called_once_with([], )
+        inner.invoke.assert_called_once_with(
+            [],
+        )
         assert result.content == "ok"
 
     def test_passes_kwargs_through(self) -> None:
@@ -95,6 +99,7 @@ class TestInstrumentedLLMInvoke:
 
 # ── InstrumentedLLM.ainvoke ───────────────────────────────────────────────────
 
+
 class TestInstrumentedLLMAinvoke:
     def test_delegates_async(self) -> None:
         inner = _make_inner()
@@ -110,6 +115,7 @@ class TestInstrumentedLLMAinvoke:
 
 
 # ── InstrumentedLLM.__getattr__ ───────────────────────────────────────────────
+
 
 class TestInstrumentedLLMProxy:
     def test_proxies_with_structured_output(self) -> None:
@@ -135,6 +141,7 @@ class TestInstrumentedLLMProxy:
 
 
 # ── logging ───────────────────────────────────────────────────────────────────
+
 
 class TestInstrumentedLLMLogging:
     def test_logs_token_usage_on_success(self, caplog: pytest.LogCaptureFixture) -> None:

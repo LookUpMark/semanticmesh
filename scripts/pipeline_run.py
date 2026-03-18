@@ -17,12 +17,12 @@ A run is considered "positive" when:
 
 from __future__ import annotations
 
+import argparse
+import json
+import logging
 import os
 import sys
 import time
-import argparse
-import logging
-import json
 from pathlib import Path
 
 # ── Repo root on path ──────────────────────────────────────────────────────────
@@ -31,28 +31,30 @@ sys.path.insert(0, str(ROOT))
 
 # ── Load .env ─────────────────────────────────────────────────────────────────
 from dotenv import load_dotenv  # type: ignore[import]
+
 load_dotenv(ROOT / ".env")
 
 # ── Pipeline config (matches notebook defaults) ────────────────────────────────
-os.environ.setdefault("NEO4J_URI",                 "bolt://localhost:7687")
-os.environ.setdefault("NEO4J_USER",                "neo4j")
-os.environ.setdefault("NEO4J_PASSWORD",            "test_password")
-os.environ.setdefault("LLM_MODEL_REASONING",       "openai/gpt-oss-120b")
-os.environ.setdefault("LLM_MODEL_EXTRACTION",      "openai/gpt-oss-20b")
-os.environ.setdefault("LLM_MAX_TOKENS_REASONING",  "16384")
+os.environ.setdefault("NEO4J_URI", "bolt://localhost:7687")
+os.environ.setdefault("NEO4J_USER", "neo4j")
+os.environ.setdefault("NEO4J_PASSWORD", "test_password")
+os.environ.setdefault("LLM_MODEL_REASONING", "openai/gpt-oss-120b")
+os.environ.setdefault("LLM_MODEL_EXTRACTION", "openai/gpt-oss-20b")
+os.environ.setdefault("LLM_MAX_TOKENS_REASONING", "16384")
 os.environ.setdefault("LLM_MAX_TOKENS_EXTRACTION", "8192")
-os.environ.setdefault("EXTRACTION_CONCURRENCY",    "5")
-os.environ.setdefault("ER_SIMILARITY_THRESHOLD",   "0.75")
-os.environ.setdefault("RETRIEVAL_VECTOR_TOP_K",    "20")
-os.environ.setdefault("RETRIEVAL_BM25_TOP_K",      "10")
-os.environ.setdefault("RERANKER_TOP_K",            "10")
+os.environ.setdefault("EXTRACTION_CONCURRENCY", "5")
+os.environ.setdefault("ER_SIMILARITY_THRESHOLD", "0.75")
+os.environ.setdefault("RETRIEVAL_VECTOR_TOP_K", "20")
+os.environ.setdefault("RETRIEVAL_BM25_TOP_K", "10")
+os.environ.setdefault("RERANKER_TOP_K", "10")
 # Avoid network retries from HF Hub in offline/no-internet environments.
-os.environ.setdefault("HF_HUB_OFFLINE",            "1")
-os.environ.setdefault("TRANSFORMERS_OFFLINE",      "1")
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
 # ── Notebook-style logging ─────────────────────────────────────────────────────
-from src.config.logging import setup_notebook_logging  # noqa: E402
 from src.config.llm_factory import reconfigure_from_env  # noqa: E402
+from src.config.logging import setup_notebook_logging  # noqa: E402
+
 reconfigure_from_env()
 setup_notebook_logging()
 
@@ -99,12 +101,12 @@ def run_pipeline(run_id: int = 1, run_ragas: bool = False) -> dict[str, object]:
     )
     builder_elapsed = time.time() - t0
 
-    triplets  = state.get("triplets", [])
-    entities  = state.get("entities", [])
-    tables    = state.get("tables", [])
-    enriched  = state.get("enriched_tables", [])
+    triplets = state.get("triplets", [])
+    entities = state.get("entities", [])
+    tables = state.get("tables", [])
+    enriched = state.get("enriched_tables", [])
     completed = state.get("completed_tables", [])
-    failed    = state.get("cypher_failed", False)
+    failed = state.get("cypher_failed", False)
 
     print(f"\n    Elapsed         : {builder_elapsed:.1f} s")
     print(f"    Triplets        : {len(triplets)}")
@@ -127,10 +129,13 @@ def run_pipeline(run_id: int = 1, run_ragas: bool = False) -> dict[str, object]:
     results = []
     for i, q in enumerate(TEST_QUESTIONS, 1):
         r = run_query(q)
-        answer   = r.get("final_answer", "")
-        grounded = bool(answer and answer.strip() and
-                        not answer.strip().lower().startswith("i cannot") and
-                        not answer.strip().lower().startswith("i don't"))
+        answer = r.get("final_answer", "")
+        grounded = bool(
+            answer
+            and answer.strip()
+            and not answer.strip().lower().startswith("i cannot")
+            and not answer.strip().lower().startswith("i don't")
+        )
         grounded_count += int(grounded)
         mark = "✅" if grounded else "❌"
         results.append((q, answer, grounded))
@@ -156,6 +161,7 @@ def run_pipeline(run_id: int = 1, run_ragas: bool = False) -> dict[str, object]:
     if run_ragas:
         try:
             from src.evaluation.ragas_runner import run_ragas_evaluation
+
             ragas_metrics = run_ragas_evaluation(evaluator_model="openai/gpt-oss-20b")
             print("\n    RAGAS metrics")
             print(f"      faithfulness      : {ragas_metrics.get('faithfulness', 0.0):.4f}")

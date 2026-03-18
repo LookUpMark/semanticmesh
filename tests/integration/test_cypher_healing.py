@@ -5,11 +5,9 @@ Tests: IT-04 (Cypher Healing Loop - Full)
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from neo4j.exceptions import CypherSyntaxError
 
 from src.graph.cypher_healer import heal_cypher
 from src.models.schemas import MappingProposal

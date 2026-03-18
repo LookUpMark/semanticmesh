@@ -114,13 +114,15 @@ def build_fk_cypher(table: EnrichedTableSchema) -> list[tuple[str, dict]]:
             parts = col.references.split(".", 1)
             tgt_table = parts[0]
             ref_column = parts[1] if len(parts) > 1 else ""
-            statements.append((
-                _FK_CYPHER,
-                {
-                    "src_table": table.table_name,
-                    "tgt_table": tgt_table,
-                    "fk_column": col.name,
-                    "ref_column": ref_column,
-                },
-            ))
+            statements.append(
+                (
+                    _FK_CYPHER,
+                    {
+                        "src_table": table.table_name,
+                        "tgt_table": tgt_table,
+                        "fk_column": col.name,
+                        "ref_column": ref_column,
+                    },
+                )
+            )
     return statements
