@@ -32,7 +32,7 @@ Included:
   - `ENABLE_SCHEMA_ENRICHMENT=true`, `ENABLE_CRITIC_VALIDATION=true`
   - `CONFIDENCE_THRESHOLD=0.90`, `ENABLE_CYPHER_HEALING=true`, `ENABLE_HALLUCINATION_GRADER=true`
 
-- [x] AB-01 Retrieval mode = vector (`RETRIEVAL_MODE=vector`)
+- [ ] AB-01 Retrieval mode = vector (`RETRIEVAL_MODE=vector`)
 - [ ] AB-02 Retrieval mode = bm25 (`RETRIEVAL_MODE=bm25`) *(attempted; timed out, rerun pending)*
 
 - [ ] AB-03 Reranker OFF (`ENABLE_RERANKER=false`)
@@ -63,9 +63,6 @@ Included:
 
 | Ablation | Status | Builder(s) | Query(s) | Total(s) | Triplets | Entities | Tables | Grounded | Positive | RAGAS faithfulness | RAGAS answer_rel | RAGAS ctx_prec | RAGAS ctx_recall | Notes |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---|
-| AB-00 | DONE | 1041.0 | 33.7 | 1074.7 | 449 | 144 | 3/3 | 4/4 | ✅ | N/A | N/A | N/A | N/A | Baseline post-wiring completed successfully (`AB-00.json`). |
-| AB-01 | DONE (NEGATIVE) | 1337.2 | 25.1 | 1362.3 | 448 | 158 | 3/3 | 3/4 | ❌ | N/A | N/A | N/A | N/A | Vector-only retrieval failed Q3 ("I cannot find this information"), run valid (`AB-01.json`). |
-| AB-02 | TIMEOUT | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | Run interrupted manually after prolonged stall post-extraction (rerun required with timebox). |
 
 ## Operational notes
 

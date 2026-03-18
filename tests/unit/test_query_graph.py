@@ -44,7 +44,14 @@ class TestRouteAfterGrader:
 
 class TestBuildQueryGraph:
     def test_graph_compiles(self) -> None:
+        from unittest.mock import MagicMock, patch
+
         from src.generation.query_graph import build_query_graph
 
-        graph = build_query_graph()
-        assert graph is not None
+        with (
+            patch("src.generation.query_graph.get_embeddings", return_value=MagicMock()),
+            patch("src.generation.query_graph.get_reasoning_llm", return_value=MagicMock()),
+            patch("src.generation.query_graph.Neo4jClient", MagicMock()),
+        ):
+            graph = build_query_graph()
+            assert graph is not None

@@ -115,7 +115,7 @@ def _populate_test_graph(client: Neo4jClient) -> None:
         client.execute_cypher("""
             MERGE (ch:Chunk:Entity {
                 node_id: 'chunk_3',
-                text = 'Sales orders track customer purchases with dates and amounts in SALES_ORDER_HDR.'
+                text: 'Sales orders track customer purchases with dates and amounts in SALES_ORDER_HDR.'
             })
         """)
 
@@ -410,15 +410,18 @@ class TestHallucinationGraderLoop:
             final_answer = result.get("final_answer", "")
             assert "ORDERS" not in final_answer or "CUSTOMER_MASTER" in final_answer
 
-    def test_hallucination_loop_max_retries_triggers_web_search(
+    def test_hallucination_loop_max_retries_accepts_last_answer(
         self,
         neo4j_client: Neo4jClient,
     ) -> None:
-        """Grader always returns hallucination → after max retries → web_search fallback."""
+        """After max_hallucination_retries the loop guard fires and accepts the current answer."""
         _populate_test_graph(neo4j_client)
 
-        # Always return hallucinated answer
+        generation_count = [0]
+
+        # Always return a hallucinated answer
         def _mock_answer(*args, **kwargs):
+            generation_count[0] += 1
             result = MagicMock()
             result.content = json.dumps(
                 {
@@ -450,18 +453,19 @@ class TestHallucinationGraderLoop:
 
         mock_llm.invoke = _invoke
 
+        max_retries = 2  # Low for fast testing
+
         with (
             patch("src.generation.query_graph.get_settings") as mock_settings_fn,
             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
-            patch("src.generation.query_graph.web_search_fallback") as mock_web_search,
         ):
             mock_settings = MagicMock()
             mock_settings.retrieval_vector_top_k = 10
             mock_settings.retrieval_bm25_top_k = 10
             mock_settings.retrieval_graph_depth = 2
             mock_settings.reranker_top_k = 5
-            mock_settings.max_hallucination_retries = 2  # Low for testing
+            mock_settings.max_hallucination_retries = max_retries
             mock_settings.enable_reranker = True
             mock_settings.enable_hallucination_grader = True
             mock_settings_fn.return_value = mock_settings
@@ -472,10 +476,6 @@ class TestHallucinationGraderLoop:
             mock_embeddings.embed_documents.return_value = [[0.1] * 1024]
             mock_embeddings.embed_query.return_value = [0.1] * 1024
             mock_embeddings_fn.return_value = mock_embeddings
-
-            mock_web_search.return_value = (
-                "[Source: Web Search] Customer data is stored in CUSTOMER_MASTER table."
-            )
 
             graph = build_query_graph()
 
@@ -494,13 +494,13 @@ class TestHallucinationGraderLoop:
             config = {"configurable": {"thread_id": "hallucination-test-2"}}
             result = graph.invoke(initial_state, config=config)
 
-            # Verify web_search was triggered
-            final_answer = result.get("final_answer", "")
-            assert "[Source: Web Search]" in final_answer
+            # After max_retries the loop guard should fire and accept the answer
+            assert result is not None
+            assert result.get("final_answer", "") != ""
 
-            # Verify sources indicate web search
-            sources = result.get("sources", [])
-            assert "web_search" in sources
+            # Generation should have been called exactly max_retries times
+            # (once per iteration before the guard triggers)
+            assert generation_count[0] == max_retries
 
     def test_hallucination_grader_with_specific_critique(
         self,
