@@ -5,12 +5,15 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from src.generation.query_graph import (
+    _compose_generation_chunks,
     _node_answer_generation,
+    _node_context_distillation,
     _node_finalise,
     _node_hybrid_retrieval,
     _node_retrieval_quality_gate,
     _node_reranking,
     _node_semantic_verification,
+    _route_after_retrieval_gate,
     _route_after_grader,
 )
 from src.models.schemas import GraderDecision, RetrievedChunk
@@ -41,6 +44,14 @@ class TestRouteAfterGrader:
     def test_unknown_action_routes_to_finalise(self) -> None:
         mock_decision = MagicMock(action="unknown_action")
         assert _route_after_grader({"grader_decision": mock_decision}) == "finalise"
+
+
+class TestRouteAfterRetrievalGate:
+    def test_abstain_early_routes_to_finalise(self) -> None:
+        assert _route_after_retrieval_gate({"retrieval_gate_decision": "abstain_early"}) == "finalise"
+
+    def test_proceed_routes_to_context_distillation(self) -> None:
+        assert _route_after_retrieval_gate({"retrieval_gate_decision": "proceed"}) == "context_distillation"
 
 
 class TestBuildQueryGraph:
@@ -309,3 +320,68 @@ class TestAnswerGenerationContextComposition:
         out = _node_finalise(state)
         assert out["sources"] == ["B"]
         assert out["retrieved_contexts"] == ["B: focused evidence"]
+
+
+class TestContextDistillationNode:
+    def _chunk(self, name: str, text: str, source: str = "graph", score: float = 0.4) -> RetrievedChunk:
+        return RetrievedChunk(
+            node_id=name,
+            node_type="BusinessConcept",
+            text=text,
+            score=score,
+            source_type=source,
+            metadata={},
+        )
+
+    def test_distills_noisy_chunk_text(self) -> None:
+        noisy = self._chunk(
+            "Customers",
+            "Customers: Heuristic embedding mapping score=0.506, adjusted_confidence=0.753, threshold=0.600, best_candidate='Customers'.",
+            source="graph",
+            score=0.5,
+        )
+        fk = self._chunk(
+            "SALES_ORDER_HDR→CUSTOMER_MASTER",
+            "The table SALES_ORDER_HDR references CUSTOMER_MASTER via a foreign key (column CUST_ID → CUSTOMER_MASTER.CUST_ID). This means each record in SALES_ORDER_HDR is linked to a record in CUSTOMER_MASTER.",
+            source="graph",
+            score=0.8,
+        )
+        state = {
+            "user_query": "How is a customer linked to orders?",
+            "reranked_chunks": [noisy, fk],
+        }
+
+        out = _node_context_distillation(state)
+        texts = [c.text for c in out["generation_chunks"]]
+        assert any(t.startswith("Relationship:") for t in texts)
+        assert not any("heuristic embedding mapping score=" in t.lower() for t in texts)
+
+
+class TestChannelBalancedComposition:
+    def _chunk(self, name: str, source: str, score: float) -> RetrievedChunk:
+        return RetrievedChunk(
+            node_id=name,
+            node_type="BusinessConcept",
+            text=f"{name}: context",
+            score=score,
+            source_type=source,
+            metadata={},
+        )
+
+    def test_limits_graph_dominance_when_other_channels_exist(self) -> None:
+        chunks = []
+        # Many graph chunks with higher scores
+        chunks.extend([self._chunk(f"G{i}", "graph", 0.9 - i * 0.01) for i in range(12)])
+        # Fewer vector and bm25 chunks
+        chunks.extend([self._chunk(f"V{i}", "vector", 0.7 - i * 0.01) for i in range(3)])
+        chunks.extend([self._chunk(f"B{i}", "bm25", 0.6 - i * 0.01) for i in range(3)])
+
+        out = _compose_generation_chunks("customer orders relationship", chunks, max_core=6, max_support=4)
+        assert len(out) == 10
+        graph_count = sum(1 for c in out if c.source_type == "graph")
+        vector_count = sum(1 for c in out if c.source_type == "vector")
+        bm25_count = sum(1 for c in out if c.source_type == "bm25")
+
+        assert graph_count <= 5
+        assert vector_count >= 1
+        assert bm25_count >= 1

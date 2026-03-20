@@ -73,12 +73,12 @@ class QueryState(TypedDict, total=False):
     # Retrieval
     retrieved_chunks: list[RetrievedChunk]
     reranked_chunks: list[RetrievedChunk]
+    generation_chunks: list[RetrievedChunk]
 
     # Generation + grading
     current_answer: str
     last_critique: str | None
     grader_decision: GraderDecision | None
-    generation_chunks: list[RetrievedChunk]
 
     # Output
     final_answer: str
