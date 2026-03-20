@@ -1,13 +1,13 @@
 {
-  "timestamp": "2026-03-20T21:57:17.365189+00:00",
-  "total_elapsed_s": 120.2,
+  "timestamp": "2026-03-20T23:23:37.134533+00:00",
+  "total_elapsed_s": 128.2,
   "studies": {
     "AB-00": {
       "study_id": "AB-00",
       "success": true,
       "builder_elapsed_s": 0.0,
-      "query_elapsed_s": 120.2,
-      "total_elapsed_s": 120.2,
+      "query_elapsed_s": 128.2,
+      "total_elapsed_s": 128.2,
       "triplets": 0,
       "entities": 0,
       "tables_parsed": 0,
@@ -25,13 +25,13 @@
       "max_samples": 10,
       "fixture_profile": "full",
       "skip_builder": true,
-      "run_tag": "full10-spacy-v7b-channel-quotas",
-      "timestamp": "2026-03-20T21:57:17.356117+00:00"
+      "run_tag": "repro-queryonly-v3",
+      "timestamp": "2026-03-20T23:23:37.127366+00:00"
     }
   },
   "dataset_path": "tests/fixtures/gold_standard.json",
   "max_samples": 10,
   "fixture_profile": "full",
   "skip_builder": true,
-  "run_tag": "full10-spacy-v7b-channel-quotas"
+  "run_tag": "repro-queryonly-v3"
 }
