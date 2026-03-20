@@ -95,6 +95,7 @@ class TestNodeReranking:
         settings.reranker_top_k = 5
         settings.retrieval_min_score = 0.95
         settings.retrieval_min_score_ratio = 0.0
+        settings.retrieval_salvage_min_score = 0.99
 
         with (
             patch("src.generation.query_graph.get_settings", return_value=settings),
@@ -115,6 +116,7 @@ class TestNodeReranking:
         settings.reranker_top_k = 5
         settings.retrieval_min_score = 0.1
         settings.retrieval_min_score_ratio = 0.6
+        settings.retrieval_salvage_min_score = 0.07
 
         with (
             patch("src.generation.query_graph.get_settings", return_value=settings),
@@ -131,3 +133,24 @@ class TestNodeReranking:
             out = _node_reranking(state)
             assert [c.node_id for c in out["reranked_chunks"]] == ["A", "B"]
             assert out["retrieval_chunk_count"] == 2
+
+    def test_salvages_top_context_in_near_threshold_zone(self) -> None:
+        settings = MagicMock()
+        settings.enable_reranker = True
+        settings.reranker_top_k = 5
+        settings.retrieval_min_score = 0.1
+        settings.retrieval_min_score_ratio = 0.5
+        settings.retrieval_salvage_min_score = 0.07
+
+        with (
+            patch("src.generation.query_graph.get_settings", return_value=settings),
+            patch(
+                "src.generation.query_graph.rerank",
+                return_value=[self._chunk("A", 0.08), self._chunk("B", 0.06)],
+            ),
+        ):
+            state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
+            out = _node_reranking(state)
+            assert [c.node_id for c in out["reranked_chunks"]] == ["A"]
+            assert out["context_sufficiency"] == "sparse"
+            assert out["retrieval_filtered_by_threshold"] is True

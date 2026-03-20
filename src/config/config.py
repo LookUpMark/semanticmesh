@@ -72,8 +72,9 @@ class AppConfig:
     retrieval_vector_top_k: int = 20
     retrieval_bm25_top_k: int = 10
     retrieval_graph_depth: int = 2
-    retrieval_min_score: float = 0.10
-    retrieval_min_score_ratio: float = 0.50
+    retrieval_min_score: float = 0.05
+    retrieval_min_score_ratio: float = 0.35
+    retrieval_salvage_min_score: float = 0.07
 
     # ── Few-Shot ───────────────────────────────────────────────────────────────
     few_shot_cypher_examples: int = 5
