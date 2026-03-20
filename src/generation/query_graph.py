@@ -16,6 +16,7 @@ from src.config.llm_factory import get_reasoning_llm
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.generation.answer_generator import generate_answer
+from src.generation.context_distiller import distill_context_chunks
 from src.generation.hallucination_grader import grade_answer
 from src.generation.lazy_expander import (
     collect_seed_names_for_expansion,
@@ -171,25 +172,45 @@ def _compose_generation_chunks(
         return (keyword_hits, has_structure, source_rank, float(chunk.score))
 
     ranked = sorted(chunks, key=_priority, reverse=True)
-    core = ranked[:max_core]
+    target = max_core + max_support
 
-    support: list[RetrievedChunk] = []
-    core_ids = {c.node_id for c in core}
-    seen_sources = {c.source_type for c in core}
-    for chunk in ranked[max_core:]:
-        if chunk.node_id in core_ids:
+    # Soft caps prevent any single channel from flooding the generation context.
+    source_caps: dict[str, int] = {
+        "vector": min(4, target),
+        "bm25": min(4, target),
+        "graph": min(5, target),
+    }
+
+    selected: list[RetrievedChunk] = []
+    selected_ids: set[str] = set()
+    source_counts: dict[str, int] = {"vector": 0, "bm25": 0, "graph": 0}
+
+    # Pass 1: enforce per-source caps while selecting top-priority chunks.
+    for chunk in ranked:
+        if len(selected) >= target:
+            break
+        if chunk.node_id in selected_ids:
             continue
-        # Prefer source diversity in support evidence.
-        if len(support) < max_support:
-            if chunk.source_type not in seen_sources or len(seen_sources) < 2:
-                support.append(chunk)
-                seen_sources.add(chunk.source_type)
-                continue
-            if len(support) < max_support:
-                support.append(chunk)
+        cap = source_caps.get(chunk.source_type, target)
+        if source_counts.get(chunk.source_type, 0) >= cap:
+            continue
+        selected.append(chunk)
+        selected_ids.add(chunk.node_id)
+        source_counts[chunk.source_type] = source_counts.get(chunk.source_type, 0) + 1
 
-    composed = core + support[:max_support]
-    return composed
+    # Pass 2: fill remaining slots regardless of source if the caps were too strict.
+    if len(selected) < target:
+        for chunk in ranked:
+            if len(selected) >= target:
+                break
+            if chunk.node_id in selected_ids:
+                continue
+            selected.append(chunk)
+            selected_ids.add(chunk.node_id)
+
+    core = selected[:max_core]
+    support = selected[max_core:target]
+    return core + support
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -287,7 +308,7 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
     llm = get_reasoning_llm()
     query: str = state["user_query"]
     chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
-    generation_chunks = _compose_generation_chunks(query, chunks)
+    generation_chunks = state.get("generation_chunks") or _compose_generation_chunks(query, chunks)
     critique: str | None = state.get("last_critique")
     sufficiency: str = state.get("context_sufficiency", "insufficient")
     if generation_chunks and sufficiency != "adequate":
@@ -310,6 +331,20 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
         "last_critique": None,
         "generation_chunks": generation_chunks,
     }
+
+
+def _node_context_distillation(state: QueryState) -> dict[str, Any]:
+    query: str = state["user_query"]
+    chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
+    composed = _compose_generation_chunks(query, chunks)
+    distilled = distill_context_chunks(query, composed, max_chunks=len(composed) or 0)
+    if distilled:
+        logger.info(
+            "Context distillation: composed=%d -> distilled=%d chunk(s).",
+            len(composed),
+            len(distilled),
+        )
+    return {"generation_chunks": distilled or composed}
 
 
 def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
@@ -364,7 +399,7 @@ def _node_semantic_verification(state: QueryState) -> dict[str, Any]:
         }
 
     answer = (state.get("current_answer") or "").lower()
-    chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
+    chunks: list[RetrievedChunk] = state.get("generation_chunks") or state.get("reranked_chunks") or []
     query = str(state.get("user_query", ""))
     if not chunks:
         return {
@@ -423,7 +458,7 @@ def _node_hallucination_grader(state: QueryState) -> dict[str, Any]:
     llm = get_reasoning_llm()
     query: str = state["user_query"]
     answer: str = state.get("current_answer") or ""
-    chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
+    chunks: list[RetrievedChunk] = state.get("generation_chunks") or state.get("reranked_chunks") or []
     iteration: int = state.get("iteration_count", 0)
 
     # Loop guard — accept answer after max retries to avoid infinite loop
@@ -509,7 +544,7 @@ def _route_after_retrieval_gate(state: QueryState) -> str:
     decision = state.get("retrieval_gate_decision", "proceed")
     if decision == "abstain_early":
         return "finalise"
-    return "answer_generation"
+    return "context_distillation"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -528,6 +563,7 @@ def build_query_graph():
     graph.add_node("hybrid_retrieval", _node_hybrid_retrieval)
     graph.add_node("reranking", _node_reranking)
     graph.add_node("retrieval_quality_gate", _node_retrieval_quality_gate)
+    graph.add_node("context_distillation", _node_context_distillation)
     graph.add_node("answer_generation", _node_answer_generation)
     graph.add_node("semantic_verification", _node_semantic_verification)
     graph.add_node("hallucination_grader", _node_hallucination_grader)
@@ -538,6 +574,7 @@ def build_query_graph():
 
     graph.add_edge("hybrid_retrieval", "reranking")
     graph.add_edge("reranking", "retrieval_quality_gate")
+    graph.add_edge("context_distillation", "answer_generation")
     graph.add_edge("answer_generation", "semantic_verification")
     graph.add_edge("semantic_verification", "hallucination_grader")
     graph.add_edge("hallucination_grader", "grader_consistency_validator")
@@ -548,7 +585,7 @@ def build_query_graph():
         _route_after_retrieval_gate,
         {
             "finalise": "finalise",
-            "answer_generation": "answer_generation",
+            "context_distillation": "context_distillation",
         },
     )
 
@@ -583,6 +620,7 @@ def run_query(user_query: str) -> dict[str, Any]:
         "iteration_count": 0,
         "retrieved_chunks": [],
         "reranked_chunks": [],
+        "generation_chunks": [],
         "current_answer": "",
         "last_critique": None,
         "grader_decision": None,
