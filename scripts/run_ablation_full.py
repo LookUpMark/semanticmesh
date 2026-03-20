@@ -7,7 +7,7 @@ for each study.
 Each study:
 1. Clears the Neo4j graph
 2. Runs the Builder Graph (triplet extraction, ER, mapping, Cypher upsert)
-3. Runs the Query Graph with 4 test questions
+3. Runs the Query Graph with dataset-driven test questions (fallback to defaults)
 4. Optionally runs RAGAS evaluation on the gold-standard dataset
 
 Results are saved under notebooks/ablation/ablation_results/studies/AB-XX/
@@ -135,6 +135,40 @@ def _default_run_tag(dataset_path: Path | None, use_smoke_fixtures: bool) -> str
     print(sep("─"))
 
 
+def _load_query_questions(dataset_path: Path | None, max_samples: int | None) -> list[str]:
+    """Load query questions from dataset and apply sample cap, with fallback."""
+    if dataset_path is None:
+        return list(TEST_QUESTIONS)
+
+    try:
+        from src.evaluation.ragas_runner import _load_dataset  # noqa: PLC0415
+
+        dataset = _load_dataset(dataset_path)
+        if max_samples is not None and max_samples > 0:
+            dataset = dataset[:max_samples]
+        questions = [str(sample.get("question", "")).strip() for sample in dataset]
+        questions = [q for q in questions if q]
+        if questions:
+            logger.info(
+                "Loaded %d query questions from dataset '%s'.",
+                len(questions),
+                dataset_path,
+            )
+            return questions
+        logger.warning(
+            "Dataset '%s' produced no valid questions; falling back to default test questions.",
+            dataset_path,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Failed loading dataset questions from '%s' (%s); falling back to default test questions.",
+            dataset_path,
+            exc,
+        )
+
+    return list(TEST_QUESTIONS)
+
+
 # ── Study execution ───────────────────────────────────────────────────────────
 
 
@@ -259,13 +293,16 @@ def run_ablation_study(
 
             print("\n[2/2] Query Graph …")
             t1 = time.time()
+            questions = _load_query_questions(dataset_path=dataset_path, max_samples=max_samples)
+            if not questions:
+                raise ValueError("Query phase has no questions to evaluate (empty dataset and empty fallback).")
 
             grounded_count = 0
             results = []
             query_trace_file = study_dir / "traces" / f"{study_id}.{tag}.query_trace.jsonl"
             with query_trace_file.open("w", encoding="utf-8") as qtf:
                 pass
-            for i, q in enumerate(TEST_QUESTIONS, 1):
+            for i, q in enumerate(questions, 1):
                 r = run_query(q)
                 answer = r.get("final_answer", "")
                 sources = list(r.get("sources", []))
@@ -279,12 +316,12 @@ def run_ablation_study(
                 grounded_count += int(grounded)
                 mark = "✅" if grounded else "❌"
                 results.append((q, answer, grounded))
-                print(f"\n    [{i}/{len(TEST_QUESTIONS)}] {mark}  Q: {q}")
+                print(f"\n    [{i}/{len(questions)}] {mark}  Q: {q}")
                 print(f"         A: {answer[:120]}{'…' if len(answer) > 120 else ''}")
                 logger.info(
                     "Query trace %d/%d | q='%s' | answer_chars=%d | sources=%d | contexts=%d",
                     i,
-                    len(TEST_QUESTIONS),
+                    len(questions),
                     q[:80],
                     len(answer),
                     len(sources),
@@ -310,7 +347,7 @@ def run_ablation_study(
 
             query_elapsed = time.time() - t1
             print(f"\n    Query elapsed   : {query_elapsed:.1f} s")
-            print(f"    Grounded        : {grounded_count} / {len(TEST_QUESTIONS)}")
+            print(f"    Grounded        : {grounded_count} / {len(questions)}")
             print(f"    Query trace     : {query_trace_file}")
 
             # ── 3. RAGAS Evaluation (optional) ─────────────────────────────────
@@ -360,7 +397,7 @@ def run_ablation_study(
                 len(triplets) > 0
                 and len(completed) == len(tables)
                 and not failed
-                and grounded_count == len(TEST_QUESTIONS)
+                and grounded_count == len(questions)
             )
 
             print()
@@ -383,7 +420,7 @@ def run_ablation_study(
                 "tables_completed": len(completed),
                 "cypher_failed": bool(failed),
                 "grounded_count": grounded_count,
-                "question_count": len(TEST_QUESTIONS),
+                "question_count": len(questions),
                 "positive": bool(positive),
                 "ragas": ragas_metrics,
                 "ragas_diagnostics": ragas_diagnostics,

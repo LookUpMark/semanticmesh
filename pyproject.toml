@@ -29,6 +29,7 @@ dependencies = [
     "faiss-cpu>=1.8",
     "langchain-tavily>=0.1",
     "tenacity>=8.0",
+    "spacy>=3.7,<4.0",
 ]
 
 [project.optional-dependencies]

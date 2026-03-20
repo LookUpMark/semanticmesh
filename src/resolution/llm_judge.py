@@ -84,6 +84,27 @@ def judge_cluster(
         On any failure, returns a conservative "do not merge" decision to
         preserve information (never crashes the pipeline).
     """
+    settings = get_settings()
+    if settings.use_lazy_extraction:
+        threshold = float(getattr(settings, "er_judge_threshold", 0.80))
+        merge = float(cluster.avg_similarity) >= threshold
+        canonical = cluster.canonical_candidate
+        logger.info(
+            "ER heuristic judge: cluster '%s' avg_similarity=%.3f threshold=%.3f merge=%s",
+            cluster.canonical_candidate,
+            cluster.avg_similarity,
+            threshold,
+            merge,
+        )
+        return CanonicalEntityDecision(
+            merge=merge,
+            canonical_name=canonical,
+            reasoning=(
+                f"Heuristic ER decision by similarity threshold: "
+                f"{cluster.avg_similarity:.3f} {'>=' if merge else '<'} {threshold:.3f}"
+            ),
+        )
+
     # Build the two JSON structures for the prompt
     variants_json = json.dumps(cluster.variants)
     provenance_entries = []
@@ -143,7 +164,6 @@ def judge_cluster(
     )
 
     # Parse JSON + Pydantic validation with self-reflection on failure
-    settings = get_settings()
     max_attempts: int = settings.max_reflection_attempts
     _fmt = '{"merge": <bool>, "canonical_name": "<str>", "reasoning": "<str>"}'
 

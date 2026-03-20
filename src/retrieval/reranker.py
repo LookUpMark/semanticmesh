@@ -49,6 +49,9 @@ def get_reranker():
     _os.environ["CUDA_VISIBLE_DEVICES"] = ""
     try:
         reranker = FlagReranker(model_name, use_fp16=False, device="cpu")
+        # FlagEmbedding can still infer empty/CUDA targets in some environments.
+        # Force a deterministic single CPU target to avoid multi-process zero-device bugs.
+        reranker.target_devices = ["cpu"]
     finally:
         if _saved is None:
             _os.environ.pop("CUDA_VISIBLE_DEVICES", None)

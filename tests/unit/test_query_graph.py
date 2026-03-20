@@ -4,17 +4,22 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from src.generation.query_graph import _node_reranking, _route_after_grader
+from src.generation.query_graph import (
+    _node_answer_generation,
+    _node_finalise,
+    _node_hybrid_retrieval,
+    _node_retrieval_quality_gate,
+    _node_reranking,
+    _node_semantic_verification,
+    _route_after_grader,
+)
 from src.models.schemas import GraderDecision, RetrievedChunk
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
+# Helpers
 
 def _state(action: str, grounded: bool = True) -> dict:
     return {"grader_decision": GraderDecision(grounded=grounded, critique=None, action=action)}
-
-
-# ── _route_after_grader ───────────────────────────────────────────────────────
 
 
 class TestRouteAfterGrader:
@@ -25,7 +30,6 @@ class TestRouteAfterGrader:
         assert _route_after_grader(_state("regenerate", grounded=False)) == "answer_generation"
 
     def test_web_search_routes_to_finalise(self) -> None:
-        # web_search action no longer exists; unknown actions fall through to finalise
         assert _route_after_grader(_state("web_search", grounded=False)) == "finalise"
 
     def test_none_decision_routes_to_finalise(self) -> None:
@@ -39,13 +43,8 @@ class TestRouteAfterGrader:
         assert _route_after_grader({"grader_decision": mock_decision}) == "finalise"
 
 
-# ── build_query_graph ─────────────────────────────────────────────────────────
-
-
 class TestBuildQueryGraph:
     def test_graph_compiles(self) -> None:
-        from unittest.mock import MagicMock, patch
-
         from src.generation.query_graph import build_query_graph
 
         with (
@@ -68,89 +67,245 @@ class TestNodeReranking:
             metadata={},
         )
 
-    def test_applies_min_score_filter(self) -> None:
+    def test_keeps_all_valid_ranked_chunks(self) -> None:
         settings = MagicMock()
         settings.enable_reranker = True
         settings.reranker_top_k = 5
-        settings.retrieval_min_score = 0.5
-        settings.retrieval_min_score_ratio = 0.0
 
         with (
             patch("src.generation.query_graph.get_settings", return_value=settings),
             patch(
                 "src.generation.query_graph.rerank",
                 return_value=[self._chunk("A", 0.9), self._chunk("B", 0.2)],
-            ),
-        ):
-            state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
-            out = _node_reranking(state)
-            assert [c.node_id for c in out["reranked_chunks"]] == ["A"]
-            assert out["retrieval_quality_score"] == 0.9
-            assert out["retrieval_chunk_count"] == 1
-            assert out["context_sufficiency"] == "adequate"
-
-    def test_returns_empty_when_top_score_below_min_score(self) -> None:
-        settings = MagicMock()
-        settings.enable_reranker = True
-        settings.reranker_top_k = 5
-        settings.retrieval_min_score = 0.95
-        settings.retrieval_min_score_ratio = 0.0
-        settings.retrieval_salvage_min_score = 0.99
-
-        with (
-            patch("src.generation.query_graph.get_settings", return_value=settings),
-            patch(
-                "src.generation.query_graph.rerank",
-                return_value=[self._chunk("A", 0.9), self._chunk("B", 0.2)],
-            ),
-        ):
-            state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
-            out = _node_reranking(state)
-            assert out["reranked_chunks"] == []
-            assert out["retrieval_filtered_by_threshold"] is True
-            assert out["context_sufficiency"] == "insufficient"
-
-    def test_applies_relative_threshold_from_top_score(self) -> None:
-        settings = MagicMock()
-        settings.enable_reranker = True
-        settings.reranker_top_k = 5
-        settings.retrieval_min_score = 0.1
-        settings.retrieval_min_score_ratio = 0.6
-        settings.retrieval_salvage_min_score = 0.07
-
-        with (
-            patch("src.generation.query_graph.get_settings", return_value=settings),
-            patch(
-                "src.generation.query_graph.rerank",
-                return_value=[
-                    self._chunk("A", 0.9),
-                    self._chunk("B", 0.62),
-                    self._chunk("C", 0.52),
-                ],
             ),
         ):
             state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
             out = _node_reranking(state)
             assert [c.node_id for c in out["reranked_chunks"]] == ["A", "B"]
+            assert out["retrieval_quality_score"] == 0.9
             assert out["retrieval_chunk_count"] == 2
+            assert out["context_sufficiency"] == "adequate"
+            assert out["retrieval_filtered_by_threshold"] is False
 
-    def test_salvages_top_context_in_near_threshold_zone(self) -> None:
+    def test_returns_empty_when_no_valid_chunks(self) -> None:
         settings = MagicMock()
         settings.enable_reranker = True
         settings.reranker_top_k = 5
-        settings.retrieval_min_score = 0.1
-        settings.retrieval_min_score_ratio = 0.5
-        settings.retrieval_salvage_min_score = 0.07
+
+        bad_chunk = RetrievedChunk(
+            node_id="",
+            node_type="BusinessConcept",
+            text="",
+            score=0.9,
+            source_type="vector",
+            metadata={},
+        )
 
         with (
             patch("src.generation.query_graph.get_settings", return_value=settings),
+            patch("src.generation.query_graph.rerank", return_value=[bad_chunk]),
+        ):
+            state = {"user_query": "q", "retrieved_chunks": [bad_chunk]}
+            out = _node_reranking(state)
+            assert out["reranked_chunks"] == []
+            assert out["retrieval_filtered_by_threshold"] is False
+            assert out["context_sufficiency"] == "insufficient"
+
+    def test_prefilters_noisy_heuristic_chunks(self) -> None:
+        settings = MagicMock()
+        settings.enable_reranker = False
+        settings.reranker_top_k = 5
+
+        noisy = RetrievedChunk(
+            node_id="Customers",
+            node_type="BusinessConcept",
+            text="Customers: Heuristic embedding mapping score=0.506, adjusted_confidence=0.753, best_candidate='Customers'.",
+            score=0.8,
+            source_type="graph",
+            metadata={},
+        )
+        useful = RetrievedChunk(
+            node_id="SALES_ORDER_HDR→CUSTOMER_MASTER",
+            node_type="relationship",
+            text="The table SALES_ORDER_HDR references CUSTOMER_MASTER via a foreign key.",
+            score=0.2,
+            source_type="graph",
+            metadata={},
+        )
+
+        with patch("src.generation.query_graph.get_settings", return_value=settings):
+            out = _node_reranking(
+                {
+                    "user_query": "How is customer linked to orders?",
+                    "retrieved_chunks": [noisy, useful],
+                }
+            )
+
+        assert len(out["reranked_chunks"]) == 1
+        assert out["reranked_chunks"][0].node_id == "SALES_ORDER_HDR→CUSTOMER_MASTER"
+
+
+class TestNodeHybridRetrievalLazyExpansion:
+    def _chunk(self, name: str, score: float) -> RetrievedChunk:
+        return RetrievedChunk(
+            node_id=name,
+            node_type="BusinessConcept",
+            text=f"{name}: definition",
+            score=score,
+            source_type="vector",
+            metadata={},
+        )
+
+    def test_triggers_lazy_expansion_when_top_score_low(self) -> None:
+        settings = MagicMock(
+            retrieval_mode="hybrid",
+            retrieval_vector_top_k=3,
+            retrieval_bm25_top_k=3,
+            retrieval_graph_depth=1,
+            enable_lazy_expansion=True,
+            lazy_expansion_confidence_threshold=0.4,
+        )
+
+        vec = [self._chunk("A", 0.2)]
+        bm = [self._chunk("B", 0.15)]
+        trav = [self._chunk("C", 0.1)]
+        concepts = []
+        fks = []
+        extra = [self._chunk("D", 0.35)]
+
+        with (
+            patch("src.generation.query_graph.get_settings", return_value=settings),
+            patch("src.generation.query_graph.get_embeddings", return_value=MagicMock()),
+            patch("src.generation.query_graph.Neo4jClient") as mock_client_cls,
+            patch("src.generation.query_graph.build_node_index", return_value=[]),
+            patch("src.generation.query_graph.vector_search", return_value=vec),
+            patch("src.generation.query_graph.bm25_search", return_value=bm),
+            patch("src.generation.query_graph.graph_traversal", side_effect=[trav, extra]) as mock_trav,
+            patch("src.generation.query_graph.fetch_all_concepts", return_value=concepts),
+            patch("src.generation.query_graph.fetch_fk_relationships", return_value=fks),
             patch(
-                "src.generation.query_graph.rerank",
-                return_value=[self._chunk("A", 0.08), self._chunk("B", 0.06)],
+                "src.generation.query_graph.merge_results",
+                side_effect=[vec + bm + trav, vec + bm + trav + extra],
             ),
         ):
-            state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
-            out = _node_reranking(state)
-            assert [c.node_id for c in out["reranked_chunks"]] == ["A"]
-            assert out["context_sufficiency"] == "sparse"
-            assert out["retrieval_filtered_by_threshold"] is True
+            mock_client = MagicMock()
+            mock_client_cls.return_value.__enter__.return_value = mock_client
+            out = _node_hybrid_retrieval({"user_query": "How are customers and orders related?"})
+
+        assert len(out["retrieved_chunks"]) == 4
+        assert mock_trav.call_count == 2
+
+
+class TestNodeRetrievalQualityGate:
+    def test_sparse_structural_single_chunk_proceeds_with_warning(self) -> None:
+        settings = MagicMock(enable_retrieval_quality_gate=True)
+        rel_chunk = RetrievedChunk(
+            node_id="SALES_ORDER_HDR→CUSTOMER_MASTER",
+            node_type="relationship",
+            text="Foreign key from SALES_ORDER_HDR to CUSTOMER_MASTER references CUST_ID.",
+            score=0.02,
+            source_type="graph",
+            metadata={},
+        )
+        state = {
+            "user_query": "How are orders linked to customers?",
+            "retrieval_quality_score": 0.02,
+            "retrieval_chunk_count": 1,
+            "retrieval_filtered_by_threshold": False,
+            "context_sufficiency": "sparse",
+            "reranked_chunks": [rel_chunk],
+        }
+
+        with patch("src.generation.query_graph.get_settings", return_value=settings):
+            out = _node_retrieval_quality_gate(state)
+
+        assert out["retrieval_gate_decision"] == "proceed_with_warning"
+
+
+class TestNodeSemanticVerification:
+    def test_relation_query_uses_lower_overlap_threshold(self) -> None:
+        settings = MagicMock(enable_semantic_verifier=True)
+        rel_chunk = RetrievedChunk(
+            node_id="SALES_ORDER_HDR→CUSTOMER_MASTER",
+            node_type="relationship",
+            text="SALES_ORDER_HDR references CUSTOMER_MASTER by foreign key CUST_ID.",
+            score=0.12,
+            source_type="graph",
+            metadata={},
+        )
+        state = {
+            "user_query": "How are customers and orders related?",
+            "current_answer": "The relationship SALES_ORDER_HDR→CUSTOMER_MASTER links orders to customers via CUST_ID foreign key.",
+            "reranked_chunks": [rel_chunk],
+        }
+
+        with patch("src.generation.query_graph.get_settings", return_value=settings):
+            out = _node_semantic_verification(state)
+
+        assert out["semantic_verification_passed"] is True
+        assert out["semantic_verification_warning"] is None
+
+
+class TestAnswerGenerationContextComposition:
+    def _chunk(self, name: str, text: str, source: str = "graph", score: float = 0.4) -> RetrievedChunk:
+        return RetrievedChunk(
+            node_id=name,
+            node_type="BusinessConcept",
+            text=text,
+            score=score,
+            source_type=source,
+            metadata={},
+        )
+
+    def test_answer_generation_uses_balanced_subset(self) -> None:
+        rel = self._chunk(
+            "SALES_ORDER_HDR→CUSTOMER_MASTER",
+            "The table SALES_ORDER_HDR references CUSTOMER_MASTER via a foreign key.",
+            source="graph",
+            score=0.8,
+        )
+        vec = self._chunk(
+            "Customer",
+            "Customer entity and profile information.",
+            source="vector",
+            score=0.7,
+        )
+        extras = [
+            self._chunk(f"X{i}", f"Extra context {i}", source="graph", score=0.2 - i * 0.01)
+            for i in range(12)
+        ]
+        state = {
+            "user_query": "How is a customer linked to orders?",
+            "reranked_chunks": [rel, vec] + extras,
+            "context_sufficiency": "adequate",
+            "iteration_count": 0,
+        }
+
+        with (
+            patch("src.generation.query_graph.get_reasoning_llm", return_value=MagicMock()),
+            patch("src.generation.query_graph.generate_answer", return_value="ok") as mock_generate,
+        ):
+            out = _node_answer_generation(state)
+
+        used_chunks = mock_generate.call_args.args[1]
+        assert len(used_chunks) <= 10
+        assert any(c.node_id == "SALES_ORDER_HDR→CUSTOMER_MASTER" for c in used_chunks)
+        assert out["generation_chunks"] == used_chunks
+
+    def test_finalise_prefers_generation_chunks_for_output_context(self) -> None:
+        reranked = [self._chunk("A", "A: noisy", score=0.1)]
+        generation = [self._chunk("B", "B: focused evidence", score=0.9)]
+        state = {
+            "current_answer": "answer",
+            "retrieval_gate_decision": "proceed",
+            "reranked_chunks": reranked,
+            "generation_chunks": generation,
+            "retrieval_quality_score": 0.9,
+            "retrieval_chunk_count": 1,
+            "retrieval_filtered_by_threshold": False,
+            "context_sufficiency": "adequate",
+        }
+
+        out = _node_finalise(state)
+        assert out["sources"] == ["B"]
+        assert out["retrieved_contexts"] == ["B: focused evidence"]

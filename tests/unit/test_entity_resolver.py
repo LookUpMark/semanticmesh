@@ -5,7 +5,7 @@ and src/resolution/entity_resolver.py (UT-06).
 from __future__ import annotations
 
 import json
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
@@ -186,6 +186,26 @@ class TestBuildProvenanceMap:
 
 
 class TestJudgeCluster:
+    @patch("src.resolution.llm_judge.get_settings")
+    def test_lazy_mode_uses_threshold_no_llm(self, mock_get_settings) -> None:
+        cluster = EntityCluster(
+            canonical_candidate="Customer",
+            variants=["Customer", "Customers"],
+            avg_similarity=0.91,
+        )
+        mock_get_settings.return_value = MagicMock(
+            use_lazy_extraction=True,
+            er_judge_threshold=0.80,
+            max_reflection_attempts=3,
+        )
+        llm = MagicMock()
+
+        decision = judge_cluster(cluster, {}, llm)
+
+        assert decision.merge is True
+        assert decision.canonical_name == "Customer"
+        llm.invoke.assert_not_called()
+
     def test_merge_true_decision(self) -> None:
         cluster = _make_cluster("Customer", "Customers")
         pmap = {"Customer": ["A Customer buys things."], "Customers": ["Customers are registered."]}

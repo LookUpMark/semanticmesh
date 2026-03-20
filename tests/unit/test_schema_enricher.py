@@ -91,6 +91,25 @@ class TestEnrichSchema:
         assert result.enriched_table_name == "Order Table"
         assert result.enriched_columns == []
 
+    def test_markdown_fenced_json_is_parsed(self) -> None:
+        table = _make_table("TB_PROD", num_cols=2)
+        llm = MagicMock()
+        response = MagicMock()
+        payload = {
+            "enriched_table_name": "Product",
+            "enriched_columns": [
+                {"original": "COL_0", "enriched": "Product ID"},
+                {"original": "COL_1", "enriched": "Product Name"},
+            ],
+            "table_description": "Stores product metadata.",
+        }
+        response.content = f"```json\n{json.dumps(payload)}\n```"
+        llm.invoke.return_value = response
+
+        result = enrich_schema(table, llm)
+        assert result.enriched_table_name == "Product"
+        assert len(result.enriched_columns) == 2
+
 
 # ---- enrich_all ----
 

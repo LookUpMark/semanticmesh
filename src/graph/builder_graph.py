@@ -16,6 +16,7 @@ from langgraph.graph import END, StateGraph
 from src.config.llm_factory import get_extraction_llm, get_reasoning_llm
 from src.config.logging import get_logger
 from src.config.settings import get_settings
+from src.extraction.heuristic_extractor import extract_all_triplets_heuristic
 from src.extraction.triplet_extractor import extract_all_triplets
 from src.graph.cypher_builder import build_fk_cypher, build_upsert_cypher
 from src.graph.cypher_generator import generate_cypher
@@ -25,7 +26,12 @@ from src.ingestion.ddl_parser import parse_ddl_file
 from src.ingestion.pdf_loader import load_and_chunk_pdf
 from src.ingestion.schema_enricher import enrich_all
 from src.mapping.hitl import hitl_node
-from src.mapping.rag_mapper import build_retrieval_query, propose_mapping, retrieve_top_entities
+from src.mapping.rag_mapper import (
+    build_retrieval_query,
+    propose_mapping,
+    propose_mapping_heuristic,
+    retrieve_top_entities,
+)
 from src.mapping.validator import build_reflection_prompt, critic_review, validate_schema
 from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
 from src.models.state import BuilderState
@@ -43,9 +49,17 @@ logger: logging.Logger = get_logger(__name__)
 
 def _node_extract_triplets(state: BuilderState) -> dict[str, Any]:
     """Extract semantic triplets from document chunks."""
-    llm = get_extraction_llm()
+    settings = get_settings()
+    use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
     chunks = state.get("chunks") or []
-    triplets = extract_all_triplets(chunks, llm)
+
+    if use_lazy:
+        logger.info("Lazy extraction enabled — using heuristic triplet extractor.")
+        triplets = extract_all_triplets_heuristic(chunks)
+    else:
+        llm = get_extraction_llm()
+        triplets = extract_all_triplets(chunks, llm)
+
     return {"triplets": triplets}
 
 
@@ -84,6 +98,7 @@ def _node_enrich_schema(state: BuilderState) -> dict[str, Any]:
 def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
     """Generate RAG-augmented mapping proposal for current table."""
     settings = get_settings()
+    use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
     llm = get_reasoning_llm()
     embeddings = get_embeddings()
     enriched_tables = state.get("enriched_tables") or []
@@ -106,14 +121,29 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
         query, entities, embeddings, top_k=settings.retrieval_vector_top_k
     )
 
-    # If coming from a reflection retry, inject the critique into the proposal call
-    proposal = propose_mapping(
-        current_table,
-        top_entities,
-        llm,
-        few_shot_examples="",  # TODO: Load from few_shot module
-        reflection_prompt=reflection_prompt,
-    )
+    if use_lazy:
+        proposal = propose_mapping_heuristic(
+            current_table,
+            entities,
+            embeddings,
+            top_k=settings.retrieval_vector_top_k,
+            min_confidence=settings.heuristic_mapping_confidence_threshold,
+        )
+        top_entities = retrieve_top_entities(
+            build_retrieval_query(current_table),
+            entities,
+            embeddings,
+            top_k=settings.retrieval_vector_top_k,
+        )
+    else:
+        # If coming from a reflection retry, inject the critique into the proposal call
+        proposal = propose_mapping(
+            current_table,
+            top_entities,
+            llm,
+            few_shot_examples="",  # TODO: Load from few_shot module
+            reflection_prompt=reflection_prompt,
+        )
 
     return {
         "mapping_proposal": proposal,
@@ -128,6 +158,7 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
 def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
     """Two-layer validation: Pydantic schema + LLM Critic."""
     settings = get_settings()
+    use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
     llm = get_reasoning_llm()
     proposal: MappingProposal | None = state.get("mapping_proposal")
     table = state.get("current_table")
@@ -161,7 +192,7 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
         best_proposal = validated
 
     # Optional ablation: skip critic and accept Pydantic-valid proposal directly.
-    if not settings.enable_critic_validation:
+    if use_lazy or not settings.enable_critic_validation:
         return {
             "mapping_proposal": validated,
             "best_proposal": None,
@@ -214,6 +245,10 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
 def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
     """Generate MERGE-based Cypher from mapping proposal."""
     settings = get_settings()
+    if bool(state.get("use_lazy_extraction", settings.use_lazy_extraction)):
+        logger.info("Lazy mode: skipping LLM Cypher generation.")
+        return {"current_cypher": None, "healing_attempts": 0}
+
     llm = get_reasoning_llm()
     proposal: MappingProposal = state["mapping_proposal"]
     table = state.get("current_table")
@@ -235,6 +270,9 @@ def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
 def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
     """Validate and heal Cypher via dry-run + LLM reflection loop."""
     settings = get_settings()
+    if bool(state.get("use_lazy_extraction", settings.use_lazy_extraction)):
+        return {"cypher_failed": True, "current_cypher": None}
+
     if not settings.enable_cypher_healing:
         logger.info("Cypher healing disabled — using deterministic builder fallback.")
         return {"cypher_failed": True, "current_cypher": None}
@@ -285,8 +323,9 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
 
     llm_cypher: str | None = state.get("current_cypher")
     cypher_failed: bool = state.get("cypher_failed", False)
+    lazy_mode: bool = bool(state.get("use_lazy_extraction", get_settings().use_lazy_extraction))
 
-    if llm_cypher and not cypher_failed:
+    if llm_cypher and not cypher_failed and not lazy_mode:
         # Primary path: LLM-healed Cypher passed Neo4j EXPLAIN — execute it.
         logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
         exec_cypher, exec_params = llm_cypher, {}
@@ -346,6 +385,13 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
 
 def _route_after_validate(state: BuilderState) -> str:
     """Route after validation: HITL, retry mapping, or proceed to Cypher."""
+    if state.get("use_lazy_extraction"):
+        if state.get("hitl_flag") and not state.get("skip_hitl"):
+            return "hitl"
+        if state.get("reflection_prompt"):
+            return "rag_mapping"
+        return "build_graph"
+
     if state.get("hitl_flag") and not state.get("skip_hitl"):
         return "hitl"
     if state.get("reflection_prompt"):
@@ -415,7 +461,12 @@ def build_builder_graph(*, production: bool = False):
     graph.add_conditional_edges(
         "validate_mapping",
         _route_after_validate,
-        {"hitl": "hitl", "rag_mapping": "rag_mapping", "generate_cypher": "generate_cypher"},
+        {
+            "hitl": "hitl",
+            "rag_mapping": "rag_mapping",
+            "generate_cypher": "generate_cypher",
+            "build_graph": "build_graph",
+        },
     )
     graph.add_conditional_edges(
         "heal_cypher",
@@ -450,6 +501,7 @@ def run_builder(
     *,
     production: bool = False,
     clear_graph: bool = False,
+    use_lazy_extraction: bool | None = None,
 ) -> BuilderState:
     """Convenience wrapper: compile graph and invoke with document paths.
 
@@ -475,10 +527,13 @@ def run_builder(
         setup_schema(client)
 
     graph = build_builder_graph(production=production)
+    settings = get_settings()
+    lazy_mode = settings.use_lazy_extraction if use_lazy_extraction is None else use_lazy_extraction
     initial: BuilderState = {
         "chunks": chunks,
         "ddl_paths": ddl_paths,
         "source_doc": str(raw_documents[0]) if raw_documents else "unknown",
+        "use_lazy_extraction": lazy_mode,
         "triplets": [],
         "entities": [],
         "tables": [],

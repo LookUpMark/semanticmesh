@@ -7,11 +7,13 @@ from unittest.mock import MagicMock, patch
 from langgraph.graph import END
 
 from src.graph.builder_graph import (
+    _node_extract_triplets,
     _route_after_build,
     _route_after_heal,
     _route_after_validate,
     build_builder_graph,
 )
+from src.models.schemas import Chunk
 
 # ── Conditional edge routing ───────────────────────────────────────────────────
 
@@ -120,3 +122,55 @@ class TestBuildBuilderGraph:
         # Check that the graph is compiled with interrupt_before
         assert graph is not None
         # The compiled graph should have the interrupt configured
+
+
+class TestNodeExtractTriplets:
+    @patch("src.graph.builder_graph.get_settings")
+    @patch("src.graph.builder_graph.extract_all_triplets_heuristic")
+    @patch("src.graph.builder_graph.extract_all_triplets")
+    @patch("src.graph.builder_graph.get_extraction_llm")
+    def test_uses_heuristic_path_when_lazy_enabled(
+        self,
+        mock_get_llm,
+        mock_extract_llm,
+        mock_extract_heuristic,
+        mock_get_settings,
+    ) -> None:
+        mock_get_settings.return_value = MagicMock(use_lazy_extraction=True)
+        mock_extract_heuristic.return_value = [MagicMock()]
+        state = {
+            "chunks": [Chunk(text="Customer maps to CUSTOMER_MASTER.", chunk_index=0, metadata={})]
+        }
+
+        out = _node_extract_triplets(state)
+
+        assert len(out["triplets"]) == 1
+        mock_extract_heuristic.assert_called_once()
+        mock_extract_llm.assert_not_called()
+        mock_get_llm.assert_not_called()
+
+    @patch("src.graph.builder_graph.get_settings")
+    @patch("src.graph.builder_graph.extract_all_triplets_heuristic")
+    @patch("src.graph.builder_graph.extract_all_triplets")
+    @patch("src.graph.builder_graph.get_extraction_llm")
+    def test_uses_llm_path_when_lazy_disabled(
+        self,
+        mock_get_llm,
+        mock_extract_llm,
+        mock_extract_heuristic,
+        mock_get_settings,
+    ) -> None:
+        mock_get_settings.return_value = MagicMock(use_lazy_extraction=False)
+        mock_get_llm.return_value = MagicMock()
+        mock_extract_llm.return_value = [MagicMock(), MagicMock()]
+        state = {
+            "chunks": [Chunk(text="Customer maps to CUSTOMER_MASTER.", chunk_index=0, metadata={})],
+            "use_lazy_extraction": False,
+        }
+
+        out = _node_extract_triplets(state)
+
+        assert len(out["triplets"]) == 2
+        mock_get_llm.assert_called_once()
+        mock_extract_llm.assert_called_once()
+        mock_extract_heuristic.assert_not_called()

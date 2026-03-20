@@ -90,6 +90,13 @@ class AppConfig:
     enable_semantic_verifier: bool = True
     enable_grader_consistency_validator: bool = True
     grader_timeout_seconds: float = 12.0
+    use_lazy_extraction: bool = False
+    enable_spacy_heuristics: bool = True
+    spacy_model_name: str = "en_core_web_sm"
+    er_judge_threshold: float = 0.80
+    heuristic_mapping_confidence_threshold: float = 0.60
+    enable_lazy_expansion: bool = False
+    lazy_expansion_confidence_threshold: float = 0.40
 
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = "INFO"

@@ -28,6 +28,7 @@ class BuilderState(TypedDict, total=False):
     # Entry-point inputs
     ddl_paths: list[str]
     source_doc: str
+    use_lazy_extraction: bool
 
     # Ingestion
     documents: list[Document]
@@ -77,6 +78,7 @@ class QueryState(TypedDict, total=False):
     current_answer: str
     last_critique: str | None
     grader_decision: GraderDecision | None
+    generation_chunks: list[RetrievedChunk]
 
     # Output
     final_answer: str

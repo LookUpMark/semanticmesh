@@ -32,6 +32,10 @@ class Settings(BaseSettings):
         ENABLE_SCHEMA_ENRICHMENT, RETRIEVAL_MODE
         ENABLE_CYPHER_HEALING, ENABLE_CRITIC_VALIDATION, ENABLE_RERANKER, ENABLE_HALLUCINATION_GRADER
         ENABLE_RETRIEVAL_QUALITY_GATE, ENABLE_SEMANTIC_VERIFIER, ENABLE_GRADER_CONSISTENCY_VALIDATOR, GRADER_TIMEOUT_SECONDS
+        USE_LAZY_EXTRACTION
+        ENABLE_SPACY_HEURISTICS, SPACY_MODEL_NAME
+        ER_JUDGE_THRESHOLD, HEURISTIC_MAPPING_CONFIDENCE_THRESHOLD
+        ENABLE_LAZY_EXPANSION, LAZY_EXPANSION_CONFIDENCE_THRESHOLD
         LOG_LEVEL
     """
 
@@ -102,6 +106,13 @@ class Settings(BaseSettings):
     enable_semantic_verifier: bool = DEFAULT_CONFIG.enable_semantic_verifier
     enable_grader_consistency_validator: bool = DEFAULT_CONFIG.enable_grader_consistency_validator
     grader_timeout_seconds: float = DEFAULT_CONFIG.grader_timeout_seconds
+    use_lazy_extraction: bool = DEFAULT_CONFIG.use_lazy_extraction
+    enable_spacy_heuristics: bool = DEFAULT_CONFIG.enable_spacy_heuristics
+    spacy_model_name: str = DEFAULT_CONFIG.spacy_model_name
+    er_judge_threshold: float = DEFAULT_CONFIG.er_judge_threshold
+    heuristic_mapping_confidence_threshold: float = DEFAULT_CONFIG.heuristic_mapping_confidence_threshold
+    enable_lazy_expansion: bool = DEFAULT_CONFIG.enable_lazy_expansion
+    lazy_expansion_confidence_threshold: float = DEFAULT_CONFIG.lazy_expansion_confidence_threshold
 
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = DEFAULT_CONFIG.log_level

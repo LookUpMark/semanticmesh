@@ -7,6 +7,7 @@ Wires hybrid retrieval → reranking → answer generation → hallucination gra
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+import re
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -16,6 +17,10 @@ from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.generation.answer_generator import generate_answer
 from src.generation.hallucination_grader import grade_answer
+from src.generation.lazy_expander import (
+    collect_seed_names_for_expansion,
+    should_trigger_lazy_expansion,
+)
 from src.graph.neo4j_client import Neo4jClient, setup_schema
 from src.models.schemas import GraderDecision, RetrievedChunk
 from src.models.state import QueryState
@@ -35,6 +40,156 @@ if TYPE_CHECKING:
     import logging
 
 logger: logging.Logger = get_logger(__name__)
+
+_TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
+_NOISE_MARKERS = (
+    "heuristic embedding mapping score=",
+    "adjusted_confidence=",
+    "best_candidate=",
+)
+
+
+def _has_structural_relationship_evidence(chunks: list[RetrievedChunk]) -> bool:
+    """Return True when chunks carry explicit relational/schema evidence."""
+    for chunk in chunks:
+        node_id = chunk.node_id.strip().lower()
+        text = chunk.text.strip().lower()
+        if "→" in node_id:
+            return True
+        if any(token in text for token in ("references", "foreign key", "fk ", " fk", "joins", "join ")):
+            return True
+    return False
+
+
+def _query_terms(query: str) -> set[str]:
+    stop = {
+        "what",
+        "which",
+        "where",
+        "when",
+        "how",
+        "does",
+        "the",
+        "this",
+        "that",
+        "with",
+        "into",
+        "from",
+        "table",
+        "database",
+        "business",
+        "concept",
+        "information",
+        "schema",
+        "knowledge",
+        "graph",
+    }
+    terms = {
+        t.lower()
+        for t in _TOKEN_RE.findall(query)
+        if len(t) > 2 and t.lower() not in stop
+    }
+    return terms
+
+
+def _is_noise_chunk(chunk: RetrievedChunk) -> bool:
+    text = chunk.text.lower()
+    if any(marker in text for marker in _NOISE_MARKERS):
+        return True
+    if len(chunk.text.strip()) < 18 and "→" not in chunk.node_id:
+        return True
+    return False
+
+
+def _pre_filter_rerank_pool(
+    chunks: list[RetrievedChunk],
+    query: str,
+    max_candidates: int,
+) -> list[RetrievedChunk]:
+    if not chunks:
+        return []
+
+    terms = _query_terms(query)
+
+    def _chunk_priority(chunk: RetrievedChunk) -> tuple[int, int, int, float]:
+        text_l = chunk.text.lower()
+        nid_l = chunk.node_id.lower()
+        has_structure = int("→" in chunk.node_id or any(k in text_l for k in ("references", "foreign key")))
+        keyword_hits = int(any(term in text_l or term in nid_l for term in terms))
+        source_rank = 2 if chunk.source_type in {"vector", "bm25"} else 1
+        return (has_structure, keyword_hits, source_rank, float(chunk.score))
+
+    selected: list[RetrievedChunk] = []
+    dropped_noise = 0
+    for chunk in chunks:
+        if not chunk.node_id.strip() or not chunk.text.strip():
+            continue
+        if _is_noise_chunk(chunk):
+            dropped_noise += 1
+            continue
+        selected.append(chunk)
+
+    if not selected:
+        # Never starve downstream nodes: keep original valid chunks when filter is too strict.
+        selected = [c for c in chunks if c.node_id.strip() and c.text.strip()]
+
+    selected.sort(key=_chunk_priority, reverse=True)
+    limited = selected[:max_candidates]
+    if dropped_noise:
+        logger.info(
+            "Pre-rerank quality filter dropped %d noisy chunk(s); kept %d/%d candidates.",
+            dropped_noise,
+            len(limited),
+            len(chunks),
+        )
+    return limited
+
+
+def _compose_generation_chunks(
+    query: str,
+    chunks: list[RetrievedChunk],
+    max_core: int = 6,
+    max_support: int = 4,
+) -> list[RetrievedChunk]:
+    """Build a balanced context window for answer generation.
+
+    Strategy:
+    - `core`: most query-relevant and structural chunks
+    - `support`: additional diverse evidence from remaining chunks
+    """
+    if not chunks:
+        return []
+
+    terms = _query_terms(query)
+
+    def _priority(chunk: RetrievedChunk) -> tuple[int, int, int, float]:
+        text_l = chunk.text.lower()
+        nid_l = chunk.node_id.lower()
+        has_structure = int("→" in chunk.node_id or any(k in text_l for k in ("references", "foreign key")))
+        keyword_hits = int(any(term in text_l or term in nid_l for term in terms))
+        source_rank = 2 if chunk.source_type in {"vector", "bm25"} else 1
+        return (keyword_hits, has_structure, source_rank, float(chunk.score))
+
+    ranked = sorted(chunks, key=_priority, reverse=True)
+    core = ranked[:max_core]
+
+    support: list[RetrievedChunk] = []
+    core_ids = {c.node_id for c in core}
+    seen_sources = {c.source_type for c in core}
+    for chunk in ranked[max_core:]:
+        if chunk.node_id in core_ids:
+            continue
+        # Prefer source diversity in support evidence.
+        if len(support) < max_support:
+            if chunk.source_type not in seen_sources or len(seen_sources) < 2:
+                support.append(chunk)
+                seen_sources.add(chunk.source_type)
+                continue
+            if len(support) < max_support:
+                support.append(chunk)
+
+    composed = core + support[:max_support]
+    return composed
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -73,6 +228,21 @@ def _node_hybrid_retrieval(state: QueryState) -> dict[str, Any]:
             merged = merge_results(
                 vec_results, bm25_results, trav_results + all_concepts + fk_chunks
             )
+
+            if getattr(settings, "enable_lazy_expansion", False):
+                top_score = float(merged[0].score) if merged else 0.0
+                if should_trigger_lazy_expansion(
+                    top_score,
+                    len(merged),
+                    float(getattr(settings, "lazy_expansion_confidence_threshold", 0.40)),
+                ):
+                    seeds = collect_seed_names_for_expansion(merged, limit=8)
+                    extra = graph_traversal(
+                        seed_names=seeds,
+                        client=client,
+                        depth=max(1, settings.retrieval_graph_depth + 1),
+                    )
+                    merged = merge_results(vec_results, bm25_results, trav_results + extra + all_concepts + fk_chunks)
     return {"retrieved_chunks": merged}
 
 
@@ -80,28 +250,13 @@ def _node_reranking(state: QueryState) -> dict[str, Any]:
     settings = get_settings()
     query: str = state["user_query"]
     chunks: list[RetrievedChunk] = state.get("retrieved_chunks") or []
-    min_score_raw = getattr(settings, "retrieval_min_score", 0.0)
-    try:
-        min_score = float(min_score_raw)
-    except (TypeError, ValueError):
-        min_score = 0.0
-    min_ratio_raw = getattr(settings, "retrieval_min_score_ratio", 0.0)
-    try:
-        min_ratio = float(min_ratio_raw)
-    except (TypeError, ValueError):
-        min_ratio = 0.0
-    min_ratio = max(0.0, min(1.0, min_ratio))
-    salvage_min_raw = getattr(settings, "retrieval_salvage_min_score", 0.07)
-    try:
-        salvage_min = float(salvage_min_raw)
-    except (TypeError, ValueError):
-        salvage_min = 0.07
-    salvage_min = max(0.0, salvage_min)
+    max_pool = max(settings.reranker_top_k * 4, settings.reranker_top_k)
+    pool = _pre_filter_rerank_pool(chunks, query=query, max_candidates=max_pool)
 
     if not settings.enable_reranker:
-        candidates = chunks[: settings.reranker_top_k]
+        candidates = pool[: settings.reranker_top_k]
     else:
-        candidates = rerank(query, chunks, top_k=settings.reranker_top_k)
+        candidates = rerank(query, pool, top_k=settings.reranker_top_k)
 
     valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
     if not valid:
@@ -114,47 +269,16 @@ def _node_reranking(state: QueryState) -> dict[str, Any]:
         }
 
     top_score = float(valid[0].score)
-    if top_score < min_score:
-        if top_score >= salvage_min:
-            logger.info(
-                "reranking: top score %.4f below min_score %.4f but above salvage_min %.4f; keeping top context.",
-                top_score,
-                min_score,
-                salvage_min,
-            )
-            return {
-                "reranked_chunks": [valid[0]],
-                "retrieval_quality_score": top_score,
-                "retrieval_chunk_count": 1,
-                "retrieval_filtered_by_threshold": True,
-                "context_sufficiency": "sparse",
-            }
-        logger.info(
-            "reranking: top score %.4f below min_score %.4f; dropping all contexts.",
-            top_score,
-            min_score,
-        )
-        return {
-            "reranked_chunks": [],
-            "retrieval_quality_score": top_score,
-            "retrieval_chunk_count": 0,
-            "retrieval_filtered_by_threshold": True,
-            "context_sufficiency": "insufficient",
-        }
-
-    threshold = max(min_score, top_score * min_ratio)
-    filtered = [c for c in valid if float(c.score) >= threshold]
-    if not filtered:
-        sufficiency = "insufficient"
-    elif len(filtered) == 1 and float(filtered[0].score) < 0.6:
+    if len(valid) == 1:
         sufficiency = "sparse"
     else:
         sufficiency = "adequate"
+
     return {
-        "reranked_chunks": filtered,
+        "reranked_chunks": valid,
         "retrieval_quality_score": top_score,
-        "retrieval_chunk_count": len(filtered),
-        "retrieval_filtered_by_threshold": len(filtered) < len(valid),
+        "retrieval_chunk_count": len(valid),
+        "retrieval_filtered_by_threshold": False,
         "context_sufficiency": sufficiency,
     }
 
@@ -163,23 +287,29 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
     llm = get_reasoning_llm()
     query: str = state["user_query"]
     chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
+    generation_chunks = _compose_generation_chunks(query, chunks)
     critique: str | None = state.get("last_critique")
     sufficiency: str = state.get("context_sufficiency", "insufficient")
-    if chunks and sufficiency != "adequate":
+    if generation_chunks and sufficiency != "adequate":
         logger.warning(
             "Generating answer with %s context (chunks=%d).",
             sufficiency,
-            len(chunks),
+            len(generation_chunks),
         )
     answer = generate_answer(
         query,
-        chunks,
+        generation_chunks,
         llm,
         critique=critique,
         context_sufficiency=sufficiency,
     )
     iteration = state.get("iteration_count", 0) + 1
-    return {"current_answer": answer, "iteration_count": iteration, "last_critique": None}
+    return {
+        "current_answer": answer,
+        "iteration_count": iteration,
+        "last_critique": None,
+        "generation_chunks": generation_chunks,
+    }
 
 
 def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
@@ -190,17 +320,36 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
     top_score = float(state.get("retrieval_quality_score", 0.0))
     chunk_count = int(state.get("retrieval_chunk_count", 0))
     sufficiency = state.get("context_sufficiency", "insufficient")
-    filtered = bool(state.get("retrieval_filtered_by_threshold", False))
+    query = str(state.get("user_query", ""))
+    reranked: list[RetrievedChunk] = state.get("reranked_chunks") or []
+    has_structural_evidence = _has_structural_relationship_evidence(reranked)
+    relation_query = any(k in query.lower() for k in ("related", "relationship", "linked", "link"))
 
     if chunk_count == 0:
         return {"retrieval_gate_decision": "abstain_early"}
 
+    if chunk_count == 1 and (has_structural_evidence or relation_query):
+        logger.info(
+            "Retrieval gate: preserving sparse but structured evidence (score %.4f).",
+            top_score,
+        )
+        return {"retrieval_gate_decision": "proceed_with_warning"}
+
     if sufficiency == "adequate" and top_score >= 0.2:
         return {"retrieval_gate_decision": "proceed"}
 
-    if filtered and top_score < 0.05:
-        logger.info("Retrieval gate: low-score filtered context; abstaining early.")
+    if top_score < 0.015 and chunk_count <= 1 and not has_structural_evidence:
+        logger.info(
+            "Retrieval gate: very low-score context without structural evidence and sparse evidence; abstaining early."
+        )
         return {"retrieval_gate_decision": "abstain_early"}
+
+    if top_score < 0.015 and chunk_count >= 2:
+        logger.info(
+            "Retrieval gate: very low-score but multi-chunk evidence available (chunks=%d); proceeding with warning.",
+            chunk_count,
+        )
+        return {"retrieval_gate_decision": "proceed_with_warning"}
 
     return {"retrieval_gate_decision": "proceed_with_warning"}
 
@@ -216,6 +365,7 @@ def _node_semantic_verification(state: QueryState) -> dict[str, Any]:
 
     answer = (state.get("current_answer") or "").lower()
     chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
+    query = str(state.get("user_query", ""))
     if not chunks:
         return {
             "semantic_verification_overlap": 0.0,
@@ -240,11 +390,24 @@ def _node_semantic_verification(state: QueryState) -> dict[str, Any]:
 
     overlap_hits = sum(1 for name in entity_names if name in answer)
     overlap = overlap_hits / len(entity_names)
-    passed = overlap >= 0.2
+    has_structural_evidence = _has_structural_relationship_evidence(chunks)
+    relation_query = any(k in query.lower() for k in ("related", "relationship", "linked", "link"))
+    min_overlap = 0.2
+    if relation_query or has_structural_evidence:
+        # Relationship-focused answers often paraphrase entity labels.
+        min_overlap = 0.1
+
+    passed = overlap >= min_overlap
     warning = None
     if not passed:
         warning = "Low lexical overlap between answer and retrieved entities."
-        logger.warning("Semantic verifier warning: overlap=%.3f (%d/%d).", overlap, overlap_hits, len(entity_names))
+        logger.warning(
+            "Semantic verifier warning: overlap=%.3f (%d/%d, min=%.2f).",
+            overlap,
+            overlap_hits,
+            len(entity_names),
+            min_overlap,
+        )
 
     return {
         "semantic_verification_overlap": overlap,
@@ -306,9 +469,10 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
     if gate_decision == "abstain_early":
         answer = "I cannot find this information in the knowledge graph."
     reranked: list[RetrievedChunk] = state.get("reranked_chunks") or []
-    sources: list[str] = [c.node_id for c in reranked]
+    generated_with: list[RetrievedChunk] = state.get("generation_chunks") or reranked
+    sources: list[str] = [c.node_id for c in generated_with]
     # retrieved_contexts: full texts used by RAGAS evaluation
-    retrieved_contexts: list[str] = [c.text for c in reranked if c.text]
+    retrieved_contexts: list[str] = [c.text for c in generated_with if c.text]
     return {
         "final_answer": answer,
         "sources": sources,
