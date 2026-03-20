@@ -200,6 +200,10 @@ def _run_pipeline_on_sample(
         result = run_query(question)
         answer: str = result.get("final_answer", "")
         sources: list[str] = list(result.get("sources", []))
+        retrieval_quality_score = float(result.get("retrieval_quality_score", 0.0) or 0.0)
+        retrieval_chunk_count = int(result.get("retrieval_chunk_count", 0) or 0)
+        retrieval_filtered_by_threshold = bool(result.get("retrieval_filtered_by_threshold", False))
+        context_sufficiency = str(result.get("context_sufficiency", "insufficient"))
 
         # ── Use retrieved_contexts (actual chunk texts) for RAGAS evaluation ──
         # `sources` contains only node IDs (e.g. "Customer", "CUSTOMER_MASTER")
@@ -226,6 +230,10 @@ def _run_pipeline_on_sample(
         sources = []
         contexts = list(sample.get("ground_truth_contexts", []))
         used_fallback_contexts = True
+        retrieval_quality_score = 0.0
+        retrieval_chunk_count = 0
+        retrieval_filtered_by_threshold = False
+        context_sufficiency = "insufficient"
 
     logger.info(
         "Pipeline sample q='%s' answer_chars=%d contexts=%d fallback=%s",
@@ -247,6 +255,10 @@ def _run_pipeline_on_sample(
         "contexts": contexts,
         "sources": sources,
         "used_fallback_contexts": used_fallback_contexts,
+        "retrieval_quality_score": retrieval_quality_score,
+        "retrieval_chunk_count": retrieval_chunk_count,
+        "retrieval_filtered_by_threshold": retrieval_filtered_by_threshold,
+        "context_sufficiency": context_sufficiency,
         "ground_truth": sample["ground_truth"],
     }
 
@@ -438,6 +450,12 @@ async def _compute_ragas_metrics_async(
                         "retrieved_context_previews": [_preview(c, 160) for c in ctxs[:5]],
                         "context_count": len(ctxs),
                         "used_fallback_contexts": bool(r.get("used_fallback_contexts", False)),
+                        "retrieval_quality_score": float(r.get("retrieval_quality_score", 0.0) or 0.0),
+                        "retrieval_chunk_count": int(r.get("retrieval_chunk_count", 0) or 0),
+                        "retrieval_filtered_by_threshold": bool(
+                            r.get("retrieval_filtered_by_threshold", False)
+                        ),
+                        "context_sufficiency": str(r.get("context_sufficiency", "insufficient")),
                         "ragas_scores": sample_scores,
                         "ragas_error": None,
                     }
@@ -457,6 +475,12 @@ async def _compute_ragas_metrics_async(
                         "retrieved_context_previews": [_preview(c, 160) for c in ctxs[:5]],
                         "context_count": len(ctxs),
                         "used_fallback_contexts": bool(r.get("used_fallback_contexts", False)),
+                        "retrieval_quality_score": float(r.get("retrieval_quality_score", 0.0) or 0.0),
+                        "retrieval_chunk_count": int(r.get("retrieval_chunk_count", 0) or 0),
+                        "retrieval_filtered_by_threshold": bool(
+                            r.get("retrieval_filtered_by_threshold", False)
+                        ),
+                        "context_sufficiency": str(r.get("context_sufficiency", "insufficient")),
                         "ragas_scores": None,
                         "ragas_error": "scoring_failed",
                     }
@@ -621,6 +645,12 @@ def run_ragas_evaluation(
                     "retrieved_context_previews": [_preview(c, 160) for c in r["contexts"][:5]],
                     "context_count": len(r["contexts"]),
                     "used_fallback_contexts": bool(r.get("used_fallback_contexts", False)),
+                    "retrieval_quality_score": float(r.get("retrieval_quality_score", 0.0) or 0.0),
+                    "retrieval_chunk_count": int(r.get("retrieval_chunk_count", 0) or 0),
+                    "retrieval_filtered_by_threshold": bool(
+                        r.get("retrieval_filtered_by_threshold", False)
+                    ),
+                    "context_sufficiency": str(r.get("context_sufficiency", "insufficient")),
                     "ragas_scores": None,
                     "ragas_error": "ragas_skipped",
                 }
