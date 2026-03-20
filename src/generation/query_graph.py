@@ -91,6 +91,12 @@ def _node_reranking(state: QueryState) -> dict[str, Any]:
     except (TypeError, ValueError):
         min_ratio = 0.0
     min_ratio = max(0.0, min(1.0, min_ratio))
+    salvage_min_raw = getattr(settings, "retrieval_salvage_min_score", 0.07)
+    try:
+        salvage_min = float(salvage_min_raw)
+    except (TypeError, ValueError):
+        salvage_min = 0.07
+    salvage_min = max(0.0, salvage_min)
 
     if not settings.enable_reranker:
         candidates = chunks[: settings.reranker_top_k]
@@ -109,6 +115,20 @@ def _node_reranking(state: QueryState) -> dict[str, Any]:
 
     top_score = float(valid[0].score)
     if top_score < min_score:
+        if top_score >= salvage_min:
+            logger.info(
+                "reranking: top score %.4f below min_score %.4f but above salvage_min %.4f; keeping top context.",
+                top_score,
+                min_score,
+                salvage_min,
+            )
+            return {
+                "reranked_chunks": [valid[0]],
+                "retrieval_quality_score": top_score,
+                "retrieval_chunk_count": 1,
+                "retrieval_filtered_by_threshold": True,
+                "context_sufficiency": "sparse",
+            }
         logger.info(
             "reranking: top score %.4f below min_score %.4f; dropping all contexts.",
             top_score,
