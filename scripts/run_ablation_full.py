@@ -255,18 +255,23 @@ def run_ablation_study(
 
             # ── 3. RAGAS Evaluation (optional) ─────────────────────────────────
             ragas_metrics = None
+            ragas_diagnostics = None
             if study_run_ragas:
                 try:
                     from src.evaluation.ragas_runner import run_ragas_evaluation  # noqa: E402
 
                     print("\n[RAGAS] Running RAGAS evaluation...")
                     ragas_trace_file = RESULTS_DIR / f"{study_id}.ragas_trace.jsonl"
+                    ragas_diag_file = RESULTS_DIR / f"{study_id}.ragas_diagnostics.json"
                     ragas_metrics = run_ragas_evaluation(
                         run_ragas=True,
                         max_samples=20,
                         trace_output_path=ragas_trace_file,
+                        trace_summary_path=ragas_diag_file,
                         trace_verbose=True,
                     )
+                    if ragas_diag_file.exists():
+                        ragas_diagnostics = json.loads(ragas_diag_file.read_text(encoding="utf-8"))
                     print("\n    RAGAS metrics")
                     print(f"      faithfulness      : {ragas_metrics.get('faithfulness', 0.0):.4f}")
                     print(
@@ -279,6 +284,10 @@ def run_ablation_study(
                         f"      context_recall    : {ragas_metrics.get('context_recall', 0.0):.4f}"
                     )
                     print(f"      trace file        : {ragas_trace_file}")
+                    print(f"      diagnostics file  : {ragas_diag_file}")
+                    if ragas_diagnostics is not None:
+                        neg_acc = ragas_diagnostics.get("negative_abstention_accuracy", 0.0)
+                        print(f"      neg abstention acc: {neg_acc:.4f}")
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("RAGAS evaluation failed: %s", exc)
 
@@ -314,6 +323,7 @@ def run_ablation_study(
                 "question_count": len(TEST_QUESTIONS),
                 "positive": bool(positive),
                 "ragas": ragas_metrics,
+                "ragas_diagnostics": ragas_diagnostics,
                 "env_overrides": env_overrides,
                 "run_ragas": study_run_ragas,
                 "timestamp": datetime.now(tz=UTC).isoformat(),
