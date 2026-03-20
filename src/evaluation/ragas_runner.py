@@ -16,6 +16,8 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import random
+import statistics
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -45,6 +47,133 @@ def _preview(text: str, max_chars: int = _TRACE_PREVIEW_CHARS) -> str:
     if len(compact) <= max_chars:
         return compact
     return compact[: max_chars - 1] + "…"
+
+
+def _is_negative_ground_truth(text: str) -> bool:
+    """Heuristic detection for negative/absence gold answers."""
+    t = (text or "").lower()
+    markers = (
+        "i cannot find this information",
+        "does not contain",
+        "no concept or table",
+        "does not contain any",
+        "does not exist",
+        "no table",
+    )
+    return any(m in t for m in markers)
+
+
+def _is_abstention_answer(text: str) -> bool:
+    """Heuristic detection for abstention-style model answers."""
+    t = (text or "").lower()
+    markers = (
+        "i cannot find",
+        "cannot find this information",
+        "not available in the knowledge graph",
+        "not present in the knowledge graph",
+        "insufficient information",
+    )
+    return any(m in t for m in markers)
+
+
+def _bootstrap_mean_ci(
+    values: list[float],
+    confidence: float = 0.95,
+    n_bootstrap: int = 1000,
+    seed: int = 42,
+) -> dict[str, float]:
+    """Return mean and percentile bootstrap CI for a list of values."""
+    if not values:
+        return {"mean": 0.0, "ci_low": 0.0, "ci_high": 0.0, "n": 0}
+
+    if len(values) == 1:
+        v = float(values[0])
+        return {"mean": v, "ci_low": v, "ci_high": v, "n": 1}
+
+    rng = random.Random(seed)
+    means: list[float] = []
+    n = len(values)
+    for _ in range(n_bootstrap):
+        sample = [values[rng.randrange(n)] for _ in range(n)]
+        means.append(float(statistics.fmean(sample)))
+    means.sort()
+
+    alpha = 1.0 - confidence
+    low_idx = int((alpha / 2.0) * (len(means) - 1))
+    high_idx = int((1.0 - alpha / 2.0) * (len(means) - 1))
+    return {
+        "mean": float(statistics.fmean(values)),
+        "ci_low": float(means[low_idx]),
+        "ci_high": float(means[high_idx]),
+        "n": n,
+    }
+
+
+def _build_trace_diagnostics(
+    trace_rows: list[dict[str, Any]],
+    dataset: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build reliability diagnostics for ablation studies from trace rows."""
+    metric_names = ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]
+
+    joined: list[dict[str, Any]] = []
+    for row in trace_rows:
+        idx = int(row.get("sample_index", -1))
+        if idx < 0 or idx >= len(dataset):
+            continue
+        gold = dataset[idx]
+        scores = row.get("ragas_scores") or {}
+        joined.append(
+            {
+                "idx": idx,
+                "scores": {k: float(scores.get(k, 0.0)) for k in metric_names},
+                "is_negative": _is_negative_ground_truth(gold.get("ground_truth", "")),
+                "is_abstention": _is_abstention_answer(row.get("model_answer", "")),
+            }
+        )
+
+    total = len(joined)
+    negatives = [r for r in joined if r["is_negative"]]
+    positives = [r for r in joined if not r["is_negative"]]
+
+    def _metric_values(rows: list[dict[str, Any]], metric: str) -> list[float]:
+        return [float(r["scores"][metric]) for r in rows]
+
+    def _zero_rate(rows: list[dict[str, Any]], metric: str) -> float:
+        vals = _metric_values(rows, metric)
+        if not vals:
+            return 0.0
+        zeros = sum(1 for v in vals if v == 0.0)
+        return zeros / len(vals)
+
+    negative_abstention_accuracy = (
+        sum(1 for r in negatives if r["is_abstention"]) / len(negatives) if negatives else 0.0
+    )
+    positive_non_abstention_rate = (
+        sum(1 for r in positives if not r["is_abstention"]) / len(positives) if positives else 0.0
+    )
+
+    overall_ci = {m: _bootstrap_mean_ci(_metric_values(joined, m)) for m in metric_names}
+    positive_ci = {m: _bootstrap_mean_ci(_metric_values(positives, m)) for m in metric_names}
+    negative_ci = {m: _bootstrap_mean_ci(_metric_values(negatives, m)) for m in metric_names}
+
+    return {
+        "sample_count": total,
+        "positive_sample_count": len(positives),
+        "negative_sample_count": len(negatives),
+        "negative_abstention_accuracy": negative_abstention_accuracy,
+        "positive_non_abstention_rate": positive_non_abstention_rate,
+        "zero_rate_overall": {m: _zero_rate(joined, m) for m in metric_names},
+        "zero_rate_positive": {m: _zero_rate(positives, m) for m in metric_names},
+        "zero_rate_negative": {m: _zero_rate(negatives, m) for m in metric_names},
+        "bootstrap_ci95_overall": overall_ci,
+        "bootstrap_ci95_positive": positive_ci,
+        "bootstrap_ci95_negative": negative_ci,
+        "notes": [
+            "RAGAS metrics can under-score correct abstentions on negative questions.",
+            "Use negative_abstention_accuracy alongside core RAGAS metrics for ablations.",
+        ],
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -416,6 +545,7 @@ def run_ragas_evaluation(
     run_ragas: bool = True,
     max_samples: int | None = None,
     trace_output_path: Path | None = None,
+    trace_summary_path: Path | None = None,
     trace_verbose: bool = False,
 ) -> dict[str, float]:
     """Run RAGAS evaluation on the gold-standard QA dataset.
@@ -431,6 +561,8 @@ def run_ragas_evaluation(
             Useful for faster ablation iterations (e.g., 20 instead of 50).
         trace_output_path: Optional JSONL path for per-sample trace rows (question,
             model answer, retrieved contexts, fallback usage, and per-metric scores).
+        trace_summary_path: Optional JSON path for reliability diagnostics computed
+            from trace rows (split metrics, zero-rates, bootstrap CI, abstention accuracy).
         trace_verbose: If True, logs per-sample answer/context previews at INFO.
 
     Returns:
@@ -510,6 +642,13 @@ def run_ragas_evaluation(
             trace_output_path,
             len(trace_rows),
         )
+
+    if trace_summary_path is not None:
+        diagnostics = _build_trace_diagnostics(trace_rows, dataset)
+        trace_summary_path.parent.mkdir(parents=True, exist_ok=True)
+        with trace_summary_path.open("w", encoding="utf-8") as f:
+            json.dump(diagnostics, f, indent=2, ensure_ascii=False)
+        logger.info("Wrote RAGAS diagnostics summary: %s", trace_summary_path)
 
     _ = EvaluationReport(
         timestamp=datetime.now(tz=UTC),
