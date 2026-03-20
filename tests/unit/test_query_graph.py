@@ -85,6 +85,9 @@ class TestNodeReranking:
             state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
             out = _node_reranking(state)
             assert [c.node_id for c in out["reranked_chunks"]] == ["A"]
+            assert out["retrieval_quality_score"] == 0.9
+            assert out["retrieval_chunk_count"] == 1
+            assert out["context_sufficiency"] == "adequate"
 
     def test_returns_empty_when_top_score_below_min_score(self) -> None:
         settings = MagicMock()
@@ -103,6 +106,8 @@ class TestNodeReranking:
             state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
             out = _node_reranking(state)
             assert out["reranked_chunks"] == []
+            assert out["retrieval_filtered_by_threshold"] is True
+            assert out["context_sufficiency"] == "insufficient"
 
     def test_applies_relative_threshold_from_top_score(self) -> None:
         settings = MagicMock()
@@ -125,3 +130,4 @@ class TestNodeReranking:
             state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
             out = _node_reranking(state)
             assert [c.node_id for c in out["reranked_chunks"]] == ["A", "B"]
+            assert out["retrieval_chunk_count"] == 2

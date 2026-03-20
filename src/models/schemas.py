@@ -205,6 +205,10 @@ class GraderDecision(BaseModel):
     grounded: bool
     critique: str | None = None
     action: Literal["pass", "regenerate", "web_search"]
+    timeout_occurred: bool = False
+    parse_attempts: int = 1
+    consistency_corrections: int = 0
+    certainty: float = Field(default=0.5, ge=0.0, le=1.0)
 
 
 # ── Evaluation ────────────────────────────────────────────────────────────────

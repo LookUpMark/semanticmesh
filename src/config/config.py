@@ -85,6 +85,10 @@ class AppConfig:
     enable_critic_validation: bool = True
     enable_reranker: bool = True
     enable_hallucination_grader: bool = True
+    enable_retrieval_quality_gate: bool = True
+    enable_semantic_verifier: bool = True
+    enable_grader_consistency_validator: bool = True
+    grader_timeout_seconds: float = 12.0
 
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = "INFO"

@@ -31,6 +31,7 @@ class Settings(BaseSettings):
         FEW_SHOT_CYPHER_EXAMPLES
         ENABLE_SCHEMA_ENRICHMENT, RETRIEVAL_MODE
         ENABLE_CYPHER_HEALING, ENABLE_CRITIC_VALIDATION, ENABLE_RERANKER, ENABLE_HALLUCINATION_GRADER
+        ENABLE_RETRIEVAL_QUALITY_GATE, ENABLE_SEMANTIC_VERIFIER, ENABLE_GRADER_CONSISTENCY_VALIDATOR, GRADER_TIMEOUT_SECONDS
         LOG_LEVEL
     """
 
@@ -96,6 +97,10 @@ class Settings(BaseSettings):
     enable_critic_validation: bool = DEFAULT_CONFIG.enable_critic_validation
     enable_reranker: bool = DEFAULT_CONFIG.enable_reranker
     enable_hallucination_grader: bool = DEFAULT_CONFIG.enable_hallucination_grader
+    enable_retrieval_quality_gate: bool = DEFAULT_CONFIG.enable_retrieval_quality_gate
+    enable_semantic_verifier: bool = DEFAULT_CONFIG.enable_semantic_verifier
+    enable_grader_consistency_validator: bool = DEFAULT_CONFIG.enable_grader_consistency_validator
+    grader_timeout_seconds: float = DEFAULT_CONFIG.grader_timeout_seconds
 
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = DEFAULT_CONFIG.log_level

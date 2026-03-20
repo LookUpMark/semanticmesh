@@ -82,6 +82,16 @@ class QueryState(TypedDict, total=False):
     final_answer: str
     sources: list[str]
     retrieved_contexts: list[str]  # full texts of reranked chunks — used by RAGAS evaluation
+    retrieval_quality_score: float
+    retrieval_chunk_count: int
+    retrieval_filtered_by_threshold: bool
+    context_sufficiency: str  # "insufficient" | "sparse" | "adequate"
+    retrieval_gate_decision: str  # "proceed" | "proceed_with_warning" | "abstain_early"
+    semantic_verification_overlap: float
+    semantic_verification_passed: bool
+    semantic_verification_warning: str | None
+    grader_consistency_valid: bool
+    grader_rejection_count: int
 
     # Control
     iteration_count: int

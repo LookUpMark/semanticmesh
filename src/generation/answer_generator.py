@@ -12,7 +12,14 @@ from typing import TYPE_CHECKING
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config.logging import get_logger
-from src.prompts.templates import ANSWER_SYSTEM, ANSWER_USER, ANSWER_WITH_CRITIQUE_USER
+from src.prompts.templates import (
+    ANSWER_SYSTEM,
+    ANSWER_SYSTEM_ADEQUATE,
+    ANSWER_SYSTEM_INSUFFICIENT,
+    ANSWER_SYSTEM_SPARSE,
+    ANSWER_USER,
+    ANSWER_WITH_CRITIQUE_USER,
+)
 
 if TYPE_CHECKING:
     import logging
@@ -21,6 +28,12 @@ if TYPE_CHECKING:
     from src.models.schemas import RetrievedChunk
 
 logger: logging.Logger = get_logger(__name__)
+
+_ABSTENTION_SENTENCE = "i cannot find this information in the knowledge graph."
+
+
+def _is_abstention(answer: str) -> bool:
+    return answer.strip().lower() == _ABSTENTION_SENTENCE
 
 
 # ── Context Formatter ─────────────────────────────────────────────────────────
@@ -54,6 +67,7 @@ def generate_answer(
     chunks: list[RetrievedChunk],
     llm: LLMProtocol,
     critique: str | None = None,
+    context_sufficiency: str = "insufficient",
 ) -> str:
     """Generate a grounded natural-language answer from reranked context chunks.
 
@@ -84,6 +98,13 @@ def generate_answer(
             user_query=query,
         )
 
+    if context_sufficiency == "adequate":
+        system_prompt = ANSWER_SYSTEM_ADEQUATE
+    elif context_sufficiency == "sparse":
+        system_prompt = ANSWER_SYSTEM_SPARSE
+    else:
+        system_prompt = ANSWER_SYSTEM_INSUFFICIENT
+
     logger.debug(
         "generate_answer: query='%s', %d chunks, critique=%s.",
         query[:60],
@@ -92,10 +113,38 @@ def generate_answer(
     )
     response = llm.invoke(
         [
-            SystemMessage(content=ANSWER_SYSTEM),
+            SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt),
         ]
     )
     answer: str = response.content.strip()
+
+    # If the model abstains despite available context, force one best-effort retry.
+    if _is_abstention(answer) and chunks:
+        top_score = max(float(c.score) for c in chunks)
+        if top_score >= 0.2:
+            logger.warning(
+                "Abstention with non-empty context (chunks=%d, top_score=%.3f) — forcing best-effort rewrite.",
+                len(chunks),
+                top_score,
+            )
+            corrective_critique = (
+                "The previous answer abstained despite available retrieved context. "
+                "Provide the best grounded answer from context and explicitly state uncertainty "
+                "for missing details. Do not use the generic abstention sentence unless context is empty."
+            )
+            corrective_prompt = ANSWER_WITH_CRITIQUE_USER.format(
+                context_chunks=context_block,
+                hallucination_critique=corrective_critique,
+                user_query=query,
+            )
+            second_response = llm.invoke(
+                [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=corrective_prompt),
+                ]
+            )
+            answer = second_response.content.strip()
+
     logger.info("Answer generated (%d chars).", len(answer))
     return answer

@@ -5,6 +5,11 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 from src.generation.answer_generator import format_context, generate_answer
+from src.prompts.templates import (
+    ANSWER_SYSTEM_ADEQUATE,
+    ANSWER_SYSTEM_INSUFFICIENT,
+    ANSWER_SYSTEM_SPARSE,
+)
 from src.models.schemas import RetrievedChunk
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -94,3 +99,34 @@ class TestGenerateAnswer:
         generate_answer("?", [], llm)
         call_args = llm.invoke.call_args[0][0]
         assert isinstance(call_args[0], SystemMessage)
+
+    def test_forces_best_effort_retry_after_abstention_with_context(self) -> None:
+        llm = MagicMock()
+        first = MagicMock()
+        first.content = "I cannot find this information in the knowledge graph."
+        second = MagicMock()
+        second.content = "Best-effort grounded answer from context."
+        llm.invoke.side_effect = [first, second]
+
+        answer = generate_answer("What is customer?", [_chunk("Customer", "Customer: buyer")], llm)
+
+        assert answer == "Best-effort grounded answer from context."
+        assert llm.invoke.call_count == 2
+
+    def test_uses_adequate_system_prompt(self) -> None:
+        llm = _make_llm("answer")
+        generate_answer("Q", [_chunk("X", "X")], llm, context_sufficiency="adequate")
+        call_args = llm.invoke.call_args[0][0]
+        assert call_args[0].content == ANSWER_SYSTEM_ADEQUATE
+
+    def test_uses_sparse_system_prompt(self) -> None:
+        llm = _make_llm("answer")
+        generate_answer("Q", [_chunk("X", "X")], llm, context_sufficiency="sparse")
+        call_args = llm.invoke.call_args[0][0]
+        assert call_args[0].content == ANSWER_SYSTEM_SPARSE
+
+    def test_uses_insufficient_system_prompt(self) -> None:
+        llm = _make_llm("answer")
+        generate_answer("Q", [], llm, context_sufficiency="insufficient")
+        call_args = llm.invoke.call_args[0][0]
+        assert call_args[0].content == ANSWER_SYSTEM_INSUFFICIENT
