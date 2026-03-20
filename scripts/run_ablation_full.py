@@ -10,7 +10,8 @@ Each study:
 3. Runs the Query Graph with 4 test questions
 4. Optionally runs RAGAS evaluation on the gold-standard dataset
 
-Results are saved to notebooks/ablation/ablation_results/AB-XX.json and AB-XX.log
+Results are saved under notebooks/ablation/ablation_results/studies/AB-XX/
+with separated runs, traces, diagnostics, reports, analyses, and baselines folders.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 # ── Repo root on path ──────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,11 +62,17 @@ logger = logging.getLogger("ablation_runner")
 
 # ── Data fixtures ─────────────────────────────────────────────────────────────
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
-DOC_PATHS = [
+DOC_PATHS_DEFAULT = [
     FIXTURE_DIR / "sample_docs" / "business_glossary.txt",
     FIXTURE_DIR / "sample_docs" / "data_dictionary.txt",
 ]
-DDL_PATHS = [FIXTURE_DIR / "sample_ddl" / "complex_schema.sql"]
+DDL_PATHS_DEFAULT = [FIXTURE_DIR / "sample_ddl" / "complex_schema.sql"]
+
+DOC_PATHS_SMOKE = [
+    FIXTURE_DIR / "smoke" / "business_glossary_smoke.txt",
+    FIXTURE_DIR / "smoke" / "data_dictionary_smoke.txt",
+]
+DDL_PATHS_SMOKE = [FIXTURE_DIR / "smoke" / "smoke_schema.sql"]
 
 # ── Test questions (same as pipeline_run.py) ────────────────────────────────────
 TEST_QUESTIONS = [
@@ -80,6 +88,8 @@ from src.evaluation.ablation_runner import ABLATION_MATRIX  # noqa: E402
 # ── Results directory ───────────────────────────────────────────────────────────
 RESULTS_DIR = ROOT / "notebooks" / "ablation" / "ablation_results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+META_DIR = RESULTS_DIR / "meta"
+META_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ── Utilities ──────────────────────────────────────────────────────────────────
@@ -99,6 +109,28 @@ def print_header(title: str) -> None:
 def print_study_header(study_id: str, description: str) -> None:
     print()
     print(sep("─"))
+
+
+def _study_dir(study_id: str) -> Path:
+    """Return (and create) the canonical output directory for a study."""
+    base = RESULTS_DIR / "studies" / study_id
+    for sub in ("runs", "traces", "diagnostics", "analyses", "reports", "baselines"):
+        (base / sub).mkdir(parents=True, exist_ok=True)
+    return base
+
+
+def _select_fixtures(use_smoke_fixtures: bool) -> tuple[list[Path], list[Path]]:
+    """Select source docs and DDL fixtures based on the requested profile."""
+    if use_smoke_fixtures:
+        return DOC_PATHS_SMOKE, DDL_PATHS_SMOKE
+    return DOC_PATHS_DEFAULT, DDL_PATHS_DEFAULT
+
+
+def _default_run_tag(dataset_path: Path | None, use_smoke_fixtures: bool) -> str:
+    """Build a deterministic run tag for artifact file names."""
+    profile = "smoke" if use_smoke_fixtures else "full"
+    ds = dataset_path.stem if dataset_path is not None else "gold_standard"
+    return f"{ds}.{profile}"
     print(f"  {study_id}: {description}")
     print(sep("─"))
 
@@ -109,6 +141,11 @@ def print_study_header(study_id: str, description: str) -> None:
 def run_ablation_study(
     study_id: str,
     run_ragas: bool = False,
+    dataset_path: Path | None = None,
+    max_samples: int | None = None,
+    use_smoke_fixtures: bool = False,
+    skip_builder: bool = False,
+    run_tag: str | None = None,
 ) -> dict[str, object]:
     """Run a single ablation study with the full pipeline.
 
@@ -134,8 +171,20 @@ def run_ablation_study(
         print("  Env overrides: (none - using defaults)")
     print(f"  Run RAGAS:     {study_run_ragas}")
 
+    docs, ddls = _select_fixtures(use_smoke_fixtures)
+    profile = "smoke" if use_smoke_fixtures else "full"
+    print(f"  Fixture profile: {profile}")
+    print(f"  Skip builder:    {skip_builder}")
+    if dataset_path is not None:
+        print(f"  Dataset path:    {dataset_path}")
+    if max_samples is not None:
+        print(f"  Max samples:     {max_samples}")
+
+    study_dir = _study_dir(study_id)
+    tag = run_tag or _default_run_tag(dataset_path, use_smoke_fixtures)
+
     # Set up file logging for this study
-    log_file = RESULTS_DIR / f"{study_id}.log"
+    log_file = study_dir / "runs" / f"{study_id}.{tag}.log"
     file_handler = logging.FileHandler(log_file, mode="w", encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter(
@@ -166,33 +215,44 @@ def run_ablation_study(
                 os.environ[k] = v
             reconfigure_from_env()
 
+            triplets: list[Any] = []
+            entities: list[Any] = []
+            tables: list[Any] = []
+            enriched: list[Any] = []
+            completed: list[Any] = []
+            failed = False
+
             # ── 1. Builder Graph ───────────────────────────────────────────────
-            from src.graph.builder_graph import run_builder  # noqa: E402
+            if not skip_builder:
+                from src.graph.builder_graph import run_builder  # noqa: E402
 
-            print("\n[1/2] Builder Graph …")
-            t0 = time.time()
-            state = run_builder(
-                raw_documents=DOC_PATHS,
-                ddl_paths=DDL_PATHS,
-                production=False,
-                clear_graph=True,
-            )
-            builder_elapsed = time.time() - t0
+                print("\n[1/2] Builder Graph …")
+                t0 = time.time()
+                state = run_builder(
+                    raw_documents=docs,
+                    ddl_paths=ddls,
+                    production=False,
+                    clear_graph=True,
+                )
+                builder_elapsed = time.time() - t0
 
-            triplets = state.get("triplets", [])
-            entities = state.get("entities", [])
-            tables = state.get("tables", [])
-            enriched = state.get("enriched_tables", [])
-            completed = state.get("completed_tables", [])
-            failed = state.get("cypher_failed", False)
+                triplets = state.get("triplets", [])
+                entities = state.get("entities", [])
+                tables = state.get("tables", [])
+                enriched = state.get("enriched_tables", [])
+                completed = state.get("completed_tables", [])
+                failed = state.get("cypher_failed", False)
 
-            print(f"\n    Elapsed         : {builder_elapsed:.1f} s")
-            print(f"    Triplets        : {len(triplets)}")
-            print(f"    Entities        : {len(entities)}")
-            print(f"    Tables parsed   : {len(tables)}")
-            print(f"    Tables enriched : {len(enriched)}")
-            print(f"    Tables completed: {len(completed)} / {len(tables)}")
-            print(f"    Cypher failed   : {failed}")
+                print(f"\n    Elapsed         : {builder_elapsed:.1f} s")
+                print(f"    Triplets        : {len(triplets)}")
+                print(f"    Entities        : {len(entities)}")
+                print(f"    Tables parsed   : {len(tables)}")
+                print(f"    Tables enriched : {len(enriched)}")
+                print(f"    Tables completed: {len(completed)} / {len(tables)}")
+                print(f"    Cypher failed   : {failed}")
+            else:
+                builder_elapsed = 0.0
+                print("\n[1/2] Builder Graph … skipped (--skip-builder)")
 
             # ── 2. Query Graph ─────────────────────────────────────────────────
             from src.generation.query_graph import run_query  # noqa: E402
@@ -202,7 +262,7 @@ def run_ablation_study(
 
             grounded_count = 0
             results = []
-            query_trace_file = RESULTS_DIR / f"{study_id}.query_trace.jsonl"
+            query_trace_file = study_dir / "traces" / f"{study_id}.{tag}.query_trace.jsonl"
             with query_trace_file.open("w", encoding="utf-8") as qtf:
                 pass
             for i, q in enumerate(TEST_QUESTIONS, 1):
@@ -261,11 +321,14 @@ def run_ablation_study(
                     from src.evaluation.ragas_runner import run_ragas_evaluation  # noqa: E402
 
                     print("\n[RAGAS] Running RAGAS evaluation...")
-                    ragas_trace_file = RESULTS_DIR / f"{study_id}.ragas_trace.jsonl"
-                    ragas_diag_file = RESULTS_DIR / f"{study_id}.ragas_diagnostics.json"
+                    ragas_trace_file = study_dir / "traces" / f"{study_id}.{tag}.ragas_trace.jsonl"
+                    ragas_diag_file = (
+                        study_dir / "diagnostics" / f"{study_id}.{tag}.ragas_diagnostics.json"
+                    )
                     ragas_metrics = run_ragas_evaluation(
+                        dataset_path=dataset_path,
                         run_ragas=True,
-                        max_samples=20,
+                        max_samples=max_samples,
                         trace_output_path=ragas_trace_file,
                         trace_summary_path=ragas_diag_file,
                         trace_verbose=True,
@@ -326,11 +389,16 @@ def run_ablation_study(
                 "ragas_diagnostics": ragas_diagnostics,
                 "env_overrides": env_overrides,
                 "run_ragas": study_run_ragas,
+                "dataset_path": str(dataset_path) if dataset_path else None,
+                "max_samples": max_samples,
+                "fixture_profile": profile,
+                "skip_builder": skip_builder,
+                "run_tag": tag,
                 "timestamp": datetime.now(tz=UTC).isoformat(),
             }
 
             # Save JSON result
-            json_file = RESULTS_DIR / f"{study_id}.json"
+            json_file = study_dir / "runs" / f"{study_id}.{tag}.json"
             with json_file.open("w", encoding="utf-8") as f:
                 json.dump(result, f, indent=2)
             print(f"\n  Result saved to: {json_file}")
@@ -374,6 +442,11 @@ def run_ablation_study(
 def run_all_studies(
     run_ragas: bool = False,
     single_study: str | None = None,
+    dataset_path: Path | None = None,
+    max_samples: int | None = None,
+    use_smoke_fixtures: bool = False,
+    skip_builder: bool = False,
+    run_tag: str | None = None,
 ) -> dict[str, object]:
     """Run all or a subset of ablation studies.
 
@@ -391,6 +464,14 @@ def run_all_studies(
 
     print(f"  Studies to run: {len(studies_to_run)}")
     print(f"  RAGAS enabled:  {run_ragas}")
+    print(f"  Fixture mode:   {'smoke' if use_smoke_fixtures else 'full'}")
+    print(f"  Skip builder:   {skip_builder}")
+    if dataset_path is not None:
+        print(f"  Dataset path:   {dataset_path}")
+    if max_samples is not None:
+        print(f"  Max samples:    {max_samples}")
+    if run_tag is not None:
+        print(f"  Run tag:        {run_tag}")
     if studies_to_run:
         print(f"  {', '.join(studies_to_run)}")
     print()
@@ -402,7 +483,15 @@ def run_all_studies(
         print(f"\n[{i}/{len(studies_to_run)}] Running {study_id}...")
 
         try:
-            result = run_ablation_study(study_id, run_ragas=run_ragas)
+            result = run_ablation_study(
+                study_id,
+                run_ragas=run_ragas,
+                dataset_path=dataset_path,
+                max_samples=max_samples,
+                use_smoke_fixtures=use_smoke_fixtures,
+                skip_builder=skip_builder,
+                run_tag=run_tag,
+            )
             results[study_id] = result
         except Exception as exc:
             logger.error("Unexpected error running %s: %s", study_id, exc)
@@ -432,13 +521,18 @@ def run_all_studies(
         print(f"    {status} {study_id}: {elapsed}s |{pos}")
 
     # Save final summary
-    summary_file = RESULTS_DIR / "ablation_summary.json"
+    summary_file = META_DIR / "ablation_summary.json"
     with summary_file.open("w", encoding="utf-8") as f:
         json.dump(
             {
                 "timestamp": datetime.now(tz=UTC).isoformat(),
                 "total_elapsed_s": round(total_elapsed, 1),
                 "studies": results,
+                "dataset_path": str(dataset_path) if dataset_path else None,
+                "max_samples": max_samples,
+                "fixture_profile": "smoke" if use_smoke_fixtures else "full",
+                "skip_builder": skip_builder,
+                "run_tag": run_tag,
             },
             f,
             indent=2,
@@ -469,6 +563,34 @@ def main() -> None:
         metavar="AB-XX",
         help="Run a single study (e.g., AB-05)",
     )
+    parser.add_argument(
+        "--dataset-path",
+        type=Path,
+        default=None,
+        help="Path to RAGAS dataset JSON (default: tests/fixtures/gold_standard.json)",
+    )
+    parser.add_argument(
+        "--max-samples",
+        type=int,
+        default=None,
+        help="Limit number of evaluation samples for faster loops",
+    )
+    parser.add_argument(
+        "--use-smoke-fixtures",
+        action="store_true",
+        help="Use smoke docs/DDL fixtures for low-cost local iterations",
+    )
+    parser.add_argument(
+        "--skip-builder",
+        action="store_true",
+        help="Skip Builder Graph and run Query/RAGAS against existing graph",
+    )
+    parser.add_argument(
+        "--run-tag",
+        type=str,
+        default=None,
+        help="Optional tag appended to output file names to avoid overwrite",
+    )
     args = parser.parse_args()
 
     # Validate study ID if provided
@@ -477,10 +599,23 @@ def main() -> None:
         print(f"Available studies: {', '.join(sorted(ABLATION_MATRIX.keys()))}")
         sys.exit(1)
 
+    if args.dataset_path is not None and not args.dataset_path.exists():
+        print(f"Error: dataset file not found: {args.dataset_path}")
+        sys.exit(1)
+
+    if args.max_samples is not None and args.max_samples <= 0:
+        print("Error: --max-samples must be a positive integer")
+        sys.exit(1)
+
     # Run the studies
     run_all_studies(
         run_ragas=args.run_ragas,
         single_study=args.study,
+        dataset_path=args.dataset_path,
+        max_samples=args.max_samples,
+        use_smoke_fixtures=args.use_smoke_fixtures,
+        skip_builder=args.skip_builder,
+        run_tag=args.run_tag,
     )
 
 
