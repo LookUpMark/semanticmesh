@@ -18,8 +18,6 @@ from src.resolution.llm_judge import (
     judge_cluster,
 )
 
-# ── Fixtures ───────────────────────────────────────────────────────────────────
-
 
 def _make_triplet(subject: str, obj: str, confidence: float = 0.9) -> Triplet:
     return Triplet(
@@ -38,14 +36,11 @@ def _make_embeddings(vectors: dict[str, list[float]]) -> MagicMock:
     return emb
 
 
-# ── extract_unique_entities ───────────────────────────────────────────────────
-
-
 class TestExtractUniqueEntities:
     def test_deduplicates_subjects_and_objects(self) -> None:
         triplets = [
             _make_triplet("Customer", "Product"),
-            _make_triplet("Customer", "Service"),  # Customer appears again
+            _make_triplet("Customer", "Service"),
         ]
         result = extract_unique_entities(triplets)
         assert result.count("Customer") == 1
@@ -71,20 +66,15 @@ class TestExtractUniqueEntities:
         assert "Entity" in result
 
 
-# ── block_entities ────────────────────────────────────────────────────────────
-
-
 class TestBlockEntities:
     def test_identical_vectors_form_cluster(self) -> None:
-        # Two entities with identical embeddings → cosine sim = 1.0
         vectors = {
             "Customer": [1.0, 0.0],
-            "Customers": [1.0, 0.0],  # identical → should cluster
-            "Product": [0.0, 1.0],  # orthogonal → different cluster
+            "Customers": [1.0, 0.0],
+            "Product": [0.0, 1.0],
         }
         emb = _make_embeddings(vectors)
         clusters = block_entities(["Customer", "Customers", "Product"], emb, threshold=0.95)
-        # Only "Customer" + "Customers" should cluster
         assert len(clusters) == 1
         assert set(clusters[0].variants) == {"Customer", "Customers"}
 
@@ -106,7 +96,7 @@ class TestBlockEntities:
         emb = _make_embeddings(vectors)
         clusters = block_entities(["Cust", "Customer", "CUST"], emb, threshold=0.95)
         assert len(clusters) == 1
-        assert clusters[0].canonical_candidate == "Customer"  # longest
+        assert clusters[0].canonical_candidate == "Customer"
 
     def test_empty_entities_returns_empty(self) -> None:
         emb = MagicMock()
@@ -122,9 +112,6 @@ class TestBlockEntities:
         clusters = block_entities(["Customer", "Customers"], emb, threshold=0.9)
         if clusters:
             assert 0.0 <= clusters[0].avg_similarity <= 1.0
-
-
-# ── Fixtures for LLM Judge ───────────────────────────────────────────────────────
 
 
 def _make_cluster(*variants: str) -> EntityCluster:
@@ -159,9 +146,6 @@ def _make_merge_llm(merge: bool, canonical: str) -> MagicMock:
     return llm
 
 
-# ── build_provenance_map ─────────────────────────────────────────────────────────
-
-
 class TestBuildProvenanceMap:
     def test_maps_subjects_and_objects(self) -> None:
         triplets = [
@@ -180,9 +164,6 @@ class TestBuildProvenanceMap:
 
     def test_empty_returns_empty_dict(self) -> None:
         assert build_provenance_map([]) == {}
-
-
-# ── judge_cluster ─────────────────────────────────────────────────────────────────
 
 
 class TestJudgeCluster:
@@ -226,7 +207,7 @@ class TestJudgeCluster:
         llm = MagicMock()
         llm.invoke.side_effect = RuntimeError("timeout")
         decision = judge_cluster(cluster, {}, llm)
-        assert decision.merge is False  # conservative
+        assert decision.merge is False
 
     def test_bad_json_returns_no_merge(self) -> None:
         cluster = _make_cluster("Customer", "Customers")
@@ -236,9 +217,6 @@ class TestJudgeCluster:
         llm.invoke.return_value = resp
         decision = judge_cluster(cluster, {}, llm)
         assert decision.merge is False
-
-
-# ── cluster_to_entity ───────────────────────────────────────────────────────────
 
 
 class TestClusterToEntity:
@@ -273,9 +251,6 @@ class TestClusterToEntity:
         )
         entity = cluster_to_entity(cluster, decision, {})
         assert entity.name == "Apple company"
-
-
-# ── Fixtures for Entity Resolver ───────────────────────────────────────────────
 
 
 def _make_triplet_full(subject: str, obj: str, prov: str = "") -> Triplet:
@@ -328,9 +303,6 @@ def _make_llm_no_merge(canonical: str) -> MagicMock:
     return llm
 
 
-# ── resolve_entities ───────────────────────────────────────────────────────────
-
-
 class TestResolveEntities:
     def test_empty_triplets_returns_empty(self) -> None:
         emb = MagicMock()
@@ -349,7 +321,7 @@ class TestResolveEntities:
         llm = MagicMock()
         result = resolve_entities(triplets, emb, llm)
         llm.invoke.assert_not_called()
-        assert len(result) == 4  # all promoted as singletons
+        assert len(result) == 4
 
     def test_cluster_resolved_to_single_entity(self) -> None:
         """Identical embeddings → one big cluster → LLM merges to 'Customer'."""
@@ -384,14 +356,7 @@ class TestResolveEntities:
         llm = MagicMock()
         llm.invoke.side_effect = RuntimeError("timeout")
         result = resolve_entities(triplets, emb, llm)
-        # Conservative no-merge → cluster preserved but not crashed
         assert len(result) >= 1
-
-
-# ── Regression: zero-vector embeddings produce zero clusters ──────────────────
-# This documents Bug 3: _MockEmbeddings returned [0.0]*1024 for all entities.
-# cosine_similarity([0,0,...], [0,0,...]) → NaN/0 → no pair exceeds threshold
-# → 0 clusters → ER is completely blind.
 
 
 class TestZeroVectorRegressionBug3:
@@ -416,8 +381,8 @@ class TestZeroVectorRegressionBug3:
         emb = MagicMock()
         vectors = {
             "Customer": [1.0, 0.0, 0.0, 0.0],
-            "Customers": [1.0, 0.0, 0.0, 0.0],  # identical → should cluster
-            "Order": [0.0, 1.0, 0.0, 0.0],  # orthogonal → no cluster
+            "Customers": [1.0, 0.0, 0.0, 0.0],
+            "Order": [0.0, 1.0, 0.0, 0.0],
         }
         emb.encode.side_effect = lambda texts, **kw: np.array([vectors[t] for t in texts])
         return emb
@@ -439,7 +404,6 @@ class TestZeroVectorRegressionBug3:
         """Regression: _node_entity_resolution must use get_embeddings(), not _MockEmbeddings."""
         import src.graph.builder_graph as bg
 
-        # _MockEmbeddings and _get_embeddings must not exist in the module
         assert not hasattr(bg, "_MockEmbeddings"), (
             "_MockEmbeddings still present in builder_graph — Bug 3 not fixed"
         )

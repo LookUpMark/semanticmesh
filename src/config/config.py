@@ -14,10 +14,8 @@ from dataclasses import dataclass
 class AppConfig:
     """Default application configuration.
 
-    These values can be overridden by environment variables. See settings.py
-    for the environment variable names.
-
-    Non-sensitive defaults are defined here for visibility and easy modification.
+    Override via environment variables (see settings.py for names).
+    Non-sensitive defaults are defined here for visibility.
     """
 
     # ── Neo4j ──────────────────────────────────────────────────────────────────
@@ -25,26 +23,19 @@ class AppConfig:
     neo4j_user: str = "neo4j"
 
     # ── LLM Providers ──────────────────────────────────────────────────────────
-    # LM Studio — local endpoint for extraction SLM
     lmstudio_base_url: str = "http://localhost:1234/v1"
-    # OpenRouter — cloud endpoint for reasoning/generation LLM
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # ── LLM Models ─────────────────────────────────────────────────────────────
-    # Reasoning + generation: OpenRouter (override via LLM_MODEL_REASONING)
     llm_model_reasoning: str = "openai/gpt-oss-120b:free"
-    # Extraction SLM: LM Studio local model (override via LLM_MODEL_EXTRACTION)
     llm_model_extraction: str = "local-model"
 
-    # Temperature settings
+    # Temperature: extraction/reasoning at 0.0 for deterministic JSON, generation at 0.3 for fluency
     llm_temperature_extraction: float = 0.0
     llm_temperature_reasoning: float = 0.0
     llm_temperature_generation: float = 0.3
 
-    # Max output tokens for extraction (8k balances chunk coverage vs truncation risk)
     llm_max_tokens_extraction: int = 8192
-
-    # Max output tokens for reasoning LLM (caps thinking+output; JSON payloads rarely need >4k)
     llm_max_tokens_reasoning: int = 16384
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
@@ -66,7 +57,7 @@ class AppConfig:
     # ── Chunking ───────────────────────────────────────────────────────────────
     chunk_size: int = 256
     chunk_overlap: int = 32
-    extraction_concurrency: int = 5  # parallel LLM calls during extraction
+    extraction_concurrency: int = 5
 
     # ── Retrieval ──────────────────────────────────────────────────────────────
     retrieval_vector_top_k: int = 20
@@ -81,7 +72,7 @@ class AppConfig:
 
     # ── Ablation Flags ─────────────────────────────────────────────────────────
     enable_schema_enrichment: bool = True
-    retrieval_mode: str = "hybrid"  # "hybrid" | "vector" | "bm25"
+    retrieval_mode: str = "hybrid"
     enable_cypher_healing: bool = True
     enable_critic_validation: bool = True
     enable_reranker: bool = True

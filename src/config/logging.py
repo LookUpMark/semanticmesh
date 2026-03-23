@@ -1,8 +1,4 @@
-"""EP-01: Structured JSON logging.
-
-Every LangGraph node should call `get_logger(__name__)` and log using
-the helpers below so that all operational data is consistently structured.
-"""
+"""Structured JSON logging for LangGraph pipeline observability."""
 
 from __future__ import annotations
 
@@ -14,8 +10,7 @@ from typing import Any
 
 from pythonjsonlogger import jsonlogger
 
-# Suppress IProgress / pydantic_settings warnings at import time so they never
-# appear regardless of calling order in notebooks.
+# Suppress third-party warnings at import time
 warnings.filterwarnings("ignore", message="IProgress not found", category=UserWarning)
 warnings.filterwarnings("ignore", message="directory.*does not exist", category=UserWarning)
 
@@ -43,17 +38,13 @@ class _NotebookFormatter(logging.Formatter):
 
 
 def setup_notebook_logging() -> None:
-    """Replace the JSON formatter with a human-readable one for Jupyter notebooks.
+    """Replace JSON formatter with human-readable output for Jupyter notebooks.
 
-    - Suppresses noisy third-party loggers (httpx, pydantic_settings, transformers).
-    - Suppresses repetitive internal loggers (neo4j schema setup).
-    - Keeps all ``src.*`` loggers at INFO for pipeline observability.
-
-    Call once from the environment-setup cell, after ``reconfigure_from_env()``.
+    Suppresses noisy third-party loggers and keeps src.* at INFO level.
+    Call once after reconfigure_from_env().
     """
     root = logging.getLogger()
 
-    # Replace all existing handlers with a single clean-format stream handler.
     for h in root.handlers[:]:
         root.removeHandler(h)
 
@@ -61,8 +52,6 @@ def setup_notebook_logging() -> None:
     handler.setFormatter(_NotebookFormatter())
     root.addHandler(handler)
     root.setLevel(logging.INFO)
-
-    # Suppress noisy third-party loggers.
     _SILENT = (
         "httpx",
         "httpcore",
@@ -77,13 +66,8 @@ def setup_notebook_logging() -> None:
     for name in _SILENT:
         logging.getLogger(name).setLevel(logging.WARNING)
 
-    # Schema setup is printed twice per query — mute at INFO, keep errors visible.
     logging.getLogger("src.graph.neo4j_client").setLevel(logging.WARNING)
-
-    # neo4j driver GqlStatusObject spam.
     logging.getLogger("neo4j.notifications").setLevel(logging.WARNING)
-
-    # HuggingFace tokenizer "fast tokenizer" INFO prints.
     try:
         import transformers  # type: ignore[import]
 
@@ -96,7 +80,7 @@ def _configure_root_logger() -> None:
     """Configure the root logger with a JSON formatter exactly once."""
     root = logging.getLogger()
     if root.handlers:
-        return  # already configured — avoids duplicate handlers in tests
+        return
 
     level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
     level = getattr(logging, level_name, logging.INFO)
@@ -113,8 +97,6 @@ def _configure_root_logger() -> None:
     handler.setFormatter(formatter)
     root.addHandler(handler)
 
-    # Suppress Neo4j driver schema notifications (verbose GqlStatusObject spam).
-    # These are INFO-level "constraint already exists" messages with no actionable info.
     logging.getLogger("neo4j.notifications").setLevel(logging.WARNING)
 
 
@@ -162,7 +144,7 @@ def log_retry_event(
 ) -> None:
     """Log a reflection/retry event (Actor-Critic or Cypher Healing).
 
-    Call at the START of each retry iteration before sending the Reflection Prompt.
+    Call at the START of each retry iteration.
     """
     logger.warning(
         "retry_event",
@@ -186,7 +168,7 @@ class NodeTimer:
         return self
 
     def __exit__(self, *_: object) -> None:
-        pass  # elapsed_ms is computed on access, not on exit
+        pass
 
     @property
     def elapsed_ms(self) -> float:

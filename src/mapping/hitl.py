@@ -6,23 +6,23 @@ and wait for human input (approve / correct / reject).
 
 from __future__ import annotations
 
-import logging
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from langgraph.types import Command, interrupt
 
 from src.config.logging import get_logger
 from src.config.settings import get_settings
-from src.models.schemas import Entity, MappingProposal
-from src.models.state import BuilderState
 
-logger: logging.Logger = get_logger(__name__)
+if TYPE_CHECKING:
+    import logging
+
+    from src.models.schemas import Entity, MappingProposal
+    from src.models.state import BuilderState
+
+logger: logging.Logger = get_logger(__name__)  # type: ignore[valid-type]
 _settings = get_settings()
 
 HumanAction = Literal["approve", "correct", "reject"]
-
-
-# ── Pure Predicate ─────────────────────────────────────────────────────────────
 
 
 def should_interrupt(state: BuilderState) -> bool:
@@ -38,12 +38,7 @@ def should_interrupt(state: BuilderState) -> bool:
     if state.get("hitl_flag", False):
         return True
     proposal: MappingProposal | None = state.get("mapping_proposal")
-    if proposal is not None and proposal.confidence < _settings.confidence_threshold:
-        return True
-    return False
-
-
-# ── Payload Builder ────────────────────────────────────────────────────────────
+    return proposal is not None and proposal.confidence < _settings.confidence_threshold
 
 
 def build_interrupt_payload(
@@ -82,9 +77,6 @@ def build_interrupt_payload(
     }
 
 
-# ── HITL LangGraph Node ────────────────────────────────────────────────────────
-
-
 def hitl_node(state: BuilderState) -> Command:
     """LangGraph node that suspends execution pending human review.
 
@@ -100,7 +92,8 @@ def hitl_node(state: BuilderState) -> Command:
         }
 
     On ``"approve"`` — routes to ``"Generate_Cypher"`` unchanged.
-    On ``"correct"`` — patches ``mapping_proposal.mapped_concept`` and routes to ``"Generate_Cypher"``.
+    On ``"correct"`` — patches ``mapping_proposal.mapped_concept`` and routes
+    to ``"Generate_Cypher"``.
     On ``"reject"``  — marks ``rejected=True`` and routes to ``"End"``.
 
     Args:
@@ -112,7 +105,6 @@ def hitl_node(state: BuilderState) -> Command:
     proposal: MappingProposal | None = state.get("mapping_proposal")
     entities: list[Entity] = state.get("current_entities") or []
 
-    # ── Pass-through if no interrupt needed ──
     if not should_interrupt(state):
         logger.debug(
             "HITL pass-through: confidence=%.2f ≥ %.2f",
@@ -132,10 +124,7 @@ def hitl_node(state: BuilderState) -> Command:
         proposal.confidence,
     )
 
-    # ── Suspend and wait for human input ──────────────────────────────────────
     human_response: dict = interrupt(payload)
-    # Execution resumes only after a Command is submitted by the human.
-    # ``human_response`` is whatever dict the reviewer provides.
 
     action: HumanAction = human_response.get("action", "approve")
 

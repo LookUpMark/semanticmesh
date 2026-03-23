@@ -1,18 +1,7 @@
 """Headless pipeline runner — replicates the notebook end-to-end.
 
-Usage:
-    python scripts/pipeline_run.py [--run-id N]
-
-Runs:
-1. Builder Graph  (triplet extraction → ER → mapping → Cypher upsert)
-2. Query Graph    (4 standard test questions)
-
-Prints a compact summary and exits with code 0 on success, 1 on failure.
-A run is considered "positive" when:
-  - triplets_extracted  > 0
-  - tables_completed   == 3
-  - cypher_failed      == False
-  - all 4 Q&A answers graded as grounded (action=pass)
+A run is "positive" when triplets > 0, all tables complete, Cypher succeeded,
+and all Q&A answers are grounded.
 """
 
 from __future__ import annotations
@@ -25,16 +14,14 @@ import sys
 import time
 from pathlib import Path
 
-# ── Repo root on path ──────────────────────────────────────────────────────────
+# ── Setup ────────────────────────────────────────────────────────────────────────
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-# ── Load .env ─────────────────────────────────────────────────────────────────
 from dotenv import load_dotenv  # type: ignore[import]
 
 load_dotenv(ROOT / ".env")
-
-# ── Pipeline config (matches notebook defaults) ────────────────────────────────
 os.environ.setdefault("NEO4J_URI", "bolt://localhost:7687")
 os.environ.setdefault("NEO4J_USER", "neo4j")
 os.environ.setdefault("NEO4J_PASSWORD", "test_password")
@@ -47,11 +34,10 @@ os.environ.setdefault("ER_SIMILARITY_THRESHOLD", "0.75")
 os.environ.setdefault("RETRIEVAL_VECTOR_TOP_K", "20")
 os.environ.setdefault("RETRIEVAL_BM25_TOP_K", "10")
 os.environ.setdefault("RERANKER_TOP_K", "10")
-# Avoid network retries from HF Hub in offline/no-internet environments.
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
-# ── Notebook-style logging ─────────────────────────────────────────────────────
+# ── Logging setup ────────────────────────────────────────────────────────────────
 from src.config.llm_factory import reconfigure_from_env  # noqa: E402
 from src.config.logging import setup_notebook_logging  # noqa: E402
 
@@ -60,7 +46,7 @@ setup_notebook_logging()
 
 logger = logging.getLogger("pipeline_run")
 
-# ── Data fixtures ─────────────────────────────────────────────────────────────
+# ── Test data ───────────────────────────────────────────────────────────────────
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 DOC_PATHS = [
     FIXTURE_DIR / "sample_docs" / "business_glossary.txt",
@@ -68,7 +54,7 @@ DOC_PATHS = [
 ]
 DDL_PATHS = [FIXTURE_DIR / "sample_ddl" / "simple_schema.sql"]
 
-# ── Test questions (same as notebook batch cell) ──────────────────────────────
+# ── Test questions ───────────────────────────────────────────────────────────────
 TEST_QUESTIONS = [
     "What entities exist in the business domain?",
     "Which table stores customer information?",
@@ -88,7 +74,6 @@ def run_pipeline(run_id: int = 1, run_ragas: bool = False) -> dict[str, object]:
     print(f"  RUN {run_id:02d}  —  {time.strftime('%Y-%m-%dT%H:%M:%S')}")
     print(sep("═"))
 
-    # ── 1. Builder Graph ───────────────────────────────────────────────────────
     from src.graph.builder_graph import run_builder
 
     print("\n[1/2] Builder Graph …")
@@ -119,7 +104,6 @@ def run_pipeline(run_id: int = 1, run_ragas: bool = False) -> dict[str, object]:
         for t in completed:
             print(f"      ✓ {t}")
 
-    # ── 2. Query Graph ─────────────────────────────────────────────────────────
     from src.generation.query_graph import run_query
 
     print("\n[2/2] Query Graph …")
@@ -147,7 +131,7 @@ def run_pipeline(run_id: int = 1, run_ragas: bool = False) -> dict[str, object]:
     print(f"\n    Query elapsed   : {query_elapsed:.1f} s")
     print(f"    Grounded        : {grounded_count} / {len(TEST_QUESTIONS)}")
 
-    # ── Summary ────────────────────────────────────────────────────────────────
+    # ── Summary and RAGAS ─────────────────────────────────────────────────────────
     total_elapsed = builder_elapsed + query_elapsed
     positive = (
         len(triplets) > 0

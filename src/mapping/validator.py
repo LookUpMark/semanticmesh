@@ -7,9 +7,9 @@ in MappingProposal objects before they proceed to Cypher generation.
 from __future__ import annotations
 
 import json
-import logging
 import time
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from typing import TYPE_CHECKING
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -20,13 +20,12 @@ from src.models.schemas import CriticDecision, Entity, MappingProposal, TableSch
 from src.prompts.templates import CRITIC_SYSTEM, CRITIC_USER, REFLECTION_TEMPLATE
 
 if TYPE_CHECKING:
+    import logging
+
     from src.config.llm_client import LLMProtocol
 
-logger: logging.Logger = get_logger(__name__)
+logger: logging.Logger = get_logger(__name__)  # type: ignore[valid-type]
 _CRITIC_TIMEOUT_SECONDS = 120
-
-
-# ── Layer 1: Pydantic Schema Validation ───────────────────────────────────────
 
 
 def validate_schema(
@@ -49,9 +48,6 @@ def validate_schema(
         error_str = str(exc)
         logger.warning("MappingProposal schema validation failed: %s", error_str)
         return None, error_str
-
-
-# ── Layer 2: LLM Actor-Critic ─────────────────────────────────────────────────
 
 
 def critic_review(
@@ -78,9 +74,6 @@ def critic_review(
         On any failure, returns ``approved=True`` to avoid infinite retry loops
         (the pipeline logs the failure as a warning).
     """
-    # Sort by name length so high-level concept names (short, e.g. "Customer")
-    # appear before attribute-level entries (long, e.g. "unique numeric identifier
-    # for the customer") in the critic context window. Take top 20 for coverage.
     safe_entities = entities or []
     sorted_entities = sorted(safe_entities, key=lambda e: len(getattr(e, "name", "")))[:20]
     entities_json = json.dumps(
@@ -145,9 +138,6 @@ def critic_review(
         decision.critique,
     )
     return decision
-
-
-# ── Reflection Prompt Builder ─────────────────────────────────────────────────
 
 
 def build_reflection_prompt(

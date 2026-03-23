@@ -12,6 +12,17 @@ Environment variables:
   LMSTUDIO_BASE_URL    — LM Studio endpoint (default: http://localhost:1234/v1)
   LLM_MODEL_REASONING  — override reasoning model (default: openai/gpt-oss-120b:free)
   LLM_MODEL_EXTRACTION — override extraction model (default: local-model)
+
+Provider auto-detection
+-----------------------
+Provider detection logic is in :mod:`src.config.provider_detection`.
+Model builders are in :mod:`src.config.model_builders`.
+
+Cached factory functions
+------------------------
+  * :func:`get_reasoning_llm()` — OpenRouter, T=0.0 (mapping, validation, Cypher)
+  * :func:`get_extraction_llm()` — Auto-detected, T=0.0 (triplet extraction)
+  * :func:`get_generation_llm()` — OpenRouter, T=0.3 (answer generation)
 """
 
 from __future__ import annotations
@@ -21,147 +32,36 @@ from functools import lru_cache
 from langchain_openai import ChatOpenAI
 
 from src.config.llm_client import FallbackLLM, InstrumentedLLM, LLMProtocol
+from src.config.model_builders import (
+    _build_anthropic_chat,
+    _build_lmstudio_chat,
+    _build_openai_chat,
+    _build_openrouter_chat,
+)
+from src.config.provider_detection import (
+    _is_free_model,
+    _strip_free_suffix,
+    detect_provider,
+)
 from src.config.settings import get_settings, reload_settings
 
-# ── Provider auto-detection ────────────────────────────────────────────────────
+__all__ = [
+    "make_llm",
+    "get_reasoning_llm",
+    "get_extraction_llm",
+    "get_generation_llm",
+    "reconfigure_from_env",
+    "detect_provider",
+    "LLMProtocol",
+]
 
-_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-_LMSTUDIO_DEFAULT_URL = "http://localhost:1234/v1"
 
-# Model name prefixes that map to direct provider APIs (no slash in the name)
-_OPENAI_PREFIXES = ("gpt-", "o1-", "o2-", "o3-", "o4-", "text-")
-_ANTHROPIC_PREFIXES = ("claude-",)
-
-
-def _optional_model_kwargs(extra_model_kwargs: dict | None) -> dict:
-    return {"model_kwargs": extra_model_kwargs} if extra_model_kwargs else {}
+# ── Public factory function ───────────────────────────────────────────────────
 
 
 def _instrument(chat_like: LLMProtocol, role: str) -> LLMProtocol:
+    """Wrap an LLM client with instrumentation and retry logic."""
     return InstrumentedLLM(chat_like, name=role, max_retries=get_settings().max_llm_retries)
-
-
-def _build_openrouter_chat(
-    model_name: str,
-    *,
-    temperature: float,
-    max_tokens: int | None,
-    openrouter_api_key: str | None,
-    openrouter_base_url: str | None,
-    extra_model_kwargs: dict | None,
-) -> ChatOpenAI:
-    api_key = openrouter_api_key or get_settings().openrouter_api_key.get_secret_value()
-    base_url = openrouter_base_url or get_settings().openrouter_base_url
-    return ChatOpenAI(
-        model=model_name,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        base_url=base_url,
-        api_key=api_key,
-        **_optional_model_kwargs(extra_model_kwargs),
-    )
-
-
-def _build_openai_chat(
-    model: str,
-    *,
-    temperature: float,
-    max_tokens: int | None,
-    openai_api_key: str | None,
-    extra_model_kwargs: dict | None,
-) -> ChatOpenAI:
-    import os
-
-    api_key = openai_api_key or os.environ.get("OPENAI_API_KEY", "")
-    return ChatOpenAI(
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        api_key=api_key,
-        **_optional_model_kwargs(extra_model_kwargs),
-    )
-
-
-def _build_anthropic_chat(model: str, *, temperature: float, max_tokens: int | None) -> LLMProtocol:
-    try:
-        from langchain_anthropic import ChatAnthropic  # type: ignore[import]
-    except ImportError as exc:  # pragma: no cover
-        raise ImportError(
-            "Install langchain-anthropic to use Anthropic models directly: "
-            "pip install langchain-anthropic"
-        ) from exc
-
-    import os
-
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    return ChatAnthropic(
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens or 4096,
-        api_key=api_key,
-    )
-
-
-def _build_lmstudio_chat(
-    model: str,
-    *,
-    temperature: float,
-    max_tokens: int | None,
-    lmstudio_base_url: str | None,
-    extra_model_kwargs: dict | None,
-) -> ChatOpenAI:
-    base_url = lmstudio_base_url or get_settings().lmstudio_base_url
-    kwargs = extra_model_kwargs or {"chat_template_kwargs": {"enable_thinking": False}}
-    return ChatOpenAI(
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        base_url=base_url,
-        api_key="lm-studio",
-        model_kwargs={"extra_body": kwargs},
-    )
-
-
-def detect_provider(model: str) -> str:
-    """Infer the LLM provider from the model name string.
-
-    Rules (in order):
-    - ``provider/model`` (contains ``/``) → **OpenRouter**
-      e.g. ``openai/gpt-oss-120b:free``, ``anthropic/claude-3.5-sonnet``,
-           ``meta-llama/llama-3.3-70b-instruct:free``
-    - Starts with ``gpt-``, ``o1-``, ``o3-``, ``o4-`` (no slash) → **openai** (direct)
-    - Starts with ``claude-`` (no slash) → **anthropic** (direct)
-    - Anything else → **lmstudio** (local)
-    """
-    if "/" in model:
-        return "openrouter"
-    m = model.lower()
-    if m.startswith(_OPENAI_PREFIXES):
-        return "openai"
-    if m.startswith(_ANTHROPIC_PREFIXES):
-        return "anthropic"
-    return "lmstudio"
-
-
-def _strip_free_suffix(model: str) -> str:
-    """Remove the :free suffix from a model name if present.
-
-    Examples:
-        >>> _strip_free_suffix("openai/gpt-oss-120b:free")
-        "openai/gpt-oss-120b"
-        >>> _strip_free_suffix("meta-llama/llama-3.3-70b-instruct:free")
-        "meta-llama/llama-3.3-70b-instruct"
-        >>> _strip_free_suffix("openai/gpt-oss-120b")
-        "openai/gpt-oss-120b"
-    """
-    if model.endswith(":free"):
-        return model[:-5]
-    return model
-
-
-def _is_free_model(model: str) -> bool:
-    """Check if a model name has the :free suffix."""
-    return model.endswith(":free")
 
 
 def make_llm(

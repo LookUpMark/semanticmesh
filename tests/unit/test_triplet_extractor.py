@@ -8,8 +8,6 @@ from unittest.mock import MagicMock
 from src.extraction.triplet_extractor import extract_all_triplets, extract_triplets
 from src.models.schemas import Chunk
 
-# ── Fixtures ───────────────────────────────────────────────────────────────────
-
 
 def _make_chunk(text: str = "A Customer purchases Products.", index: int = 0) -> Chunk:
     return Chunk(
@@ -35,9 +33,6 @@ VALID_TRIPLET = {
     "provenance_text": "A Customer purchases Products.",
     "confidence": 0.95,
 }
-
-
-# ── extract_triplets ──────────────────────────────────────────────────────────
 
 
 class TestExtractTriplets:
@@ -79,7 +74,7 @@ class TestExtractTriplets:
     def test_pydantic_validation_error_returns_empty(self) -> None:
         """Confidence > 1.0 should fail Pydantic validation."""
         chunk = _make_chunk()
-        bad_triplet = {**VALID_TRIPLET, "confidence": 2.5}  # invalid
+        bad_triplet = {**VALID_TRIPLET, "confidence": 2.5}
         llm = _make_llm([bad_triplet])
         result = extract_triplets(chunk, llm)
         assert result == []
@@ -92,9 +87,6 @@ class TestExtractTriplets:
         assert len(result) == 2
 
 
-# ── extract_all_triplets ──────────────────────────────────────────────────────
-
-
 class TestExtractAllTriplets:
     def test_empty_chunks_returns_empty(self) -> None:
         llm = _make_llm([])
@@ -104,7 +96,7 @@ class TestExtractAllTriplets:
         chunks = [_make_chunk(index=i, text=f"Fact {i}.") for i in range(3)]
         llm = _make_llm([VALID_TRIPLET])
         result = extract_all_triplets(chunks, llm)
-        assert len(result) == 3  # 1 triplet per chunk × 3 chunks
+        assert len(result) == 3
 
     def test_one_failing_chunk_does_not_stop_others(self) -> None:
         chunks = [_make_chunk(index=i) for i in range(3)]
@@ -123,7 +115,6 @@ class TestExtractAllTriplets:
         llm = MagicMock()
         llm.invoke.side_effect = side_effect
         result = extract_all_triplets(chunks, llm)
-        # chunks 0 and 2 succeed → 2 triplets
         assert len(result) == 2
 
     def test_parallel_max_workers_override(self) -> None:
@@ -131,7 +122,7 @@ class TestExtractAllTriplets:
         chunks = [_make_chunk(index=i, text=f"Fact {i}.") for i in range(5)]
         llm = _make_llm([VALID_TRIPLET])
         result = extract_all_triplets(chunks, llm, max_workers=3)
-        assert len(result) == 5  # 1 triplet per chunk × 5 chunks
+        assert len(result) == 5
 
     def test_results_in_chunk_order(self) -> None:
         """Triplets are returned in chunk index order regardless of completion order."""
@@ -142,7 +133,6 @@ class TestExtractAllTriplets:
         completion_order: list[int] = []
 
         def side_effect(messages):
-            # Find chunk index from message content
             content = messages[1].content
             idx = next(
                 (c.chunk_index for c in chunks if f"Fact {c.chunk_index}." in content),
@@ -157,6 +147,5 @@ class TestExtractAllTriplets:
         llm = MagicMock()
         llm.invoke.side_effect = side_effect
         result = extract_all_triplets(chunks, llm, max_workers=4)
-        # subjects should come out in chunk order: Entity0, Entity1, Entity2, Entity3
         subjects = [t.subject for t in result]
         assert subjects == ["Entity0", "Entity1", "Entity2", "Entity3"]

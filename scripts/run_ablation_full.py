@@ -1,17 +1,7 @@
-"""Automated ablation study runner - Full pipeline with RAGAS.
+"""Automated ablation study runner with RAGAS evaluation.
 
-This script runs all 21 ablation studies (AB-00 through AB-20) sequentially,
-following the same pattern as pipeline_run.py but with environment variable overrides
-for each study.
-
-Each study:
-1. Clears the Neo4j graph
-2. Runs the Builder Graph (triplet extraction, ER, mapping, Cypher upsert)
-3. Runs the Query Graph with dataset-driven test questions (fallback to defaults)
-4. Optionally runs RAGAS evaluation on the gold-standard dataset
-
-Results are saved under notebooks/ablation/ablation_results/studies/AB-XX/
-with separated runs, traces, diagnostics, reports, analyses, and baselines folders.
+Runs studies (AB-00 through AB-20) with environment overrides.
+Results saved to notebooks/ablation/ablation_results/studies/AB-XX/
 """
 
 from __future__ import annotations
@@ -26,16 +16,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-# ── Repo root on path ──────────────────────────────────────────────────────────
+# ── Setup ────────────────────────────────────────────────────────────────────────
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-# ── Load .env ─────────────────────────────────────────────────────────────────
 from dotenv import load_dotenv  # type: ignore[import]
 
 load_dotenv(ROOT / ".env")
-
-# ── Pipeline config (matches pipeline_run.py defaults) ────────────────────────────
 os.environ.setdefault("NEO4J_URI", "bolt://localhost:7687")
 os.environ.setdefault("NEO4J_USER", "neo4j")
 os.environ.setdefault("NEO4J_PASSWORD", "test_password")
@@ -43,7 +31,7 @@ os.environ.setdefault("LLM_MODEL_REASONING", "openai/gpt-oss-120b:free")
 os.environ.setdefault("LLM_MODEL_EXTRACTION", "openai/gpt-4.1-nano")
 os.environ.setdefault("LLM_MAX_TOKENS_REASONING", "16384")
 os.environ.setdefault("LLM_MAX_TOKENS_EXTRACTION", "16384")
-os.environ.setdefault("EXTRACTION_CONCURRENCY", "10")  # Parallel extraction
+os.environ.setdefault("EXTRACTION_CONCURRENCY", "10")
 os.environ.setdefault("ER_SIMILARITY_THRESHOLD", "0.75")
 os.environ.setdefault("RETRIEVAL_VECTOR_TOP_K", "20")
 os.environ.setdefault("RETRIEVAL_BM25_TOP_K", "10")
@@ -51,7 +39,7 @@ os.environ.setdefault("RERANKER_TOP_K", "10")
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
-# ── Notebook-style logging ─────────────────────────────────────────────────────
+# ── Logging setup ────────────────────────────────────────────────────────────────
 from src.config.llm_factory import reconfigure_from_env  # noqa: E402
 from src.config.logging import setup_notebook_logging  # noqa: E402
 
@@ -60,7 +48,7 @@ setup_notebook_logging()
 
 logger = logging.getLogger("ablation_runner")
 
-# ── Data fixtures ─────────────────────────────────────────────────────────────
+# ── Test data ───────────────────────────────────────────────────────────────────
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 DOC_PATHS_DEFAULT = [
     FIXTURE_DIR / "sample_docs" / "business_glossary.txt",
@@ -74,7 +62,7 @@ DOC_PATHS_SMOKE = [
 ]
 DDL_PATHS_SMOKE = [FIXTURE_DIR / "smoke" / "smoke_schema.sql"]
 
-# ── Test questions (same as pipeline_run.py) ────────────────────────────────────
+# ── Test questions ───────────────────────────────────────────────────────────────
 TEST_QUESTIONS = [
     "What entities exist in the business domain?",
     "Which table stores customer information?",
@@ -82,7 +70,6 @@ TEST_QUESTIONS = [
     "What columns does the product table have?",
 ]
 
-# ── Ablation matrix ───────────────────────────────────────────────────────────
 from src.evaluation.ablation_runner import ABLATION_MATRIX  # noqa: E402
 
 # ── Results directory ───────────────────────────────────────────────────────────
@@ -92,7 +79,7 @@ META_DIR = RESULTS_DIR / "meta"
 META_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ── Utilities ──────────────────────────────────────────────────────────────────
+# ── Helper functions ─────────────────────────────────────────────────────────────
 
 
 def sep(char: str = "─", n: int = 60) -> str:
@@ -131,8 +118,6 @@ def _default_run_tag(dataset_path: Path | None, use_smoke_fixtures: bool) -> str
     profile = "smoke" if use_smoke_fixtures else "full"
     ds = dataset_path.stem if dataset_path is not None else "gold_standard"
     return f"{ds}.{profile}"
-    print(f"  {study_id}: {description}")
-    print(sep("─"))
 
 
 def _load_query_questions(dataset_path: Path | None, max_samples: int | None) -> list[str]:
@@ -169,7 +154,7 @@ def _load_query_questions(dataset_path: Path | None, max_samples: int | None) ->
     return list(TEST_QUESTIONS)
 
 
-# ── Study execution ───────────────────────────────────────────────────────────
+# ── Study execution ─────────────────────────────────────────────────────────────
 
 
 def run_ablation_study(
@@ -584,7 +569,7 @@ def run_all_studies(
     }
 
 
-# ── CLI ─────────────────────────────────────────────────────────────────────────
+# ── CLI ─────────────────────────────────────────────────────────────────────
 
 
 def main() -> None:

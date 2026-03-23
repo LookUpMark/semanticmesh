@@ -12,8 +12,6 @@ from src.mapping.validator import (
 )
 from src.models.schemas import ColumnSchema, Entity, MappingProposal, TableSchema
 
-# ── Fixtures ───────────────────────────────────────────────────────────────────
-
 
 def _valid_dict(concept: str = "Customer", confidence: float = 0.9) -> dict:
     return {
@@ -57,9 +55,6 @@ def _make_critic_llm(approved: bool, critique: str | None = None) -> MagicMock:
     return llm
 
 
-# ── validate_schema ───────────────────────────────────────────────────────────
-
-
 class TestValidateSchema:
     def test_valid_proposal_returns_object(self) -> None:
         proposal, error = validate_schema(_valid_dict())
@@ -68,7 +63,7 @@ class TestValidateSchema:
         assert isinstance(proposal, MappingProposal)
 
     def test_missing_required_field_returns_error(self) -> None:
-        bad = {"mapped_concept": "Customer"}  # missing table_name, confidence, reasoning
+        bad = {"mapped_concept": "Customer"}
         proposal, error = validate_schema(bad)
         assert proposal is None
         assert error is not None
@@ -87,9 +82,6 @@ class TestValidateSchema:
         proposal, error = validate_schema(d)
         assert proposal is not None
         assert proposal.mapped_concept is None
-
-
-# ── critic_review ─────────────────────────────────────────────────────────────
 
 
 class TestCriticReview:
@@ -117,7 +109,7 @@ class TestCriticReview:
         llm.invoke.side_effect = RuntimeError("timeout")
         proposal = MappingProposal(**_valid_dict())
         decision = critic_review(proposal, table, [], llm)
-        assert decision.approved is True  # conservative default
+        assert decision.approved is True
 
     def test_bad_json_defaults_to_approved(self) -> None:
         table = _make_table()
@@ -137,15 +129,10 @@ class TestCriticReview:
 
         critic_review(proposal, table, entities, llm)
 
-        # Check that at most 20 entities were passed to the LLM
         call_args = llm.invoke.call_args
-        user_message = call_args[0][0][1]  # Second message is HumanMessage
+        user_message = call_args[0][0][1]
         content = user_message.content
-        # Count how many "name" fields appear in the entities_json
-        assert content.count('"name"') <= 20  # At most 20 entities serialized
-
-
-# ── build_reflection_prompt ───────────────────────────────────────────────────
+        assert content.count('"name"') <= 20
 
 
 class TestBuildReflectionPrompt:
@@ -172,7 +159,6 @@ class TestBuildReflectionPrompt:
             error="Invalid confidence value",
             original_input="input data",
         )
-        # The template should include the error
         assert "Invalid confidence value" in prompt
 
     def test_contains_original_input(self) -> None:

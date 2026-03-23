@@ -17,26 +17,8 @@ from src.config.config import DEFAULT_CONFIG
 class Settings(BaseSettings):
     """Application settings with environment variable override support.
 
-    Environment variables:
-        NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
-        LMSTUDIO_BASE_URL (default: http://localhost:1234/v1)
-        LLM_MODEL_REASONING, LLM_MODEL_EXTRACTION
-        LLM_TEMPERATURE_EXTRACTION, LLM_TEMPERATURE_REASONING, LLM_TEMPERATURE_GENERATION
-        LLM_MAX_TOKENS_EXTRACTION (default: 16384)
-        EMBEDDING_MODEL, RERANKER_MODEL
-        ER_BLOCKING_TOP_K, ER_SIMILARITY_THRESHOLD
-        CONFIDENCE_THRESHOLD, MAX_REFLECTION_ATTEMPTS, MAX_CYPHER_HEALING_ATTEMPTS
-        CHUNK_SIZE, CHUNK_OVERLAP
-        RETRIEVAL_VECTOR_TOP_K, RETRIEVAL_BM25_TOP_K, RETRIEVAL_GRAPH_DEPTH, RETRIEVAL_MIN_SCORE, RETRIEVAL_MIN_SCORE_RATIO, RETRIEVAL_SALVAGE_MIN_SCORE
-        FEW_SHOT_CYPHER_EXAMPLES
-        ENABLE_SCHEMA_ENRICHMENT, RETRIEVAL_MODE
-        ENABLE_CYPHER_HEALING, ENABLE_CRITIC_VALIDATION, ENABLE_RERANKER, ENABLE_HALLUCINATION_GRADER
-        ENABLE_RETRIEVAL_QUALITY_GATE, ENABLE_SEMANTIC_VERIFIER, ENABLE_GRADER_CONSISTENCY_VALIDATOR, GRADER_TIMEOUT_SECONDS
-        USE_LAZY_EXTRACTION
-        ENABLE_SPACY_HEURISTICS, SPACY_MODEL_NAME
-        ER_JUDGE_THRESHOLD, HEURISTIC_MAPPING_CONFIDENCE_THRESHOLD
-        ENABLE_LAZY_EXPANSION, LAZY_EXPANSION_CONFIDENCE_THRESHOLD
-        LOG_LEVEL
+    All non-sensitive defaults come from config.py and can be overridden.
+    Sensitive values (API keys, passwords) must be set via environment variables.
     """
 
     model_config = SettingsConfigDict(
@@ -49,12 +31,12 @@ class Settings(BaseSettings):
     # ── Neo4j ──────────────────────────────────────────────────────────────────
     neo4j_uri: str = DEFAULT_CONFIG.neo4j_uri
     neo4j_user: str = DEFAULT_CONFIG.neo4j_user
-    neo4j_password: SecretStr = SecretStr("neo4j")  # Override via NEO4J_PASSWORD
+    neo4j_password: SecretStr = SecretStr("neo4j")
 
     # ── LLM ─────────────────────────────────────────────────────────────────────
     lmstudio_base_url: str = DEFAULT_CONFIG.lmstudio_base_url
     openrouter_base_url: str = DEFAULT_CONFIG.openrouter_base_url
-    openrouter_api_key: SecretStr = SecretStr("")  # Override via OPENROUTER_API_KEY
+    openrouter_api_key: SecretStr = SecretStr("")
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
     llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
@@ -129,20 +111,16 @@ def get_settings() -> Settings:
 def reload_settings() -> Settings:
     """Clear the settings cache and return a fresh Settings instance.
 
-    Call this after changing ``os.environ`` in notebooks or tests so that
-    model names, API keys, and other parameters are re-read.
+    Call this after changing ``os.environ`` in notebooks or tests.
     Updates the module-level ``settings`` singleton in-place.
     """
     get_settings.cache_clear()
     new = get_settings()
-    # Update the module-level alias so existing ``from src.config.settings import settings``
-    # references in already-imported modules continue to work after reload.
     import src.config.settings as _self  # noqa: PLC0415
 
     _self.settings = new
     return new
 
 
-# Module-level singleton — import with:
-#   from src.config.settings import settings
+# Module-level singleton
 settings: Settings = get_settings()

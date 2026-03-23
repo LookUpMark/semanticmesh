@@ -8,8 +8,8 @@ expansion logic is introduced.
 
 from __future__ import annotations
 
-from functools import lru_cache
 import re
+from functools import lru_cache
 
 from src.config.logging import get_logger
 from src.config.settings import get_settings

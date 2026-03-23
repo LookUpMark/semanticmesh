@@ -1,7 +1,7 @@
 """Builder LangGraph — EP-11 / US-11-01.
 
-Wires all ingestion nodes (extraction → ER → DDL → enrichment → mapping →
-validation → HITL → Cypher → graph write) into a compiled StateGraph.
+Wires all ingestion nodes (extraction -> ER -> DDL -> enrichment -> mapping ->
+validation -> HITL -> Cypher -> graph write) into a compiled StateGraph.
 """
 
 from __future__ import annotations
@@ -18,26 +18,24 @@ from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.extraction.heuristic_extractor import extract_all_triplets_heuristic
 from src.extraction.triplet_extractor import extract_all_triplets
-from src.graph.cypher_builder import build_fk_cypher, build_upsert_cypher
-from src.graph.cypher_generator import generate_cypher
-from src.graph.cypher_healer import heal_cypher
+from src.graph.build_nodes import (
+    _node_build_graph,
+    _node_generate_cypher,
+    _node_heal_cypher,
+    _route_after_heal,
+)
 from src.graph.neo4j_client import Neo4jClient, setup_schema
+from src.graph.validation_nodes import _node_validate_mapping, _route_after_validate
 from src.ingestion.ddl_parser import parse_ddl_file
 from src.ingestion.pdf_loader import load_and_chunk_pdf
 from src.ingestion.schema_enricher import enrich_all
 from src.mapping.hitl import hitl_node
-from src.mapping.rag_mapper import (
-    build_retrieval_query,
-    propose_mapping,
-    propose_mapping_heuristic,
-    retrieve_top_entities,
-)
-from src.mapping.validator import build_reflection_prompt, critic_review, validate_schema
-from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
+from src.mapping.rag_mapper import propose_mapping, propose_mapping_heuristic
+from src.mapping.retrieval import build_retrieval_query, retrieve_top_entities
+from src.models.schemas import Entity
 from src.models.state import BuilderState
-from src.prompts.few_shot import load_cypher_examples
 from src.resolution.entity_resolver import resolve_entities
-from src.retrieval.embeddings import embed_text, get_embeddings
+from src.retrieval.embeddings import get_embeddings
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -155,258 +153,9 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
     }
 
 
-def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
-    """Two-layer validation: Pydantic schema + LLM Critic."""
-    settings = get_settings()
-    use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
-    llm = get_reasoning_llm()
-    proposal: MappingProposal | None = state.get("mapping_proposal")
-    table = state.get("current_table")
-    entities: list[Entity] = state.get("current_entities") or []
-    attempts: int = state.get("reflection_attempts", 0)
-    best_proposal: MappingProposal | None = state.get("best_proposal")
-
-    if proposal is None:
-        return {"reflection_attempts": attempts + 1}
-
-    # Layer 1: Pydantic
-    validated, error = validate_schema(proposal.model_dump())
-    if error:
-        if attempts >= settings.max_reflection_attempts:
-            logger.warning(
-                "Pydantic validation failed after %d attempts for '%s' — accepting best proposal.",
-                attempts,
-                proposal.table_name,
-            )
-            return {"reflection_attempts": 0, "hitl_flag": False}
-        ref_prompt = build_reflection_prompt(
-            role="data governance expert",
-            output_format="JSON mapping proposal",
-            error=error,
-            original_input=proposal.model_dump_json(),
-        )
-        return {"reflection_prompt": ref_prompt, "reflection_attempts": attempts + 1}
-
-    # Track the highest-confidence valid proposal across all critic retries
-    if best_proposal is None or (validated.confidence or 0.0) > (best_proposal.confidence or 0.0):
-        best_proposal = validated
-
-    # Optional ablation: skip critic and accept Pydantic-valid proposal directly.
-    if use_lazy or not settings.enable_critic_validation:
-        return {
-            "mapping_proposal": validated,
-            "best_proposal": None,
-            "validation_error": None,
-            "reflection_attempts": 0,
-            "hitl_flag": validated.confidence < settings.confidence_threshold,
-        }
-
-    # Layer 2: LLM Critic
-    decision = critic_review(validated, table, entities, llm)
-    if not decision.approved:
-        critique = decision.critique or "Mapping rejected by critic."
-        if attempts >= settings.max_reflection_attempts:
-            logger.warning(
-                "Critic rejected mapping for '%s' after %d attempts — accepting best proposal "
-                "(concept='%s', confidence=%.2f).",
-                validated.table_name,
-                attempts,
-                best_proposal.mapped_concept,
-                best_proposal.confidence or 0.0,
-            )
-            return {
-                "mapping_proposal": best_proposal,
-                "best_proposal": None,  # reset for next table
-                "validation_error": None,
-                "reflection_attempts": 0,
-                "hitl_flag": False,
-            }
-        ref_prompt = build_reflection_prompt(
-            role="data governance expert",
-            output_format="JSON mapping proposal",
-            error=critique,
-            original_input=proposal.model_dump_json(),
-        )
-        return {
-            "reflection_prompt": ref_prompt,
-            "best_proposal": best_proposal,
-            "reflection_attempts": attempts + 1,
-        }
-
-    return {
-        "mapping_proposal": validated,
-        "best_proposal": None,  # reset for next table
-        "validation_error": None,
-        "reflection_attempts": 0,
-        "hitl_flag": validated.confidence < settings.confidence_threshold,
-    }
-
-
-def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
-    """Generate MERGE-based Cypher from mapping proposal."""
-    settings = get_settings()
-    if bool(state.get("use_lazy_extraction", settings.use_lazy_extraction)):
-        logger.info("Lazy mode: skipping LLM Cypher generation.")
-        return {"current_cypher": None, "healing_attempts": 0}
-
-    llm = get_reasoning_llm()
-    proposal: MappingProposal = state["mapping_proposal"]
-    table = state.get("current_table")
-    # Build a synthetic Entity from the proposal so the concept name and
-    # definition in the generated Cypher match the validated mapping exactly,
-    # rather than an arbitrary entity retrieved during the mapping step.
-    entity = Entity(
-        name=proposal.mapped_concept or "Unknown",
-        definition=proposal.reasoning or "",
-        synonyms=[],
-        provenance_text="",
-        source_doc="",
-    )
-    few_shot = load_cypher_examples(settings.few_shot_cypher_examples)
-    cypher = generate_cypher(proposal, table, entity, few_shot, llm)
-    return {"current_cypher": cypher, "healing_attempts": 0}
-
-
-def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
-    """Validate and heal Cypher via dry-run + LLM reflection loop."""
-    settings = get_settings()
-    if bool(state.get("use_lazy_extraction", settings.use_lazy_extraction)):
-        return {"cypher_failed": True, "current_cypher": None}
-
-    if not settings.enable_cypher_healing:
-        logger.info("Cypher healing disabled — using deterministic builder fallback.")
-        return {"cypher_failed": True, "current_cypher": None}
-    llm = get_reasoning_llm()
-    cypher: str = state.get("current_cypher") or ""
-    proposal: MappingProposal = state["mapping_proposal"]
-
-    with Neo4jClient() as client:
-        healed = heal_cypher(
-            cypher,
-            proposal,
-            client.driver,
-            llm,
-            max_attempts=settings.max_cypher_healing_attempts,
-        )
-
-    if healed is None:
-        logger.warning(
-            "Cypher healing failed for table '%s' — using deterministic builder.",
-            proposal.table_name,
-        )
-        return {"cypher_failed": True, "current_cypher": None}
-
-    return {"current_cypher": healed, "cypher_failed": False}
-
-
-def _node_build_graph(state: BuilderState) -> dict[str, Any]:
-    """Execute the best available Cypher to upsert data into Neo4j.
-
-    Strategy (primary → fallback):
-    1. **LLM-healed Cypher** — if ``heal_cypher`` succeeded (``cypher_failed=False``
-       and ``current_cypher`` is set), execute the LLM-generated Cypher directly.
-       This is the "happy path" that exercises the full thesis loop: generate →
-       self-reflect → heal → execute.
-    2. **Deterministic builder** — if the LLM Cypher is invalid after all healing
-       attempts, fall back to ``cypher_builder.build_upsert_cypher`` which uses
-       driver-bound parameters and is immune to quoting/escaping issues.
-
-    In both cases the BusinessConcept embedding is populated afterwards so the
-    vector index can serve Query Graph requests.
-    """
-    proposal: MappingProposal = state["mapping_proposal"]
-    table: EnrichedTableSchema | None = state.get("current_table")
-
-    if not proposal or not table:
-        logger.warning("Missing proposal or table in build_graph — skipping.")
-        return {}
-
-    llm_cypher: str | None = state.get("current_cypher")
-    cypher_failed: bool = state.get("cypher_failed", False)
-    lazy_mode: bool = bool(state.get("use_lazy_extraction", get_settings().use_lazy_extraction))
-
-    if llm_cypher and not cypher_failed and not lazy_mode:
-        # Primary path: LLM-healed Cypher passed Neo4j EXPLAIN — execute it.
-        logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
-        exec_cypher, exec_params = llm_cypher, {}
-    else:
-        # Fallback path: healing exhausted or no Cypher produced.
-        logger.info(
-            "LLM Cypher failed for '%s' — falling back to deterministic builder.",
-            proposal.table_name,
-        )
-        exec_cypher, exec_params = build_upsert_cypher(proposal, table)
-
-    with Neo4jClient() as client:
-        client.execute_cypher(exec_cypher, exec_params)
-        logger.info("Graph updated for table '%s'.", proposal.table_name)
-
-        # Write FK edges: PhysicalTable -[:REFERENCES]-> PhysicalTable
-        fk_statements = build_fk_cypher(table)
-        for fk_cypher, fk_params in fk_statements:
-            try:
-                client.execute_cypher(fk_cypher, fk_params)
-                logger.info(
-                    "FK edge: %s.%s -> %s",
-                    table.table_name,
-                    fk_params["fk_column"],
-                    fk_params["tgt_table"],
-                )
-            except Exception as exc:
-                logger.warning(
-                    "Could not write FK edge for %s.%s: %s",
-                    table.table_name,
-                    fk_params["fk_column"],
-                    exc,
-                )
-
-        # Populate the BGE-M3 embedding so the vector index can serve queries.
-        if proposal.mapped_concept:
-            try:
-                model = get_embeddings()
-                vector = embed_text(proposal.mapped_concept, model=model)
-                client.execute_cypher(
-                    "MATCH (c:BusinessConcept {name: $name}) SET c.embedding = $emb",
-                    {"name": proposal.mapped_concept, "emb": vector},
-                )
-                logger.info("Embedding set for BusinessConcept '%s'.", proposal.mapped_concept)
-            except Exception as exc:
-                logger.warning("Could not set embedding for '%s': %s", proposal.mapped_concept, exc)
-
-    completed = list(state.get("completed_tables") or [])
-    completed.append(proposal.table_name)
-    return {"completed_tables": completed}
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Conditional Edge Predicates
 # ─────────────────────────────────────────────────────────────────────────────
-
-
-def _route_after_validate(state: BuilderState) -> str:
-    """Route after validation: HITL, retry mapping, or proceed to Cypher."""
-    if state.get("use_lazy_extraction"):
-        if state.get("hitl_flag") and not state.get("skip_hitl"):
-            return "hitl"
-        if state.get("reflection_prompt"):
-            return "rag_mapping"
-        return "build_graph"
-
-    if state.get("hitl_flag") and not state.get("skip_hitl"):
-        return "hitl"
-    if state.get("reflection_prompt"):
-        return "rag_mapping"  # retry with reflection
-    return "generate_cypher"
-
-
-def _route_after_heal(state: BuilderState) -> str:
-    """Route after Cypher healing: always proceed to build_graph.
-
-    ``build_graph`` implements a primary/fallback strategy internally:
-    - ``cypher_failed=False`` → LLM-healed Cypher executed directly (primary)
-    - ``cypher_failed=True``  → deterministic builder used as fallback
-    """
-    return "build_graph"
 
 
 def _route_after_build(state: BuilderState) -> str:

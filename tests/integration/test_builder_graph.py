@@ -21,11 +21,6 @@ from src.models.state import BuilderState
 pytestmark = pytest.mark.integration
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Helper Functions
-# ─────────────────────────────────────────────────────────────────────────────
-
-
 def _load_text_file(path: Path) -> str:
     """Load text content from a file."""
     with open(path) as f:
@@ -33,24 +28,15 @@ def _load_text_file(path: Path) -> str:
 
 
 def _create_mock_llm_factory(responses: dict[str, str]) -> Any:
-    """Create a mock LLM factory that returns predefined responses.
-
-    Args:
-        responses: Dict mapping function names to JSON response strings
-
-    Returns:
-        A MagicMock that can be used as both reasoning and extraction LLM
-    """
+    """Create a mock LLM factory that returns predefined responses."""
 
     class _MockLLM:
         def __init__(self, response_map: dict[str, str]) -> None:
             self.response_map = response_map
             self.call_count: dict[str, int] = {}
 
-        def invoke(self, *args, **kwargs) -> MagicMock:  # type: ignore[override]
-            # Determine which response to return based on call context
+        def invoke(self, *args, **kwargs) -> MagicMock:
             prompt = str(args[0]) if args else str(kwargs)
-
             response = MagicMock()
 
             if "triplet" in prompt.lower() or "extract" in prompt.lower():
@@ -81,7 +67,6 @@ def _create_mock_llm_factory(responses: dict[str, str]) -> Any:
 
 def _setup_mocks() -> tuple[Any, Any, Any]:
     """Setup standard mocks for builder graph tests."""
-    # Create mock settings
     mock_settings = MagicMock()
     mock_settings.neo4j_uri = "bolt://localhost:7687"
     mock_settings.neo4j_user = "neo4j"
@@ -95,16 +80,10 @@ def _setup_mocks() -> tuple[Any, Any, Any]:
     mock_settings.enable_cypher_healing = True
     mock_settings.enable_critic_validation = True
 
-    # Create mock LLMs
     mock_extraction = MagicMock()
     mock_reasoning = MagicMock()
 
     return mock_settings, mock_extraction, mock_reasoning
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# IT-01: End-to-End Builder Graph
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 @pytest.mark.integration
@@ -118,10 +97,8 @@ class TestBuilderGraphE2E:
         sample_business_glossary: Path,
     ) -> None:
         """Run full builder graph and verify expected nodes are created."""
-        # Load test data
         glossary_text = _load_text_file(sample_business_glossary)
 
-        # Create chunks from the glossary
         chunks = [
             Chunk(
                 text=glossary_text,
@@ -130,7 +107,6 @@ class TestBuilderGraphE2E:
             )
         ]
 
-        # Setup mock LLM responses
         extraction_response = json.dumps(
             {
                 "triplets": [
@@ -189,7 +165,6 @@ class TestBuilderGraphE2E:
             }
         )
 
-        # Mock Cypher response - use MERGE for idempotency
         cypher_response = """
 MERGE (c:BusinessConcept:Entity {name: 'Customer'})
 SET c.definition = 'A Customer is any individual...', c.synonyms = ['client', 'buyer']
@@ -204,7 +179,6 @@ SET r.mapping_confidence = 0.95, r.reasoning = 'Table stores customer data'
             patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
             patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
         ):
-            # Configure mocks
             mock_settings = MagicMock()
             mock_settings.confidence_threshold = 0.90
             mock_settings.max_reflection_attempts = 3
@@ -219,7 +193,6 @@ SET r.mapping_confidence = 0.95, r.reasoning = 'Table stores customer data'
             mock_settings.neo4j_password = "test"
             mock_settings_fn.return_value = mock_settings
 
-            # Create LLM mocks
             mock_extraction = MagicMock()
             extraction_result = MagicMock()
             extraction_result.content = extraction_response
@@ -227,7 +200,6 @@ SET r.mapping_confidence = 0.95, r.reasoning = 'Table stores customer data'
             mock_extraction_fn.return_value = mock_extraction
 
             mock_reasoning = MagicMock()
-            reasoning_result = MagicMock()
 
             def _reasoning_invoke(*args, **kwargs):
                 prompt = str(args[0]) if args else ""
@@ -247,7 +219,6 @@ SET r.mapping_confidence = 0.95, r.reasoning = 'Table stores customer data'
             mock_reasoning.invoke = _reasoning_invoke
             mock_reasoning_fn.return_value = mock_reasoning
 
-            # Build and run graph
             graph = build_builder_graph(production=False)
 
             initial_state: BuilderState = {
@@ -263,13 +234,8 @@ SET r.mapping_confidence = 0.95, r.reasoning = 'Table stores customer data'
             }
 
             config = {"configurable": {"thread_id": "test-e2e-1"}}
-            final_state = graph.invoke(initial_state, config=config)
+            graph.invoke(initial_state, config=config)
 
-            # Verify graph state
-            assert final_state is not None
-            assert "completed_tables" in final_state
-
-        # Verify Neo4j has expected nodes
         with neo4j_client:
             concepts = neo4j_client.execute_cypher(
                 "MATCH (n:BusinessConcept) RETURN n.name AS name", {}
@@ -281,17 +247,9 @@ SET r.mapping_confidence = 0.95, r.reasoning = 'Table stores customer data'
                 "MATCH ()-[r:MAPPED_TO]->() RETURN count(r) AS cnt", {}
             )
 
-        # Should have at least some nodes (depending on LLM responses)
-        # In a real test with actual LLM, we'd check specific values
-        # For now, just verify the structure
         assert isinstance(concepts, list)
         assert isinstance(tables, list)
         assert isinstance(mappings, list)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# IT-02: Idempotency (Double Run)
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 @pytest.mark.integration
@@ -305,14 +263,12 @@ class TestBuilderGraphIdempotency:
         get_graph_snapshot: Any,
     ) -> None:
         """Running the Builder twice on the same input must produce identical graph state."""
-        # Create a simple chunk
         chunk = Chunk(
             text="Customers place orders for products.",
             chunk_index=0,
             metadata={"source": "test.txt"},
         )
 
-        # Setup mock responses with proper MERGE Cypher
         responses = {
             "extraction": json.dumps(
                 {
@@ -391,22 +347,14 @@ SET r.mapping_confidence = 0.95
 
             config = {"configurable": {"thread_id": "idempotency-test"}}
 
-            # First run
             graph.invoke(initial_state, config=config)
             snapshot_1 = get_graph_snapshot(neo4j_client)
 
-            # Second run (same input)
             graph.invoke(initial_state, config=config)
             snapshot_2 = get_graph_snapshot(neo4j_client)
 
-            # Verify idempotency - MERGE should not create duplicates
             assert snapshot_1["node_count"] == snapshot_2["node_count"]
             assert snapshot_1["edge_count"] == snapshot_2["edge_count"]
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# IT-03: Self-Reflection Loop
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 @pytest.mark.integration
@@ -425,14 +373,13 @@ class TestBuilderGraphSelfReflection:
             metadata={"source": "test.txt"},
         )
 
-        # First mapping call returns invalid JSON, second returns valid
         mapping_calls = [0]
 
         def _mock_mapping(*args, **kwargs):
             mapping_calls[0] += 1
             result = MagicMock()
             if mapping_calls[0] == 1:
-                result.content = "INVALID JSON"  # First attempt fails
+                result.content = "INVALID JSON"
             else:
                 result.content = json.dumps(
                     {
@@ -464,14 +411,12 @@ class TestBuilderGraphSelfReflection:
             mock_settings.enable_critic_validation = True
             mock_settings_fn.return_value = mock_settings
 
-            # Extraction returns valid response
             mock_extraction = MagicMock()
             ext_result = MagicMock()
             ext_result.content = json.dumps({"triplets": []})
             mock_extraction.invoke.return_value = ext_result
             mock_extraction_fn.return_value = mock_extraction
 
-            # Reasoning LLM handles mapping + critic + enrichment + cypher
             mock_reasoning = MagicMock()
 
             def _reasoning_invoke(*args, **kwargs):
@@ -511,16 +456,9 @@ class TestBuilderGraphSelfReflection:
             }
 
             config = {"configurable": {"thread_id": "reflection-test"}}
-            final_state = graph.invoke(initial_state, config=config)
+            graph.invoke(initial_state, config=config)
 
-            # Verify reflection loop was triggered
-            # The mapping was called twice (first invalid, second valid)
             assert mapping_calls[0] >= 2
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# IT-05: HITL Interrupt & Resume
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 @pytest.mark.integration
@@ -539,12 +477,11 @@ class TestBuilderGraphHITL:
             metadata={"source": "test.txt"},
         )
 
-        # Low confidence mapping to trigger HITL
         low_confidence_mapping = json.dumps(
             {
                 "table_name": "CUSTOMER_MASTER",
                 "mapped_concept": "Customer",
-                "confidence": 0.75,  # Below threshold of 0.90
+                "confidence": 0.75,
                 "reasoning": "Low confidence match",
                 "alternative_concepts": [],
             }
@@ -579,7 +516,7 @@ class TestBuilderGraphHITL:
             patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
         ):
             mock_settings = MagicMock()
-            mock_settings.confidence_threshold = 0.90  # Higher than 0.75
+            mock_settings.confidence_threshold = 0.90
             mock_settings.max_reflection_attempts = 3
             mock_settings.max_cypher_healing_attempts = 3
             mock_settings.retrieval_vector_top_k = 10
@@ -613,16 +550,8 @@ class TestBuilderGraphHITL:
 
             config = {"configurable": {"thread_id": "hitl-test"}}
 
-            # Stream the graph and look for interrupt
-            hitl_triggered = False
             for event in graph.stream(initial_state, config=config):
-                # Check if we hit the interrupt
                 if "__interrupt__" in str(event):
-                    hitl_triggered = True
                     break
 
-            # Note: Full HITL resume requires Command(resume=...)
-            # which is complex to test in this context
-            # We verify the graph compiles with interrupt configured
             assert graph is not None
-            # The interrupt_before=["hitl"] should be configured

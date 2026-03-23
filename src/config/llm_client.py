@@ -1,27 +1,13 @@
 """Provider-agnostic LLM interface.
 
-EP-01: Defines:
-  - LLMProtocol  — structural typing.Protocol; any BaseChatModel satisfies it.
-  - InstrumentedLLM — proxy wrapper that adds retry, latency logging, and
-    token-usage logging around any BaseChatModel instance.
-  - FallbackLLM — wrapper that automatically switches from free to paid models
-    on rate limit errors (HTTP 429).
+Defines:
+  - LLMProtocol: Structural typing.Protocol for any BaseChatModel
+  - InstrumentedLLM: Proxy wrapper with retry and logging
+  - FallbackLLM: Automatic free→paid fallback on rate limits
 
 Usage::
-
-    # In tests — mock the narrowest possible interface
-    llm = MagicMock(spec=LLMProtocol)
-
-    # In production — wrap the concrete provider
-    from langchain_openrouter import ChatOpenRouter
     llm = InstrumentedLLM(ChatOpenRouter(model="qwen/qwen3-coder:free"), name="reasoning")
-
-    # With automatic free→paid fallback on rate limits
-    llm = FallbackLLM(
-        primary=ChatOpenRouter(model="openai/gpt-oss-120b:free"),
-        fallback=ChatOpenRouter(model="openai/gpt-oss-120b"),
-        name="reasoning"
-    )
+    llm = FallbackLLM(primary=free_model, fallback=paid_model, name="reasoning")
 """
 
 from __future__ import annotations
@@ -47,14 +33,13 @@ from src.config.logging import NodeTimer, get_logger
 logger: logging.Logger = get_logger(__name__)
 
 # ── Exceptions that warrant a retry ──────────────────────────────────────────
-# Covers RateLimitError (HTTP 429) and timeout from any OpenAI-compatible endpoint.
 
 try:
     from openai import APITimeoutError, RateLimitError
 
     _RETRYABLE: tuple[type[Exception], ...] = (RateLimitError, APITimeoutError)
-except ImportError:  # openai package not installed
-    _RETRYABLE = (Exception,)  # fallback: retry on any error
+except ImportError:
+    _RETRYABLE = (Exception,)
 
 
 # ── LLMProtocol ───────────────────────────────────────────────────────────────
@@ -62,14 +47,10 @@ except ImportError:  # openai package not installed
 
 @runtime_checkable
 class LLMProtocol(Protocol):
-    """Structural protocol satisfied by any LangChain BaseChatModel subclass.
+    """Structural protocol for any LangChain BaseChatModel subclass.
 
-    Pipeline nodes annotate their LLM parameter as ``llm: LLMProtocol``.
-    This keeps them decoupled from any concrete provider class.
-
-    All ``BaseChatModel`` subclasses (ChatOpenRouter, ChatOpenAI, ChatOllama,
-    ChatAnthropic, ChatHuggingFace, …) satisfy this protocol implicitly.
-    ``InstrumentedLLM`` also satisfies it explicitly.
+    All BaseChatModel subclasses satisfy this protocol implicitly.
+    Pipeline nodes use this to stay decoupled from concrete providers.
     """
 
     def invoke(
@@ -93,17 +74,14 @@ class LLMProtocol(Protocol):
 
 
 class InstrumentedLLM:
-    """Proxy wrapper that adds retry, latency logging, and token-usage logging.
+    """Proxy wrapper with retry, latency logging, and token-usage logging.
 
-    Delegates every attribute not explicitly overridden to the inner
-    ``BaseChatModel`` instance via ``__getattr__``, so callers can still use
-    ``llm.with_structured_output(...)``, ``llm.bind_tools(...)``, etc.
+    Delegates undefined attributes to the inner BaseChatModel via __getattr__.
 
     Args:
-        model:       Any ``BaseChatModel`` instance (e.g. ``ChatOpenRouter``).
-        name:        Logical role name for logging (``"reasoning"``, ``"extraction"``,
-                     ``"generation"``).
-        max_retries: Maximum retry attempts on retryable errors (default from settings).
+        model: Any BaseChatModel instance (e.g., ChatOpenRouter).
+        name: Logical role name for logging ("reasoning", "extraction", "generation").
+        max_retries: Maximum retry attempts on retryable errors.
     """
 
     def __init__(
@@ -149,7 +127,6 @@ class InstrumentedLLM:
                 exc,
             )
             raise
-        # unreachable — satisfies type checker
         raise RuntimeError("Unreachable")  # pragma: no cover
 
     # ── async invoke ──────────────────────────────────────────────────────────
@@ -189,12 +166,7 @@ class InstrumentedLLM:
     # ── transparent delegation ─────────────────────────────────────────────────
 
     def __getattr__(self, item: str) -> Any:
-        """Delegate every other attribute to the inner model.
-
-        This allows callers to use ``llm.with_structured_output(...)``,
-        ``llm.bind_tools(...)``, ``llm.stream(...)``, etc. without any
-        explicit forwarding code in this wrapper.
-        """
+        """Delegate undefined attributes to the inner model."""
         return getattr(self._model, item)
 
     # ── internals ─────────────────────────────────────────────────────────────
@@ -227,30 +199,15 @@ class InstrumentedLLM:
 
 
 class FallbackLLM:
-    """LLM wrapper that automatically falls back to a paid model on rate limits.
+    """LLM wrapper with automatic free→paid fallback on rate limits.
 
-    When the primary (free) model hits rate limit errors (HTTP 429), this wrapper
-    immediately switches to the fallback (paid) model for the current request
-    and all subsequent requests. This provides seamless free→paid fallback without
-    manual intervention.
-
-    Unlike InstrumentedLLM which retries on rate limits, FallbackLLM switches
-    to the paid model immediately on the first rate limit error, avoiding
-    the delays associated with waiting for free tier rate limits to reset.
+    Switches to the fallback model on first rate limit error (HTTP 429),
+    avoiding retry delays. Once switched, all future calls use the fallback.
 
     Args:
-        primary:     The primary (usually free) BaseChatModel to use.
-        fallback:    The fallback (paid) BaseChatModel to use when rate limits are hit.
-        name:        Logical role name for logging.
-
-    Example:
-        Create a free→paid fallback pair:
-        >>> free_model = ChatOpenRouter(model="openai/gpt-oss-120b:free")
-        >>> paid_model = ChatOpenRouter(model="openai/gpt-oss-120b")
-        >>> llm = FallbackLLM(free_model, paid_model, name="reasoning")
-        >>> # First call uses free model
-        >>> response = llm.invoke("Hello")
-        >>> # If rate limit is hit, immediately switches to paid model
+        primary: The primary (usually free) BaseChatModel.
+        fallback: The fallback (paid) BaseChatModel.
+        name: Logical role name for logging.
     """
 
     _RATE_LIMIT_ERRORS: tuple[type[Exception], ...] = _RETRYABLE
@@ -262,30 +219,27 @@ class FallbackLLM:
         *,
         name: str,
     ) -> None:
-        self._primary = primary  # Raw BaseChatModel, not InstrumentedLLM
-        self._fallback = fallback  # Raw BaseChatModel, not InstrumentedLLM
+        self._primary = primary
+        self._fallback = fallback
         self._name = name
         self._using_fallback = False
         self._logger: logging.Logger = get_logger(f"llm.{name}")
 
     def __getattr__(self, item: str) -> Any:
-        # Delegate attribute access to the currently active model (primary or fallback)
         return getattr(self._get_current_model(), item)
 
     @property
     def temperature(self) -> float:
-        return getattr(self._get_current_model(), "temperature")
+        return self._get_current_model().temperature
 
     @property
     def model(self) -> str:
-        return getattr(self._get_current_model(), "model")
+        return self._get_current_model().model
 
     def _should_use_fallback(self) -> bool:
-        """Check if we should use the fallback model based on past rate limits."""
         return self._using_fallback
 
     def _get_current_model(self) -> BaseChatModel:
-        """Get the current active model (primary or fallback)."""
         return self._fallback if self._should_use_fallback() else self._primary
 
     def invoke(
@@ -293,19 +247,10 @@ class FallbackLLM:
         input: list[BaseMessage] | str,
         **kwargs: Any,
     ) -> AIMessage:
-        """Invoke with immediate free→paid fallback on rate limit.
-
-        Strategy:
-        1. Try primary (free) model ONCE (no retries on rate limit)
-        2. If rate limit is hit, immediately switch to fallback (paid)
-        3. Once switched, all future calls use the fallback model
-        4. Non-rate-limit errors are still raised normally
-        """
-        # If already using fallback, just call it directly
+        """Invoke with immediate free→paid fallback on rate limit."""
         if self._using_fallback:
             return self._invoke_with_logging(self._fallback, input, **kwargs)
 
-        # Try primary model
         try:
             with NodeTimer() as t:
                 response = self._primary.invoke(input, **kwargs)
@@ -313,13 +258,11 @@ class FallbackLLM:
             return response
         except Exception as exc:
             if self._is_rate_limit_error(exc):
-                # Switch to fallback immediately
                 self._logger.warning(
                     "Rate limit hit on primary model, switching to fallback for all future calls"
                 )
                 self._using_fallback = True
                 return self._invoke_with_logging(self._fallback, input, **kwargs)
-            # For non-rate-limit errors, re-raise
             raise
 
     def _invoke_with_logging(
@@ -328,7 +271,6 @@ class FallbackLLM:
         input: list[BaseMessage] | str,
         **kwargs: Any,
     ) -> AIMessage:
-        """Invoke with logging (used after switching to fallback or for direct calls)."""
         with NodeTimer() as t:
             response = model.invoke(input, **kwargs)
         model_name = "fallback" if model is self._fallback else "primary"
@@ -365,7 +307,6 @@ class FallbackLLM:
         input: list[BaseMessage] | str,
         **kwargs: Any,
     ) -> AIMessage:
-        """Async invoke with logging."""
         start = time.perf_counter()
         response = await model.ainvoke(input, **kwargs)
         elapsed_ms = (time.perf_counter() - start) * 1000
@@ -374,15 +315,10 @@ class FallbackLLM:
         return response
 
     def _is_rate_limit_error(self, exc: Exception) -> bool:
-        """Check if an exception is a rate limit error."""
-        # Direct rate limit error
         if isinstance(exc, self._RATE_LIMIT_ERRORS):
             return True
-        # Check for error message containing rate limit indicators
         exc_str = str(exc).lower()
-        if "rate limit" in exc_str or "429" in exc_str:
-            return True
-        return False
+        return bool("rate limit" in exc_str or "429" in exc_str)
 
     def _log_call(
         self,
@@ -405,10 +341,6 @@ class FallbackLLM:
             usage.get("output_tokens", "?"),
             usage.get("total_tokens", "?"),
         )
-
-    def __getattr__(self, item: str) -> Any:
-        """Delegate attributes to the current active model."""
-        return getattr(self._get_current_model(), item)
 
     def __repr__(self) -> str:
         mode = "fallback" if self._using_fallback else "primary"

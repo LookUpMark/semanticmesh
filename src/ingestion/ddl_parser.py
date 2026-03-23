@@ -42,7 +42,6 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
 
     Returns None if the expression is not a CREATE TABLE or has no columns.
     """
-    # Only handle CREATE TABLE (not CREATE INDEX, VIEW, etc.)
     if create_expr.args.get("kind", "").upper() != "TABLE":
         return None
 
@@ -53,7 +52,6 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
     table_name: str = table_ref.name.upper()
     schema_name: str | None = table_ref.db.upper() if table_ref.db else None
 
-    # Collect all primary key column names declared inline or via table constraint
     pk_columns: set[str] = set()
     schema_def = create_expr.find(exp.Schema)
     if schema_def is None:
@@ -63,7 +61,6 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
         for col in constraint.find_all(exp.Column):
             pk_columns.add(col.name.upper())
 
-    # Build ColumnSchema list
     columns: list[ColumnSchema] = []
     for col_def in schema_def.find_all(exp.ColumnDef):
         col_name = col_def.name.upper()
@@ -74,7 +71,6 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
         is_fk = False
         references: str | None = None
 
-        # Inline PRIMARY KEY constraint
         for col_constraint in col_def.find_all(exp.ColumnConstraint):
             kind = col_constraint.args.get("kind")
             if isinstance(kind, exp.PrimaryKeyColumnConstraint):
@@ -96,7 +92,6 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
             )
         )
 
-    # Table-level FOREIGN KEY constraints
     for fk_constraint in schema_def.find_all(exp.ForeignKey):
         # FK columns are Identifiers in fk_constraint.expressions
         fk_cols = [
@@ -160,7 +155,6 @@ def parse_ddl(ddl_text: str, dialect: str = "mysql") -> list[TableSchema]:
             continue
         if not isinstance(stmt, exp.Create):
             continue
-        # Use the statement's own SQL string as ddl_source
         table_ddl_source = stmt.sql(dialect=dialect)
         schema = _extract_table(stmt, ddl_source=table_ddl_source)
         if schema is not None:

@@ -2,6 +2,9 @@
 
 EP-06: Map-Reduce RAG — for each physical table, retrieve relevant business
 concepts via embedding similarity, then call the LLM to propose a mapping.
+
+This module focuses on the LLM-based mapping logic. Retrieval functions are
+provided by the separate retrieval module.
 """
 
 from __future__ import annotations
@@ -25,21 +28,14 @@ from src.models.schemas import (
     TableSchema,
 )
 from src.prompts.templates import MAPPING_SYSTEM, MAPPING_USER, REFLECTION_TEMPLATE
-from src.retrieval.embeddings import embed_text, embed_texts
+from src.retrieval.embeddings import embed_text
+from src.utils.json_utils import clean_json
 
 if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
 _settings = get_settings()
-
-# Matches optional triple-backtick markdown fences (with or without language tag)
-_FENCE_RE = re.compile(r"^```[a-zA-Z]*\n?|```$", re.MULTILINE)
-
-
-def _clean_json(raw: str) -> str:
-    """Strip markdown fences from LLM output before JSON parsing."""
-    return _FENCE_RE.sub("", raw).strip()
 
 
 def _null_mapping(table_name: str, reason: str) -> MappingProposal:
@@ -54,84 +50,13 @@ def _null_mapping(table_name: str, reason: str) -> MappingProposal:
 def _mapping_reflection_prompt(error_or_critique: str, original_input: str) -> str:
     return REFLECTION_TEMPLATE.format(
         role="senior data governance expert",
-        output_format='JSON object matching {"table_name":…,"mapped_concept":…,"confidence":…,"reasoning":…,"alternative_concepts":[…]}',
+        output_format=(
+            'JSON object matching {"table_name":…,"mapped_concept":…,"confidence":…,'
+            '"reasoning":…,"alternative_concepts":[…]}'
+        ),
         error_or_critique=error_or_critique,
         original_input=original_input,
     )
-
-
-def build_retrieval_query(table: EnrichedTableSchema) -> str:
-    """Construct a dense retrieval query from enriched table metadata.
-
-    Priority order for metadata:
-    1. enriched_table_name + table_description (if available)
-    2. Fallback to original table_name + column names
-
-    The richer this query, the better the embedding similarity with business
-    concepts defined in natural language.
-
-    Args:
-        table: EnrichedTableSchema (may have enrichment fields as None if
-               enrichment failed — graceful degradation).
-
-    Returns:
-        A plain-text query string for embedding.
-    """
-    parts: list[str] = []
-
-    # Prefer enriched name + description
-    if table.enriched_table_name:
-        parts.append(table.enriched_table_name)
-    else:
-        parts.append(table.table_name)
-
-    if table.table_description:
-        parts.append(table.table_description)
-
-    # Add enriched column names if available
-    if table.enriched_columns:
-        col_names = [ec.enriched_name for ec in table.enriched_columns]
-    else:
-        col_names = [c.name for c in table.columns if not c.is_primary_key]
-
-    parts.append(", ".join(col_names[:10]))  # cap at 10 columns
-    return " | ".join(parts)
-
-
-def retrieve_top_entities(
-    query: str,
-    entities: list[Entity],
-    embeddings: Any,
-    top_k: int | None = None,
-) -> list[Entity]:
-    """Retrieve the most semantically relevant entities for a given table query.
-
-    Constructs embedding text for each entity as ``"{name}: {definition}"``.
-    Uses cosine similarity against the query embedding.
-
-    Args:
-        query: Plain-text retrieval query (from ``build_retrieval_query``).
-        entities: All canonical entities from entity resolution.
-        embeddings: Embedding model (BGE-M3).
-        top_k: Maximum number of entities to return.
-               Defaults to ``settings.retrieval_vector_top_k``.
-
-    Returns:
-        Top-k most similar ``Entity`` objects, sorted by descending similarity.
-    """
-    k = top_k if top_k is not None else _settings.retrieval_vector_top_k
-    if not entities:
-        return []
-
-    query_vec = np.array(embed_text(query, model=embeddings), dtype=np.float32).reshape(1, -1)
-
-    entity_texts = [f"{e.name}: {e.definition}" if e.definition else e.name for e in entities]
-    entity_vecs = np.array(embed_texts(entity_texts, model=embeddings), dtype=np.float32)
-
-    sims = cosine_similarity(query_vec, entity_vecs)[0]
-    top_indices = np.argsort(sims)[::-1][:k]
-
-    return [entities[i] for i in top_indices]
 
 
 def propose_mapping(
@@ -210,7 +135,7 @@ def propose_mapping(
 
     for attempt in range(1, max_attempts + 1):
         try:
-            data = json.loads(_clean_json(raw_json))
+            data = json.loads(clean_json(raw_json))
         except json.JSONDecodeError as exc:
             logger.warning(
                 "Non-JSON mapping response for '%s' (attempt %d/%d): %s",
@@ -272,6 +197,8 @@ def propose_mapping_heuristic(
     This is the lazy-mode mapping path. It ranks entities by cosine similarity
     and turns the best score into a calibrated confidence value.
     """
+    from src.mapping.retrieval import build_retrieval_query, retrieve_top_entities
+
     settings = get_settings()
     threshold = (
         float(min_confidence)
