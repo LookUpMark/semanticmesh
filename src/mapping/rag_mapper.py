@@ -42,6 +42,24 @@ def _clean_json(raw: str) -> str:
     return _FENCE_RE.sub("", raw).strip()
 
 
+def _null_mapping(table_name: str, reason: str) -> MappingProposal:
+    return MappingProposal(
+        table_name=table_name,
+        mapped_concept=None,
+        confidence=0.0,
+        reasoning=reason,
+    )
+
+
+def _mapping_reflection_prompt(error_or_critique: str, original_input: str) -> str:
+    return REFLECTION_TEMPLATE.format(
+        role="senior data governance expert",
+        output_format='JSON object matching {"table_name":…,"mapped_concept":…,"confidence":…,"reasoning":…,"alternative_concepts":[…]}',
+        error_or_critique=error_or_critique,
+        original_input=original_input,
+    )
+
+
 def build_retrieval_query(table: EnrichedTableSchema) -> str:
     """Construct a dense retrieval query from enriched table metadata.
 
@@ -178,12 +196,7 @@ def propose_mapping(
                 table.table_name,
                 exc,
             )
-            return MappingProposal(
-                table_name=table.table_name,
-                mapped_concept=None,
-                confidence=0.0,
-                reasoning=f"LLM call failed: {exc}",
-            )
+            return _null_mapping(table.table_name, f"LLM call failed: {exc}")
 
     logger.debug(
         "Mapping LLM call for '%s' completed in %.0f ms",
@@ -207,23 +220,11 @@ def propose_mapping(
                 exc,
             )
             if attempt == max_attempts:
-                return MappingProposal(
-                    table_name=table.table_name,
-                    mapped_concept=None,
-                    confidence=0.0,
-                    reasoning="JSON parse error after self-reflection exhausted.",
+                return _null_mapping(
+                    table.table_name, "JSON parse error after self-reflection exhausted."
                 )
             raw_json = llm.invoke(
-                [
-                    HumanMessage(
-                        content=REFLECTION_TEMPLATE.format(
-                            role="senior data governance expert",
-                            output_format='JSON object matching {"table_name":…,"mapped_concept":…,"confidence":…,"reasoning":…,"alternative_concepts":[…]}',
-                            error_or_critique=str(exc),
-                            original_input=raw_json,
-                        )
-                    )
-                ]
+                [HumanMessage(content=_mapping_reflection_prompt(str(exc), raw_json))]
             ).content.strip()
             continue
 
@@ -238,23 +239,12 @@ def propose_mapping(
                 exc,
             )
             if attempt == max_attempts:
-                return MappingProposal(
-                    table_name=table.table_name,
-                    mapped_concept=None,
-                    confidence=0.0,
-                    reasoning=f"Pydantic validation error after self-reflection exhausted: {exc}",
+                return _null_mapping(
+                    table.table_name,
+                    f"Pydantic validation error after self-reflection exhausted: {exc}",
                 )
             raw_json = llm.invoke(
-                [
-                    HumanMessage(
-                        content=REFLECTION_TEMPLATE.format(
-                            role="senior data governance expert",
-                            output_format='JSON object matching {"table_name":…,"mapped_concept":…,"confidence":…,"reasoning":…,"alternative_concepts":[…]}',
-                            error_or_critique=str(exc),
-                            original_input=json.dumps(data),
-                        )
-                    )
-                ]
+                [HumanMessage(content=_mapping_reflection_prompt(str(exc), json.dumps(data)))]
             ).content.strip()
             continue
 
@@ -267,9 +257,7 @@ def propose_mapping(
         return proposal
 
     # Unreachable — loop always returns
-    return MappingProposal(
-        table_name=table.table_name, mapped_concept=None, confidence=0.0, reasoning="Exhausted."
-    )
+    return _null_mapping(table.table_name, "Exhausted.")
 
 
 def propose_mapping_heuristic(
@@ -353,7 +341,9 @@ def propose_mapping_heuristic(
         candidate_text = (
             f"{candidate.name}: {candidate.definition}" if candidate.definition else candidate.name
         )
-        e_vec = np.array(embed_text(candidate_text, model=embeddings), dtype=np.float32).reshape(1, -1)
+        e_vec = np.array(embed_text(candidate_text, model=embeddings), dtype=np.float32).reshape(
+            1, -1
+        )
         similarity = float(cosine_similarity(q_vec, e_vec)[0][0])
         base_confidence = max(0.0, min(1.0, (similarity + 1.0) / 2.0))
 

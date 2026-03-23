@@ -19,6 +19,33 @@ from src.models.state import BuilderState
 pytestmark = pytest.mark.integration
 
 
+def _make_builder_settings() -> MagicMock:
+    settings = MagicMock()
+    settings.confidence_threshold = 0.90
+    settings.max_reflection_attempts = 3
+    settings.max_cypher_healing_attempts = 3
+    settings.retrieval_vector_top_k = 10
+    settings.few_shot_cypher_examples = 3
+    settings.enable_schema_enrichment = True
+    settings.enable_cypher_healing = True
+    settings.enable_critic_validation = True
+    return settings
+
+
+def _make_builder_state(chunk: Chunk, ddl_path: str, source_doc: str) -> BuilderState:
+    return {
+        "chunks": [chunk],
+        "ddl_paths": [ddl_path],
+        "source_doc": source_doc,
+        "triplets": [],
+        "entities": [],
+        "tables": [],
+        "enriched_tables": [],
+        "pending_tables": [],
+        "completed_tables": [],
+    }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # IT-08: Incremental Delta Update
 # ─────────────────────────────────────────────────────────────────────────────
@@ -118,33 +145,14 @@ SET r.mapping_confidence = 0.95
                 patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
                 patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
             ):
-                mock_settings = MagicMock()
-                mock_settings.confidence_threshold = 0.90
-                mock_settings.max_reflection_attempts = 3
-                mock_settings.max_cypher_healing_attempts = 3
-                mock_settings.retrieval_vector_top_k = 10
-                mock_settings.few_shot_cypher_examples = 3
-                mock_settings.enable_schema_enrichment = True
-                mock_settings.enable_cypher_healing = True
-                mock_settings.enable_critic_validation = True
-                mock_settings_fn.return_value = mock_settings
+                mock_settings_fn.return_value = _make_builder_settings()
                 mock_extraction_fn.return_value = mock_llm_a
                 mock_reasoning_fn.return_value = mock_llm_a
 
                 graph = build_builder_graph(production=False)
 
                 # Initial run: TABLE_A only
-                initial_state: BuilderState = {
-                    "chunks": [chunk_a],
-                    "ddl_paths": [table_a_ddl],
-                    "source_doc": "test_a",
-                    "triplets": [],
-                    "entities": [],
-                    "tables": [],
-                    "enriched_tables": [],
-                    "pending_tables": [],
-                    "completed_tables": [],
-                }
+                initial_state = _make_builder_state(chunk_a, table_a_ddl, "test_a")
 
                 config = {"configurable": {"thread_id": "incremental-test"}}
                 graph.invoke(initial_state, config=config)
@@ -210,33 +218,14 @@ SET r.mapping_confidence = 0.95
                 patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
                 patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
             ):
-                mock_settings = MagicMock()
-                mock_settings.confidence_threshold = 0.90
-                mock_settings.max_reflection_attempts = 3
-                mock_settings.max_cypher_healing_attempts = 3
-                mock_settings.retrieval_vector_top_k = 10
-                mock_settings.few_shot_cypher_examples = 3
-                mock_settings.enable_schema_enrichment = True
-                mock_settings.enable_cypher_healing = True
-                mock_settings.enable_critic_validation = True
-                mock_settings_fn.return_value = mock_settings
+                mock_settings_fn.return_value = _make_builder_settings()
                 mock_extraction_fn.return_value = mock_llm_b
                 mock_reasoning_fn.return_value = mock_llm_b
 
                 graph = build_builder_graph(production=False)
 
                 # Delta run: TABLE_B only
-                delta_state: BuilderState = {
-                    "chunks": [chunk_b],
-                    "ddl_paths": [table_b_ddl],
-                    "source_doc": "test_b",
-                    "triplets": [],
-                    "entities": [],
-                    "tables": [],
-                    "enriched_tables": [],
-                    "pending_tables": [],
-                    "completed_tables": [],
-                }
+                delta_state = _make_builder_state(chunk_b, table_b_ddl, "test_b")
 
                 config = {"configurable": {"thread_id": "incremental-test-2"}}
                 graph.invoke(delta_state, config=config)
@@ -345,32 +334,13 @@ SET r.mapping_confidence = 0.95
                 patch("src.graph.builder_graph.get_extraction_llm") as mock_extraction_fn,
                 patch("src.graph.builder_graph.get_reasoning_llm") as mock_reasoning_fn,
             ):
-                mock_settings = MagicMock()
-                mock_settings.confidence_threshold = 0.90
-                mock_settings.max_reflection_attempts = 3
-                mock_settings.max_cypher_healing_attempts = 3
-                mock_settings.retrieval_vector_top_k = 10
-                mock_settings.few_shot_cypher_examples = 3
-                mock_settings.enable_schema_enrichment = True
-                mock_settings.enable_cypher_healing = True
-                mock_settings.enable_critic_validation = True
-                mock_settings_fn.return_value = mock_settings
+                mock_settings_fn.return_value = _make_builder_settings()
                 mock_extraction_fn.return_value = mock_llm
                 mock_reasoning_fn.return_value = mock_llm
 
                 graph = build_builder_graph(production=False)
 
-                state: BuilderState = {
-                    "chunks": [chunk],
-                    "ddl_paths": [table_c_ddl],
-                    "source_doc": "test_c",
-                    "triplets": [],
-                    "entities": [],
-                    "tables": [],
-                    "enriched_tables": [],
-                    "pending_tables": [],
-                    "completed_tables": [],
-                }
+                state = _make_builder_state(chunk, table_c_ddl, "test_c")
 
                 # First run
                 config = {"configurable": {"thread_id": "idempotent-test-1"}}

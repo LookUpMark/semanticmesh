@@ -57,7 +57,7 @@ def test_spacy_path_extracts_dependency_triplet(monkeypatch) -> None:
     monkeypatch.setattr(
         heuristic_extractor,
         "_get_spacy_nlp",
-        lambda: (lambda _text: FakeDoc()),
+        lambda: lambda _text: FakeDoc(),
     )
 
     chunks = [_chunk("Customers place orders.", 7)]

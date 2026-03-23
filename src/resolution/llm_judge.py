@@ -45,6 +45,23 @@ def _clean_json(raw: str) -> str:
     return _FENCE_RE.sub("", raw).strip()
 
 
+def _no_merge_decision(cluster: EntityCluster, reasoning: str) -> CanonicalEntityDecision:
+    return CanonicalEntityDecision(
+        merge=False,
+        canonical_name=cluster.canonical_candidate,
+        reasoning=reasoning,
+    )
+
+
+def _reflection_prompt(fmt: str, error_or_critique: str, original_input: str) -> str:
+    return REFLECTION_TEMPLATE.format(
+        role="semantic disambiguation expert",
+        output_format=f"JSON object matching {fmt}",
+        error_or_critique=error_or_critique,
+        original_input=original_input,
+    )
+
+
 def build_provenance_map(triplets: list[Triplet]) -> dict[str, list[str]]:
     """Build a mapping from entity string → list of provenance texts.
 
@@ -133,10 +150,9 @@ def judge_cluster(
                     "LLM returned non-string content for cluster %s — returning no-merge decision.",
                     cluster.canonical_candidate,
                 )
-                return CanonicalEntityDecision(
-                    merge=False,
-                    canonical_name=cluster.canonical_candidate,
-                    reasoning="LLM returned non-string content — conservative no-merge default.",
+                return _no_merge_decision(
+                    cluster,
+                    "LLM returned non-string content — conservative no-merge default.",
                 )
             raw_json: str = content.strip()
         except Exception as exc:
@@ -145,11 +161,7 @@ def judge_cluster(
                 cluster.canonical_candidate,
                 exc,
             )
-            return CanonicalEntityDecision(
-                merge=False,
-                canonical_name=cluster.canonical_candidate,
-                reasoning="LLM call failed — conservative no-merge default.",
-            )
+            return _no_merge_decision(cluster, "LLM call failed — conservative no-merge default.")
 
     logger.debug(
         "ER judge for cluster '%s' completed in %.0f ms",
@@ -157,11 +169,7 @@ def judge_cluster(
         timer.elapsed_ms,
     )
 
-    _no_merge = CanonicalEntityDecision(
-        merge=False,
-        canonical_name=cluster.canonical_candidate,
-        reasoning="Conservative no-merge default.",
-    )
+    _no_merge = _no_merge_decision(cluster, "Conservative no-merge default.")
 
     # Parse JSON + Pydantic validation with self-reflection on failure
     max_attempts: int = settings.max_reflection_attempts
@@ -181,16 +189,7 @@ def judge_cluster(
             if attempt == max_attempts:
                 return _no_merge
             raw_json = llm.invoke(
-                [
-                    HumanMessage(
-                        content=REFLECTION_TEMPLATE.format(
-                            role="semantic disambiguation expert",
-                            output_format=f"JSON object matching {_fmt}",
-                            error_or_critique=str(exc),
-                            original_input=raw_json,
-                        )
-                    )
-                ]
+                [HumanMessage(content=_reflection_prompt(_fmt, str(exc), raw_json))]
             ).content.strip()
             continue
 
@@ -207,16 +206,7 @@ def judge_cluster(
             if attempt == max_attempts:
                 return _no_merge
             raw_json = llm.invoke(
-                [
-                    HumanMessage(
-                        content=REFLECTION_TEMPLATE.format(
-                            role="semantic disambiguation expert",
-                            output_format=f"JSON object matching {_fmt}",
-                            error_or_critique=str(exc),
-                            original_input=json.dumps(data),
-                        )
-                    )
-                ]
+                [HumanMessage(content=_reflection_prompt(_fmt, str(exc), json.dumps(data)))]
             ).content.strip()
             continue
 

@@ -22,6 +22,44 @@ pytestmark = pytest.mark.integration
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+def _make_query_settings(
+    *,
+    max_hallucination_retries: int = 3,
+    enable_reranker: bool = True,
+    enable_hallucination_grader: bool = True,
+) -> MagicMock:
+    settings = MagicMock()
+    settings.retrieval_vector_top_k = 10
+    settings.retrieval_bm25_top_k = 10
+    settings.retrieval_graph_depth = 2
+    settings.reranker_top_k = 5
+    settings.max_hallucination_retries = max_hallucination_retries
+    settings.enable_reranker = enable_reranker
+    settings.enable_hallucination_grader = enable_hallucination_grader
+    return settings
+
+
+def _initial_query_state(query: str) -> QueryState:
+    return {
+        "user_query": query,
+        "iteration_count": 0,
+        "retrieved_chunks": [],
+        "reranked_chunks": [],
+        "current_answer": "",
+        "last_critique": None,
+        "grader_decision": None,
+        "final_answer": "",
+        "sources": [],
+    }
+
+
+def _mock_embeddings() -> MagicMock:
+    embeddings = MagicMock()
+    embeddings.embed_documents.return_value = [[0.1] * 1024]
+    embeddings.embed_query.return_value = [0.1] * 1024
+    return embeddings
+
+
 def _populate_test_graph(client: Neo4jClient) -> None:
     """Populate the test graph with sample data for query tests."""
     with client:
@@ -175,40 +213,18 @@ class TestQueryGraphE2E:
             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
         ):
-            mock_settings = MagicMock()
-            mock_settings.retrieval_vector_top_k = 10
-            mock_settings.retrieval_bm25_top_k = 10
-            mock_settings.retrieval_graph_depth = 2
-            mock_settings.reranker_top_k = 5
-            mock_settings.max_hallucination_retries = 3
-            mock_settings.enable_reranker = True
-            mock_settings.enable_hallucination_grader = True
-            mock_settings_fn.return_value = mock_settings
+            mock_settings_fn.return_value = _make_query_settings()
 
             mock_llm_fn.return_value = mock_llm
 
-            # Mock embeddings
-            mock_embeddings = MagicMock()
-            mock_embeddings.embed_documents.return_value = [[0.1] * 1024]
-            mock_embeddings.embed_query.return_value = [0.1] * 1024
-            mock_embeddings_fn.return_value = mock_embeddings
+            mock_embeddings_fn.return_value = _mock_embeddings()
 
             graph = build_query_graph()
 
             query = "Which table stores customer data?"
             config = {"configurable": {"thread_id": "query-test-1"}}
 
-            initial_state: QueryState = {
-                "user_query": query,
-                "iteration_count": 0,
-                "retrieved_chunks": [],
-                "reranked_chunks": [],
-                "current_answer": "",
-                "last_critique": None,
-                "grader_decision": None,
-                "final_answer": "",
-                "sources": [],
-            }
+            initial_state = _initial_query_state(query)
 
             result = graph.invoke(initial_state, config=config)
 
@@ -256,36 +272,15 @@ class TestQueryGraphE2E:
             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
         ):
-            mock_settings = MagicMock()
-            mock_settings.retrieval_vector_top_k = 10
-            mock_settings.retrieval_bm25_top_k = 10
-            mock_settings.retrieval_graph_depth = 2
-            mock_settings.reranker_top_k = 5
-            mock_settings.max_hallucination_retries = 3
-            mock_settings.enable_reranker = True
-            mock_settings.enable_hallucination_grader = True
-            mock_settings_fn.return_value = mock_settings
+            mock_settings_fn.return_value = _make_query_settings()
 
             mock_llm_fn.return_value = mock_llm
 
-            mock_embeddings = MagicMock()
-            mock_embeddings.embed_documents.return_value = [[0.1] * 1024]
-            mock_embeddings.embed_query.return_value = [0.1] * 1024
-            mock_embeddings_fn.return_value = mock_embeddings
+            mock_embeddings_fn.return_value = _mock_embeddings()
 
             graph = build_query_graph()
 
-            initial_state: QueryState = {
-                "user_query": "What customer data is stored?",
-                "iteration_count": 0,
-                "retrieved_chunks": [],
-                "reranked_chunks": [],
-                "current_answer": "",
-                "last_critique": None,
-                "grader_decision": None,
-                "final_answer": "",
-                "sources": [],
-            }
+            initial_state = _initial_query_state("What customer data is stored?")
 
             config = {"configurable": {"thread_id": "query-test-2"}}
             result = graph.invoke(initial_state, config=config)
@@ -368,36 +363,15 @@ class TestHallucinationGraderLoop:
             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
         ):
-            mock_settings = MagicMock()
-            mock_settings.retrieval_vector_top_k = 10
-            mock_settings.retrieval_bm25_top_k = 10
-            mock_settings.retrieval_graph_depth = 2
-            mock_settings.reranker_top_k = 5
-            mock_settings.max_hallucination_retries = 3
-            mock_settings.enable_reranker = True
-            mock_settings.enable_hallucination_grader = True
-            mock_settings_fn.return_value = mock_settings
+            mock_settings_fn.return_value = _make_query_settings()
 
             mock_llm_fn.return_value = mock_llm
 
-            mock_embeddings = MagicMock()
-            mock_embeddings.embed_documents.return_value = [[0.1] * 1024]
-            mock_embeddings.embed_query.return_value = [0.1] * 1024
-            mock_embeddings_fn.return_value = mock_embeddings
+            mock_embeddings_fn.return_value = _mock_embeddings()
 
             graph = build_query_graph()
 
-            initial_state: QueryState = {
-                "user_query": "What table stores customer data?",
-                "iteration_count": 0,
-                "retrieved_chunks": [],
-                "reranked_chunks": [],
-                "current_answer": "",
-                "last_critique": None,
-                "grader_decision": None,
-                "final_answer": "",
-                "sources": [],
-            }
+            initial_state = _initial_query_state("What table stores customer data?")
 
             config = {"configurable": {"thread_id": "hallucination-test-1"}}
             result = graph.invoke(initial_state, config=config)
@@ -460,36 +434,17 @@ class TestHallucinationGraderLoop:
             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
         ):
-            mock_settings = MagicMock()
-            mock_settings.retrieval_vector_top_k = 10
-            mock_settings.retrieval_bm25_top_k = 10
-            mock_settings.retrieval_graph_depth = 2
-            mock_settings.reranker_top_k = 5
-            mock_settings.max_hallucination_retries = max_retries
-            mock_settings.enable_reranker = True
-            mock_settings.enable_hallucination_grader = True
-            mock_settings_fn.return_value = mock_settings
+            mock_settings_fn.return_value = _make_query_settings(
+                max_hallucination_retries=max_retries
+            )
 
             mock_llm_fn.return_value = mock_llm
 
-            mock_embeddings = MagicMock()
-            mock_embeddings.embed_documents.return_value = [[0.1] * 1024]
-            mock_embeddings.embed_query.return_value = [0.1] * 1024
-            mock_embeddings_fn.return_value = mock_embeddings
+            mock_embeddings_fn.return_value = _mock_embeddings()
 
             graph = build_query_graph()
 
-            initial_state: QueryState = {
-                "user_query": "What table stores customer data?",
-                "iteration_count": 0,
-                "retrieved_chunks": [],
-                "reranked_chunks": [],
-                "current_answer": "",
-                "last_critique": None,
-                "grader_decision": None,
-                "final_answer": "",
-                "sources": [],
-            }
+            initial_state = _initial_query_state("What table stores customer data?")
 
             config = {"configurable": {"thread_id": "hallucination-test-2"}}
             result = graph.invoke(initial_state, config=config)
@@ -545,36 +500,15 @@ class TestHallucinationGraderLoop:
             patch("src.generation.query_graph.get_reasoning_llm") as mock_llm_fn,
             patch("src.generation.query_graph.get_embeddings") as mock_embeddings_fn,
         ):
-            mock_settings = MagicMock()
-            mock_settings.retrieval_vector_top_k = 10
-            mock_settings.retrieval_bm25_top_k = 10
-            mock_settings.retrieval_graph_depth = 2
-            mock_settings.reranker_top_k = 5
-            mock_settings.max_hallucination_retries = 1  # Single retry
-            mock_settings.enable_reranker = True
-            mock_settings.enable_hallucination_grader = True
-            mock_settings_fn.return_value = mock_settings
+            mock_settings_fn.return_value = _make_query_settings(max_hallucination_retries=1)
 
             mock_llm_fn.return_value = mock_llm
 
-            mock_embeddings = MagicMock()
-            mock_embeddings.embed_documents.return_value = [[0.1] * 1024]
-            mock_embeddings.embed_query.return_value = [0.1] * 1024
-            mock_embeddings_fn.return_value = mock_embeddings
+            mock_embeddings_fn.return_value = _mock_embeddings()
 
             graph = build_query_graph()
 
-            initial_state: QueryState = {
-                "user_query": "What is PRODUCT_XYZ?",
-                "iteration_count": 0,
-                "retrieved_chunks": [],
-                "reranked_chunks": [],
-                "current_answer": "",
-                "last_critique": None,
-                "grader_decision": None,
-                "final_answer": "",
-                "sources": [],
-            }
+            initial_state = _initial_query_state("What is PRODUCT_XYZ?")
 
             config = {"configurable": {"thread_id": "hallucination-test-3"}}
             result = graph.invoke(initial_state, config=config)

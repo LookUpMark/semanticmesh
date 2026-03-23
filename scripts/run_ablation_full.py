@@ -295,7 +295,9 @@ def run_ablation_study(
             t1 = time.time()
             questions = _load_query_questions(dataset_path=dataset_path, max_samples=max_samples)
             if not questions:
-                raise ValueError("Query phase has no questions to evaluate (empty dataset and empty fallback).")
+                raise ValueError(
+                    "Query phase has no questions to evaluate (empty dataset and empty fallback)."
+                )
 
             grounded_count = 0
             results = []

@@ -48,11 +48,7 @@ def _query_terms(query: str) -> set[str]:
         "knowledge",
         "graph",
     }
-    return {
-        t.lower()
-        for t in _TOKEN_RE.findall(query)
-        if len(t) > 2 and t.lower() not in stop
-    }
+    return {t.lower() for t in _TOKEN_RE.findall(query) if len(t) > 2 and t.lower() not in stop}
 
 
 def _distill_text(chunk: RetrievedChunk) -> str:

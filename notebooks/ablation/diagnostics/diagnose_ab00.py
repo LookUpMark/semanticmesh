@@ -183,9 +183,7 @@ def _run_query_verbose(
     gold_contexts = gold.get("ground_truth_contexts", [])
     reranked_texts = [c.text for c in reranked]
     gold_hit = sum(
-        1
-        for gc in gold_contexts
-        if any(gc[:40].lower() in rt.lower() for rt in reranked_texts)
+        1 for gc in gold_contexts if any(gc[:40].lower() in rt.lower() for rt in reranked_texts)
     )
     record["gold_context_hit"] = f"{gold_hit}/{len(gold_contexts)}"
     log.info("  [Context] gold context coverage: %s", record["gold_context_hit"])
@@ -277,7 +275,9 @@ def _write_report(all_records: list[dict]) -> None:
         q_short = r["question"][:45].replace("|", "/")
         ret = r.get("retrieval", {})
         grader = r.get("grader", {})
-        grounded_str = "✅" if grader.get("grounded", True) else f"❌ {(grader.get('critique') or '')[:30]}"
+        grounded_str = (
+            "✅" if grader.get("grounded", True) else f"❌ {(grader.get('critique') or '')[:30]}"
+        )
         ans_preview = r.get("answer", "")[:60].replace("|", "/").replace("\n", " ")
         lines.append(
             f"| {i} | {q_short} "
@@ -346,8 +346,12 @@ def _write_report(all_records: list[dict]) -> None:
     grounded_total = sum(1 for r in all_records if r.get("grader", {}).get("grounded", True))
     lines.append(f"- **Grounded answers:** {grounded_total}/{len(all_records)}")
 
-    avg_vec = sum(len(r.get("retrieval", {}).get("vector", [])) for r in all_records) / max(len(all_records), 1)
-    avg_merged = sum(r.get("retrieval", {}).get("total_merged", 0) for r in all_records) / max(len(all_records), 1)
+    avg_vec = sum(len(r.get("retrieval", {}).get("vector", [])) for r in all_records) / max(
+        len(all_records), 1
+    )
+    avg_merged = sum(r.get("retrieval", {}).get("total_merged", 0) for r in all_records) / max(
+        len(all_records), 1
+    )
     avg_reranked = sum(len(r.get("reranked", [])) for r in all_records) / max(len(all_records), 1)
     lines += [
         f"- **Avg vector results:** {avg_vec:.1f}",
@@ -448,7 +452,7 @@ def main() -> None:
     if hits:
         total_h = sum(h for h, _ in hits)
         total_t = sum(t for _, t in hits)
-        print(f"Gold ctx coverage: {total_h}/{total_t} = {total_h/total_t:.1%}")
+        print(f"Gold ctx coverage: {total_h}/{total_t} = {total_h / total_t:.1%}")
     print(f"\nFiles written:")
     for p in [RETRIEVAL_LOG, ANSWERS_LOG, GRADER_LOG, REPORT_MD]:
         print(f"  {p}")

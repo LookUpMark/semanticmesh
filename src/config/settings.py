@@ -110,7 +110,9 @@ class Settings(BaseSettings):
     enable_spacy_heuristics: bool = DEFAULT_CONFIG.enable_spacy_heuristics
     spacy_model_name: str = DEFAULT_CONFIG.spacy_model_name
     er_judge_threshold: float = DEFAULT_CONFIG.er_judge_threshold
-    heuristic_mapping_confidence_threshold: float = DEFAULT_CONFIG.heuristic_mapping_confidence_threshold
+    heuristic_mapping_confidence_threshold: float = (
+        DEFAULT_CONFIG.heuristic_mapping_confidence_threshold
+    )
     enable_lazy_expansion: bool = DEFAULT_CONFIG.enable_lazy_expansion
     lazy_expansion_confidence_threshold: float = DEFAULT_CONFIG.lazy_expansion_confidence_threshold
 

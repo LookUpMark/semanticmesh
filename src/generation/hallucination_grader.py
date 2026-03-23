@@ -28,6 +28,26 @@ if TYPE_CHECKING:
 logger: logging.Logger = get_logger(__name__)
 
 
+def _pass_decision(
+    *,
+    timeout_occurred: bool,
+    parse_attempts: int,
+    consistency_corrections: int,
+    certainty: float,
+) -> GraderDecision:
+    from src.models.schemas import GraderDecision  # noqa: PLC0415
+
+    return GraderDecision(
+        grounded=True,
+        critique=None,
+        action="pass",
+        timeout_occurred=timeout_occurred,
+        parse_attempts=parse_attempts,
+        consistency_corrections=consistency_corrections,
+        certainty=certainty,
+    )
+
+
 def grade_answer(
     query: str,
     answer: str,
@@ -52,10 +72,7 @@ def grade_answer(
     """
     from src.models.schemas import GraderDecision  # noqa: PLC0415
 
-    _pass = GraderDecision(
-        grounded=True,
-        critique=None,
-        action="pass",
+    _pass = _pass_decision(
         timeout_occurred=False,
         parse_attempts=1,
         consistency_corrections=0,
@@ -88,10 +105,7 @@ def grade_answer(
         )
     except FutureTimeoutError:
         logger.warning("Grader timed out — defaulting to pass.")
-        return GraderDecision(
-            grounded=True,
-            critique=None,
-            action="pass",
+        return _pass_decision(
             timeout_occurred=True,
             parse_attempts=0,
             consistency_corrections=0,
@@ -119,10 +133,7 @@ def grade_answer(
                 exc,
             )
             if attempt == max_attempts:
-                return GraderDecision(
-                    grounded=True,
-                    critique=None,
-                    action="pass",
+                return _pass_decision(
                     timeout_occurred=False,
                     parse_attempts=parse_attempts,
                     consistency_corrections=consistency_corrections,
@@ -143,10 +154,7 @@ def grade_answer(
                 )
             except FutureTimeoutError:
                 logger.warning("Grader reflection timed out — defaulting to pass.")
-                return GraderDecision(
-                    grounded=True,
-                    critique=None,
-                    action="pass",
+                return _pass_decision(
                     timeout_occurred=True,
                     parse_attempts=parse_attempts,
                     consistency_corrections=consistency_corrections,
@@ -161,10 +169,7 @@ def grade_answer(
                 decision.action,
             )
             if corrected_once:
-                return GraderDecision(
-                    grounded=True,
-                    critique=None,
-                    action="pass",
+                return _pass_decision(
                     timeout_occurred=False,
                     parse_attempts=parse_attempts,
                     consistency_corrections=consistency_corrections,
@@ -186,10 +191,7 @@ def grade_answer(
                 raw_json = _invoke_with_timeout([HumanMessage(content=correction_prompt)])
             except FutureTimeoutError:
                 logger.warning("Grader consistency correction timed out — defaulting to pass.")
-                return GraderDecision(
-                    grounded=True,
-                    critique=None,
-                    action="pass",
+                return _pass_decision(
                     timeout_occurred=True,
                     parse_attempts=parse_attempts,
                     consistency_corrections=consistency_corrections,

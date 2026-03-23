@@ -170,15 +170,15 @@ def extract_all_triplets_heuristic(chunks: list[Chunk]) -> list[Triplet]:
                 sentence_triplets.extend(_extract_from_sentence(sentence, chunk.chunk_index))
 
         for triplet in sentence_triplets:
-                key = (
-                    triplet.subject.lower(),
-                    triplet.predicate.lower(),
-                    triplet.object.lower(),
-                    triplet.source_chunk_index,
-                )
-                if key in seen:
-                    continue
-                seen.add(key)
-                extracted.append(triplet)
+            key = (
+                triplet.subject.lower(),
+                triplet.predicate.lower(),
+                triplet.object.lower(),
+                triplet.source_chunk_index,
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            extracted.append(triplet)
 
     return extracted

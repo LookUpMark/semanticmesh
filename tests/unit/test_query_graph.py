@@ -21,6 +21,7 @@ from src.models.schemas import GraderDecision, RetrievedChunk
 
 # Helpers
 
+
 def _state(action: str, grounded: bool = True) -> dict:
     return {"grader_decision": GraderDecision(grounded=grounded, critique=None, action=action)}
 
@@ -48,10 +49,15 @@ class TestRouteAfterGrader:
 
 class TestRouteAfterRetrievalGate:
     def test_abstain_early_routes_to_finalise(self) -> None:
-        assert _route_after_retrieval_gate({"retrieval_gate_decision": "abstain_early"}) == "finalise"
+        assert (
+            _route_after_retrieval_gate({"retrieval_gate_decision": "abstain_early"}) == "finalise"
+        )
 
     def test_proceed_routes_to_context_distillation(self) -> None:
-        assert _route_after_retrieval_gate({"retrieval_gate_decision": "proceed"}) == "context_distillation"
+        assert (
+            _route_after_retrieval_gate({"retrieval_gate_decision": "proceed"})
+            == "context_distillation"
+        )
 
 
 class TestBuildQueryGraph:
@@ -191,7 +197,9 @@ class TestNodeHybridRetrievalLazyExpansion:
             patch("src.generation.query_graph.build_node_index", return_value=[]),
             patch("src.generation.query_graph.vector_search", return_value=vec),
             patch("src.generation.query_graph.bm25_search", return_value=bm),
-            patch("src.generation.query_graph.graph_traversal", side_effect=[trav, extra]) as mock_trav,
+            patch(
+                "src.generation.query_graph.graph_traversal", side_effect=[trav, extra]
+            ) as mock_trav,
             patch("src.generation.query_graph.fetch_all_concepts", return_value=concepts),
             patch("src.generation.query_graph.fetch_fk_relationships", return_value=fks),
             patch(
@@ -258,7 +266,9 @@ class TestNodeSemanticVerification:
 
 
 class TestAnswerGenerationContextComposition:
-    def _chunk(self, name: str, text: str, source: str = "graph", score: float = 0.4) -> RetrievedChunk:
+    def _chunk(
+        self, name: str, text: str, source: str = "graph", score: float = 0.4
+    ) -> RetrievedChunk:
         return RetrievedChunk(
             node_id=name,
             node_type="BusinessConcept",
@@ -323,7 +333,9 @@ class TestAnswerGenerationContextComposition:
 
 
 class TestContextDistillationNode:
-    def _chunk(self, name: str, text: str, source: str = "graph", score: float = 0.4) -> RetrievedChunk:
+    def _chunk(
+        self, name: str, text: str, source: str = "graph", score: float = 0.4
+    ) -> RetrievedChunk:
         return RetrievedChunk(
             node_id=name,
             node_type="BusinessConcept",
@@ -376,7 +388,9 @@ class TestChannelBalancedComposition:
         chunks.extend([self._chunk(f"V{i}", "vector", 0.7 - i * 0.01) for i in range(3)])
         chunks.extend([self._chunk(f"B{i}", "bm25", 0.6 - i * 0.01) for i in range(3)])
 
-        out = _compose_generation_chunks("customer orders relationship", chunks, max_core=6, max_support=4)
+        out = _compose_generation_chunks(
+            "customer orders relationship", chunks, max_core=6, max_support=4
+        )
         assert len(out) == 10
         graph_count = sum(1 for c in out if c.source_type == "graph")
         vector_count = sum(1 for c in out if c.source_type == "vector")

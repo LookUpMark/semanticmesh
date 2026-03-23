@@ -48,6 +48,20 @@ _NOISE_MARKERS = (
     "adjusted_confidence=",
     "best_candidate=",
 )
+_RELATION_TOKENS = ("references", "foreign key", "fk ", " fk", "joins", "join ")
+_PRIORITY_STRUCTURE_TOKENS = ("references", "foreign key")
+
+
+def _has_relation_tokens(text: str) -> bool:
+    return any(token in text for token in _RELATION_TOKENS)
+
+
+def _has_priority_structure_tokens(text: str) -> bool:
+    return any(token in text for token in _PRIORITY_STRUCTURE_TOKENS)
+
+
+def _active_chunks(state: QueryState) -> list[RetrievedChunk]:
+    return state.get("generation_chunks") or state.get("reranked_chunks") or []
 
 
 def _has_structural_relationship_evidence(chunks: list[RetrievedChunk]) -> bool:
@@ -57,7 +71,7 @@ def _has_structural_relationship_evidence(chunks: list[RetrievedChunk]) -> bool:
         text = chunk.text.strip().lower()
         if "→" in node_id:
             return True
-        if any(token in text for token in ("references", "foreign key", "fk ", " fk", "joins", "join ")):
+        if _has_relation_tokens(text):
             return True
     return False
 
@@ -85,11 +99,7 @@ def _query_terms(query: str) -> set[str]:
         "knowledge",
         "graph",
     }
-    terms = {
-        t.lower()
-        for t in _TOKEN_RE.findall(query)
-        if len(t) > 2 and t.lower() not in stop
-    }
+    terms = {t.lower() for t in _TOKEN_RE.findall(query) if len(t) > 2 and t.lower() not in stop}
     return terms
 
 
@@ -115,7 +125,7 @@ def _pre_filter_rerank_pool(
     def _chunk_priority(chunk: RetrievedChunk) -> tuple[int, int, int, float]:
         text_l = chunk.text.lower()
         nid_l = chunk.node_id.lower()
-        has_structure = int("→" in chunk.node_id or any(k in text_l for k in ("references", "foreign key")))
+        has_structure = int("→" in chunk.node_id or _has_priority_structure_tokens(text_l))
         keyword_hits = int(any(term in text_l or term in nid_l for term in terms))
         source_rank = 2 if chunk.source_type in {"vector", "bm25"} else 1
         return (has_structure, keyword_hits, source_rank, float(chunk.score))
@@ -166,7 +176,7 @@ def _compose_generation_chunks(
     def _priority(chunk: RetrievedChunk) -> tuple[int, int, int, float]:
         text_l = chunk.text.lower()
         nid_l = chunk.node_id.lower()
-        has_structure = int("→" in chunk.node_id or any(k in text_l for k in ("references", "foreign key")))
+        has_structure = int("→" in chunk.node_id or _has_priority_structure_tokens(text_l))
         keyword_hits = int(any(term in text_l or term in nid_l for term in terms))
         source_rank = 2 if chunk.source_type in {"vector", "bm25"} else 1
         return (keyword_hits, has_structure, source_rank, float(chunk.score))
@@ -263,7 +273,9 @@ def _node_hybrid_retrieval(state: QueryState) -> dict[str, Any]:
                         client=client,
                         depth=max(1, settings.retrieval_graph_depth + 1),
                     )
-                    merged = merge_results(vec_results, bm25_results, trav_results + extra + all_concepts + fk_chunks)
+                    merged = merge_results(
+                        vec_results, bm25_results, trav_results + extra + all_concepts + fk_chunks
+                    )
     return {"retrieved_chunks": merged}
 
 
@@ -399,7 +411,7 @@ def _node_semantic_verification(state: QueryState) -> dict[str, Any]:
         }
 
     answer = (state.get("current_answer") or "").lower()
-    chunks: list[RetrievedChunk] = state.get("generation_chunks") or state.get("reranked_chunks") or []
+    chunks: list[RetrievedChunk] = _active_chunks(state)
     query = str(state.get("user_query", ""))
     if not chunks:
         return {
@@ -458,7 +470,7 @@ def _node_hallucination_grader(state: QueryState) -> dict[str, Any]:
     llm = get_reasoning_llm()
     query: str = state["user_query"]
     answer: str = state.get("current_answer") or ""
-    chunks: list[RetrievedChunk] = state.get("generation_chunks") or state.get("reranked_chunks") or []
+    chunks: list[RetrievedChunk] = _active_chunks(state)
     iteration: int = state.get("iteration_count", 0)
 
     # Loop guard — accept answer after max retries to avoid infinite loop
@@ -514,7 +526,9 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
         "retrieved_contexts": retrieved_contexts,
         "retrieval_quality_score": float(state.get("retrieval_quality_score", 0.0)),
         "retrieval_chunk_count": int(state.get("retrieval_chunk_count", len(reranked))),
-        "retrieval_filtered_by_threshold": bool(state.get("retrieval_filtered_by_threshold", False)),
+        "retrieval_filtered_by_threshold": bool(
+            state.get("retrieval_filtered_by_threshold", False)
+        ),
         "context_sufficiency": state.get("context_sufficiency", "insufficient"),
         "retrieval_gate_decision": gate_decision,
         "semantic_verification_overlap": float(state.get("semantic_verification_overlap", 1.0)),

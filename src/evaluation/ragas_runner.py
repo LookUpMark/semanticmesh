@@ -450,7 +450,9 @@ async def _compute_ragas_metrics_async(
                         "retrieved_context_previews": [_preview(c, 160) for c in ctxs[:5]],
                         "context_count": len(ctxs),
                         "used_fallback_contexts": bool(r.get("used_fallback_contexts", False)),
-                        "retrieval_quality_score": float(r.get("retrieval_quality_score", 0.0) or 0.0),
+                        "retrieval_quality_score": float(
+                            r.get("retrieval_quality_score", 0.0) or 0.0
+                        ),
                         "retrieval_chunk_count": int(r.get("retrieval_chunk_count", 0) or 0),
                         "retrieval_filtered_by_threshold": bool(
                             r.get("retrieval_filtered_by_threshold", False)
@@ -475,7 +477,9 @@ async def _compute_ragas_metrics_async(
                         "retrieved_context_previews": [_preview(c, 160) for c in ctxs[:5]],
                         "context_count": len(ctxs),
                         "used_fallback_contexts": bool(r.get("used_fallback_contexts", False)),
-                        "retrieval_quality_score": float(r.get("retrieval_quality_score", 0.0) or 0.0),
+                        "retrieval_quality_score": float(
+                            r.get("retrieval_quality_score", 0.0) or 0.0
+                        ),
                         "retrieval_chunk_count": int(r.get("retrieval_chunk_count", 0) or 0),
                         "retrieval_filtered_by_threshold": bool(
                             r.get("retrieval_filtered_by_threshold", False)

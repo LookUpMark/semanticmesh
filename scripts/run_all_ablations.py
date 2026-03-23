@@ -110,6 +110,41 @@ def is_completed(study_id: str, state: dict[str, str | list[str]]) -> bool:
     return study_id in state.get("completed", [])
 
 
+def _build_study_result(
+    *,
+    study_id: str,
+    success: bool,
+    elapsed_s: float,
+    env_overrides: dict[str, str],
+    run_ragas: bool,
+    metrics: dict[str, object] | None = None,
+    error: str | None = None,
+    include_timestamp: bool = False,
+) -> dict[str, object]:
+    result: dict[str, object] = {
+        "study_id": study_id,
+        "success": success,
+        "elapsed_s": round(elapsed_s, 1),
+        "env_overrides": env_overrides,
+        "run_ragas": run_ragas,
+    }
+    if metrics is not None:
+        result["metrics"] = metrics
+    if error is not None:
+        result["error"] = error
+    if include_timestamp:
+        result["timestamp"] = datetime.now(tz=UTC).isoformat()
+    return result
+
+
+def _restore_environment(saved_env: dict[str, str | None]) -> None:
+    for key, value in saved_env.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
 # ── Study execution ───────────────────────────────────────────────────────────
 
 
@@ -143,12 +178,15 @@ def run_study(study_id: str, dry_run: bool = False) -> dict[str, object]:
 
     if dry_run:
         print(f"  [DRY RUN] Would execute {study_id}")
-        return {
-            "study_id": study_id,
-            "dry_run": True,
-            "env_overrides": env_overrides,
-            "run_ragas": run_ragas,
-        }
+        result = _build_study_result(
+            study_id=study_id,
+            success=True,
+            elapsed_s=0.0,
+            env_overrides=env_overrides,
+            run_ragas=run_ragas,
+        )
+        result["dry_run"] = True
+        return result
 
     # Build the command to run the study
     cmd = [
@@ -217,26 +255,25 @@ print(json.dumps({{"result": "success", "metrics": result}}))
         # We'll use the pipeline_run.py approach instead for better control
 
         print(f"\n  Elapsed: {elapsed:.1f}s")
-
-        return {
-            "study_id": study_id,
-            "success": True,
-            "elapsed_s": round(elapsed, 1),
-            "env_overrides": env_overrides,
-            "run_ragas": run_ragas,
-        }
+        return _build_study_result(
+            study_id=study_id,
+            success=True,
+            elapsed_s=elapsed,
+            env_overrides=env_overrides,
+            run_ragas=run_ragas,
+        )
 
     except Exception as exc:
         elapsed = time.time() - start_time
         logger.error("Study %s failed: %s", study_id, exc)
-        return {
-            "study_id": study_id,
-            "success": False,
-            "error": str(exc),
-            "elapsed_s": round(elapsed, 1),
-            "env_overrides": env_overrides,
-            "run_ragas": run_ragas,
-        }
+        return _build_study_result(
+            study_id=study_id,
+            success=False,
+            elapsed_s=elapsed,
+            env_overrides=env_overrides,
+            run_ragas=run_ragas,
+            error=str(exc),
+        )
 
 
 def run_study_inline(study_id: str) -> dict[str, object]:
@@ -302,15 +339,15 @@ def run_study_inline(study_id: str) -> dict[str, object]:
 
             elapsed = time.time() - start_time
 
-            result = {
-                "study_id": study_id,
-                "success": True,
-                "elapsed_s": round(elapsed, 1),
-                "metrics": metrics,
-                "env_overrides": env_overrides,
-                "run_ragas": run_ragas,
-                "timestamp": datetime.now(tz=UTC).isoformat(),
-            }
+            result = _build_study_result(
+                study_id=study_id,
+                success=True,
+                elapsed_s=elapsed,
+                env_overrides=env_overrides,
+                run_ragas=run_ragas,
+                metrics=metrics,
+                include_timestamp=True,
+            )
 
             # Save JSON result
             json_file = RESULTS_DIR / f"{study_id}.json"
@@ -326,25 +363,21 @@ def run_study_inline(study_id: str) -> dict[str, object]:
 
         finally:
             # Restore environment
-            for k, v in saved_env.items():
-                if v is None:
-                    os.environ.pop(k, None)
-                else:
-                    os.environ[k] = v
+            _restore_environment(saved_env)
             reconfigure_from_env()
 
     except Exception as exc:
         elapsed = time.time() - start_time
         logger.error("Study %s failed: %s", study_id, exc)
-        result = {
-            "study_id": study_id,
-            "success": False,
-            "error": str(exc),
-            "elapsed_s": round(elapsed, 1),
-            "env_overrides": env_overrides,
-            "run_ragas": run_ragas,
-            "timestamp": datetime.now(tz=UTC).isoformat(),
-        }
+        result = _build_study_result(
+            study_id=study_id,
+            success=False,
+            elapsed_s=elapsed,
+            env_overrides=env_overrides,
+            run_ragas=run_ragas,
+            error=str(exc),
+            include_timestamp=True,
+        )
     finally:
         # Restore original handlers
         root_logger.removeHandler(root_handler)

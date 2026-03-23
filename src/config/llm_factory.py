@@ -33,6 +33,95 @@ _OPENAI_PREFIXES = ("gpt-", "o1-", "o2-", "o3-", "o4-", "text-")
 _ANTHROPIC_PREFIXES = ("claude-",)
 
 
+def _optional_model_kwargs(extra_model_kwargs: dict | None) -> dict:
+    return {"model_kwargs": extra_model_kwargs} if extra_model_kwargs else {}
+
+
+def _instrument(chat_like: LLMProtocol, role: str) -> LLMProtocol:
+    return InstrumentedLLM(chat_like, name=role, max_retries=get_settings().max_llm_retries)
+
+
+def _build_openrouter_chat(
+    model_name: str,
+    *,
+    temperature: float,
+    max_tokens: int | None,
+    openrouter_api_key: str | None,
+    openrouter_base_url: str | None,
+    extra_model_kwargs: dict | None,
+) -> ChatOpenAI:
+    api_key = openrouter_api_key or get_settings().openrouter_api_key.get_secret_value()
+    base_url = openrouter_base_url or get_settings().openrouter_base_url
+    return ChatOpenAI(
+        model=model_name,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        base_url=base_url,
+        api_key=api_key,
+        **_optional_model_kwargs(extra_model_kwargs),
+    )
+
+
+def _build_openai_chat(
+    model: str,
+    *,
+    temperature: float,
+    max_tokens: int | None,
+    openai_api_key: str | None,
+    extra_model_kwargs: dict | None,
+) -> ChatOpenAI:
+    import os
+
+    api_key = openai_api_key or os.environ.get("OPENAI_API_KEY", "")
+    return ChatOpenAI(
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        api_key=api_key,
+        **_optional_model_kwargs(extra_model_kwargs),
+    )
+
+
+def _build_anthropic_chat(model: str, *, temperature: float, max_tokens: int | None) -> LLMProtocol:
+    try:
+        from langchain_anthropic import ChatAnthropic  # type: ignore[import]
+    except ImportError as exc:  # pragma: no cover
+        raise ImportError(
+            "Install langchain-anthropic to use Anthropic models directly: "
+            "pip install langchain-anthropic"
+        ) from exc
+
+    import os
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    return ChatAnthropic(
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens or 4096,
+        api_key=api_key,
+    )
+
+
+def _build_lmstudio_chat(
+    model: str,
+    *,
+    temperature: float,
+    max_tokens: int | None,
+    lmstudio_base_url: str | None,
+    extra_model_kwargs: dict | None,
+) -> ChatOpenAI:
+    base_url = lmstudio_base_url or get_settings().lmstudio_base_url
+    kwargs = extra_model_kwargs or {"chat_template_kwargs": {"enable_thinking": False}}
+    return ChatOpenAI(
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        base_url=base_url,
+        api_key="lm-studio",
+        model_kwargs={"extra_body": kwargs},
+    )
+
+
 def detect_provider(model: str) -> str:
     """Infer the LLM provider from the model name string.
 
@@ -117,86 +206,63 @@ def make_llm(
     is_free = _is_free_model(model)
     paid_model = _strip_free_suffix(model) if is_free else model
 
-    # Helper to create a ChatOpenAI instance for OpenRouter
-    def _create_openrouter_chat(model_name: str) -> ChatOpenAI:
-        _api_key = openrouter_api_key or get_settings().openrouter_api_key.get_secret_value()
-        _base_url = openrouter_base_url or get_settings().openrouter_base_url
-        return ChatOpenAI(
-            model=model_name,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            base_url=_base_url,
-            api_key=_api_key,
-            **({"model_kwargs": extra_model_kwargs} if extra_model_kwargs else {}),
-        )
-
     if provider == "openrouter":
-        # Create fallback pair for free models
         if is_free and enable_fallback and model != paid_model:
-            primary_chat = _create_openrouter_chat(model)
-            fallback_chat = _create_openrouter_chat(paid_model)
+            primary_chat = _build_openrouter_chat(
+                model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                openrouter_api_key=openrouter_api_key,
+                openrouter_base_url=openrouter_base_url,
+                extra_model_kwargs=extra_model_kwargs,
+            )
+            fallback_chat = _build_openrouter_chat(
+                paid_model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                openrouter_api_key=openrouter_api_key,
+                openrouter_base_url=openrouter_base_url,
+                extra_model_kwargs=extra_model_kwargs,
+            )
             fallback_llm = FallbackLLM(
                 primary=primary_chat,
                 fallback=fallback_chat,
                 name=role,
             )
-            # Instrument the fallback wrapper too, so all nodes get the same wrapper type.
-            return InstrumentedLLM(
-                fallback_llm,
-                name=role,
-                max_retries=get_settings().max_llm_retries,
-            )
-        # Single model (non-free or fallback disabled)
-        chat = _create_openrouter_chat(model)
-        return InstrumentedLLM(chat, name=role, max_retries=get_settings().max_llm_retries)
+            return _instrument(fallback_llm, role)
 
-    elif provider == "openai":
-        import os
-
-        _api_key = openai_api_key or os.environ.get("OPENAI_API_KEY", "")
-        chat = ChatOpenAI(
-            model=model,
+        chat = _build_openrouter_chat(
+            model,
             temperature=temperature,
             max_tokens=max_tokens,
-            api_key=_api_key,
-            **({"model_kwargs": extra_model_kwargs} if extra_model_kwargs else {}),
+            openrouter_api_key=openrouter_api_key,
+            openrouter_base_url=openrouter_base_url,
+            extra_model_kwargs=extra_model_kwargs,
         )
-        return InstrumentedLLM(chat, name=role, max_retries=get_settings().max_llm_retries)
+        return _instrument(chat, role)
 
-    elif provider == "anthropic":
-        try:
-            from langchain_anthropic import ChatAnthropic  # type: ignore[import]
-        except ImportError as exc:  # pragma: no cover
-            raise ImportError(
-                "Install langchain-anthropic to use Anthropic models directly: "
-                "pip install langchain-anthropic"
-            ) from exc
-        import os
-
-        _api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        return InstrumentedLLM(
-            ChatAnthropic(
-                model=model,
-                temperature=temperature,
-                max_tokens=max_tokens or 4096,
-                api_key=_api_key,
-            ),
-            name=role,
-            max_retries=get_settings().max_llm_retries,
-        )
-
-    else:  # lmstudio
-        _base_url = lmstudio_base_url or get_settings().lmstudio_base_url
-        _kwargs = extra_model_kwargs or {"chat_template_kwargs": {"enable_thinking": False}}
-        chat = ChatOpenAI(
-            model=model,
+    if provider == "openai":
+        chat = _build_openai_chat(
+            model,
             temperature=temperature,
             max_tokens=max_tokens,
-            base_url=_base_url,
-            api_key="lm-studio",
-            model_kwargs={"extra_body": _kwargs},
+            openai_api_key=openai_api_key,
+            extra_model_kwargs=extra_model_kwargs,
         )
-        return InstrumentedLLM(chat, name=role, max_retries=get_settings().max_llm_retries)
+        return _instrument(chat, role)
+
+    if provider == "anthropic":
+        chat = _build_anthropic_chat(model, temperature=temperature, max_tokens=max_tokens)
+        return _instrument(chat, role)
+
+    chat = _build_lmstudio_chat(
+        model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        lmstudio_base_url=lmstudio_base_url,
+        extra_model_kwargs=extra_model_kwargs,
+    )
+    return _instrument(chat, role)
 
 
 # ── Cached pipeline factories ─────────────────────────────────────────────────
@@ -250,8 +316,7 @@ def get_extraction_llm() -> LLMProtocol:
     provider = detect_provider(s.llm_model_extraction)
 
     if provider == "lmstudio":
-        # Local model: pass LM Studio-specific chat template kwargs
-        return InstrumentedLLM(
+        return _instrument(
             ChatOpenAI(
                 model=s.llm_model_extraction,
                 temperature=s.llm_temperature_extraction,
@@ -260,8 +325,7 @@ def get_extraction_llm() -> LLMProtocol:
                 api_key="lm-studio",
                 model_kwargs={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
             ),
-            name="extraction",
-            max_retries=s.max_llm_retries,
+            "extraction",
         )
 
     # Cloud model (OpenRouter, OpenAI, Anthropic): use make_llm for provider routing
