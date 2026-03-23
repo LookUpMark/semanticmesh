@@ -8,7 +8,6 @@ schema conventions and business glossary terminology.
 from __future__ import annotations
 
 import json
-import re
 from typing import TYPE_CHECKING
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -17,6 +16,7 @@ from pydantic import ValidationError
 from src.config.logging import NodeTimer, get_logger
 from src.models.schemas import EnrichedColumn, EnrichedTableSchema, TableSchema
 from src.prompts.templates import ENRICHMENT_SYSTEM, ENRICHMENT_USER
+from src.utils.json_utils import clean_json
 
 if TYPE_CHECKING:
     import logging
@@ -24,21 +24,6 @@ if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
-
-_FENCE_RE = re.compile(r"^```[a-zA-Z]*\n?|```$", re.MULTILINE)
-
-
-def _clean_json_payload(raw: str) -> str:
-    """Best-effort cleanup for LLM JSON payloads.
-
-    Handles markdown fences and extra pre/post text around the top-level JSON object.
-    """
-    cleaned = _FENCE_RE.sub("", raw).strip()
-    start = cleaned.find("{")
-    end = cleaned.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        return cleaned[start : end + 1]
-    return cleaned
 
 
 def _format_columns_text(table: TableSchema) -> str:
@@ -119,12 +104,11 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
         timer.elapsed_ms,
     )
 
-    # Parse JSON response
     try:
         data = json.loads(raw_json)
     except json.JSONDecodeError as exc:
         try:
-            data = json.loads(_clean_json_payload(raw_json))
+            data = json.loads(clean_json(raw_json))
         except json.JSONDecodeError:
             logger.warning(
                 "Non-JSON response for table '%s': %s -- returning unenriched schema.",
@@ -133,7 +117,6 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
             )
             return EnrichedTableSchema.from_table_schema(table)
 
-    # Build enriched column list
     enriched_columns: list[EnrichedColumn] = []
     for entry in data.get("enriched_columns", []):
         try:

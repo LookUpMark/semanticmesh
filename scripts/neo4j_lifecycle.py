@@ -27,12 +27,7 @@ NEO4J_AUTH = "neo4j/test_password"
 HTTP_PORT = 7474
 BOLT_PORT = 7687
 VOLUME_NAME = "neo4j-thesis-data"
-
-# How long to wait for Neo4j to accept connections after start (seconds)
 STARTUP_TIMEOUT = 60
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:

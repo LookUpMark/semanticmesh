@@ -8,7 +8,6 @@ Returns CanonicalEntityDecision (merge/keep separate + canonical name).
 from __future__ import annotations
 
 import json
-import re
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
@@ -24,6 +23,7 @@ from src.models.schemas import (
     Triplet,
 )
 from src.prompts.templates import ER_JUDGE_SYSTEM, ER_JUDGE_USER, REFLECTION_TEMPLATE
+from src.utils.json_utils import clean_json
 
 if TYPE_CHECKING:
     import logging
@@ -31,18 +31,6 @@ if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
-
-# Matches optional triple-backtick markdown fences (with or without language tag)
-_FENCE_RE = re.compile(r"^```[a-zA-Z]*\n?|```$", re.MULTILINE)
-
-
-def _clean_json(raw: str) -> str:
-    """Strip markdown fences and leading/trailing whitespace from LLM output.
-
-    Many models wrap JSON in ```json ... ``` despite instructions. This strips
-    those fences so ``json.loads`` can parse the payload cleanly.
-    """
-    return _FENCE_RE.sub("", raw).strip()
 
 
 def _no_merge_decision(cluster: EntityCluster, reasoning: str) -> CanonicalEntityDecision:
@@ -65,15 +53,11 @@ def _reflection_prompt(fmt: str, error_or_critique: str, original_input: str) ->
 def build_provenance_map(triplets: list[Triplet]) -> dict[str, list[str]]:
     """Build a mapping from entity string → list of provenance texts.
 
-    Both subjects and objects of every triplet are included.  Used to
-    provide the LLM judge with grounding context for each entity variant.
-
     Args:
         triplets: All triplets from SLM extraction.
 
     Returns:
         Dict mapping ``entity_string → [provenance_text_1, ...]``.
-        Multiple triplets may contribute provenance for the same entity.
     """
     provenance: dict[str, list[str]] = defaultdict(list)
     for t in triplets:
@@ -122,12 +106,10 @@ def judge_cluster(
             ),
         )
 
-    # Build the two JSON structures for the prompt
     variants_json = json.dumps(cluster.variants)
     provenance_entries = []
     for variant in cluster.variants:
         contexts = provenance_map.get(variant, ["<no provenance available>"])
-        # Use first 2 provenance texts max to keep prompt bounded
         provenance_entries.append({"variant": variant, "context": " | ".join(contexts[:2])})
     provenance_json = json.dumps(provenance_entries)
 
@@ -171,13 +153,12 @@ def judge_cluster(
 
     _no_merge = _no_merge_decision(cluster, "Conservative no-merge default.")
 
-    # Parse JSON + Pydantic validation with self-reflection on failure
     max_attempts: int = settings.max_reflection_attempts
     _fmt = '{"merge": <bool>, "canonical_name": "<str>", "reasoning": "<str>"}'
 
     for attempt in range(1, max_attempts + 1):
         try:
-            data = json.loads(_clean_json(raw_json))
+            data = json.loads(clean_json(raw_json))
         except json.JSONDecodeError as exc:
             logger.warning(
                 "Non-JSON ER judge response for cluster '%s' (attempt %d/%d): %s",
@@ -239,16 +220,15 @@ def cluster_to_entity(
     canonical = decision.canonical_name if decision.merge else cluster.canonical_candidate
     synonyms = [v for v in cluster.variants if v != canonical]
 
-    # Collect provenance texts for the canonical entity
     all_provenance: list[str] = provenance_map.get(canonical, [])
     for variant in synonyms:
         all_provenance.extend(provenance_map.get(variant, []))
-    provenance_text = " | ".join(dict.fromkeys(all_provenance))  # deduplicated, order-preserving
+    provenance_text = " | ".join(dict.fromkeys(all_provenance))
 
     return Entity(
         name=canonical,
-        definition="",  # filled by Schema Enrichment / HITL
+        definition="",
         synonyms=synonyms,
-        provenance_text=provenance_text[:1000],  # cap at 1000 chars for Neo4j property
-        source_doc="",  # filled by the node that calls this function
+        provenance_text=provenance_text[:1000],
+        source_doc="",
     )

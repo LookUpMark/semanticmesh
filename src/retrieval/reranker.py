@@ -41,16 +41,12 @@ def get_reranker():
     settings = get_settings()
     model_name: str = settings.reranker_model
     logger.info("Loading reranker model '%s'...", model_name)
-    # Temporarily hide CUDA devices during init so PyTorch doesn't try to
-    # allocate GPU memory even when device="cpu" is requested.
     import os as _os
 
     _saved = _os.environ.get("CUDA_VISIBLE_DEVICES")
     _os.environ["CUDA_VISIBLE_DEVICES"] = ""
     try:
         reranker = FlagReranker(model_name, use_fp16=False, device="cpu")
-        # FlagEmbedding can still infer empty/CUDA targets in some environments.
-        # Force a deterministic single CPU target to avoid multi-process zero-device bugs.
         reranker.target_devices = ["cpu"]
     finally:
         if _saved is None:
@@ -71,12 +67,12 @@ def rerank(
 
     Each ``(query, chunk.text)`` pair is scored jointly by ``bge-reranker-large``.
     Scores are stored in ``chunk.metadata["reranker_score"]`` and the chunk
-    ``.score`` field is updated.  The list is sorted descending and sliced to
+    ``.score`` field is updated. The list is sorted descending and sliced to
     ``top_k``.
 
     If ``chunks`` is empty the function returns immediately without loading the
-    model.  If the reranker call fails (e.g., OOM), a warning is logged and the
-    input chunks are returned in their original order (graceful degradation).
+    model. If the reranker call fails, a warning is logged and the input chunks
+    are returned in their original order (graceful degradation).
 
     Args:
         query:    Natural language query string.

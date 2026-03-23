@@ -10,10 +10,6 @@ from __future__ import annotations
 
 from src.models.schemas import MappingProposal  # noqa: TC001
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Data types
-# ─────────────────────────────────────────────────────────────────────────────
-
 
 class HealingResult:
     """Result of one Cypher generation attempt (with optional healing retries)."""
@@ -33,11 +29,6 @@ class GoldMapping:
     def __init__(self, *, table_name: str, correct_concept: str) -> None:
         self.table_name: str = table_name
         self.correct_concept: str = correct_concept
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Metric implementations
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 def cypher_healing_rate(results: list[HealingResult]) -> float:

@@ -3,6 +3,13 @@
 EP-12 / US-12-01 to US-12-04:
 Retrieves candidate nodes from Neo4j for a given natural-language query,
 then merges and deduplicates results before passing to the reranker.
+
+This module orchestrates three retrieval channels:
+- Dense vector search (BGE-M3 embeddings)
+- BM25 keyword search (rank-bm25)
+- Graph traversal (Neo4j Cypher)
+
+Results are fused via Reciprocal Rank Fusion (RRF) and deduplicated.
 """
 
 from __future__ import annotations
@@ -12,7 +19,9 @@ from typing import TYPE_CHECKING, Any
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.models.schemas import RetrievedChunk
+from src.retrieval.bm25_retriever import bm25_search  # noqa: F401 (backward compat)
 from src.retrieval.embeddings import embed_text
+from src.retrieval.node_utils import _node_to_text  # noqa: F401 (backward compat)
 
 if TYPE_CHECKING:
     import logging
@@ -65,10 +74,10 @@ def vector_search(
     """Embed the query and run Neo4j vector index search on BusinessConcept nodes.
 
     Args:
-        query:  Natural language query string.
+        query: Natural language query string.
         client: Active ``Neo4jClient``.
-        top_k:  Number of results; defaults to ``settings.retrieval_vector_top_k``.
-        model:  Optional pre-loaded FlagModel; passed to ``embed_text``.
+        top_k: Number of results; defaults to ``settings.retrieval_vector_top_k``.
+        model: Optional pre-loaded FlagModel; passed to ``embed_text``.
 
     Returns:
         Sorted list of ``RetrievedChunk`` with ``source_type="vector"``.
@@ -111,78 +120,6 @@ def vector_search(
     return chunks
 
 
-# ── BM25 Keyword Search ────────────────────────────────────────────────────────
-
-
-def _node_to_text(node: dict[str, Any]) -> str:
-    """Flatten a node dict to a searchable string for BM25 tokenisation."""
-    parts = [
-        node.get("name") or "",
-        node.get("definition") or "",
-        " ".join(node.get("synonyms") or []),
-        " ".join(node.get("column_names") or []),
-    ]
-    return " ".join(p for p in parts if p).lower()
-
-
-def bm25_search(
-    query: str,
-    all_nodes: list[dict[str, Any]],
-    top_k: int | None = None,
-) -> list[RetrievedChunk]:
-    """Keyword retrieval using BM25Okapi over a pre-built node text corpus.
-
-    Args:
-        query:     Natural language query string.
-        all_nodes: Node dump from ``build_node_index``.
-        top_k:     Number of results; defaults to ``settings.retrieval_bm25_top_k``.
-
-    Returns:
-        Sorted list of ``RetrievedChunk`` with ``source_type="bm25"``.
-    """
-    try:
-        from rank_bm25 import BM25Okapi
-    except ImportError as exc:
-        raise ImportError("Install rank-bm25: pip install rank-bm25") from exc
-
-    settings = get_settings()
-    n = top_k or settings.retrieval_bm25_top_k
-
-    if not all_nodes:
-        return []
-
-    corpus_texts: list[str] = [_node_to_text(node) for node in all_nodes]
-    tokenised_corpus = [text.split() for text in corpus_texts]
-    bm25 = BM25Okapi(tokenised_corpus)
-
-    tokenised_query = query.lower().split()
-    scores: list[float] = bm25.get_scores(tokenised_query).tolist()
-
-    indexed = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)[:n]
-    chunks: list[RetrievedChunk] = []
-    for idx, score in indexed:
-        node = all_nodes[idx]
-        name = (node.get("name") or "").strip()
-        definition = node.get("definition") or ""
-        if not name:
-            continue
-        text = f"{name}: {definition}" if definition else name
-        chunks.append(
-            RetrievedChunk(
-                node_id=name,
-                node_type=node.get("node_type", "BusinessConcept"),
-                text=text,
-                score=score,
-                source_type="bm25",
-                metadata={
-                    key: val for key, val in node.items() if key not in ("name", "definition")
-                },
-            )
-        )
-    logger.debug("bm25_search: %d results for query '%s'.", len(chunks), query[:60])
-    return chunks
-
-
 # ── Graph Traversal ────────────────────────────────────────────────────────────
 
 
@@ -195,8 +132,8 @@ def graph_traversal(
 
     Args:
         seed_names: Node names to start traversal from.
-        client:     Active ``Neo4jClient``.
-        depth:      Hop depth; defaults to ``settings.retrieval_graph_depth`` (2).
+        client: Active ``Neo4jClient``.
+        depth: Hop depth; defaults to ``settings.retrieval_graph_depth`` (2).
 
     Returns:
         List of ``RetrievedChunk`` with ``source_type="graph"``.
@@ -338,6 +275,9 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
     return chunks
 
 
+# ── Result Fusion (RRF) ────────────────────────────────────────────────────────
+
+
 def merge_results(
     vector: list[RetrievedChunk],
     bm25: list[RetrievedChunk],
@@ -350,8 +290,8 @@ def merge_results(
 
     Args:
         vector: Results from ``vector_search``.
-        bm25:   Results from ``bm25_search``.
-        graph:  Results from ``graph_traversal``.
+        bm25: Results from ``bm25_search``.
+        graph: Results from ``graph_traversal``.
 
     Returns:
         Deduplicated list sorted by score descending.

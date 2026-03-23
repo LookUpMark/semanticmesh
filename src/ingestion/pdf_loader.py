@@ -42,7 +42,6 @@ def load_pdf(path: Path) -> list[Document]:
     if not path.exists():
         raise IngestionError(f"File not found: {path}")
 
-    # Handle plain text files (.txt)
     if path.suffix.lower() == ".txt":
         try:
             with open(path, encoding="utf-8") as f:
@@ -61,7 +60,6 @@ def load_pdf(path: Path) -> list[Document]:
         except Exception as exc:
             raise IngestionError(f"Failed to read text file: {path}") from exc
 
-    # Handle PDF files
     try:
         pdf = fitz.open(str(path))
     except fitz.FileDataError as exc:

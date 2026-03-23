@@ -5,12 +5,12 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 from src.generation.answer_generator import format_context, generate_answer
+from src.models.schemas import RetrievedChunk
 from src.prompts.templates import (
     ANSWER_SYSTEM_ADEQUATE,
     ANSWER_SYSTEM_INSUFFICIENT,
     ANSWER_SYSTEM_SPARSE,
 )
-from src.models.schemas import RetrievedChunk
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

@@ -4,20 +4,23 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from src.generation.query_graph import (
-    _compose_generation_chunks,
+from src.generation.nodes.generation_nodes import (
     _node_answer_generation,
-    _node_context_distillation,
+    _compose_generation_chunks,
+)
+from src.generation.nodes.expansion_nodes import _node_context_distillation
+from src.generation.query_graph import (
     _node_finalise,
-    _node_hybrid_retrieval,
+    _node_retrieve,  # Renamed from _node_hybrid_retrieval
+    _node_rerank,  # Renamed from _node_reranking
     _node_retrieval_quality_gate,
-    _node_reranking,
     _node_semantic_verification,
-    _route_after_retrieval_gate,
+)
+from src.generation.routing import (
     _route_after_grader,
+    _route_after_retrieval_gate,
 )
 from src.models.schemas import GraderDecision, RetrievedChunk
-
 
 # Helpers
 
@@ -65,9 +68,9 @@ class TestBuildQueryGraph:
         from src.generation.query_graph import build_query_graph
 
         with (
-            patch("src.generation.query_graph.get_embeddings", return_value=MagicMock()),
-            patch("src.generation.query_graph.get_reasoning_llm", return_value=MagicMock()),
-            patch("src.generation.query_graph.Neo4jClient", MagicMock()),
+            patch("src.retrieval.embeddings.get_embeddings", return_value=MagicMock()),
+            patch("src.config.llm_factory.get_reasoning_llm", return_value=MagicMock()),
+            patch("src.graph.neo4j_client.Neo4jClient", MagicMock()),
         ):
             graph = build_query_graph()
             assert graph is not None
@@ -90,14 +93,14 @@ class TestNodeReranking:
         settings.reranker_top_k = 5
 
         with (
-            patch("src.generation.query_graph.get_settings", return_value=settings),
+            patch("src.generation.nodes.retrieval_nodes.get_settings", return_value=settings),
             patch(
-                "src.generation.query_graph.rerank",
+                "src.generation.nodes.retrieval_nodes.rerank",
                 return_value=[self._chunk("A", 0.9), self._chunk("B", 0.2)],
             ),
         ):
             state = {"user_query": "q", "retrieved_chunks": [self._chunk("seed", 0.1)]}
-            out = _node_reranking(state)
+            out = _node_rerank(state)
             assert [c.node_id for c in out["reranked_chunks"]] == ["A", "B"]
             assert out["retrieval_quality_score"] == 0.9
             assert out["retrieval_chunk_count"] == 2
@@ -119,11 +122,11 @@ class TestNodeReranking:
         )
 
         with (
-            patch("src.generation.query_graph.get_settings", return_value=settings),
-            patch("src.generation.query_graph.rerank", return_value=[bad_chunk]),
+            patch("src.generation.nodes.retrieval_nodes.get_settings", return_value=settings),
+            patch("src.generation.nodes.retrieval_nodes.rerank", return_value=[bad_chunk]),
         ):
             state = {"user_query": "q", "retrieved_chunks": [bad_chunk]}
-            out = _node_reranking(state)
+            out = _node_rerank(state)
             assert out["reranked_chunks"] == []
             assert out["retrieval_filtered_by_threshold"] is False
             assert out["context_sufficiency"] == "insufficient"
@@ -150,8 +153,8 @@ class TestNodeReranking:
             metadata={},
         )
 
-        with patch("src.generation.query_graph.get_settings", return_value=settings):
-            out = _node_reranking(
+        with patch("src.generation.nodes.retrieval_nodes.get_settings", return_value=settings):
+            out = _node_rerank(
                 {
                     "user_query": "How is customer linked to orders?",
                     "retrieved_chunks": [noisy, useful],
@@ -191,25 +194,25 @@ class TestNodeHybridRetrievalLazyExpansion:
         extra = [self._chunk("D", 0.35)]
 
         with (
-            patch("src.generation.query_graph.get_settings", return_value=settings),
-            patch("src.generation.query_graph.get_embeddings", return_value=MagicMock()),
-            patch("src.generation.query_graph.Neo4jClient") as mock_client_cls,
-            patch("src.generation.query_graph.build_node_index", return_value=[]),
-            patch("src.generation.query_graph.vector_search", return_value=vec),
-            patch("src.generation.query_graph.bm25_search", return_value=bm),
+            patch("src.generation.nodes.retrieval_nodes.get_settings", return_value=settings),
+            patch("src.generation.nodes.retrieval_nodes.get_embeddings", return_value=MagicMock()),
+            patch("src.generation.nodes.retrieval_nodes.Neo4jClient") as mock_client_cls,
+            patch("src.generation.nodes.retrieval_nodes.build_node_index", return_value=[]),
+            patch("src.generation.nodes.retrieval_nodes.vector_search", return_value=vec),
+            patch("src.generation.nodes.retrieval_nodes.bm25_search", return_value=bm),
             patch(
-                "src.generation.query_graph.graph_traversal", side_effect=[trav, extra]
+                "src.generation.nodes.retrieval_nodes.graph_traversal", side_effect=[trav, extra]
             ) as mock_trav,
-            patch("src.generation.query_graph.fetch_all_concepts", return_value=concepts),
-            patch("src.generation.query_graph.fetch_fk_relationships", return_value=fks),
+            patch("src.generation.nodes.retrieval_nodes.fetch_all_concepts", return_value=concepts),
+            patch("src.generation.nodes.retrieval_nodes.fetch_fk_relationships", return_value=fks),
             patch(
-                "src.generation.query_graph.merge_results",
+                "src.generation.nodes.retrieval_nodes.merge_results",
                 side_effect=[vec + bm + trav, vec + bm + trav + extra],
             ),
         ):
             mock_client = MagicMock()
             mock_client_cls.return_value.__enter__.return_value = mock_client
-            out = _node_hybrid_retrieval({"user_query": "How are customers and orders related?"})
+            out = _node_retrieve({"user_query": "How are customers and orders related?"})
 
         assert len(out["retrieved_chunks"]) == 4
         assert mock_trav.call_count == 2
@@ -303,8 +306,12 @@ class TestAnswerGenerationContextComposition:
         }
 
         with (
-            patch("src.generation.query_graph.get_reasoning_llm", return_value=MagicMock()),
-            patch("src.generation.query_graph.generate_answer", return_value="ok") as mock_generate,
+            patch(
+                "src.generation.nodes.generation_nodes.get_reasoning_llm", return_value=MagicMock()
+            ),
+            patch(
+                "src.generation.nodes.generation_nodes.generate_answer", return_value="ok"
+            ) as mock_generate,
         ):
             out = _node_answer_generation(state)
 

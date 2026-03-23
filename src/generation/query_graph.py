@@ -2,66 +2,55 @@
 
 Wires hybrid retrieval → reranking → answer generation → hallucination grader
 (with regeneration loop) into a compiled StateGraph.
+
+This module serves as the orchestration layer for the query pipeline,
+integrating nodes from:
+- retrieval_nodes: Hybrid retrieval and reranking
+- generation_nodes: Answer generation and hallucination grading
+- expansion_nodes: Context distillation and lazy expansion
+- routing: Conditional edge routing logic
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-import re
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
-from src.config.llm_factory import get_reasoning_llm
+# Re-export for backward compatibility with tests
 from src.config.logging import get_logger
 from src.config.settings import get_settings
-from src.generation.answer_generator import generate_answer
-from src.generation.context_distiller import distill_context_chunks
-from src.generation.hallucination_grader import grade_answer
-from src.generation.lazy_expander import (
-    collect_seed_names_for_expansion,
-    should_trigger_lazy_expansion,
+from src.generation.nodes import (
+    _node_answer_generation,
+    _node_context_distillation,
+    _node_grade_hallucination,
+    _node_rerank,
+    _node_retrieve,
 )
-from src.graph.neo4j_client import Neo4jClient, setup_schema
-from src.models.schemas import GraderDecision, RetrievedChunk
+from src.generation.routing import (
+    _route_after_consistency_validator,
+    _route_after_retrieval_gate,
+)
+from src.graph.neo4j_client import Neo4jClient
+
+# Backward compatibility: expose node functions with original names
+_node_hybrid_retrieval = _node_retrieve
+_node_reranking = _node_rerank
+_node_hallucination_grader = _node_grade_hallucination
+from src.graph.neo4j_client import setup_schema
+from src.models.schemas import RetrievedChunk
 from src.models.state import QueryState
-from src.retrieval.embeddings import get_embeddings
-from src.retrieval.hybrid_retriever import (
-    bm25_search,
-    build_node_index,
-    fetch_all_concepts,
-    fetch_fk_relationships,
-    graph_traversal,
-    merge_results,
-    vector_search,
-)
-from src.retrieval.reranker import rerank
 
 if TYPE_CHECKING:
     import logging
 
 logger: logging.Logger = get_logger(__name__)
 
-_TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
-_NOISE_MARKERS = (
-    "heuristic embedding mapping score=",
-    "adjusted_confidence=",
-    "best_candidate=",
-)
-_RELATION_TOKENS = ("references", "foreign key", "fk ", " fk", "joins", "join ")
-_PRIORITY_STRUCTURE_TOKENS = ("references", "foreign key")
 
-
-def _has_relation_tokens(text: str) -> bool:
-    return any(token in text for token in _RELATION_TOKENS)
-
-
-def _has_priority_structure_tokens(text: str) -> bool:
-    return any(token in text for token in _PRIORITY_STRUCTURE_TOKENS)
-
-
-def _active_chunks(state: QueryState) -> list[RetrievedChunk]:
-    return state.get("generation_chunks") or state.get("reranked_chunks") or []
+# ─────────────────────────────────────────────────────────────────────────────
+# Helper Functions (moved from nodes, used by quality gate/verifier)
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 def _has_structural_relationship_evidence(chunks: list[RetrievedChunk]) -> bool:
@@ -71,295 +60,32 @@ def _has_structural_relationship_evidence(chunks: list[RetrievedChunk]) -> bool:
         text = chunk.text.strip().lower()
         if "→" in node_id:
             return True
-        if _has_relation_tokens(text):
+        # Relation tokens from retrieval_nodes
+        relation_tokens = ("references", "foreign key", "fk ", " fk", "joins", "join ")
+        if any(token in text for token in relation_tokens):
             return True
     return False
 
 
-def _query_terms(query: str) -> set[str]:
-    stop = {
-        "what",
-        "which",
-        "where",
-        "when",
-        "how",
-        "does",
-        "the",
-        "this",
-        "that",
-        "with",
-        "into",
-        "from",
-        "table",
-        "database",
-        "business",
-        "concept",
-        "information",
-        "schema",
-        "knowledge",
-        "graph",
-    }
-    terms = {t.lower() for t in _TOKEN_RE.findall(query) if len(t) > 2 and t.lower() not in stop}
-    return terms
-
-
-def _is_noise_chunk(chunk: RetrievedChunk) -> bool:
-    text = chunk.text.lower()
-    if any(marker in text for marker in _NOISE_MARKERS):
-        return True
-    if len(chunk.text.strip()) < 18 and "→" not in chunk.node_id:
-        return True
-    return False
-
-
-def _pre_filter_rerank_pool(
-    chunks: list[RetrievedChunk],
-    query: str,
-    max_candidates: int,
-) -> list[RetrievedChunk]:
-    if not chunks:
-        return []
-
-    terms = _query_terms(query)
-
-    def _chunk_priority(chunk: RetrievedChunk) -> tuple[int, int, int, float]:
-        text_l = chunk.text.lower()
-        nid_l = chunk.node_id.lower()
-        has_structure = int("→" in chunk.node_id or _has_priority_structure_tokens(text_l))
-        keyword_hits = int(any(term in text_l or term in nid_l for term in terms))
-        source_rank = 2 if chunk.source_type in {"vector", "bm25"} else 1
-        return (has_structure, keyword_hits, source_rank, float(chunk.score))
-
-    selected: list[RetrievedChunk] = []
-    dropped_noise = 0
-    for chunk in chunks:
-        if not chunk.node_id.strip() or not chunk.text.strip():
-            continue
-        if _is_noise_chunk(chunk):
-            dropped_noise += 1
-            continue
-        selected.append(chunk)
-
-    if not selected:
-        # Never starve downstream nodes: keep original valid chunks when filter is too strict.
-        selected = [c for c in chunks if c.node_id.strip() and c.text.strip()]
-
-    selected.sort(key=_chunk_priority, reverse=True)
-    limited = selected[:max_candidates]
-    if dropped_noise:
-        logger.info(
-            "Pre-rerank quality filter dropped %d noisy chunk(s); kept %d/%d candidates.",
-            dropped_noise,
-            len(limited),
-            len(chunks),
-        )
-    return limited
-
-
-def _compose_generation_chunks(
-    query: str,
-    chunks: list[RetrievedChunk],
-    max_core: int = 6,
-    max_support: int = 4,
-) -> list[RetrievedChunk]:
-    """Build a balanced context window for answer generation.
-
-    Strategy:
-    - `core`: most query-relevant and structural chunks
-    - `support`: additional diverse evidence from remaining chunks
-    """
-    if not chunks:
-        return []
-
-    terms = _query_terms(query)
-
-    def _priority(chunk: RetrievedChunk) -> tuple[int, int, int, float]:
-        text_l = chunk.text.lower()
-        nid_l = chunk.node_id.lower()
-        has_structure = int("→" in chunk.node_id or _has_priority_structure_tokens(text_l))
-        keyword_hits = int(any(term in text_l or term in nid_l for term in terms))
-        source_rank = 2 if chunk.source_type in {"vector", "bm25"} else 1
-        return (keyword_hits, has_structure, source_rank, float(chunk.score))
-
-    ranked = sorted(chunks, key=_priority, reverse=True)
-    target = max_core + max_support
-
-    # Soft caps prevent any single channel from flooding the generation context.
-    source_caps: dict[str, int] = {
-        "vector": min(4, target),
-        "bm25": min(4, target),
-        "graph": min(5, target),
-    }
-
-    selected: list[RetrievedChunk] = []
-    selected_ids: set[str] = set()
-    source_counts: dict[str, int] = {"vector": 0, "bm25": 0, "graph": 0}
-
-    # Pass 1: enforce per-source caps while selecting top-priority chunks.
-    for chunk in ranked:
-        if len(selected) >= target:
-            break
-        if chunk.node_id in selected_ids:
-            continue
-        cap = source_caps.get(chunk.source_type, target)
-        if source_counts.get(chunk.source_type, 0) >= cap:
-            continue
-        selected.append(chunk)
-        selected_ids.add(chunk.node_id)
-        source_counts[chunk.source_type] = source_counts.get(chunk.source_type, 0) + 1
-
-    # Pass 2: fill remaining slots regardless of source if the caps were too strict.
-    if len(selected) < target:
-        for chunk in ranked:
-            if len(selected) >= target:
-                break
-            if chunk.node_id in selected_ids:
-                continue
-            selected.append(chunk)
-            selected_ids.add(chunk.node_id)
-
-    core = selected[:max_core]
-    support = selected[max_core:target]
-    return core + support
+def _active_chunks(state: QueryState) -> list[RetrievedChunk]:
+    """Get active chunks for generation (generation_chunks or reranked_chunks)."""
+    return state.get("generation_chunks") or state.get("reranked_chunks") or []
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Node Implementations
+# Quality Gate and Verification Nodes
 # ─────────────────────────────────────────────────────────────────────────────
-
-
-def _node_hybrid_retrieval(state: QueryState) -> dict[str, Any]:
-    settings = get_settings()
-    query: str = state["user_query"]
-    model = get_embeddings()
-
-    retrieval_mode = (settings.retrieval_mode or "hybrid").lower()
-    with Neo4jClient() as client:
-        all_nodes = build_node_index(client)
-        if retrieval_mode == "vector":
-            vec_results = vector_search(
-                query, client, top_k=settings.retrieval_vector_top_k, model=model
-            )
-            merged = vec_results
-        elif retrieval_mode == "bm25":
-            bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
-            merged = bm25_results
-        else:
-            vec_results = vector_search(
-                query, client, top_k=settings.retrieval_vector_top_k, model=model
-            )
-            trav_results = graph_traversal(
-                seed_names=[c.node_id for c in vec_results[:5]],
-                client=client,
-                depth=settings.retrieval_graph_depth,
-            )
-            all_concepts = fetch_all_concepts(client)
-            fk_chunks = fetch_fk_relationships(client)
-            bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
-            merged = merge_results(
-                vec_results, bm25_results, trav_results + all_concepts + fk_chunks
-            )
-
-            if getattr(settings, "enable_lazy_expansion", False):
-                top_score = float(merged[0].score) if merged else 0.0
-                if should_trigger_lazy_expansion(
-                    top_score,
-                    len(merged),
-                    float(getattr(settings, "lazy_expansion_confidence_threshold", 0.40)),
-                ):
-                    seeds = collect_seed_names_for_expansion(merged, limit=8)
-                    extra = graph_traversal(
-                        seed_names=seeds,
-                        client=client,
-                        depth=max(1, settings.retrieval_graph_depth + 1),
-                    )
-                    merged = merge_results(
-                        vec_results, bm25_results, trav_results + extra + all_concepts + fk_chunks
-                    )
-    return {"retrieved_chunks": merged}
-
-
-def _node_reranking(state: QueryState) -> dict[str, Any]:
-    settings = get_settings()
-    query: str = state["user_query"]
-    chunks: list[RetrievedChunk] = state.get("retrieved_chunks") or []
-    max_pool = max(settings.reranker_top_k * 4, settings.reranker_top_k)
-    pool = _pre_filter_rerank_pool(chunks, query=query, max_candidates=max_pool)
-
-    if not settings.enable_reranker:
-        candidates = pool[: settings.reranker_top_k]
-    else:
-        candidates = rerank(query, pool, top_k=settings.reranker_top_k)
-
-    valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
-    if not valid:
-        return {
-            "reranked_chunks": [],
-            "retrieval_quality_score": 0.0,
-            "retrieval_chunk_count": 0,
-            "retrieval_filtered_by_threshold": False,
-            "context_sufficiency": "insufficient",
-        }
-
-    top_score = float(valid[0].score)
-    if len(valid) == 1:
-        sufficiency = "sparse"
-    else:
-        sufficiency = "adequate"
-
-    return {
-        "reranked_chunks": valid,
-        "retrieval_quality_score": top_score,
-        "retrieval_chunk_count": len(valid),
-        "retrieval_filtered_by_threshold": False,
-        "context_sufficiency": sufficiency,
-    }
-
-
-def _node_answer_generation(state: QueryState) -> dict[str, Any]:
-    llm = get_reasoning_llm()
-    query: str = state["user_query"]
-    chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
-    generation_chunks = state.get("generation_chunks") or _compose_generation_chunks(query, chunks)
-    critique: str | None = state.get("last_critique")
-    sufficiency: str = state.get("context_sufficiency", "insufficient")
-    if generation_chunks and sufficiency != "adequate":
-        logger.warning(
-            "Generating answer with %s context (chunks=%d).",
-            sufficiency,
-            len(generation_chunks),
-        )
-    answer = generate_answer(
-        query,
-        generation_chunks,
-        llm,
-        critique=critique,
-        context_sufficiency=sufficiency,
-    )
-    iteration = state.get("iteration_count", 0) + 1
-    return {
-        "current_answer": answer,
-        "iteration_count": iteration,
-        "last_critique": None,
-        "generation_chunks": generation_chunks,
-    }
-
-
-def _node_context_distillation(state: QueryState) -> dict[str, Any]:
-    query: str = state["user_query"]
-    chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
-    composed = _compose_generation_chunks(query, chunks)
-    distilled = distill_context_chunks(query, composed, max_chunks=len(composed) or 0)
-    if distilled:
-        logger.info(
-            "Context distillation: composed=%d -> distilled=%d chunk(s).",
-            len(composed),
-            len(distilled),
-        )
-    return {"generation_chunks": distilled or composed}
 
 
 def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
+    """Gate retrieval quality to avoid generating answers from insufficient context.
+
+    Returns:
+        "proceed": Adequate retrieval quality
+        "proceed_with_warning": Low quality but usable
+        "abstain_early": Insufficient context, abort early
+    """
+
     settings = get_settings()
     if not getattr(settings, "enable_retrieval_quality_gate", True):
         return {"retrieval_gate_decision": "proceed"}
@@ -402,6 +128,12 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
 
 
 def _node_semantic_verification(state: QueryState) -> dict[str, Any]:
+    """Verify semantic overlap between answer and retrieved entities.
+
+    Checks if the answer mentions the entities/concepts found in retrieved chunks.
+    Low overlap may indicate hallucination or irrelevant answer.
+    """
+
     settings = get_settings()
     if not getattr(settings, "enable_semantic_verifier", True):
         return {
@@ -463,38 +195,18 @@ def _node_semantic_verification(state: QueryState) -> dict[str, Any]:
     }
 
 
-def _node_hallucination_grader(state: QueryState) -> dict[str, Any]:
-    settings = get_settings()
-    if not settings.enable_hallucination_grader:
-        return {"grader_decision": GraderDecision(grounded=True, critique=None, action="pass")}
-    llm = get_reasoning_llm()
-    query: str = state["user_query"]
-    answer: str = state.get("current_answer") or ""
-    chunks: list[RetrievedChunk] = _active_chunks(state)
-    iteration: int = state.get("iteration_count", 0)
-
-    # Loop guard — accept answer after max retries to avoid infinite loop
-    if iteration >= settings.max_hallucination_retries:
-        logger.warning("Max hallucination retries reached — accepting current answer.")
-        decision = GraderDecision(
-            grounded=True,
-            critique=None,
-            action="pass",
-        )
-    else:
-        decision = grade_answer(query, answer, chunks, llm)
-
-    update: dict[str, Any] = {"grader_decision": decision}
-    if decision.action == "regenerate":
-        update["last_critique"] = decision.critique
-        update["grader_rejection_count"] = int(state.get("grader_rejection_count", 0)) + 1
-    return update
-
-
 def _node_grader_consistency_validator(state: QueryState) -> dict[str, Any]:
+    """Validate grader decision consistency.
+
+    Ensures that if a decision is marked as grounded, its action is "pass".
+    Inconsistent decisions are logged as warnings.
+    """
+
     settings = get_settings()
     if not getattr(settings, "enable_grader_consistency_validator", True):
         return {"grader_consistency_valid": True}
+
+    from src.models.schemas import GraderDecision
 
     decision: GraderDecision | None = state.get("grader_decision")
     if decision is None:
@@ -511,6 +223,10 @@ def _node_grader_consistency_validator(state: QueryState) -> dict[str, Any]:
 
 
 def _node_finalise(state: QueryState) -> dict[str, Any]:
+    """Finalize query response and collect metadata for evaluation.
+
+    Compiles the final answer with sources and retrieval metrics for RAGAS evaluation.
+    """
     answer: str = state.get("current_answer") or ""
     gate_decision = state.get("retrieval_gate_decision", "proceed")
     if gate_decision == "abstain_early":
@@ -526,7 +242,7 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
         "retrieved_contexts": retrieved_contexts,
         "retrieval_quality_score": float(state.get("retrieval_quality_score", 0.0)),
         "retrieval_chunk_count": int(state.get("retrieval_chunk_count", len(reranked))),
-        "retrieval_filtered_by_threshold": bool(
+        "retrieved_filtered_by_threshold": bool(
             state.get("retrieval_filtered_by_threshold", False)
         ),
         "context_sufficiency": state.get("context_sufficiency", "insufficient"),
@@ -540,28 +256,6 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Conditional Edge
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-def _route_after_grader(state: QueryState) -> str:
-    """Route based on grader decision action."""
-    decision: GraderDecision | None = state.get("grader_decision")
-    if decision is None or decision.action == "pass":
-        return "finalise"
-    if decision.action == "regenerate":
-        return "answer_generation"
-    return "finalise"
-
-
-def _route_after_retrieval_gate(state: QueryState) -> str:
-    decision = state.get("retrieval_gate_decision", "proceed")
-    if decision == "abstain_early":
-        return "finalise"
-    return "context_distillation"
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Graph Factory
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -569,23 +263,36 @@ def _route_after_retrieval_gate(state: QueryState) -> str:
 def build_query_graph():
     """Compile and return the Query StateGraph.
 
+    The query graph implements an Agentic RAG pipeline with:
+    - Hybrid retrieval (vector + BM25 + graph traversal)
+    - Cross-encoder reranking
+    - Retrieval quality gate
+    - Context distillation
+    - Answer generation with critique loop
+    - Semantic verification
+    - Hallucination grading (Self-RAG)
+    - Consistency validation
+
     Returns:
         A compiled LangGraph ``CompiledStateGraph`` ready to ``.invoke()``.
     """
     graph = StateGraph(QueryState)
 
-    graph.add_node("hybrid_retrieval", _node_hybrid_retrieval)
-    graph.add_node("reranking", _node_reranking)
+    # Add nodes
+    graph.add_node("hybrid_retrieval", _node_retrieve)
+    graph.add_node("reranking", _node_rerank)
     graph.add_node("retrieval_quality_gate", _node_retrieval_quality_gate)
     graph.add_node("context_distillation", _node_context_distillation)
     graph.add_node("answer_generation", _node_answer_generation)
     graph.add_node("semantic_verification", _node_semantic_verification)
-    graph.add_node("hallucination_grader", _node_hallucination_grader)
+    graph.add_node("hallucination_grader", _node_grade_hallucination)
     graph.add_node("grader_consistency_validator", _node_grader_consistency_validator)
     graph.add_node("finalise", _node_finalise)
 
+    # Set entry point
     graph.set_entry_point("hybrid_retrieval")
 
+    # Add edges
     graph.add_edge("hybrid_retrieval", "reranking")
     graph.add_edge("reranking", "retrieval_quality_gate")
     graph.add_edge("context_distillation", "answer_generation")
@@ -594,6 +301,7 @@ def build_query_graph():
     graph.add_edge("hallucination_grader", "grader_consistency_validator")
     graph.add_edge("finalise", END)
 
+    # Add conditional edges
     graph.add_conditional_edges(
         "retrieval_quality_gate",
         _route_after_retrieval_gate,
@@ -605,7 +313,7 @@ def build_query_graph():
 
     graph.add_conditional_edges(
         "grader_consistency_validator",
-        _route_after_grader,
+        _route_after_consistency_validator,
         {
             "finalise": "finalise",
             "answer_generation": "answer_generation",
@@ -622,7 +330,21 @@ def run_query(user_query: str) -> dict[str, Any]:
         user_query: Natural-language question.
 
     Returns:
-        ``{"final_answer": str, "sources": list[str], "retrieved_contexts": list[str], "retrieval_quality_score": float, "retrieval_chunk_count": int, "retrieval_filtered_by_threshold": bool, "context_sufficiency": str}``.
+        ``{
+            "final_answer": str,
+            "sources": list[str],
+            "retrieved_contexts": list[str],
+            "retrieval_quality_score": float,
+            "retrieval_chunk_count": int,
+            "retrieved_filtered_by_threshold": bool,
+            "context_sufficiency": str,
+            "retrieval_gate_decision": str,
+            "semantic_verification_overlap": float,
+            "semantic_verification_passed": bool,
+            "semantic_verification_warning": str | None,
+            "grader_consistency_valid": bool,
+            "grader_rejection_count": int,
+        }``
     """
     graph = build_query_graph()
     config = {"configurable": {"thread_id": "query-run-1"}}
@@ -643,7 +365,7 @@ def run_query(user_query: str) -> dict[str, Any]:
         "retrieved_contexts": [],
         "retrieval_quality_score": 0.0,
         "retrieval_chunk_count": 0,
-        "retrieval_filtered_by_threshold": False,
+        "retrieved_filtered_by_threshold": False,
         "context_sufficiency": "insufficient",
         "retrieval_gate_decision": "proceed",
         "semantic_verification_overlap": 1.0,

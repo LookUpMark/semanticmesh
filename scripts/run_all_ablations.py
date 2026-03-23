@@ -1,17 +1,11 @@
 """Automated ablation study runner with RAGAS integration.
 
-Runs all 20 ablation studies (AB-00 through AB-20) sequentially with:
-- Conditional RAGAS evaluation (only for high-impact studies)
+Features:
+- Conditional RAGAS evaluation (high-impact studies only)
 - Resume capability (via state.json)
 - Dry-run mode for validation
 - Single-study mode for targeted runs
 - Resilient execution (continues on failure)
-
-Usage:
-    python scripts/run_all_ablations.py                    # Run all studies
-    python scripts/run_all_ablations.py --dry-run          # Validate configuration
-    python scripts/run_all_ablations.py --study AB-05      # Run single study
-    python scripts/run_all_ablations.py --resume           # Resume from last state
 """
 
 from __future__ import annotations
@@ -26,23 +20,22 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-# ── Repo root on path ──────────────────────────────────────────────────────────
+# ── Setup ────────────────────────────────────────────────────────────────────────
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-# ── Load .env ─────────────────────────────────────────────────────────────────
 from dotenv import load_dotenv  # type: ignore[import]
 
 load_dotenv(ROOT / ".env")
-
-# ── Notebook-style logging ─────────────────────────────────────────────────────
 from src.config.llm_factory import reconfigure_from_env  # noqa: E402
 from src.config.logging import setup_notebook_logging  # noqa: E402
 
 reconfigure_from_env()
 setup_notebook_logging()
 
-# ── Import after setup ─────────────────────────────────────────────────────────
+# ── Imports ─────────────────────────────────────────────────────────────────────
+
 from src.evaluation.ablation_runner import ABLATION_MATRIX  # noqa: E402
 
 logger = logging.getLogger("run_all_ablations")
@@ -52,21 +45,21 @@ logger = logging.getLogger("run_all_ablations")
 RESULTS_DIR = ROOT / "notebooks" / "ablation" / "ablation_results"
 STATE_FILE = RESULTS_DIR / "ablation_state.json"
 
-# Studies with RAGAS enabled (high impact on metrics)
+# Studies with RAGAS enabled (high-impact studies)
 RAGAS_ENABLED_STUDIES = {
-    "AB-00",  # Baseline reference
+    "AB-00",  # Baseline
     "AB-01",
-    "AB-02",  # Retrieval mode variations
+    "AB-02",  # Retrieval variations
     "AB-03",  # Reranker OFF
     "AB-06",
     "AB-07",
-    "AB-08",  # Chunking strategies
+    "AB-08",  # Chunking
     "AB-15",  # Schema enrichment OFF
     "AB-16",  # Critic validation OFF
     "AB-19",  # Cypher healing OFF
 }
 
-# ── Utilities ──────────────────────────────────────────────────────────────────
+# ── Helper functions ─────────────────────────────────────────────────────────────
 
 
 def sep(char: str = "─", n: int = 60) -> str:
@@ -145,7 +138,7 @@ def _restore_environment(saved_env: dict[str, str | None]) -> None:
             os.environ[key] = value
 
 
-# ── Study execution ───────────────────────────────────────────────────────────
+# ── Study execution ─────────────────────────────────────────────────────────────
 
 
 def _get_env_overrides(study_id: str) -> dict[str, str]:
@@ -505,7 +498,7 @@ def run_all_studies(
     }
 
 
-# ── CLI ─────────────────────────────────────────────────────────────────────────
+# ── CLI ─────────────────────────────────────────────────────────────────────
 
 
 def main() -> None:

@@ -7,12 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from src.mapping.rag_mapper import (
-    build_retrieval_query,
-    propose_mapping,
-    propose_mapping_heuristic,
-    retrieve_top_entities,
-)
+from src.mapping.rag_mapper import propose_mapping, propose_mapping_heuristic
+from src.mapping.retrieval import build_retrieval_query, retrieve_top_entities
 from src.models.schemas import (
     ColumnSchema,
     EnrichedColumn,
@@ -21,8 +17,6 @@ from src.models.schemas import (
     MappingProposal,
     TableSchema,
 )
-
-# ── Test Helpers ─────────────────────────────────────────────────────────────
 
 
 def _make_table(name: str = "TB_CST", ddl: str = "") -> TableSchema:
@@ -70,9 +64,6 @@ def _make_llm_proposal(table_name: str, concept: str, confidence: float) -> Magi
     return llm
 
 
-# ── build_retrieval_query ─────────────────────────────────────────────────────
-
-
 class TestBuildRetrievalQuery:
     def test_uses_enriched_name_when_available(self) -> None:
         table = _make_enriched("TB_CST")
@@ -102,13 +93,8 @@ class TestBuildRetrievalQuery:
             EnrichedColumn(original_name=f"COL{i}", enriched_name=f"Column {i}") for i in range(15)
         ]
         query = build_retrieval_query(enriched)
-        # Check that not all 15 columns are included
         assert "Column 14" not in query
-        # Check that at least some columns are included
         assert "Column 0" in query
-
-
-# ── retrieve_top_entities ─────────────────────────────────────────────────────
 
 
 class TestRetrieveTopEntities:
@@ -140,28 +126,20 @@ class TestRetrieveTopEntities:
             _make_entity("Customer", "A person who buys"),
             _make_entity("Product", "An item for sale"),
         ]
-        # Customer vector is [1,0], Product is [0,1], query is [1,0]
-        # Customer should be first (similarity 1.0)
         emb = self._make_embeddings([1, 0], [[1, 0], [0, 1]])
         result = retrieve_top_entities("query", entities, emb, top_k=2)
         assert result[0].name == "Customer"
         assert result[1].name == "Product"
 
     def test_uses_definition_when_available(self) -> None:
-        # Entity with definition should have better embedding match
         entities = [
-            _make_entity("Customer", "A person who buys things"),  # Has definition
-            _make_entity("CUST", ""),  # No definition
+            _make_entity("Customer", "A person who buys things"),
+            _make_entity("CUST", ""),
         ]
-        # Query contains "person who buys"
         query = "person who buys things"
-        # Mock embeddings where the entity with definition matches better
         emb = self._make_embeddings([0.9, 0.1], [[0.9, 0.1], [0.5, 0.5]])
         result = retrieve_top_entities(query, entities, emb, top_k=1)
         assert result[0].name == "Customer"
-
-
-# ── propose_mapping ───────────────────────────────────────────────────────────
 
 
 class TestProposeMapping:
@@ -198,7 +176,6 @@ class TestProposeMapping:
         table = _make_table()
         llm = MagicMock()
         resp = MagicMock()
-        # Missing required field 'confidence'
         resp.content = json.dumps({"table_name": "TB_CST", "mapped_concept": "Customer"})
         llm.invoke.return_value = resp
         result = propose_mapping(table, [], llm)
@@ -229,9 +206,8 @@ class TestProposeMapping:
             table, entities, llm, few_shot_examples=few_shot, reflection_prompt=reflection
         )
 
-        # Verify the reflection was prepended
         call_args = llm.invoke.call_args
-        user_message = call_args[0][0][1]  # Second message is HumanMessage
+        user_message = call_args[0][0][1]
         assert "[REFLECTION CRITIQUE" in user_message.content
         assert reflection in user_message.content
         assert few_shot in user_message.content
@@ -239,7 +215,7 @@ class TestProposeMapping:
 
 class TestProposeMappingHeuristic:
     @patch("src.mapping.rag_mapper.embed_text")
-    @patch("src.mapping.rag_mapper.retrieve_top_entities")
+    @patch("src.mapping.retrieval.retrieve_top_entities")
     @patch("src.mapping.rag_mapper.get_settings")
     def test_returns_mapped_concept_when_confidence_above_threshold(
         self,
@@ -259,7 +235,7 @@ class TestProposeMappingHeuristic:
         assert out.confidence >= 0.9
 
     @patch("src.mapping.rag_mapper.embed_text")
-    @patch("src.mapping.rag_mapper.retrieve_top_entities")
+    @patch("src.mapping.retrieval.retrieve_top_entities")
     @patch("src.mapping.rag_mapper.get_settings")
     def test_penalizes_column_like_candidate_and_selects_concept(
         self,
@@ -291,7 +267,7 @@ class TestProposeMappingHeuristic:
         assert out.confidence >= 0.55
 
     @patch("src.mapping.rag_mapper.embed_text")
-    @patch("src.mapping.rag_mapper.retrieve_top_entities")
+    @patch("src.mapping.retrieval.retrieve_top_entities")
     @patch("src.mapping.rag_mapper.get_settings")
     def test_falls_back_to_enriched_table_name_when_best_candidate_is_attribute_like(
         self,
@@ -314,7 +290,7 @@ class TestProposeMappingHeuristic:
         assert out.mapped_concept == "Product"
         assert out.confidence >= 0.55
 
-    @patch("src.mapping.rag_mapper.retrieve_top_entities")
+    @patch("src.mapping.retrieval.retrieve_top_entities")
     def test_returns_null_mapping_when_no_candidates(self, mock_retrieve_top) -> None:
         table = _make_enriched("TB_CST")
         mock_retrieve_top.return_value = []

@@ -16,10 +16,6 @@ from testcontainers.neo4j import Neo4jContainer
 from src.config.settings import Settings
 from src.graph.neo4j_client import Neo4jClient
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Test Settings
-# ─────────────────────────────────────────────────────────────────────────────
-
 
 @pytest.fixture(scope="session")
 def test_settings() -> Settings:
@@ -60,11 +56,6 @@ def test_settings() -> Settings:
     )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Neo4j Container Fixture
-# ─────────────────────────────────────────────────────────────────────────────
-
-
 @pytest.fixture(scope="session")
 def neo4j_container(test_settings: Settings):
     """Spin up a real Neo4j Docker container for integration tests.
@@ -90,26 +81,16 @@ def neo4j_client(neo4j_container: Neo4jContainer) -> Neo4jClient:
     The client is created fresh for each test and automatically
     cleans up the database between tests.
     """
-    # Get connection details from the container
     uri = neo4j_container.get_connection_url()
     user = neo4j_container.username
     password = neo4j_container.password
 
-    # Create client
     client = Neo4jClient(uri=uri, username=user, password=password)
 
-    # Clear database before each test
     with client:
         client.execute_cypher("MATCH (n) DETACH DELETE n")
 
     yield client
-
-    # Cleanup is automatic via context manager exit
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Mock LLM Fixtures
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 def _load_mock_response(name: str) -> dict[str, Any]:
@@ -127,12 +108,9 @@ def mock_llm():
     to customize for specific tests.
     """
     llm = MagicMock()
-
-    # Create a mock response object
     response = MagicMock()
     response.content = "{}"
     llm.invoke.return_value = response
-
     return llm
 
 
@@ -158,7 +136,7 @@ def mock_llm_sequence():
                 response.content = responses[call_count[0]]
                 call_count[0] += 1
             else:
-                response.content = responses[-1]  # Return last response
+                response.content = responses[-1]
             return response
 
         llm.invoke = _invoke
@@ -203,11 +181,6 @@ def mock_grader_hallucinated():
     return _load_mock_response("grader_hallucinated")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Mock Embeddings Fixture
-# ─────────────────────────────────────────────────────────────────────────────
-
-
 @pytest.fixture
 def mock_embeddings():
     """Mock embeddings that return fixed 1024-dim vectors.
@@ -217,30 +190,22 @@ def mock_embeddings():
     """
     embedder = MagicMock()
 
-    # Return slightly different vectors to allow similarity tests
     def _embed_documents(texts: list[str]) -> list[list[float]]:
         vectors = []
-        for i, text in enumerate(texts):
-            # Create deterministic but varied vectors
+        for i in range(len(texts)):
             base = [0.1] * 1024
-            base[0] = (i % 10) / 10.0  # Vary first element
+            base[0] = (i % 10) / 10.0
             vectors.append(base)
         return vectors
 
     embedder.embed_documents = _embed_documents
 
     def _embed_query(text: str) -> list[float]:
-        # Return a distinctive query vector
         return [0.5] * 1024
 
     embedder.embed_query = _embed_query
 
     return embedder
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Sample Data Fixtures
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 @pytest.fixture
@@ -267,11 +232,6 @@ def sample_data_dictionary() -> Path:
     return Path(__file__).parent / "fixtures" / "sample_docs" / "data_dictionary.txt"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Helper Functions
-# ─────────────────────────────────────────────────────────────────────────────
-
-
 @pytest.fixture
 def get_graph_snapshot():
     """Factory function to capture Neo4j graph state for idempotency tests.
@@ -285,7 +245,6 @@ def get_graph_snapshot():
 
     def _snapshot(client: Neo4jClient) -> dict[str, Any]:
         with client:
-            # Count nodes and relationships
             result = client.execute_cypher("""
                 MATCH (n)
                 WITH count(DISTINCT n) as node_count

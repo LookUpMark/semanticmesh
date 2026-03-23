@@ -13,7 +13,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config.logging import get_logger
 from src.prompts.templates import (
-    ANSWER_SYSTEM,
     ANSWER_SYSTEM_ADEQUATE,
     ANSWER_SYSTEM_INSUFFICIENT,
     ANSWER_SYSTEM_SPARSE,
@@ -29,27 +28,24 @@ if TYPE_CHECKING:
 
 logger: logging.Logger = get_logger(__name__)
 
-_ABSTENTION_SENTENCE = "i cannot find this information in the knowledge graph."
+_ABSTENTION_SENTINEL = "i cannot find this information in the knowledge graph."
 
 
 def _is_abstention(answer: str) -> bool:
-    return answer.strip().lower() == _ABSTENTION_SENTENCE
+    return answer.strip().lower() == _ABSTENTION_SENTINEL
 
 
-# ── Context Formatter ─────────────────────────────────────────────────────────
+# ── Context Formatter ──
 
 
 def format_context(chunks: list[RetrievedChunk]) -> str:
-    """Format reranked chunks as a numbered list for injection into the answer prompt.
+    """Format reranked chunks as a numbered list for the answer prompt.
 
     Args:
-        chunks: Reranked ``RetrievedChunk`` list (passed in score-descending order).
+        chunks: Reranked ``RetrievedChunk`` list (score-descending order).
 
     Returns:
-        Multi-line string like::
-
-            [1] Customer: A person who buys products. (score=0.97)
-            [2] Order: A purchase transaction. (score=0.88)
+        Multi-line string with numbered chunks, types, and scores.
     """
     if not chunks:
         return "(no context retrieved)"
@@ -59,7 +55,7 @@ def format_context(chunks: list[RetrievedChunk]) -> str:
     return "\n".join(lines)
 
 
-# ── Answer Generator ──────────────────────────────────────────────────────────
+# ── Answer Generator ──
 
 
 def generate_answer(
@@ -119,7 +115,6 @@ def generate_answer(
     )
     answer: str = response.content.strip()
 
-    # If the model abstains despite available context, force one best-effort retry.
     if _is_abstention(answer) and chunks:
         top_score = max(float(c.score) for c in chunks)
         if top_score >= 0.2:

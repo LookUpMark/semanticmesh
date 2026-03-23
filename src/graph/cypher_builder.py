@@ -16,8 +16,6 @@ import json
 
 from src.models.schemas import EnrichedTableSchema, MappingProposal
 
-# ── Main upsert: BusinessConcept + PhysicalTable + MAPPED_TO ─────────────────
-
 _UPSERT_CYPHER = """\
 MERGE (bc:BusinessConcept {name: $concept_name})
 ON CREATE SET bc.definition = $concept_definition,
@@ -63,8 +61,6 @@ def build_upsert_cypher(
         ``Neo4jClient.execute_cypher(cypher, params)``.
     """
     column_names = [c.name for c in table.columns]
-    # Neo4j property values must be primitives or arrays — Map is not supported.
-    # Serialize column_types dict as a JSON string for storage.
     column_types = json.dumps({c.name: c.data_type for c in table.columns})
 
     params: dict = {
@@ -83,8 +79,6 @@ def build_upsert_cypher(
     }
     return _UPSERT_CYPHER, params
 
-
-# ── FK edge: PhysicalTable -[:REFERENCES]-> PhysicalTable ────────────────────
 
 _FK_CYPHER = """\
 MERGE (src:PhysicalTable {table_name: $src_table})
@@ -110,7 +104,6 @@ def build_fk_cypher(table: EnrichedTableSchema) -> list[tuple[str, dict]]:
     statements: list[tuple[str, dict]] = []
     for col in table.columns:
         if col.is_foreign_key and col.references:
-            # references format: "TARGET_TABLE.TARGET_COLUMN"
             parts = col.references.split(".", 1)
             tgt_table = parts[0]
             ref_column = parts[1] if len(parts) > 1 else ""

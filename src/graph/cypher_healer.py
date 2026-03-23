@@ -24,9 +24,6 @@ from src.prompts.templates import CYPHER_FIX_USER, CYPHER_SYSTEM
 logger: logging.Logger = get_logger(__name__)
 
 
-# ── Dry-Run Validation ─────────────────────────────────────────────────────────
-
-
 def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
     """Validate a Cypher statement without executing any writes.
 
@@ -58,9 +55,6 @@ def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
     except Exception as exc:
         logger.warning("Cypher test unexpected error: %s", exc)
         return False, str(exc)
-
-
-# ── One-Shot LLM Fix ──────────────────────────────────────────────────────────
 
 
 def fix_cypher(
@@ -99,9 +93,6 @@ def fix_cypher(
     fixed = strip_cypher_fence(response.content)
     logger.debug("fix_cypher: LLM returned %d-char fix.", len(fixed))
     return fixed
-
-
-# ── Full Healing Loop ─────────────────────────────────────────────────────────
 
 
 def heal_cypher(

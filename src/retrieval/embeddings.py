@@ -44,7 +44,7 @@ def get_embeddings():
     logger.info("Loading embedding model '%s' on CPU...", model_name)
     model = FlagModel(
         model_name,
-        use_fp16=False,  # fp16 requires CUDA; use fp32 on CPU
+        use_fp16=False,
         query_instruction_for_retrieval="Represent this sentence for retrieval: ",
         devices=["cpu"],
     )
@@ -64,7 +64,6 @@ def embed_texts(
 
     Returns:
         A list of 1024-dimensional float vectors (one per input string).
-        Returns an empty list when ``texts`` is empty.
     """
     if not texts:
         return []

@@ -7,8 +7,9 @@ Returns a GraderDecision driving the Query Graph routing.
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import json
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from typing import TYPE_CHECKING
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -162,7 +163,6 @@ def grade_answer(
                 )
             continue
 
-        # Consistency check: grounded=True must have action="pass"
         if decision.grounded and decision.action != "pass":
             logger.warning(
                 "Grader inconsistency (grounded=True but action=%s) — requesting one correction.",

@@ -9,7 +9,6 @@ on any parsing failure.
 from __future__ import annotations
 
 import json
-import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
@@ -19,7 +18,8 @@ from pydantic import ValidationError
 from src.config.logging import NodeTimer, get_logger
 from src.config.settings import get_settings
 from src.models.schemas import Chunk, Triplet, TripletExtractionResponse
-from src.prompts.templates import EXTRACTION_SYSTEM, EXTRACTION_USER, REFLECTION_TEMPLATE
+from src.prompts.templates import EXTRACTION_SYSTEM, EXTRACTION_USER
+from src.utils.json_utils import ReflectionResult, clean_json, reflect_on_json
 
 if TYPE_CHECKING:
     import logging
@@ -27,18 +27,6 @@ if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
-
-# Matches optional triple-backtick markdown fences (with or without language tag)
-_FENCE_RE = re.compile(r"^```[a-zA-Z]*\n?|```$", re.MULTILINE)
-
-
-def _clean_json(raw: str) -> str:
-    """Strip markdown fences and leading/trailing whitespace from LLM output.
-
-    Many models wrap JSON in ```json ... ``` despite instructions. This strips
-    those fences so ``json.loads`` can parse the payload cleanly.
-    """
-    return _FENCE_RE.sub("", raw).strip()
 
 
 def _reflect_on_json(
@@ -49,13 +37,8 @@ def _reflect_on_json(
 ) -> str:
     """Ask the LLM to self-correct a malformed JSON extraction output.
 
-    Uses ``REFLECTION_TEMPLATE`` (PT-05) to inject the original raw response
-    and the parse/validation error, requesting a corrected JSON string.
-
-    When ``truncated=True`` (the original response was empty because the model
-    hit the max_tokens cap), the prompt instructs the model to re-extract from
-    the original chunk with a strict 10-triplet limit so the output fits within
-    the token budget.
+    Wraps the shared ``reflect_on_json`` utility with triplet-specific
+    role and output format.
 
     Args:
         raw_json:  The original (broken) LLM output string.
@@ -64,29 +47,17 @@ def _reflect_on_json(
         truncated: Set to True when raw_json is empty (cap hit on first call).
 
     Returns:
-        Corrected raw JSON string from the LLM.
+        Corrected raw JSON string from the LLM, or empty string on failure.
     """
-    if truncated:
-        # The response was empty because the model hit the output token cap.
-        # Ask for a concise re-extraction with a hard triplet limit.
-        prompt = (
-            "Your previous response was cut off because it exceeded the output token limit.\n"
-            "Re-extract triplets from the text above, but limit yourself to the "
-            "10 most important (subject, predicate, object) facts. "
-            'Output ONLY valid JSON: {"triplets": [{"subject": ..., "predicate": ..., '
-            '"object": ..., "provenance_text": ..., "confidence": 0.9}]}. '
-            "No explanation, no markdown."
-        )
-    else:
-        prompt = REFLECTION_TEMPLATE.format(
-            role="strict information extraction engine",
-            output_format='JSON object matching {"triplets": [...]}',
-            error_or_critique=error,
-            original_input=raw_json,
-        )
-    response = llm.invoke([HumanMessage(content=prompt)])
-    content = response.content
-    return content.strip() if isinstance(content, str) else ""
+    result: ReflectionResult = reflect_on_json(
+        llm=llm,
+        error=error,
+        original_input=raw_json,
+        role="strict information extraction engine",
+        output_format='JSON object matching {"triplets": [...]}',
+        truncated=truncated,
+    )
+    return result["content"] if result["success"] else ""
 
 
 def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
@@ -119,7 +90,7 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
                     chunk.chunk_index,
                 )
                 return []
-            raw_json: str = _clean_json(content)
+            raw_json: str = clean_json(content)
         except Exception as exc:
             logger.warning(
                 "LLM call failed for chunk %d (source=%s): %s — returning empty triplet list.",
@@ -138,7 +109,6 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
     settings = get_settings()
     max_attempts: int = settings.max_reflection_attempts
 
-    # Step 1: JSON parse (with self-reflection on failure)
     data: dict | None = None
     for attempt in range(1, max_attempts + 1):
         try:
@@ -160,7 +130,6 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
     if data is None:
         return []
 
-    # Step 2: Pydantic validation (with self-reflection on failure)
     parsed: TripletExtractionResponse | None = None
     for attempt in range(1, max_attempts + 1):
         try:
@@ -185,7 +154,6 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
     if parsed is None:
         return []
 
-    # Attach source chunk index to each triplet
     triplets = [
         t.model_copy(update={"source_chunk_index": chunk.chunk_index}) for t in parsed.triplets
     ]
@@ -230,7 +198,6 @@ def extract_all_triplets(
     settings = get_settings()
     workers = max_workers if max_workers is not None else settings.extraction_concurrency
 
-    # Map future → chunk_index so we can sort results back into order
     results: dict[int, list[Triplet]] = {}
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -245,7 +212,6 @@ def extract_all_triplets(
                 logger.warning("Unexpected error for chunk %d: %s", idx, exc)
                 results[idx] = []
 
-    # Flatten in original chunk order
     all_triplets: list[Triplet] = []
     for chunk in chunks:
         all_triplets.extend(results.get(chunk.chunk_index, []))

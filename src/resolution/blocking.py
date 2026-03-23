@@ -53,13 +53,8 @@ def block_entities(
 ) -> list[EntityCluster]:
     """Group semantically similar entity strings into candidate clusters.
 
-    Algorithm:
-    1. Embed all entity strings with the provided ``Embeddings`` instance.
-    2. Compute the full N×N cosine similarity matrix.
-    3. For each entity, collect all other entities with similarity >= ``threshold``
-       (all-pairs, not K-NN per entity — avoids asymmetric clusters).
-    4. Apply a Union-Find to merge overlapping pairs into single clusters.
-    5. Return clusters with >= 2 variants; singletons are discarded.
+    Uses Union-Find clustering on cosine similarity matrix to merge
+    near-duplicate variants. Only clusters with >= 2 variants are returned.
 
     Args:
         entities: Unique entity strings (from ``extract_unique_entities``).
@@ -78,14 +73,11 @@ def block_entities(
     sim_threshold = threshold if threshold is not None else _settings.er_similarity_threshold
     k = top_k if top_k is not None else _settings.er_blocking_top_k
 
-    # Embed all entities in one batch call
     logger.info("Embedding %d entities for blocking...", len(entities))
     vectors = np.array(embed_texts(entities, model=embeddings), dtype=np.float32)
 
-    # Full cosine similarity matrix
-    sim_matrix = cosine_similarity(vectors)  # shape: (N, N)
+    sim_matrix = cosine_similarity(vectors)
 
-    # Union-Find clustering
     parent = list(range(len(entities)))
 
     def find(i: int) -> int:
@@ -101,14 +93,12 @@ def block_entities(
 
     n = len(entities)
     for i in range(n):
-        # Sort by similarity descending, take top-k candidates
         sims = sim_matrix[i]
         candidate_indices = np.argsort(sims)[::-1][:k]
         for j in candidate_indices:
             if i != j and sims[j] >= sim_threshold:
                 union(i, j)
 
-    # Collect groups
     groups: dict[int, list[int]] = defaultdict(list)
     for i in range(n):
         groups[find(i)].append(i)
@@ -116,19 +106,16 @@ def block_entities(
     clusters: list[EntityCluster] = []
     for member_indices in groups.values():
         if len(member_indices) < 2:
-            continue  # singletons are not ambiguous — skip
+            continue
 
         variants = [entities[i] for i in member_indices]
 
-        # Canonical candidate: longest string (most specific / unabbreviated)
         canonical = max(variants, key=len)
 
-        # Average pairwise similarity within cluster
         idx_arr = np.array(member_indices)
         sub_matrix = sim_matrix[np.ix_(idx_arr, idx_arr)]
         n_members = len(member_indices)
         if n_members > 1:
-            # Exclude diagonal (self-similarity = 1.0)
             mask = ~np.eye(n_members, dtype=bool)
             avg_sim = float(sub_matrix[mask].mean())
         else:

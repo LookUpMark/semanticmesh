@@ -35,7 +35,6 @@ _DEFAULT_DATASET: Path = (
     Path(__file__).parent.parent.parent / "tests" / "fixtures" / "gold_standard.json"
 )
 
-# Cheap model used as RAGAS evaluator judge (via OpenRouter)
 _DEFAULT_EVALUATOR_MODEL: str = "openai/gpt-4o-mini"
 _OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 _TRACE_PREVIEW_CHARS: int = 240
@@ -176,9 +175,7 @@ def _build_trace_diagnostics(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Dataset helpers
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Dataset helpers ──
 
 
 def _load_dataset(dataset_path: Path) -> list[dict[str, Any]]:
@@ -205,13 +202,8 @@ def _run_pipeline_on_sample(
         retrieval_filtered_by_threshold = bool(result.get("retrieval_filtered_by_threshold", False))
         context_sufficiency = str(result.get("context_sufficiency", "insufficient"))
 
-        # ── Use retrieved_contexts (actual chunk texts) for RAGAS evaluation ──
-        # `sources` contains only node IDs (e.g. "Customer", "CUSTOMER_MASTER")
-        # which are not meaningful context strings for RAGAS metrics.
-        # `retrieved_contexts` contains the full text of each reranked chunk.
         contexts: list[str] = result.get("retrieved_contexts", [])
         if not contexts:
-            # Fallback: gold context strings if the pipeline returned nothing
             contexts = list(sample.get("ground_truth_contexts", []))
             used_fallback_contexts = True
             logger.warning(
@@ -263,9 +255,7 @@ def _run_pipeline_on_sample(
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# RAGAS metric computation
-# ─────────────────────────────────────────────────────────────────────────────
+# ── RAGAS metric computation ──
 
 _ZERO_METRICS: dict[str, float] = {
     "faithfulness": 0.0,
@@ -315,7 +305,6 @@ async def _score_single_sample(
 ) -> dict[str, float]:
     """Score a single sample asynchronously with per-metric timeout."""
     try:
-        # Each metric gets a separate timeout to prevent one bad call from blocking all
         faithfulness = float(
             await asyncio.wait_for(
                 faithfulness_m.ascore(user_input=q, response=ans, retrieved_contexts=ctxs),
@@ -422,7 +411,7 @@ async def _compute_ragas_metrics_async(
                 ans,
                 ctxs,
                 ref,
-                timeout=60.0,  # 60 seconds per metric
+                timeout=60.0,
             )
             scores["faithfulness"].append(sample_scores["faithfulness"])
             scores["answer_relevancy"].append(sample_scores["answer_relevancy"])
@@ -520,10 +509,8 @@ def _compute_ragas_metrics(
         logger.debug("nest_asyncio not available, using standard asyncio")
 
     try:
-        # Try to get existing loop
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            # We're in an async context, use ThreadPoolExecutor for isolation
             import concurrent.futures  # noqa: PLC0415
 
             logger.debug("Running in async context, using ThreadPoolExecutor")
@@ -536,9 +523,8 @@ def _compute_ragas_metrics(
                         trace_rows=trace_rows,
                     ),
                 )
-                return future.result(timeout=1800)  # 30 min total timeout
+                return future.result(timeout=1800)
         else:
-            # No running loop, safe to run directly
             logger.debug("No running loop, using asyncio.run()")
             return asyncio.run(
                 _compute_ragas_metrics_async(
@@ -548,7 +534,6 @@ def _compute_ragas_metrics(
                 )
             )
     except RuntimeError:
-        # No loop exists, create new one
         logger.debug("No loop exists, creating new one with asyncio.run()")
         return asyncio.run(
             _compute_ragas_metrics_async(
@@ -562,9 +547,7 @@ def _compute_ragas_metrics(
         return dict(_ZERO_METRICS)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Public API
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Public API ──
 
 
 def run_ragas_evaluation(
@@ -601,7 +584,6 @@ def run_ragas_evaluation(
     path = dataset_path or _DEFAULT_DATASET
     dataset = _load_dataset(path)
 
-    # Limit dataset to max_samples if specified
     if max_samples is not None and max_samples > 0:
         dataset = dataset[:max_samples]
         logger.info("Limited dataset to %d samples (max_samples=%d)", len(dataset), max_samples)
@@ -651,7 +633,7 @@ def run_ragas_evaluation(
                     "used_fallback_contexts": bool(r.get("used_fallback_contexts", False)),
                     "retrieval_quality_score": float(r.get("retrieval_quality_score", 0.0) or 0.0),
                     "retrieval_chunk_count": int(r.get("retrieval_chunk_count", 0) or 0),
-                    "retrieval_filtered_by_threshold": bool(
+                    "retrieved_filtered_by_threshold": bool(
                         r.get("retrieval_filtered_by_threshold", False)
                     ),
                     "context_sufficiency": str(r.get("context_sufficiency", "insufficient")),

@@ -8,8 +8,6 @@ import pytest
 
 from src.graph.neo4j_client import _SCHEMA_STATEMENTS, Neo4jClient, setup_schema
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
 
 def _make_client(driver_mock: MagicMock) -> Neo4jClient:
     """Return a Neo4jClient with an injected driver mock."""
@@ -47,9 +45,6 @@ def _make_session_mock(records: list[dict] | None = None) -> MagicMock:
     return session_mock
 
 
-# ── Context Manager ────────────────────────────────────────────────────────────
-
-
 class TestNeo4jClientLifecycle:
     def test_enter_creates_driver(self) -> None:
         with patch("src.graph.neo4j_client.GraphDatabase.driver") as mock_driver_ctor:
@@ -83,9 +78,6 @@ class TestNeo4jClientLifecycle:
         client = Neo4jClient(uri="bolt://localhost:7687", username="neo4j", password="test")
         with pytest.raises(RuntimeError, match="context manager"):
             _ = client.driver
-
-
-# ── execute_cypher ─────────────────────────────────────────────────────────────
 
 
 class TestExecuteCypher:
@@ -132,9 +124,6 @@ class TestExecuteCypher:
         session_mock.run.assert_called_once_with("RETURN 1", parameters={})
 
 
-# ── execute_batch ──────────────────────────────────────────────────────────────
-
-
 class TestExecuteBatch:
     def test_empty_batch_is_noop(self) -> None:
         driver_mock = MagicMock()
@@ -145,7 +134,6 @@ class TestExecuteBatch:
     def test_calls_execute_write(self) -> None:
         driver_mock = MagicMock()
 
-        # Mock session with execute_write
         session_mock = MagicMock()
         session_mock.__enter__ = MagicMock(return_value=session_mock)
         session_mock.__exit__ = MagicMock(return_value=False)
@@ -175,16 +163,8 @@ class TestExecuteBatch:
         ]
         client.execute_batch(statements)
 
-        # Verify execute_write was called
         session_mock.execute_write.assert_called_once()
-        # Verify the transaction function runs all statements
-        tx_func = session_mock.execute_write.call_args[0][0]
-        # We can't directly test the tx function without actually running it,
-        # but we verified execute_write was called with a function
         assert session_mock.execute_write.call_count == 1
-
-
-# ── setup_schema ──────────────────────────────────────────────────────────────
 
 
 class TestSetupSchema:
@@ -197,9 +177,7 @@ class TestSetupSchema:
     def test_failed_statement_does_not_raise(self) -> None:
         client_mock = MagicMock()
         client_mock.execute_cypher.side_effect = Exception("unsupported")
-        # Should NOT raise — just log warnings
         setup_schema(client_mock)
-        # All statements should still be attempted
         assert client_mock.execute_cypher.call_count == len(_SCHEMA_STATEMENTS)
 
     def test_continues_after_single_failure(self) -> None:
@@ -215,5 +193,4 @@ class TestSetupSchema:
         client_mock.execute_cypher.side_effect = side_effect
         setup_schema(client_mock)
 
-        # All statements should still be attempted
         assert client_mock.execute_cypher.call_count == len(_SCHEMA_STATEMENTS)
