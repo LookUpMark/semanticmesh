@@ -1,0 +1,130 @@
+BUSINESS GLOSSARY - Enterprise System
+Last Updated: 2024-03-15
+Status: Partial (pending review)
+
+==========================================
+CUSTOMER MANAGEMENT
+==========================================
+
+Customer
+An individual or organization that... [definition incomplete]
+
+Client
+A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts)
+
+Account Holder
+The person designated as the primary owner of an account. Similar to Customer but with account-specific context.
+
+End User
+The actual user of a product or service, may differ from the purchaser.
+
+==========================================
+ORDER & TRANSACTION
+==========================================
+
+Order
+A request to purchase products or services. Can be in various states.
+
+Transaction
+Similar to Order but more general. May refer to any exchange of value.
+
+Purchase
+The act of buying something. Related to Order and Transaction.
+
+Sales Order
+An order with confirmed pricing and inventory allocation. Distinct from Quote.
+
+Quote
+A preliminary order with estimated pricing, not yet confirmed.
+
+==========================================
+PRODUCT & INVENTORY
+==========================================
+
+Product
+A thing that is... [definition needs clarification]
+
+Item
+Synonym for Product. Used in inventory context.
+
+SKU
+Stock Keeping Unit - a unique identifier for a product variant.
+
+Inventory Item
+Physical products held in stock. May be referenced as Product or Item.
+
+Merchandise
+Goods available for sale. Similar to Product.
+
+==========================================
+PAYMENT & BILLING
+==========================================
+
+Payment
+The transfer of money to settle an order.
+
+Invoice
+A document requesting payment. Related to Bill.
+
+Bill
+A statement of money owed. Similar to Invoice.
+
+Receipt
+Proof of payment. Generated after Payment is processed.
+
+==========================================
+ACCOUNTING & FINANCE
+==========================================
+
+Revenue
+Income from sales. The same as... [definition circular, see Sales]
+
+Sales
+Revenue from selling products. See Revenue.
+
+Financial Transaction
+Any monetary exchange. See Payment, Transaction.
+
+==========================================
+SHIPPING & LOGISTICS
+==========================================
+
+Shipment
+The process of delivering goods to a customer.
+
+Delivery
+The completion of a Shipment when goods reach the customer.
+
+Fulfillment
+The process of preparing and delivering orders. Encompasses Shipment and Delivery.
+
+==========================================
+STATUS DEFINITIONS
+==========================================
+
+Order Status:
+- Pending: Not yet processed
+- Processing: Being handled
+- Completed: Finished successfully
+- Cancelled: Terminated before completion
+- On Hold: Temporarily suspended
+- Failed: [definition missing]
+
+Payment Status:
+- Pending: Awaiting processing
+- Approved: Accepted
+- Declined: Rejected
+- Refunded: Money returned
+- Partially Refunded: Some money returned
+
+==========================================
+RELATIONSHIPS (UNCLEAR)
+==========================================
+
+Customer to Order: A customer can place multiple orders. Or is it accounts that place orders?
+
+Order to Payment: An order may have multiple payment attempts. Or is it one-to-one?
+
+Product to Inventory: Products are tracked in inventory. But what's the exact relationship?
+
+Invoice to Order: An invoice is generated for an order. But when? And can one order have multiple invoices?

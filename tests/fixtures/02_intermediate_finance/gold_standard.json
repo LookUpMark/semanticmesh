@@ -1,0 +1,269 @@
+{
+  "dataset_info": {
+    "name": "02_intermediate_finance",
+    "domain": "Banking & Finance",
+    "complexity": "Intermediate",
+    "version": "1.0",
+    "created": "2025-01-15",
+    "description": "Retail banking operations with 8 core concepts (Account, Customer, Transaction, Loan, Interest, Branch, ATM, Card), 6 tables, junction tables, account hierarchies, and calculated columns."
+  },
+  "qa_pairs": [
+    {
+      "id": 1,
+      "question": "What is a checking account?",
+      "answer": "A checking account is a transactional deposit account designed for day-to-day spending. Key features include unlimited transactions, debit card access, bill pay, and check writing. Standard checking has a minimum balance requirement of $100 with a $12 monthly maintenance fee that can be waived with $500 in direct deposits. Interest checking requires a $2,500 minimum balance.",
+      "category": "Direct Mapping",
+      "entities": ["Account"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 2,
+      "question": "What is the difference between a savings account and a money market account?",
+      "answer": "A savings account is an interest-bearing account for accumulating funds with Federal Regulation D limiting withdrawals to 6 per month. It has tiered interest rates from 0.01% to 0.50% APY based on balance. A money market account is a hybrid savings/checking account with higher interest rates (0.15% to 0.75% APY tiered), a $2,500 minimum balance, and limited check writing (6 checks per month) but unlimited debit card transactions.",
+      "category": "Direct Mapping",
+      "entities": ["Account"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 3,
+      "question": "What is APR versus APY?",
+      "answer": "APR (Annual Percentage Rate) is the annual cost of a loan including interest and fees, used for loan products. APY (Annual Percentage Yield) is the effective annual rate including compounding effects for deposit products. APY is higher than the nominal rate when compounding is more frequent than annually. For example, a savings account might quote 0.25% APY reflecting daily compounding, while a loan quotes 5.5% APR including origination fees.",
+      "category": "Direct Mapping",
+      "entities": ["Interest"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 4,
+      "question": "What is KYC Level 2?",
+      "answer": "KYC Level 2 is enhanced due diligence requiring occupation verification and source of funds documentation beyond the basic identity verification (SSN, ID, address) required for Level 1. Level 2 is required for premium products and large transactions. Level 3 is for high-net-worth individuals requiring additional documentation.",
+      "category": "Direct Mapping",
+      "entities": ["Customer"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 5,
+      "question": "What is the minimum balance requirement for a premium checking account?",
+      "answer": "Premium checking accounts require a minimum balance of $2,500. This minimum must be maintained to avoid the monthly maintenance fee and qualify for premium benefits including waived fees, preferred interest rates, and higher transaction limits.",
+      "category": "Direct Mapping",
+      "entities": ["Account"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 6,
+      "question": "What types of loan products does the bank offer?",
+      "answer": "The bank offers five types of loan products: (1) Mortgage - secured real estate loans with 15-30 year terms at 5.5%-7.5% APR; (2) Personal Loan - unsecured loans for $1,000-$40,000 with 12-60 month terms at 7.0%-18.0% APR; (3) Auto Loan - secured vehicle loans for $5,000-$75,000 with 24-72 month terms at 4.0%-12.0% APR; (4) HELOC - revolving home equity credit lines with variable rates at Prime + margin; (5) Credit Card - revolving credit with 15%-25% APR based on creditworthiness.",
+      "category": "Direct Mapping",
+      "entities": ["Loan"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 7,
+      "question": "What is the daily ATM withdrawal limit for standard customers?",
+      "answer": "The daily ATM withdrawal limit for standard customers is $500. Premium customers have a higher limit of $2,000 per day. Out-of-network ATM withdrawals incur a $3.00 fee plus any fee charged by the ATM owner.",
+      "category": "Direct Mapping",
+      "entities": ["ATM", "Card"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 8,
+      "question": "What is the difference between a parent account and a child account?",
+      "answer": "A parent account is a primary account that aggregates sub-accounts for portfolio management and reporting. Parent accounts do not hold balances directly; they summarize child account totals. A child account is a sub-account linked to a parent account for organizational purposes, such as in portfolio management or household relationship views. All transactions occur at the child account level, while the parent provides roll-up reporting and consolidated statements.",
+      "category": "Direct Mapping",
+      "entities": ["Account"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 9,
+      "question": "What does the status 'Frozen' mean for a card?",
+      "answer": "A 'Frozen' card status means the card is temporarily suspended due to suspected fraudulent activity detected by monitoring, customer request (lost card, traveling), or negative account status. Frozen cards cannot process transactions. The freeze can be reversed after identity verification to reactivate the card. This differs from 'Blocked' status which is permanent and requires a replacement card.",
+      "category": "Direct Mapping",
+      "entities": ["Card"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 10,
+      "question": "What is the overdraft fee?",
+      "answer": "The overdraft fee is $35 per overdraft transaction, with a maximum of 4 overdraft fees per day ($140 total). An overdraft protection transfer from savings to cover the overdraft costs $12. No overdraft fee is charged if the account balance is within $10 at the end of the business day. The fee applies when a transaction exceeds the available balance.",
+      "category": "Direct Mapping",
+      "entities": ["Account", "Transaction"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 11,
+      "question": "What accounts does James Wilson have?",
+      "answer": "James Wilson has a portfolio of three accounts: (1) Checking account CHK-001001 with a current balance of $5,240.35, (2) Savings account SAV-001001 with a current balance of $15,250.75, and (3) 12-month Certificate of Deposit CD-001001 with a current balance of $50,000.00 earning 4.50% APY. His accounts are held at the Downtown Headquarters branch (0001) in New York.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Account"],
+      "hops": 2,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 12,
+      "question": "What is the current balance of Mary Johnson's savings account?",
+      "answer": "Mary Johnson's savings account SAV-003001 has a current balance of $48,750.50. This is a premium savings account earning 5.00% APY with a $2,500 minimum balance requirement. The account has earned $243.75 in year-to-date interest and has no monthly maintenance fee. Her account is held at the Downtown Headquarters branch.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Account"],
+      "hops": 2,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 13,
+      "question": "What loans does Michael Rodriguez have?",
+      "answer": "Michael Rodriguez has two active loans: (1) An auto loan for $35,000 at 6.50% APR with a 60-month term, monthly payment of $684.57, and current balance due of $28,000.00; (2) He is also a joint owner on a mortgage with Elizabeth Clark for $425,000 at 6.00% APR with a 360-month term, monthly payment of $2,547.72, and current balance due of $418,750.00. Both loans link to his checking account CHK-005001 for automatic payments.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Loan", "Account"],
+      "hops": 3,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 14,
+      "question": "What transactions occurred in Patricia Davis's checking account in February 2024?",
+      "answer": "Patricia Davis's checking account CHK-004001 had two transactions in February 2024: (1) A debit of $75.50 on February 13 for a point-of-sale purchase at Target Store #4567 in Chicago, IL, reducing her balance to $1,675.75; (2) A credit of $1,500.00 on February 12 from a mobile check deposit, bringing her balance to $1,751.25. The mobile check deposit has reference number MOB-987654321.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Account", "Transaction"],
+      "hops": 3,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 15,
+      "question": "Which customers are joint owners on Robert Chen's accounts?",
+      "answer": "Linda Thompson is a joint owner on both of Robert Chen's accounts with 50% ownership each: checking account CHK-002001 and savings account SAV-002001. Robert Chen also has joint ownership (50%) on William Harris's savings account SAV-006001. All three customers have Level 2 or Level 3 KYC status and their accounts are held at the Westside Branch in Los Angeles.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Account", "Customer"],
+      "hops": 3,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 16,
+      "question": "What cards does Mary Johnson have?",
+      "answer": "Mary Johnson has three cards: (1) A Visa debit card ending in 0366 linked to her checking account CHK-003001 with a $5,000 daily limit and $1,000 ATM limit, chip and contactless enabled, active status; (2) A Visa credit card ending in 0840 with a $25,000 credit limit, $5,000 daily limit, chip and contactless enabled, active status; (3) David Anderson also has a Mastercard debit card ending in 1011 as a joint owner on her checking account.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Account", "Card"],
+      "hops": 3,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 17,
+      "question": "What is the interest rate on James Wilson's CD?",
+      "answer": "James Wilson's 12-month Certificate of Deposit CD-001001 has an interest rate of 4.50% APY. The CD has a principal amount of $50,000.00, was opened on February 15, 2023, matures on February 15, 2024, and has earned $2,250.00 in interest to date. This promotional rate is higher than the standard 12-month CD rate of 1.50% APY.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Account", "Interest"],
+      "hops": 3,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 18,
+      "question": "What branch does Robert Chen bank at and what are its services?",
+      "answer": "Robert Chen banks at the Westside Branch (branch code 0002) at 456 Oak Avenue, Los Angeles, CA 90001. This is a full-service branch with 2 tellers, 3 ATMs, and managed by Sarah Mitchell. Services include Monday-Friday 9AM-6PM and Saturday 9AM-2PM hours, loan officers, financial advisors, safe deposit boxes, and notary services. The branch opened March 20, 2015 and has active status.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Account", "Branch"],
+      "hops": 3,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 19,
+      "question": "What ATMs are available at the Downtown Headquarters branch?",
+      "answer": "The Downtown Headquarters branch has 4 ATMs: (1) ATM-0001 is a branch ATM at 123 Main Street, operational with $85,000 cash balance, supports deposits and cardless transactions; (2) ATM-0002 is a drive-through ATM at the same address, operational with $45,000 cash balance, supports deposits and cardless transactions. Both ATMs were installed January 15, 2010 and were last replenished February 15, 2024 at 2:30 AM.",
+      "category": "Multi-hop",
+      "entities": ["Branch", "ATM"],
+      "hops": 2,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 20,
+      "question": "What is the status of Jennifer Martinez's personal loan application?",
+      "answer": "Jennifer Martinez has an active personal loan (loan ID 70010) for $5,000 at 12.00% APR with a 24-month term. The monthly payment is $235.37 and the current balance due is $4,200.00. The loan was originated January 5, 2024 and matures January 5, 2026. Payments are automatically drafted from her checking account CHK-006001.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Loan", "Account"],
+      "hops": 3,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 21,
+      "question": "Which customers have preferred status and why?",
+      "answer": "Four customers have preferred status: (1) James Wilson - combined deposit balance of $70,491.10 and 5+ years tenure; (2) Mary Johnson - combined deposit balance of $151,000.50 and 8+ years tenure; (3) Michael Rodriguez - active loan relationship and combined deposit balance of $20,850.75; (4) Elizabeth Clark - 10+ years tenure and joint ownership on $425,000 mortgage. Preferred customers receive waived fees, preferred rates, and dedicated relationship managers.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Account"],
+      "hops": 3,
+      "difficulty": "Hard"
+    },
+    {
+      "id": 22,
+      "question": "What is the total interest earned across all savings accounts this year?",
+      "answer": "Based on the year-to-date interest earned field, the total interest credited across all savings accounts in January 2024 was $365.37. This includes interest from: SAV-001001 ($38.12), SAV-002001 ($3.50), SAV-003001 ($243.75), SAV-004001 ($7.80), SAV-005001 ($16.70), SAV-006001 ($55.50), and MM-003001 ($187.50). Money market accounts and CDs with higher balances earned the most interest.",
+      "category": "Multi-hop",
+      "entities": ["Account", "Interest"],
+      "hops": 2,
+      "difficulty": "Hard"
+    },
+    {
+      "id": 23,
+      "question": "What accounts have no customers linked to them?",
+      "answer": "All accounts in the system have at least one customer linked. The customer_account junction table ensures that every account has at least one Owner relationship. This is enforced by the business rule that accounts cannot exist without customer ownership. Joint accounts have multiple customers linked, while individual accounts have a single customer with 100% ownership.",
+      "category": "Negative",
+      "entities": ["Account", "Customer"],
+      "hops": 2,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 24,
+      "question": "What transactions failed to post and why?",
+      "answer": "One transaction failed to post: Transaction ID 900015, a $25.00 point-of-sale debit at a gas station on Jennifer Martinez's checking account CHK-006001 on February 13, 2024. The transaction failed due to insufficient funds in the account. The transaction status is 'Failed' and no funds were moved. The account balance remained at $525.50. This type of transaction does not incur an overdraft fee because the system rejected it before posting.",
+      "category": "Negative",
+      "entities": ["Transaction", "Account"],
+      "hops": 2,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 25,
+      "question": "Which ATMs are currently out of service or out of cash?",
+      "answer": "Two ATMs have issues: (1) ATM-0004 at 456 Oak Avenue (Westside Branch) is 'OutOfCash' with $0.00 balance - it was last replenished February 14, 2024 at 8:00 AM but deposits may still work; (2) STANDALONE-002 at 987 Birch Road in the Grocery Store is 'OutOfService' with $15,000 cash balance - this is a technical issue preventing all transactions. ATM-0004 supports deposits and cardless, while STANDALONE-002 does not support deposits and has no cardless capability.",
+      "category": "Negative",
+      "entities": ["ATM"],
+      "hops": 1,
+      "difficulty": "Medium"
+    }
+  ],
+  "categories": {
+    "Direct Mapping": 10,
+    "Multi-hop": 12,
+    "Negative": 3
+  },
+  "difficulty_distribution": {
+    "Easy": 10,
+    "Medium": 13,
+    "Hard": 2
+  },
+  "entity_coverage": {
+    "Account": 10,
+    "Customer": 10,
+    "Transaction": 8,
+    "Loan": 6,
+    "Interest": 6,
+    "Branch": 4,
+    "ATM": 5,
+    "Card": 5
+  },
+  "testing_capabilities": [
+    "Many-to-many relationship navigation via junction table",
+    "Account hierarchy traversal (parent-child accounts)",
+    "Multi-hop queries across customer-account-transaction chains",
+    "Financial terminology understanding (APR vs APY, overdraft, KYC)",
+    "Status-based filtering (Active, Frozen, OutOfService, Failed)",
+    "Calculated field interpretation (interest earned, balance after)",
+    "Joint ownership and percentage splitting",
+    "Temporal queries (transaction history, maturity dates)",
+    "Negative case handling (no accounts linked, failed transactions)",
+    "Aggregation capabilities (total interest, customer counts)"
+  ]
+}
