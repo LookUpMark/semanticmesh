@@ -205,7 +205,7 @@ reconfigure_from_env()
 # Import and run
 from src.evaluation.ablation_runner import run_ablation
 
-dataset_path = Path("{ROOT}") / "tests" / "fixtures" / "gold_standard.json"
+dataset_path = Path("{ROOT}") / "tests" / "fixtures" / "00_legacy" / "gold_standard.json"
 result = run_ablation("{study_id}", dataset_path=dataset_path, run_ragas={run_ragas})
 
 # Return as JSON
@@ -326,7 +326,7 @@ def run_study_inline(study_id: str) -> dict[str, object]:
             # Import and run the ablation
             from src.evaluation.ablation_runner import run_ablation
 
-            dataset_path = ROOT / "tests" / "fixtures" / "gold_standard.json"
+            dataset_path = ROOT / "tests" / "fixtures" / "00_legacy" / "gold_standard.json"
 
             metrics = run_ablation(study_id, dataset_path=dataset_path, run_ragas=run_ragas)
 

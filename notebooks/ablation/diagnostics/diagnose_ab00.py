@@ -50,7 +50,7 @@ setup_notebook_logging()
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).parent
-GOLD_STANDARD = ROOT / "tests" / "fixtures" / "gold_standard.json"
+GOLD_STANDARD = ROOT / "tests" / "fixtures" / "00_legacy" / "gold_standard.json"
 
 RETRIEVAL_LOG = SCRIPT_DIR / "retrieval_log.jsonl"
 ANSWERS_LOG = SCRIPT_DIR / "answers_log.jsonl"

@@ -262,13 +262,13 @@ def run_ablation(
             root = Path(__file__).parent.parent.parent
             fixture_dir = root / "tests" / "fixtures"
             doc_paths = [
-                fixture_dir / "sample_docs" / "business_glossary.txt",
-                fixture_dir / "sample_docs" / "data_dictionary.txt",
+                fixture_dir / "00_legacy" / "sample_docs" / "business_glossary.txt",
+                fixture_dir / "00_legacy" / "sample_docs" / "data_dictionary.txt",
             ]
         if ddl_paths is None:
             root = Path(__file__).parent.parent.parent
             fixture_dir = root / "tests" / "fixtures"
-            ddl_paths = [fixture_dir / "sample_ddl" / "complex_schema.sql"]
+            ddl_paths = [fixture_dir / "00_legacy" / "sample_ddl" / "complex_schema.sql"]
 
         # Run the builder graph
         logger.info("Running builder graph...")

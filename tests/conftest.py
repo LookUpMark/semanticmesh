@@ -95,7 +95,7 @@ def neo4j_client(neo4j_container: Neo4jContainer) -> Neo4jClient:
 
 def _load_mock_response(name: str) -> dict[str, Any]:
     """Load a mock LLM response from the fixtures directory."""
-    path = Path(__file__).parent / "fixtures" / "mock_responses" / f"{name}.json"
+    path = Path(__file__).parent / "fixtures" / "00_legacy" / "mock_responses" / f"{name}.json"
     with open(path) as f:
         return json.load(f)
 
@@ -211,25 +211,25 @@ def mock_embeddings():
 @pytest.fixture
 def sample_simple_schema() -> Path:
     """Path to the simple schema DDL file."""
-    return Path(__file__).parent / "fixtures" / "sample_ddl" / "simple_schema.sql"
+    return Path(__file__).parent / "fixtures" / "00_legacy" / "sample_ddl" / "simple_schema.sql"
 
 
 @pytest.fixture
 def sample_complex_schema() -> Path:
     """Path to the complex schema DDL file."""
-    return Path(__file__).parent / "fixtures" / "sample_ddl" / "complex_schema.sql"
+    return Path(__file__).parent / "fixtures" / "00_legacy" / "sample_ddl" / "complex_schema.sql"
 
 
 @pytest.fixture
 def sample_business_glossary() -> Path:
     """Path to the business glossary text file."""
-    return Path(__file__).parent / "fixtures" / "sample_docs" / "business_glossary.txt"
+    return Path(__file__).parent / "fixtures" / "00_legacy" / "sample_docs" / "business_glossary.txt"
 
 
 @pytest.fixture
 def sample_data_dictionary() -> Path:
     """Path to the data dictionary text file."""
-    return Path(__file__).parent / "fixtures" / "sample_docs" / "data_dictionary.txt"
+    return Path(__file__).parent / "fixtures" / "00_legacy" / "sample_docs" / "data_dictionary.txt"
 
 
 @pytest.fixture

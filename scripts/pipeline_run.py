@@ -49,10 +49,10 @@ logger = logging.getLogger("pipeline_run")
 # ── Test data ───────────────────────────────────────────────────────────────────
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 DOC_PATHS = [
-    FIXTURE_DIR / "sample_docs" / "business_glossary.txt",
-    FIXTURE_DIR / "sample_docs" / "data_dictionary.txt",
+    FIXTURE_DIR / "00_legacy" / "sample_docs" / "business_glossary.txt",
+    FIXTURE_DIR / "00_legacy" / "sample_docs" / "data_dictionary.txt",
 ]
-DDL_PATHS = [FIXTURE_DIR / "sample_ddl" / "simple_schema.sql"]
+DDL_PATHS = [FIXTURE_DIR / "00_legacy" / "sample_ddl" / "simple_schema.sql"]
 
 # ── Test questions ───────────────────────────────────────────────────────────────
 TEST_QUESTIONS = [

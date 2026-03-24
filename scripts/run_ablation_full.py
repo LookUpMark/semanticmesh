@@ -51,16 +51,16 @@ logger = logging.getLogger("ablation_runner")
 # ── Test data ───────────────────────────────────────────────────────────────────
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 DOC_PATHS_DEFAULT = [
-    FIXTURE_DIR / "sample_docs" / "business_glossary.txt",
-    FIXTURE_DIR / "sample_docs" / "data_dictionary.txt",
+    FIXTURE_DIR / "00_legacy" / "sample_docs" / "business_glossary.txt",
+    FIXTURE_DIR / "00_legacy" / "sample_docs" / "data_dictionary.txt",
 ]
-DDL_PATHS_DEFAULT = [FIXTURE_DIR / "sample_ddl" / "complex_schema.sql"]
+DDL_PATHS_DEFAULT = [FIXTURE_DIR / "00_legacy" / "sample_ddl" / "complex_schema.sql"]
 
 DOC_PATHS_SMOKE = [
-    FIXTURE_DIR / "smoke" / "business_glossary_smoke.txt",
-    FIXTURE_DIR / "smoke" / "data_dictionary_smoke.txt",
+    FIXTURE_DIR / "00_legacy" / "smoke" / "business_glossary_smoke.txt",
+    FIXTURE_DIR / "00_legacy" / "smoke" / "data_dictionary_smoke.txt",
 ]
-DDL_PATHS_SMOKE = [FIXTURE_DIR / "smoke" / "smoke_schema.sql"]
+DDL_PATHS_SMOKE = [FIXTURE_DIR / "00_legacy" / "smoke" / "smoke_schema.sql"]
 
 # ── Test questions ───────────────────────────────────────────────────────────────
 TEST_QUESTIONS = [

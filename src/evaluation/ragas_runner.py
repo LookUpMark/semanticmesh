@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 logger: logging.Logger = get_logger(__name__)
 
 _DEFAULT_DATASET: Path = (
-    Path(__file__).parent.parent.parent / "tests" / "fixtures" / "gold_standard.json"
+    Path(__file__).parent.parent.parent / "tests" / "fixtures" / "00_legacy" / "gold_standard.json"
 )
 
 _DEFAULT_EVALUATOR_MODEL: str = "openai/gpt-4o-mini"
