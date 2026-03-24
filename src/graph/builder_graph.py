@@ -161,10 +161,11 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
 
 
 def _route_after_build(state: BuilderState) -> str:
-    """Route after graph build: process next table or END."""
+    """Route after graph build: process next table or save_trace/END."""
     if state.get("pending_tables"):
         return "rag_mapping"
-    return END
+    # Always go through save_trace before END (saves trace if enabled, otherwise passes through)
+    return "save_trace"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -360,7 +361,7 @@ def run_builder(
         triplets = final_state.get("triplets", [])
         triplet_dicts = [
             {
-                "chunk_index": t.chunk_index,
+                "chunk_index": t.source_chunk_index,
                 "subject": t.subject,
                 "predicate": t.predicate,
                 "object": t.object,
@@ -377,7 +378,8 @@ def run_builder(
                 "name": e.name,
                 "definition": e.definition,
                 "synonyms": e.synonyms,
-                "provenance": e.provenance,
+                "provenance_text": e.provenance_text,
+                "source_doc": e.source_doc,
             }
             for e in entities
         ]
@@ -391,17 +393,25 @@ def run_builder(
         enriched_tables = final_state.get("enriched_tables", [])
         table_dicts = [
             {
-                "name": t.name,
-                "columns": [{"name": c.name, "type": c.type} for c in t.columns],
+                "name": t.table_name,
+                "columns": [{"name": c.name, "type": c.data_type} for c in t.columns],
             }
             for t in tables
         ]
-        builder_trace.record_schema_processing(table_dicts, enriched_tables)
+        # Convert enriched tables to dicts for tracing
+        enriched_table_dicts = [
+            {
+                "name": t.enriched_table_name or t.table_name,
+                "description": t.table_description or "",
+            }
+            for t in enriched_tables
+        ]
+        builder_trace.record_schema_processing(table_dicts, enriched_table_dicts)
 
         # Record graph stats
         with Neo4jClient() as client:
-            node_count = client.execute_cypher("MATCH (n) RETURN count(n) as count").single()["count"]
-            rel_count = client.execute_cypher("MATCH ()-[r]->() RETURN count(r) as count").single()["count"]
+            node_count = client.execute_cypher("MATCH (n) RETURN count(n) as count")[0]["count"]
+            rel_count = client.execute_cypher("MATCH ()-[r]->() RETURN count(r) as count")[0]["count"]
             builder_trace.neo4j_summary = {
                 "total_nodes": node_count,
                 "total_relationships": rel_count,

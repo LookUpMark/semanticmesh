@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import Any, TypedDict
 
 from src.models.schemas import (
     Chunk,
@@ -15,9 +15,6 @@ from src.models.schemas import (
     TableSchema,
     Triplet,
 )
-
-if TYPE_CHECKING:
-    from src.config.tracing import BuilderTrace, QueryTrace
 
 
 class BuilderState(TypedDict, total=False):
@@ -48,9 +45,9 @@ class BuilderState(TypedDict, total=False):
     ingestion_errors: list[str]
     completed_tables: list[str]
 
-    # Debug tracing fields
+    # Debug tracing fields (use Any to avoid circular imports)
     trace_enabled: bool
-    builder_trace: BuilderTrace | None
+    builder_trace: Any  # BuilderTrace | None at runtime
     trace_output_dir: str
 
 
@@ -79,8 +76,8 @@ class QueryState(TypedDict, total=False):
     grader_rejection_count: int
     iteration_count: int
 
-    # Debug tracing fields
+    # Debug tracing fields (use Any to avoid circular imports)
     query_trace_enabled: bool
-    query_trace: QueryTrace | None
+    query_trace: Any  # QueryTrace | None at runtime
     query_index: int
     builder_trace_id: str

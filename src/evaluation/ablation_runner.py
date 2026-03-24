@@ -326,7 +326,11 @@ def run_ablation(
 
                 with open(gt_path) as f:
                     gt_data = json.load(f)
-                    ground_truth = gt_data.get("pairs", [])
+                    # Handle both formats: dict with "pairs" field or simple list
+                    if isinstance(gt_data, dict):
+                        ground_truth = gt_data.get("pairs", [])
+                    elif isinstance(gt_data, list):
+                        ground_truth = gt_data
 
             # Generate comparison report
             if query_traces and ground_truth:

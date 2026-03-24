@@ -170,8 +170,8 @@ class BuilderTrace:
         self.chunks = truncate_list(truncated_chunks)
         self.chunking_summary = {
             "total_chunks": len(chunks),
-            "total_tokens": sum(c.get("token_count", 0) for c in chunks),
-            "avg_tokens": sum(c.get("token_count", 0) for c in chunks) / len(chunks) if chunks else 0,
+            "total_tokens": sum(int(c.get("token_count", 0) or 0) for c in chunks),
+            "avg_tokens": sum(int(c.get("token_count", 0) or 0) for c in chunks) / len(chunks) if chunks else 0,
         }
 
     def record_triplets(self, triplets: list[dict[str, Any]], extraction_errors: list[dict[str, Any]] | None = None) -> None:

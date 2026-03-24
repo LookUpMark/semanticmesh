@@ -1,0 +1,320 @@
+{
+  "study_id": "AB-00",
+  "timestamp": "2026-03-24T17:59:20.580981+00:00",
+  "trace_id": "AB-00.2026-03-24T17-59-20.580981+00-00",
+  "config": {
+    "llm_model_reasoning": "openai/gpt-oss-120b:free",
+    "llm_model_extraction": "local-model",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/00_legacy/sample_docs/business_glossary.txt",
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/00_legacy/sample_docs/data_dictionary.txt"
+  ],
+  "ddl_files": [
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/00_legacy/sample_ddl/complex_schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "BUSINESS GLOSSARY \u2014 E-COMMERCE DOMAIN\n==========================================\n\nThis document defines the core business concepts and their relationships in the e-commerce platform. These concepts represent the shared understanding between business stakeholders and technical teams.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nDefinition: A Customer is any individual or legal entity that has registered an acco... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "219"
+    },
+    {
+      "chunk_id": 1,
+      "text": "Synonyms: client, buyer, account holder, user, registered user\nRelated Concepts: CustomerAddress, SalesOrder\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPRODUCT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nDefinition: A Product is a tangible or digital item offered for sale on the platform.\n\nKey Attributes:\n- Each Product is uniquely identified by a SKU (Stock Keeping Unit) code\n- Products have a human-readable product name\n- Products have a defined unit price i... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "207"
+    },
+    {
+      "chunk_id": 2,
+      "text": "Synonyms: item, article, goods, merchandise, SKU\nRelated Concepts: Category, Inventory, OrderLineItem\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nDefinition: A Sales Order is a formal transactional document that records the agreement between the platform and a Customer to supply one or more Products at specified quantities and prices, on a specific date.\n\nKey Attributes:\n- Each Sales Order has a unique Ord... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "251"
+    },
+    {
+      "chunk_id": 3,
+      "text": "Synonyms: order, purchase order, transaction, customer order, sales transaction\nRelated Concepts: Customer, OrderLineItem, Invoice\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nORDER LINE ITEM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nDefinition: An Order Line Item is a single line within a Sales Order that specifies a particular Product, the quantity ordered, and the agreed unit price at time of purchase.\n\nKey Attributes:\n- Each line item has a unique line ide... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "229"
+    },
+    {
+      "chunk_id": 4,
+      "text": "Synonyms: line item, order detail, order row, sales line, order line\nRelated Concepts: SalesOrder, Product, InvoiceLine\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCATEGORY\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nDefinition: A Category is a hierarchical classification grouping related Products.\n\nKey Attributes:\n- Each Category has a unique identifier\n- Categories have human-readable names\n- Categories can have parent Categories, forming a tree structure\n- E... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "221"
+    },
+    {
+      "chunk_id": 5,
+      "text": "Synonyms: product category, product type, product group, classification\nRelated Concepts: Product\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER ADDRESS\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nDefinition: A Customer Address is a postal or geographic address associated with a Customer, used for delivery or billing purposes.\n\nKey Attributes:\n- Each address has a unique identifier\n- Addresses are associated with exactly one Customer\n- Addresses have a ty... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "221"
+    },
+    {
+      "chunk_id": 6,
+      "text": "Key Attributes:\n- Each inventory record references one Product\n- Each inventory record references one Warehouse location\n- Inventory records track the quantity on hand\n- Inventory levels are timestamped with last update time\n\nBusiness Rules:\n- Inventory levels are updated in real-time with each Sales Order confirmation\n- Inventory levels increase when products are restocked\n- Low inventory triggers automatic reorder notifications\n- Products with zero inventory cannot be ordered\n- Warehouse trans... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "225"
+    },
+    {
+      "chunk_id": 7,
+      "text": "Business Rules:\n- Each warehouse maintains inventory for multiple products\n- Orders are fulfilled from the warehouse closest to the customer\n- Warehouse transfers are used to balance inventory across locations\n- Warehouse capacity is monitored to prevent overstocking\n\nSynonyms: distribution center, fulfillment center, storage location, depot\nRelated Concepts: Inventory, Product, CustomerAddress\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nKEY RELATIONSHIP SUMMARY\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "243"
+    },
+    {
+      "chunk_id": 8,
+      "text": "Category Relationships:\n- A Category contains zero or more Products\n- A Category may have one parent Category\n- A Category may have zero or more child Categories\n\nInventory Relationships:\n- An Inventory record tracks one Product in one Warehouse\n- A Product has Inventory records in one or more Warehouses\n- A Warehouse has Inventory records for zero or more Products\n\nAddress Relationships:\n- A Customer Address belongs to exactly one Customer\n- A Customer has one or more Customer Addresses\n\n\u2500\u2500\u2500\u2500\u2500\u2500... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "206"
+    },
+    {
+      "chunk_id": 9,
+      "text": "Inventory Management Process:\n1. Products are received from suppliers at warehouses\n2. Inventory records are updated to reflect new stock\n3. When orders are placed, inventory is reserved\n4. Upon order confirmation, inventory is decremented\n5. Low inventory triggers automatic reorder\n6. Warehouse transfers balance inventory across locations\n\nCustomer Management Process:\n1. New customers register through the website\n2. Customer provides email and creates password\n3. Customer may add delivery and b... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "128"
+    },
+    {
+      "chunk_id": 10,
+      "text": "DATA DICTIONARY \u2014 E-COMMERCE DATABASE\n========================================\n\nThis document describes the physical database schema implementing the e-commerce platform's data model. All tables are in the ECOM_SCHEMA schema unless otherwise noted.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nDescription: Master record for all registered platform customers. Each row represents one customer account. This... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "138"
+    },
+    {
+      "chunk_id": 11,
+      "text": "Column Details:\n  - CUST_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique numeric identifier for the customer. System-generated sequential number starting from 100001.\n  - FULL_NAME (VARCHAR(200), NOT NULL): Customer's full legal name. Combined first and last name. Used in order confirmations and shipping labels.\n  - EMAIL (VARCHAR(150), NOT NULL, UNIQUE): Primary contact email address. Must be unique across all customers. Used for login and order notifications.\n  - REGION_CODE (VARCHAR(10), NOT N... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "238"
+    },
+    {
+      "chunk_id": 12,
+      "text": "- LAST_LOGIN (DATETIME, NULL): Timestamp of the most recent successful login. NULL for customers who have never logged in.\n  - EMAIL_VERIFIED (BOOLEAN, NOT NULL, DEFAULT FALSE): Whether the customer's email address has been verified through confirmation link.",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "53"
+    },
+    {
+      "chunk_id": 13,
+      "text": "Indexes:\n  - PRIMARY KEY on CUST_ID\n  - UNIQUE INDEX on EMAIL (idx_customer_email)\n  - INDEX on REGION_CODE (idx_customer_region) for regional reporting\n  - INDEX on IS_ACTIVE (idx_customer_active) for active customer queries\n  - INDEX on CREATED_AT (idx_customer_created) for customer acquisition analytics\n\nForeign Keys: None (this is a master table)\n\nBusiness Concept Mapping: This table stores the Customer business concept.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTB_PRODUC... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "170"
+    },
+    {
+      "chunk_id": 14,
+      "text": "Column Details:\n  - PRODUCT_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique numeric product identifier. System-generated.\n  - SKU (VARCHAR(50), NOT NULL, UNIQUE): Stock Keeping Unit \u2014 human-readable product code. Format: 3-letter category code + 6-digit sequential number. Example: \"ELE-001234\". Used in barcodes and inventory systems.\n  - PRODUCT_NAME (VARCHAR(300), NOT NULL): Full product title as displayed to customers. Includes brand, model, and key specifications.\n  - CATEGORY_ID (INT, NOT NUL... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "231"
+    },
+    {
+      "chunk_id": 15,
+      "text": "- DESCRIPTION (TEXT, NULL): Detailed product description including features, specifications, and usage instructions. Displayed on product detail page.\n  - WEIGHT_KG (DECIMAL(8,3), NULL): Product weight in kilograms. NULL for digital products. Used for shipping calculations.\n  - CREATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp when product record was created.\n  - UPDATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP): Timestamp of last product ... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "104"
+    },
+    {
+      "chunk_id": 16,
+      "text": "Indexes:\n  - PRIMARY KEY on PRODUCT_ID\n  - UNIQUE INDEX on SKU (idx_product_sku)\n  - INDEX on CATEGORY_ID (idx_product_category) for category browsing\n  - INDEX on IS_ACTIVE (idx_product_active) for storefront queries\n  - INDEX on UNIT_PRICE (idx_product_price) for price range searches\n  - FULLTEXT INDEX on PRODUCT_NAME, DESCRIPTION (idx_product_search) for search\n\nForeign Keys:\n  - CATEGORY_ID references TB_CATEGORY(CATEGORY_ID)\n\nBusiness Concept Mapping: This table stores the Product business ... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "209"
+    },
+    {
+      "chunk_id": 17,
+      "text": "Column Details:\n  - ORDER_ID (BIGINT, PK, NOT NULL, AUTO_INCREMENT): Unique order identifier. System-generated sequential number.\n  - CUST_ID (INT, NOT NULL, FK -> CUSTOMER_MASTER.CUST_ID): The customer who placed the order. All orders must be associated with a registered customer.\n  - ORDER_DATE (DATE, NOT NULL): Date the order was placed. Determines order aging and fulfillment priority.\n  - TOTAL_AMT (DECIMAL(12,2), NOT NULL): Total monetary value of the order including all line items, taxes, ... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "220"
+    },
+    {
+      "chunk_id": 18,
+      "text": "- BILLING_ADDRESS_ID (INT, NULL, FK -> CUST_ADDRESS.ADDRESS_ID): The billing address for this order. Must be a valid address belonging to the order's customer.\n  - PAYMENT_METHOD (VARCHAR(50), NULL): Payment method used. Examples: 'CREDIT_CARD', 'PAYPAL', 'BANK_TRANSFER'.\n  - PAYMENT_CONFIRMED_AT (DATETIME, NULL): Timestamp when payment was confirmed. NULL for unpaid orders.\n  - SHIPPED_AT (DATETIME, NULL): Timestamp when order was shipped. NULL for unshipped orders.\n  - DELIVERED_AT (DATETIME, ... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "190"
+    },
+    {
+      "chunk_id": 19,
+      "text": "Indexes:\n  - PRIMARY KEY on ORDER_ID\n  - INDEX on CUST_ID (idx_order_customer) for customer order history\n  - INDEX on ORDER_DATE (idx_order_date) for date-based reporting\n  - INDEX on STATUS_CODE (idx_order_status) for order fulfillment queries\n  - INDEX on (CUST_ID, ORDER_DATE) composite index for customer order sorting\n\nForeign Keys:\n  - CUST_ID references CUSTOMER_MASTER(CUST_ID)\n  - DELIVERY_ADDRESS_ID references CUST_ADDRESS(ADDRESS_ID)\n  - BILLING_ADDRESS_ID references CUST_ADDRESS(ADDRES... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "232"
+    },
+    {
+      "chunk_id": 20,
+      "text": "Column Details:\n  - LINE_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique line item identifier. System-generated.\n  - ORDER_ID (BIGINT, NOT NULL, FK -> SALES_ORDER_HDR.ORDER_ID): Parent order. Each line item belongs to exactly one order.\n  - LINE_NUMBER (INT, NOT NULL): Sequential line number within the order (1, 2, 3, ...). Used for display order.\n  - PRODUCT_ID (INT, NOT NULL, FK -> TB_PRODUCT.PRODUCT_ID): The product ordered. References the product master for current product information.\n  - QU... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "219"
+    },
+    {
+      "chunk_id": 21,
+      "text": "- PRODUCT_NAME_AT_ORDER (VARCHAR(300), NULL): Product name as it appeared when the order was placed. Preserved for historical accuracy if product name changes.\n  - CREATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp when line item was created.",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "55"
+    },
+    {
+      "chunk_id": 22,
+      "text": "Indexes:\n  - PRIMARY KEY on LINE_ID\n  - UNIQUE INDEX on (ORDER_ID, LINE_NUMBER) (idx_line_order_num)\n  - INDEX on ORDER_ID (idx_line_order) for order line retrieval\n  - INDEX on PRODUCT_ID (idx_line_product) for product sales analytics\n  - INDEX on (ORDER_ID, PRODUCT_ID) composite index for order product lookup\n\nForeign Keys:\n  - ORDER_ID references SALES_ORDER_HDR(ORDER_ID)\n  - PRODUCT_ID references TB_PRODUCT(PRODUCT_ID)\n\nBusiness Concept Mapping: This table stores the OrderLineItem business c... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "188"
+    },
+    {
+      "chunk_id": 23,
+      "text": "Primary Key: CATEGORY_ID (INT, auto-increment)\n\nTable Type: Master data table (low frequency of changes)\n\nColumn Details:\n  - CATEGORY_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique category identifier. System-generated.\n  - CATEGORY_NAME (VARCHAR(200), NOT NULL): Human-readable category name. Displayed in navigation menus and search filters.\n  - PARENT_CATEGORY_ID (INT, NULL, FK -> TB_CATEGORY.CATEGORY_ID): Parent category. NULL for root-level categories. Forms the category hierarchy.\n  - CATEG... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "241"
+    },
+    {
+      "chunk_id": 24,
+      "text": "Indexes:\n  - PRIMARY KEY on CATEGORY_ID\n  - INDEX on PARENT_CATEGORY_ID (idx_category_parent) for hierarchy queries\n  - INDEX on CATEGORY_NAME (idx_category_name) for category search\n  - INDEX on IS_VISIBLE (idx_category_visible) for storefront queries\n\nForeign Keys:\n  - PARENT_CATEGORY_ID references TB_CATEGORY(CATEGORY_ID) (self-referential)\n\nBusiness Concept Mapping: This table stores the Category business concept.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUST_ADDRESS\n\u2500\u2500\u2500... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "160"
+    },
+    {
+      "chunk_id": 25,
+      "text": "Column Details:\n  - ADDRESS_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique address identifier. System-generated.\n  - CUST_ID (INT, NOT NULL, FK -> CUSTOMER_MASTER.CUST_ID): Owning customer. All addresses must belong to a registered customer.\n  - ADDRESS_TYPE (VARCHAR(20), NOT NULL): Type of address. Valid values: 'DELIVERY', 'BILLING'. Determines usage in orders.\n  - STREET (VARCHAR(300), NOT NULL): Street address including house number and street name. May include apartment or suite information... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "238"
+    },
+    {
+      "chunk_id": 26,
+      "text": "- IS_PRIMARY (BOOLEAN, NOT NULL, DEFAULT FALSE): Whether this is the customer's primary address. Only one address of each type can be primary per customer. Enforced by application logic.\n  - CREATED_AT (DATETIME, NOT NULL, DEFAULT CURRENT_TIMESTAMP): Timestamp when address was added.",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "60"
+    },
+    {
+      "chunk_id": 27,
+      "text": "Indexes:\n  - PRIMARY KEY on ADDRESS_ID\n  - INDEX on CUST_ID (idx_address_customer) for customer address retrieval\n  - INDEX on (CUST_ID, ADDRESS_TYPE) composite index for typed address lookup\n  - INDEX on (CUST_ID, IS_PRIMARY) composite index for primary address lookup\n\nForeign Keys:\n  - CUST_ID references CUSTOMER_MASTER(CUST_ID)\n\nBusiness Concept Mapping: This table stores the CustomerAddress business concept.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nINVENTORY\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "183"
+    },
+    {
+      "chunk_id": 28,
+      "text": "Column Details:\n  - INVENTORY_ID (INT, PK, NOT NULL, AUTO_INCREMENT): Unique record identifier. System-generated.\n  - PRODUCT_ID (INT, NOT NULL, FK -> TB_PRODUCT.PRODUCT_ID): The stocked product. References product master.\n  - WAREHOUSE_CODE (VARCHAR(20), NOT NULL): Warehouse location identifier. Examples: 'WH-EU-01', 'WH-US-NY'. References warehouse master table in logistics system.\n  - QUANTITY_ON_HAND (INT, NOT NULL, DEFAULT 0): Number of units currently in stock. Updated in real-time with or... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "251"
+    },
+    {
+      "chunk_id": 29,
+      "text": "Indexes:\n  - PRIMARY KEY on INVENTORY_ID\n  - UNIQUE INDEX on (PRODUCT_ID, WAREHOUSE_CODE) (idx_inventory_product_warehouse)\n  - INDEX on PRODUCT_ID (idx_inventory_product) for total product inventory queries\n  - INDEX on WAREHOUSE_CODE (idx_inventory_warehouse) for warehouse stock reports\n  - INDEX on QUANTITY_ON_HAND (idx_inventory_quantity) for low stock queries\n\nForeign Keys:\n  - PRODUCT_ID references TB_PRODUCT(PRODUCT_ID)\n\nBusiness Concept Mapping: This table stores the Inventory business c... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "182"
+    },
+    {
+      "chunk_id": 30,
+      "text": "Primary Key: WAREHOUSE_CODE (VARCHAR(20))\n\nTable Type: Master data table (low frequency of changes)\n\nColumn Details:\n  - WAREHOUSE_CODE (VARCHAR(20), PK, NOT NULL): Unique warehouse location identifier. Human-readable code. Examples: 'WH-EU-01', 'WH-US-NY'.\n  - WAREHOUSE_NAME (VARCHAR(200), NOT NULL): Full warehouse name. Example: 'European Distribution Center - Milan'.\n  - STREET (VARCHAR(300), NOT NULL): Street address of the warehouse facility.\n  - CITY (VARCHAR(100), NOT NULL): City where wa... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "249"
+    },
+    {
+      "chunk_id": 31,
+      "text": "Indexes:\n  - PRIMARY KEY on WAREHOUSE_CODE\n  - INDEX on COUNTRY_CODE (idx_warehouse_country) for regional warehouse lookup\n  - INDEX on IS_ACTIVE (idx_warehouse_active) for active warehouse queries\n\nForeign Keys: None (this is a master table)\n\nBusiness Concept Mapping: This table stores the Warehouse business concept.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTB_REGION\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nDescription: Geographic regions for tax calcula... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "135"
+    },
+    {
+      "chunk_id": 32,
+      "text": "Primary Key: REGION_CODE (VARCHAR(10))\n\nTable Type: Master data table (rarely changes)\n\nColumn Details:\n  - REGION_CODE (VARCHAR(10), PK, NOT NULL): Unique region identifier. ISO 3166-2 subdivision format. Examples: 'US-CA', 'IT-25', 'DE-BW'.\n  - REGION_NAME (VARCHAR(200), NOT NULL): Human-readable region name. Example: 'California', 'Lombardy', 'Baden-W\u00fcrttemberg'.\n  - COUNTRY_CODE (CHAR(2), NOT NULL): ISO 3166-1 alpha-2 country code. Links region to country.\n  - TAX_RATE (DECIMAL(5,4), NOT NUL... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "246"
+    },
+    {
+      "chunk_id": 33,
+      "text": "Foreign Keys:\n  - DEFAULT_WAREHOUSE references TB_WAREHOUSE(WAREHOUSE_CODE)\n\nBusiness Concept Mapping: This table stores the Region business concept.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSYS_AUDIT_LOG\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nDescription: SYSTEM TABLE \u2014 Records all data modification events for compliance auditing. This is a technical table with no direct business concept mapping. Should NOT be mapped to business concepts in the knowled... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "134"
+    },
+    {
+      "chunk_id": 34,
+      "text": "Column Details:\n  - LOG_ID (BIGINT, PK, NOT NULL, AUTO_INCREMENT): Unique log entry identifier. System-generated sequential number.\n  - ACTION_TYPE (VARCHAR(50), NOT NULL): Type of database operation. Valid values: 'INSERT', 'UPDATE', 'DELETE'.\n  - TABLE_NAME (VARCHAR(100), NOT NULL): Name of the affected table. Exact table name from schema.\n  - RECORD_ID (VARCHAR(100), NOT NULL): Primary key of the affected record, stored as string. Used to identify the specific record that changed.\n  - CHANGED... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "230"
+    },
+    {
+      "chunk_id": 35,
+      "text": "- NEW_VALUES (JSON, NULL): New values for INSERT and UPDATE operations. Contains complete row data after change. NULL for DELETE operations.\n  - IP_ADDRESS (VARCHAR(45), NULL): IP address of the client that made the change. NULL for system operations.\n  - SESSION_ID (VARCHAR(100), NULL): Database session identifier. Used for grouping related changes.",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "75"
+    },
+    {
+      "chunk_id": 36,
+      "text": "Indexes:\n  - PRIMARY KEY on LOG_ID\n  - INDEX on TABLE_NAME (idx_audit_table) for table-specific audit queries\n  - INDEX on CHANGED_BY (idx_audit_user) for user activity tracking\n  - INDEX on CHANGED_AT (idx_audit_timestamp) for time-based audit reports\n  - INDEX on (TABLE_NAME, RECORD_ID) composite index for record history queries\n\nForeign Keys: None (this is a system table)\n\nBusiness Concept Mapping: None \u2014 this is a technical system table for compliance only.\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "250"
+    },
+    {
+      "chunk_id": 37,
+      "text": "SALES_ORDER_HDR.ORDER_ID\n  \u2514\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID\n\nSALES_ORDER_HDR.DELIVERY_ADDRESS_ID \u2192 CUST_ADDRESS.ADDRESS_ID\nSALES_ORDER_HDR.BILLING_ADDRESS_ID \u2192 CUST_ADDRESS.ADDRESS_ID\n\nTB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID\n  \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference)\n\nTB_WAREHOUSE.WAREHOUSE_CODE\n  \u251c\u2500\u2500 INVENTORY.WAREHOUSE_CODE\n  \u2514\u2500\u2500 TB_REGION.DEFAULT_WAREHOUSE\n\nTB_REGION.REGION_CODE\n  \u2514\u2500\u2500 CUSTOMER_MASTER.REGION_CODE\n\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "195"
+    },
+    {
+      "chunk_id": 38,
+      "text": "Business Concept      \u2192 Physical Table(s)\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCustomer             \u2192 CUSTOMER_MASTER\nProduct              \u2192 TB_PRODUCT\nSalesOrder           \u2192 SALES_ORDER_HDR\nOrderLineItem        \u2192 ORDER_LINE_ITEM\nCategory             \u2192 TB_CATEGORY\nCustomerAddress      \u2192 CUST_ADDRESS\nInventory            \u2192 INVENTORY\nWarehouse            \u2192 TB_WAREHOUSE\nRegion               \u2192 TB_REGION\n\nTechnical/No Mapping \u2192 SYS_AUDIT_LOG",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "89"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 39,
+    "total_tokens": 7315,
+    "avg_tokens": 187.56410256410257
+  },
+  "triplets": [],
+  "extraction_summary": {},
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [],
+  "resolution_summary": {},
+  "tables_parsed": [],
+  "tables_enriched": [],
+  "schema_summary": {},
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {},
+  "stage_timings": {}
+}
