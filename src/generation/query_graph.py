@@ -288,6 +288,7 @@ def build_query_graph():
     graph.add_node("hallucination_grader", _node_grade_hallucination)
     graph.add_node("grader_consistency_validator", _node_grader_consistency_validator)
     graph.add_node("finalise", _node_finalise)
+    graph.add_node("save_query_trace", _node_save_query_trace)
 
     # Set entry point
     graph.set_entry_point("hybrid_retrieval")
@@ -299,7 +300,8 @@ def build_query_graph():
     graph.add_edge("answer_generation", "semantic_verification")
     graph.add_edge("semantic_verification", "hallucination_grader")
     graph.add_edge("hallucination_grader", "grader_consistency_validator")
-    graph.add_edge("finalise", END)
+    graph.add_edge("finalise", "save_query_trace")
+    graph.add_edge("save_query_trace", END)
 
     # Add conditional edges
     graph.add_conditional_edges(
@@ -323,11 +325,47 @@ def build_query_graph():
     return graph.compile(checkpointer=MemorySaver())
 
 
-def run_query(user_query: str) -> dict[str, Any]:
+# ─────────────────────────────────────────────────────────────────────────────
+# Debug Tracing
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _node_save_query_trace(state: QueryState) -> dict[str, Any]:
+    """Save debug query trace if enabled."""
+    if not state.get("query_trace_enabled"):
+        return {}
+
+    from pathlib import Path
+
+    trace = state.get("query_trace")
+    if not trace:
+        logger.warning("Query trace enabled but no trace object found in state.")
+        return {}
+
+    output_dir = Path(state.get("trace_output_dir", "notebooks/ablation/ablation_results/traces/debug"))
+    trace_file = output_dir / f"query_traces_{trace.study_id}.jsonl"
+    trace.save(trace_file)
+    logger.info(f"Query trace saved to {trace_file}")
+
+    return {}
+
+
+def run_query(
+    user_query: str,
+    *,
+    trace_enabled: bool = False,
+    query_index: int = 0,
+    builder_trace_id: str = "",
+    study_id: str = "manual",
+) -> dict[str, Any]:
     """Convenience entry point: builds and runs the query graph for a single query.
 
     Args:
         user_query: Natural-language question.
+        trace_enabled: If True, enable detailed debug tracing of the query pipeline.
+        query_index: Index of this query in the batch (for trace naming).
+        builder_trace_id: ID of the builder trace to link with.
+        study_id: Study ID for trace naming (e.g., "AB-00").
 
     Returns:
         ``{
@@ -346,8 +384,24 @@ def run_query(user_query: str) -> dict[str, Any]:
             "grader_rejection_count": int,
         }``
     """
+    from src.config.tracing import QueryTrace
+    from src.config.settings import get_settings
+
+    settings = get_settings()
+
+    # Initialize query trace if enabled
+    query_trace: QueryTrace | None = None
+    if trace_enabled:
+        query_trace = QueryTrace.create(
+            study_id=study_id,
+            question=user_query,
+            query_index=query_index,
+            builder_trace_id=builder_trace_id,
+        )
+        logger.info(f"Query tracing enabled for query {query_index}")
+
     graph = build_query_graph()
-    config = {"configurable": {"thread_id": "query-run-1"}}
+    config = {"configurable": {"thread_id": f"query-run-{query_index}"}}
     # Ensure schema (vector index) exists before querying.
     with Neo4jClient() as client:
         setup_schema(client)
@@ -373,8 +427,58 @@ def run_query(user_query: str) -> dict[str, Any]:
         "semantic_verification_warning": None,
         "grader_consistency_valid": True,
         "grader_rejection_count": 0,
+        "query_trace_enabled": trace_enabled,
+        "query_trace": query_trace,
+        "query_index": query_index,
+        "builder_trace_id": builder_trace_id,
+        "trace_output_dir": settings.trace_output_dir if trace_enabled else "",
     }
     result = graph.invoke(initial, config=config)
+
+    # Populate trace with final state data
+    if trace_enabled and query_trace:
+        # Record retrieval details
+        retrieved = result.get("retrieved_chunks", [])
+        query_trace.record_retrieval(
+            vector_results=None,  # Would need to be tracked in retrieval node
+            bm25_results=None,
+            graph_results=None,
+            rrf_fused=[{"node": r.node_id, "rrf_score": r.score, "sources": []} for r in retrieved],
+        )
+
+        # Record reranking
+        reranked = result.get("reranked_chunks", [])
+        query_trace.record_reranking(
+            pre_rerank=[{"node": r.node_id, "score": r.score} for r in retrieved],
+            post_rerank=[{"node": r.node_id, "score": r.score} for r in reranked],
+            model=settings.reranker_model if settings.enable_reranker else "disabled",
+        )
+
+        # Record context preparation
+        generation_chunks = result.get("generation_chunks", reranked)
+        query_trace.record_context_preparation(
+            contexts=[{"node": c.node_id, "text": c.text, "source": c.source} for c in generation_chunks],
+            context_limit=None,
+        )
+
+        # Record generation attempts (simplified - would need more detailed tracking)
+        query_trace.record_generation_attempt(
+            answer=result.get("current_answer", result.get("final_answer", "")),
+            critique=result.get("last_critique", ""),
+            grader_decision=str(result.get("grader_decision", "")),
+            attempt_number=result.get("iteration_count", 0) + 1,
+        )
+        query_trace.record_generation_summary()
+
+        # Record final output
+        query_trace.record_output(
+            answer=result.get("final_answer", ""),
+            grounded=result.get("semantic_verification_passed", True),
+            verification_score=result.get("semantic_verification_overlap", 0.0),
+            grader_decision=str(result.get("grader_decision", "")),
+            sources=result.get("sources", []),
+        )
+
     return {
         "final_answer": result.get("final_answer", ""),
         "sources": result.get("sources", []),

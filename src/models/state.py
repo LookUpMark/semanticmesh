@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from src.models.schemas import (
     Chunk,
@@ -15,6 +15,9 @@ from src.models.schemas import (
     TableSchema,
     Triplet,
 )
+
+if TYPE_CHECKING:
+    from src.config.tracing import BuilderTrace, QueryTrace
 
 
 class BuilderState(TypedDict, total=False):
@@ -45,6 +48,11 @@ class BuilderState(TypedDict, total=False):
     ingestion_errors: list[str]
     completed_tables: list[str]
 
+    # Debug tracing fields
+    trace_enabled: bool
+    builder_trace: BuilderTrace | None
+    trace_output_dir: str
+
 
 class QueryState(TypedDict, total=False):
     """Mutable state flowing through the Query/Answer graph."""
@@ -70,3 +78,9 @@ class QueryState(TypedDict, total=False):
     grader_consistency_valid: bool
     grader_rejection_count: int
     iteration_count: int
+
+    # Debug tracing fields
+    query_trace_enabled: bool
+    query_trace: QueryTrace | None
+    query_index: int
+    builder_trace_id: str

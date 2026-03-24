@@ -101,6 +101,13 @@ class Settings(BaseSettings):
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = DEFAULT_CONFIG.log_level
 
+    # ── Debug Tracing ───────────────────────────────────────────────────────────
+    enable_debug_trace: bool = DEFAULT_CONFIG.enable_debug_trace
+    trace_output_dir: str = DEFAULT_CONFIG.trace_output_dir
+    trace_compress_large_fields: bool = DEFAULT_CONFIG.trace_compress_large_fields
+    trace_truncate_length: int = DEFAULT_CONFIG.trace_truncate_length
+    trace_max_items: int = DEFAULT_CONFIG.trace_max_items
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
