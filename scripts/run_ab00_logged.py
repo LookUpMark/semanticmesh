@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Run AB-00 with lazy extraction and file logging."""
+"""Run AB-00 with LLM extraction and file logging."""
 
 import os
 import sys
@@ -7,8 +7,8 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-# Enable lazy extraction BEFORE importing anything else
-os.environ["USE_LAZY_EXTRACTION"] = "true"
+# NO lazy extraction - use LLM from .env configuration
+# os.environ["USE_LAZY_EXTRACTION"] = "true"  # REMOVED
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -31,14 +31,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.info(f"Logging to: {log_file}")
 logger.info("=" * 70)
-logger.info("AB-00 ABLATION STUDY - LAZY EXTRACTION MODE")
+logger.info("AB-00 ABLATION STUDY - LLM EXTRACTION MODE")
 logger.info("=" * 70)
 
 try:
     from src.evaluation.ablation_runner import run_ablation
+    from src.config.settings import get_settings
 
+    # Check configuration
+    settings = get_settings()
     logger.info("Configuration:")
-    logger.info("  - Lazy extraction: ENABLED (bypasses LM Studio)")
+    logger.info(f"  - Extraction model: {settings.llm_model_extraction}")
+    logger.info(f"  - Lazy extraction: {settings.use_lazy_extraction}")
     logger.info("  - Debug trace: ENABLED")
     logger.info("  - Dataset: 01_basics_ecommerce")
     logger.info("  - RAGAS: ENABLED")
