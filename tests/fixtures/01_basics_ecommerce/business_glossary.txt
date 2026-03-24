@@ -1,0 +1,193 @@
+# Business Glossary - E-Commerce Domain (Simplified)
+
+This document defines the core business concepts for the e-commerce platform test dataset.
+
+────────────────────────────────────────────────────────────
+CUSTOMER
+────────────────────────────────────────────────────────────
+**Definition**: An individual or entity registered on the platform who has made at least one purchase.
+
+**Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments.
+
+**Key Attributes**:
+- Unique Customer ID
+- Valid email address (required for login)
+- One or more delivery/billing addresses
+- Geographic region for tax calculation
+- Active/inactive status
+
+**Business Rules**:
+- Must place at least one order to remain active
+- Can have multiple addresses but only one primary per type
+- Data retained for 7 years after last purchase
+
+**Synonyms**: client, buyer, account holder, user
+**Related Concepts**: CustomerAddress, SalesOrder
+
+**Examples**:
+- A new user registers and places their first order
+- An existing customer updates their shipping address
+
+────────────────────────────────────────────────────────────
+PRODUCT
+────────────────────────────────────────────────────────────
+**Definition**: A tangible or digital item offered for sale on the platform.
+
+**Business Context**: Products are the core items that customers purchase. They are organized into categories and have inventory tracked across warehouses.
+
+**Key Attributes**:
+- Unique SKU code
+- Human-readable product name
+- Unit price in base currency (EUR)
+- Active/inactive status
+- Belongs to exactly one Category
+
+**Business Rules**:
+- Must belong to a valid category before being sold
+- Prices can change daily based on market conditions
+- Inactive products cannot be ordered but remain for historical reference
+
+**Synonyms**: item, article, goods, merchandise, SKU
+**Related Concepts**: Category, Inventory, OrderLineItem
+
+**Examples**:
+- "Wireless Bluetooth Headphones - Black" (SKU: ELE-001234)
+- "Cotton T-Shirt - Medium, Blue" (SKU: CLO-002345)
+
+────────────────────────────────────────────────────────────
+SALES ORDER
+────────────────────────────────────────────────────────────
+**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products.
+
+**Business Context**: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information.
+
+**Key Attributes**:
+- Unique Order ID
+- References exactly one Customer
+- Order date when transaction was initiated
+- Total monetary value
+- Status: PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+- Must contain at least one Order Line Item
+
+**Business Rules**:
+- Cannot be shipped until payment is confirmed
+- Can only be cancelled if not yet shipped
+- Status changes are logged for audit purposes
+
+**Synonyms**: order, purchase order, transaction, customer order
+**Related Concepts**: Customer, OrderLineItem, CustomerAddress
+
+**Examples**:
+- Order #12345 for Customer #10001 containing 3 items
+- Order #12346 with status "DELIVERED" from last week
+
+────────────────────────────────────────────────────────────
+ORDER LINE ITEM
+────────────────────────────────────────────────────────────
+**Definition**: A single line within a Sales Order specifying a Product, quantity, and unit price at time of purchase.
+
+**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering.
+
+**Key Attributes**:
+- Unique line identifier
+- References exactly one Product
+- Quantity of units ordered
+- Unit price at time of order (historical, not current)
+- Extended amount = quantity × unit price
+
+**Business Rules**:
+- A Sales Order must contain at least one line item
+- Cannot be modified after order confirmation
+- Unit price is fixed and does not change with future price updates
+
+**Synonyms**: line item, order detail, order row
+**Related Concepts**: SalesOrder, Product
+
+**Examples**:
+- Line 1: 2 units of Wireless Headphones at €79.99 each
+- Line 2: 1 unit of USB Cable at €12.50
+
+────────────────────────────────────────────────────────────
+PAYMENT
+────────────────────────────────────────────────────────────
+**Definition**: The monetary transaction that settles the total amount due for a Sales Order.
+
+**Business Context**: Payments authorize and transfer funds from the customer to the platform. Multiple payment methods are supported.
+
+**Key Attributes**:
+- Unique Payment ID
+- References exactly one Sales Order
+- Payment method (credit card, PayPal, bank transfer)
+- Payment amount
+- Confirmation timestamp
+- Status: PENDING, CONFIRMED, FAILED, REFUNDED
+
+**Business Rules**:
+- Payment must be confirmed before order ships
+- Refunds create new payment records with negative amounts
+- Multiple payment attempts can exist for one order
+
+**Synonyms**: transaction, payment transaction
+**Related Concepts**: SalesOrder
+
+**Examples**:
+- Credit card payment of €156.48 for Order #12345
+- PayPal payment of €45.00 for Order #12346
+
+────────────────────────────────────────────────────────────
+SHIPMENT
+────────────────────────────────────────────────────────────
+**Definition**: The physical delivery of Products from a Warehouse to a Customer's delivery address.
+
+**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom.
+
+**Key Attributes**:
+- Unique Shipment ID
+- References exactly one Sales Order
+- Source Warehouse
+- Destination Customer Address
+- Shipped timestamp
+- Tracking number
+- Status: PREPARING, SHIPPED, IN_TRANSIT, DELIVERED
+
+**Business Rules**:
+- Can only be created for confirmed orders with payment
+- One order may have multiple partial shipments
+- Delivery address must belong to the order's customer
+
+**Synonyms**: delivery, package, consignment
+**Related Concepts**: SalesOrder, Warehouse, CustomerAddress, Inventory
+
+**Examples**:
+- Shipment #S-001 containing 2 items from Warehouse WH-EU-01
+- Shipment #S-002 with tracking number "1Z999AA1" for Order #12347
+
+────────────────────────────────────────────────────────────
+KEY RELATIONSHIP SUMMARY
+────────────────────────────────────────────────────────────
+
+Customer Relationships:
+- A Customer places zero or more Sales Orders
+- A Customer has one or more Customer Addresses (not in simplified schema)
+
+Product Relationships:
+- A Product belongs to exactly one Category
+- A Product appears on zero or more Order Line Items
+
+Sales Order Relationships:
+- A Sales Order is placed by exactly one Customer
+- A Sales Order has one or more Order Line Items
+- A Sales Order has one or more Payments
+- A Sales Order has one or more Shipments
+
+Order Line Item Relationships:
+- An Order Line Item is part of exactly one Sales Order
+- An Order Line Item references exactly one Product
+
+Payment Relationships:
+- A Payment is for exactly one Sales Order
+
+Shipment Relationships:
+- A Shipment is for exactly one Sales Order
+- A Shipment comes from exactly one Warehouse
+- A Shipment goes to exactly one Customer Address

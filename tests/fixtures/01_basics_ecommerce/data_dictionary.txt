@@ -1,0 +1,186 @@
+# Data Dictionary - E-Commerce Database (Simplified)
+
+This document describes the physical database schema for the simplified e-commerce test dataset.
+
+────────────────────────────────────────────────────────────
+CUSTOMER_MASTER
+────────────────────────────────────────────────────────────
+**Description**: Master record for all registered platform customers.
+
+**Primary Key**: CUST_ID (INT, auto-increment)
+
+**Column Details**:
+| Column | Type | Description | Nullable |
+|--------|------|-------------|----------|
+| CUST_ID | INT | Unique customer identifier | NO |
+| FULL_NAME | VARCHAR(200) | Customer's full name | NO |
+| EMAIL | VARCHAR(150) | Unique email address for login | NO |
+| REGION_CODE | VARCHAR(10) | Geographic region for tax | YES |
+| CREATED_AT | DATETIME | Account creation timestamp | NO |
+| IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO |
+
+**Business Concept Mapping**: Customer
+
+────────────────────────────────────────────────────────────
+TB_PRODUCT
+────────────────────────────────────────────────────────────
+**Description**: Master catalogue of all products available for sale.
+
+**Primary Key**: PRODUCT_ID (INT, auto-increment)
+
+**Column Details**:
+| Column | Type | Description | Nullable |
+|--------|------|-------------|----------|
+| PRODUCT_ID | INT | Unique product identifier | NO |
+| SKU | VARCHAR(50) | Stock Keeping Unit code | NO |
+| PRODUCT_NAME | VARCHAR(300) | Product display name | NO |
+| CATEGORY_ID | INT | Category reference | NO |
+| UNIT_PRICE | DECIMAL(10,2) | Price in EUR | NO |
+| IS_ACTIVE | BOOLEAN | Whether currently for sale | NO |
+
+**Foreign Keys**:
+- CATEGORY_ID → TB_CATEGORY(CATEGORY_ID)
+
+**Business Concept Mapping**: Product
+
+────────────────────────────────────────────────────────────
+TB_CATEGORY
+────────────────────────────────────────────────────────────
+**Description**: Hierarchical product category tree.
+
+**Primary Key**: CATEGORY_ID (INT, auto-increment)
+
+**Column Details**:
+| Column | Type | Description | Nullable |
+|--------|------|-------------|----------|
+| CATEGORY_ID | INT | Unique category identifier | NO |
+| CATEGORY_NAME | VARCHAR(200) | Category display name | NO |
+| PARENT_CATEGORY_ID | INT | Parent category for hierarchy | YES |
+
+**Foreign Keys**:
+- PARENT_CATEGORY_ID → TB_CATEGORY(CATEGORY_ID) [self-reference]
+
+**Business Concept Mapping**: Category
+
+────────────────────────────────────────────────────────────
+SALES_ORDER_HDR
+────────────────────────────────────────────────────────────
+**Description**: Header record for each customer sales order.
+
+**Primary Key**: ORDER_ID (BIGINT, auto-increment)
+
+**Column Details**:
+| Column | Type | Description | Nullable |
+|--------|------|-------------|----------|
+| ORDER_ID | BIGINT | Unique order identifier | NO |
+| CUST_ID | INT | Customer who placed order | NO |
+| ORDER_DATE | DATE | Date order was placed | NO |
+| TOTAL_AMT | DECIMAL(12,2) | Total order value | NO |
+| STATUS_CODE | VARCHAR(20) | PENDING/CONFIRMED/SHIPPED/DELIVERED/CANCELLED | NO |
+| PAYMENT_CONFIRMED_AT | DATETIME | Payment confirmation timestamp | YES |
+| DELIVERED_AT | DATETIME | Delivery timestamp | YES |
+| CREATED_AT | DATETIME | Order creation timestamp | NO |
+
+**Foreign Keys**:
+- CUST_ID → CUSTOMER_MASTER(CUST_ID)
+
+**Business Concept Mapping**: SalesOrder
+
+────────────────────────────────────────────────────────────
+ORDER_LINE_ITEM
+────────────────────────────────────────────────────────────
+**Description**: Individual product lines within a sales order.
+
+**Primary Key**: LINE_ID (INT, auto-increment)
+
+**Column Details**:
+| Column | Type | Description | Nullable |
+|--------|------|-------------|----------|
+| LINE_ID | INT | Unique line identifier | NO |
+| ORDER_ID | BIGINT | Parent order | NO |
+| PRODUCT_ID | INT | Product ordered | NO |
+| QUANTITY | INT | Number of units | NO |
+| UNIT_PRICE | DECIMAL(10,2) | Price at time of order | NO |
+| LINE_AMT | DECIMAL(12,2) | Extended amount (qty × price) | NO |
+
+**Foreign Keys**:
+- ORDER_ID → SALES_ORDER_HDR(ORDER_ID)
+- PRODUCT_ID → TB_PRODUCT(PRODUCT_ID)
+
+**Business Concept Mapping**: OrderLineItem
+
+────────────────────────────────────────────────────────────
+PAYMENT
+────────────────────────────────────────────────────────────
+**Description**: Monetary transactions settling order amounts.
+
+**Primary Key**: PAYMENT_ID (BIGINT, auto-increment)
+
+**Column Details**:
+| Column | Type | Description | Nullable |
+|--------|------|-------------|----------|
+| PAYMENT_ID | BIGINT | Unique payment identifier | NO |
+| ORDER_ID | BIGINT | Order being paid | NO |
+| PAYMENT_METHOD | VARCHAR(50) | Credit card, PayPal, etc. | NO |
+| AMOUNT | DECIMAL(12,2) | Payment amount | NO |
+| STATUS_CODE | VARCHAR(20) | PENDING/CONFIRMED/FAILED/REFUNDED | NO |
+| CONFIRMED_AT | DATETIME | Payment confirmation timestamp | YES |
+| CREATED_AT | DATETIME | Payment creation timestamp | NO |
+
+**Foreign Keys**:
+- ORDER_ID → SALES_ORDER_HDR(ORDER_ID)
+
+**Business Concept Mapping**: Payment
+
+────────────────────────────────────────────────────────────
+SHIPMENT
+────────────────────────────────────────────────────────────
+**Description**: Physical delivery of products to customers.
+
+**Primary Key**: SHIPMENT_ID (BIGINT, auto-increment)
+
+**Column Details**:
+| Column | Type | Description | Nullable |
+|--------|------|-------------|----------|
+| SHIPMENT_ID | BIGINT | Unique shipment identifier | NO |
+| ORDER_ID | BIGINT | Order being fulfilled | NO |
+| WAREHOUSE_CODE | VARCHAR(20) | Source warehouse | YES |
+| SHIPPED_AT | DATETIME | Ship timestamp | YES |
+| TRACKING_NUMBER | VARCHAR(100) | Carrier tracking number | YES |
+| STATUS_CODE | VARCHAR(20) | PREPARING/SHIPPED/IN_TRANSIT/DELIVERED | NO |
+
+**Foreign Keys**:
+- ORDER_ID → SALES_ORDER_HDR(ORDER_ID)
+
+**Business Concept Mapping**: Shipment
+
+═════════════════════════════════════════════════════════════
+
+RELATIONSHIP SUMMARY
+═════════════════════════════════════════════════════════════
+
+CUSTOMER_MASTER.CUST_ID
+  └── SALES_ORDER_HDR.CUST_ID
+
+TB_PRODUCT.PRODUCT_ID
+  └── ORDER_LINE_ITEM.PRODUCT_ID
+
+TB_CATEGORY.CATEGORY_ID
+  ├── TB_PRODUCT.CATEGORY_ID
+  └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference)
+
+SALES_ORDER_HDR.ORDER_ID
+  ├── ORDER_LINE_ITEM.ORDER_ID
+  ├── PAYMENT.ORDER_ID
+  └── SHIPMENT.ORDER_ID
+
+BUSINESS CONCEPT TO TABLE MAPPING
+═════════════════════════════════════════════════════════════
+
+Customer         → CUSTOMER_MASTER
+Product          → TB_PRODUCT
+SalesOrder       → SALES_ORDER_HDR
+OrderLineItem    → ORDER_LINE_ITEM
+Category         → TB_CATEGORY
+Payment          → PAYMENT
+Shipment         → SHIPMENT

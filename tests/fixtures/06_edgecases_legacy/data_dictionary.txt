@@ -1,0 +1,489 @@
+================================================================================
+CUSTOMERMASTER DATABASE - DATA DICTIONARY
+================================================================================
+Legacy System: CustomerMaster v3.2.1
+Last Updated: 2015-08-14
+Migration Status: PENDING to new ERP system
+
+================================================================================
+TABLE: tblCustomer
+--------------------------------------------------------------------------------
+Purpose: Stores customer master data from the legacy CRM system
+Naming Convention: Hungarian notation (str = string, dtm = datetime, bol = boolean)
+Primary Key: strCustID (alphanumeric customer code inherited from AS/400 system)
+
+Field Specifications:
+--------------------
+strCustID (VARCHAR 50, PK)
+    - Customer identifier in format C-XXXXX or REG-XXXX
+    - Legacy AS/400 customer number
+    - Contains letters, numbers, hyphens
+    - NOT NULL, UNIQUE
+
+strFullName (VARCHAR 255)
+    - Customer's full name (free text field)
+    - Format: "FirstName LastName" or "Company Name"
+    - NOT NULL
+
+strEmail (VARCHAR 150)
+    - Primary email address for contact
+    - May contain multiple emails separated by semicolon
+    - Optional field (nullable)
+
+strRegion (VARCHAR 100)
+    - Sales region or territory
+    - Values: "North", "South", "East", "West", "International"
+    - Used for sales territory assignment
+
+strCountry (VARCHAR 100)
+    - Customer's country
+    - Full country name (not ISO code)
+    - Example: "United States", "United Kingdom"
+
+dtmCreated (DATETIME)
+    - Record creation timestamp
+    - Auto-populated by trigger
+
+dtmLastModified (DATETIME)
+    - Last modification timestamp
+    - Updated by trigger on any field change
+
+bolActive (BIT)
+    - Active customer flag
+    - 1 = active, 0 = inactive
+    - Inactive customers excluded from marketing
+
+cust_id (INT, NULL)
+    - NEW: Planned integer surrogate key
+    - Migration placeholder for new system
+    - Currently NULL for all records
+
+customer_name (VARCHAR 255, NULL)
+    - NEW: Standardized naming convention
+    - Redundant with strFullName
+    - Planned for migration compatibility
+
+txtNotes (TEXT)
+    - Free-form notes about customer
+    - Used by customer service team
+    - Contains migration notes, special handling
+
+================================================================================
+TABLE: tblProduct
+--------------------------------------------------------------------------------
+Purpose: Product catalog master
+Naming Convention: Hungarian notation mixed with standard SQL
+
+Field Specifications:
+--------------------
+intProdID (INT, PK)
+    - Integer product identifier
+    - Auto-increment, identity column
+    - Used in foreign key references
+
+strSKU (VARCHAR 50, UNIQUE)
+    - Stock Keeping Unit
+    - Format: Category-Color-Size (e.g., "SHIRT-BLU-L")
+    - Must be unique
+
+strName (VARCHAR 255)
+    - Product display name
+    - E-commerce product title
+
+strDescription (TEXT)
+    - Long product description
+    - HTML content (stored as-is, no sanitization)
+
+fltPrice (DECIMAL 10,2)
+    - Unit selling price
+    - Must be > 0
+    - Stored with 2 decimal places
+
+intStockQty (INT)
+    - Current stock quantity
+    - Updated by inventory transactions
+    - Can be negative (backorders allowed)
+
+bolActive (BIT)
+    - Product availability flag
+    - 1 = available for sale
+    - 0 = discontinued or out of circulation
+
+strCategory (VARCHAR 100)
+    - Product category
+    - Hierarchical: "Clothing > Shirts > Casual"
+
+strBrand (VARCHAR 100)
+    - Brand or manufacturer name
+    - Free text field
+
+dtmIntroduced (DATETIME)
+    - Product launch date
+    - When product was added to catalog
+
+dtmDiscontinued (DATETIME)
+    - Discontinuation date
+    - NULL if currently active
+
+Legacy Deprecated Fields:
+------------------------
+prod_num (VARCHAR 20)
+    - OLD: Legacy product number
+    - Superseded by strSKU
+    - Retained for historical reporting
+
+item_desc (VARCHAR 500)
+    - OLD: Truncated description
+    - Superseded by strDescription
+    - Do not use for new code
+
+unit_cost (VARCHAR 20)
+    - OLD: Cost stored as string (BUG!)
+    - Should be DECIMAL
+    - Contains currency symbols: "$19.99"
+    - Requires parsing before calculations
+
+================================================================================
+TABLE: vw_SalesOrderHdr
+--------------------------------------------------------------------------------
+Purpose: Sales order header records
+Note: Despite "vw_" prefix, this is a TABLE, not a view
+Legacy quirk: Originally a view, materialized to table in 2010
+
+Field Specifications:
+--------------------
+lngOrderID (INT, PK)
+    - Long integer order ID
+    - Identity column, ever-increasing
+    - Prefix "lng" from early VB6 days
+
+intCustID (VARCHAR 50, FK)
+    - Foreign key to tblCustomer.strCustID
+    - Note: int prefix but actually VARCHAR
+    - Naming inconsistency from schema evolution
+
+dtmOrderDate (DATETIME)
+    - Order creation date/time
+    - Set by application, not database default
+
+dtmShipDate (DATETIME)
+    - Actual shipment date
+    - NULL until shipped
+
+dtmRequiredDate (DATETIME)
+    - Customer's requested delivery date
+    - Used for fulfillment prioritization
+
+strOrderStatus (VARCHAR 20)
+    - Order workflow status
+    - Values: "PENDING", "SHIPPED", "CANCELLED"
+    - CHECK constraint enforced
+
+fltSubTotal (DECIMAL 12,2)
+    - Subtotal of line items (before tax)
+    - Calculated from ord_line_item table
+
+fltTaxAmount (DECIMAL 12,2)
+    - Tax calculated on order
+    - Based on customer's region tax rate
+
+fltTotalAmount (DECIMAL 12,2)
+    - Final order total (subtotal + tax + shipping)
+    - Includes shipping costs if applicable
+
+strShippingMethod (VARCHAR 50)
+    - Shipping carrier/method
+    - Examples: "UPS Ground", "FedEx 2Day", "USPS Priority"
+
+strTrackingNumber (VARCHAR 100)
+    - Carrier tracking number
+    - NULL until shipped
+
+================================================================================
+TABLE: ord_line_item
+--------------------------------------------------------------------------------
+Purpose: Order line items
+Naming Convention: Inconsistent - some abbreviated, some full
+
+Field Specifications:
+--------------------
+line_id (INT, PK)
+    - Line item unique identifier
+    - Composite key would be better, but legacy uses surrogate
+
+ord_id (INT, FK)
+    - Foreign key to vw_SalesOrderHdr.lngOrderID
+    - Note: Uses lngOrderID but field named ord_id (inconsistent)
+
+prod_id (INT, FK)
+    - Foreign key to tblProduct.intProdID
+    - References product master
+
+qty (INT)
+    - Quantity ordered
+    - Must be positive integer
+
+amt (DECIMAL 10,2)
+    - Line item total amount (qty * unit_price)
+    - At time of order (snapshotted, not current price)
+
+disc_amt (DECIMAL 10,2)
+    - Discount amount applied to this line
+    - Can be zero
+
+line_status (VARCHAR 20)
+    - Line item status
+    - Values: "PENDING", "PICKED", "SHIPPED", "BACKORDERED"
+
+product_code (VARCHAR 50)
+    - REDUNDANT: Copy of tblProduct.strSKU
+    - Denormalized for reporting performance
+    - May be out of sync with master
+
+item_name (VARCHAR 255)
+    - REDUNDANT: Copy of product name at order time
+    - Snapshotted for historical accuracy
+    - Does NOT update if product name changes
+
+================================================================================
+TABLE: inv_txn_log
+--------------------------------------------------------------------------------
+Purpose: Inventory transaction log
+Naming Convention: Heavily abbreviated
+
+Field Specifications:
+--------------------
+txn_id (INT, PK)
+    - Transaction identifier
+    - Auto-increment
+
+prod_id (INT, FK)
+    - Foreign key to tblProduct.intProdID
+    - Product being adjusted
+
+txn_type (VARCHAR 10)
+    - Transaction type
+    - Values: "IN" (receipt), "OUT" (shipment/adjustment), "ADJ" (correction)
+    - CHECK constraint enforced
+
+qty (INT)
+    - Quantity change
+    - Positive for IN, negative for OUT
+    - Can be positive or negative for ADJ
+
+txn_dt (DATETIME)
+    - Transaction timestamp
+    - DEFAULT GETDATE() in SQL Server
+
+ref_num (VARCHAR 50)
+    - Reference number
+    - Order number, PO number, or adjustment code
+
+user_id (VARCHAR 50)
+    - User who initiated transaction
+    - References User.UserName (not enforced by FK)
+
+notes (TEXT)
+    - Free-form notes
+    - Reason for adjustment, etc.
+
+================================================================================
+TABLE: Group (Reserved Word)
+--------------------------------------------------------------------------------
+Purpose: Product groups/categories
+Note: "Group" is a SQL reserved word, requires square brackets
+
+Field Specifications:
+--------------------
+GroupID (INT, PK)
+    - Group identifier
+    - Auto-increment
+
+GroupName (VARCHAR 100)
+    - Group display name
+    - Used for category navigation
+
+ParentGroupID (INT, FK)
+    - Self-referencing foreign key
+    - NULL for top-level groups
+    - Creates hierarchical structure
+
+Description (VARCHAR 500)
+    - Group description
+    - HTML content
+
+IsActive (BIT)
+    - Active flag
+    - Inactive groups hidden from UI
+
+================================================================================
+TABLE: User (Reserved Word)
+--------------------------------------------------------------------------------
+Purpose: System users
+Note: "User" is a SQL reserved word, requires square brackets
+
+Field Specifications:
+--------------------
+UserID (INT, PK)
+    - User identifier
+    - Auto-increment
+
+UserName (VARCHAR 100, UNIQUE)
+    - Login username
+    - Used throughout system
+
+PasswordHash (VARCHAR 255)
+    - Hashed password
+    - SHA-256 hash (not salted - security issue!)
+
+UserRole (VARCHAR 50)
+    - User role/permission level
+    - Values: "ADMIN", "MANAGER", "CLERK"
+    - CHECK constraint enforced
+
+Email (VARCHAR 150)
+    - User email address
+    - For notifications
+
+LastLogin (DATETIME)
+    - Last successful login timestamp
+    - NULL for new users
+
+CreatedDate (DATETIME)
+    - Account creation date
+    - DEFAULT GETDATE()
+
+================================================================================
+TABLE: tblOrderStatusHistory
+--------------------------------------------------------------------------------
+Purpose: Audit log of order status changes
+Naming Convention: Verbose (tbl prefix)
+
+Field Specifications:
+--------------------
+HistoryID (INT, PK)
+    - History record identifier
+    - Auto-increment
+
+OrderID (INT, FK)
+    - Foreign key to vw_SalesOrderHdr.lngOrderID
+
+OldStatus (VARCHAR 20)
+    - Previous status value
+    - NULL for initial status
+
+NewStatus (VARCHAR 20)
+    - New status value
+    - Current status after change
+
+ChangedByUser (VARCHAR 100)
+    - Username who made the change
+    - References User.UserName
+
+ChangedDate (DATETIME)
+    - Timestamp of status change
+    - DEFAULT GETDATE()
+
+ChangeReason (TEXT)
+    - Reason for status change
+    - Free text (cancellation reasons, etc.)
+
+================================================================================
+TABLE: tblShippingCarrier
+--------------------------------------------------------------------------------
+Purpose: Shipping carrier master data
+
+Field Specifications:
+--------------------
+CarrierID (INT, PK)
+    - Carrier identifier
+    - Auto-increment
+
+CarrierName (VARCHAR 100)
+    - Carrier display name
+    - Examples: "UPS", "FedEx", "USPS"
+
+CarrierCode (VARCHAR 20, UNIQUE)
+    - Carrier code for API integration
+    - Examples: "UPS", "FDX", "USPS"
+
+TrackingURL (VARCHAR 500)
+    - URL template for tracking
+    - Placeholder: {TRACKING_NUM}
+    - Example: "https://www.ups.com/track?tracknum={TRACKING_NUM}"
+
+bolActive (BIT)
+    - Active carrier flag
+    - Inactive carriers not available for new orders
+
+================================================================================
+TABLE: tblPayment
+--------------------------------------------------------------------------------
+Purpose: Payment transaction records
+Security Note: Contains sensitive card data (compliance issue!)
+
+Field Specifications:
+--------------------
+PaymentID (INT, PK)
+    - Payment identifier
+    - Auto-increment
+
+OrderID (INT, FK)
+    - Foreign key to vw_SalesOrderHdr.lngOrderID
+
+PaymentMethod (VARCHAR 50)
+    - Payment method type
+    - Values: "CREDIT_CARD", "DEBIT", "PAYPAL", "BANK_TRANSFER"
+    - CHECK constraint enforced
+
+PaymentDate (DATETIME)
+    - Payment processing date
+    - When payment was captured
+
+Amount (DECIMAL 12,2)
+    - Payment amount
+    - Must match order total
+
+PaymentStatus (VARCHAR 20)
+    - Payment processing status
+    - Values: "PENDING", "COMPLETED", "FAILED", "REFUNDED"
+
+CardNumberText (VARCHAR 100)
+    - SECURITY ISSUE: Full card number stored as text!
+    - Should be tokenized
+    - Contains unencrypted PAN (Primary Account Number)
+
+CardHolderName (VARCHAR 100)
+    - Cardholder name
+    - As provided by customer
+
+AuthorizationCode (VARCHAR 50)
+    - Payment gateway auth code
+    - Proof of successful authorization
+
+================================================================================
+MIGRATION NOTES:
+================================================================================
+Known Issues:
+1. Hungarian notation inconsistent (intCustID is VARCHAR, lngOrderID is INT)
+2. Reserved words used as table names (Group, User) require quoting
+3. Inappropriate data types (unit_cost is VARCHAR, should be DECIMAL)
+4. Security violations (card numbers stored in plaintext)
+5. Denormalized redundant fields (product_code, item_name in line items)
+6. Mixed naming conventions (tbl_, vw_, ord_, inv_, no prefix)
+7. Abbreviated field names (cust_nm, ord_dt in reports, not in schema)
+8. Missing constraints (no CHECK for positive quantities)
+9. TEXT fields used for variable-length data (should use VARCHAR(MAX))
+10. Bit columns used inconsistently (bol vs BIT vs no suffix)
+
+Recommendations for New Schema:
+1. Remove all Hungarian notation prefixes
+2. Use consistent naming (snake_case or camelCase)
+3. Implement proper data types (DECIMAL for money, INT for IDs)
+4. Add proper constraints and indexes
+5. Tokenize sensitive payment data
+6. Normalize denormalized fields
+7. Use views for backward compatibility during migration
+8. Rename tables to avoid reserved words
+9. Add proper foreign key constraints
+10. Implement audit triggers
