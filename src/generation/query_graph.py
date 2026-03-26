@@ -253,6 +253,9 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
         "semantic_verification_overlap": float(state.get("semantic_verification_overlap", 1.0)),
         "semantic_verification_passed": bool(state.get("semantic_verification_passed", True)),
         "semantic_verification_warning": state.get("semantic_verification_warning"),
+        "grader_grounded": bool(
+            getattr(state.get("grader_decision"), "grounded", True)
+        ),
         "grader_consistency_valid": bool(state.get("grader_consistency_valid", True)),
         "grader_rejection_count": int(state.get("grader_rejection_count", 0)),
     }

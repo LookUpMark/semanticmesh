@@ -30,7 +30,7 @@ def _node_to_text(node: dict[str, Any]) -> str:
         Lowercase concatenated text string.
     """
     parts = [
-        node.get("name") or "",
+        node.get("name") or node.get("text") or "",
         node.get("definition") or "",
         " ".join(node.get("synonyms") or []),
         " ".join(node.get("column_names") or []),

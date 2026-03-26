@@ -126,12 +126,11 @@
       "answer": "Query the route table filtering by product_id, ordered by sequence_number ascending. For each operation, retrieve operation_name, work_center, cycle_time_minutes, and setup_time_minutes. Join with the product table to get product details. The sequence of operations shows the complete manufacturing workflow from start to finish."
     },
     {
-      "QA-019": {
-        "id": "QA-019",
-        "category": "multi_hop",
-        "question": "How can I find which batches are stored at a specific warehouse and their QC status?",
-        "answer": "Query the batch table filtering by warehouse_id. Join with the product table to get product names and types. Include production_date, quantity_produced, expiry_date, and qc_status (PENDING, PASSED, FAILED, QUARANTINED). Filter by qc_status to isolate batches requiring quality attention or ready for shipment."
-      },
+      "id": "QA-019",
+      "category": "multi_hop",
+      "question": "How can I find which batches are stored at a specific warehouse and their QC status?",
+      "answer": "Query the batch table filtering by warehouse_id. Join with the product table to get product names and types. Include production_date, quantity_produced, expiry_date, and qc_status (PENDING, PASSED, FAILED, QUARANTINED). Filter by qc_status to isolate batches requiring quality attention or ready for shipment."
+    },
     {
       "id": "QA-020",
       "category": "multi_hop",

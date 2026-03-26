@@ -20,6 +20,7 @@ class Chunk(BaseModel):
 
     text: str
     chunk_index: int
+    parent_chunk_index: int | None = None
     metadata: dict[str, str] = Field(default_factory=dict)
 
 
@@ -162,7 +163,7 @@ class RetrievedChunk(BaseModel):
     node_type: str
     text: str
     score: float
-    source_type: Literal["vector", "bm25", "graph"]
+    source_type: Literal["vector", "bm25", "graph", "chunk_vector", "parent_chunk"]
     metadata: dict[str, Any] = Field(default_factory=dict)
     reranker_score: float | None = None
 

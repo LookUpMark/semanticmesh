@@ -92,7 +92,7 @@ def generate_cypher(
         table_ddl=safe_ddl,
         concept_name=entity.name,
         concept_definition=safe_definition,
-        synonyms=", ".join(entity.synonyms) if entity.synonyms else "none",
+        synonyms=", ".join(entity.synonyms) if entity.synonyms else "",
         provenance_text=safe_provenance,
         source_doc=entity.source_doc or "",
         mapping_confidence=mapping.confidence,

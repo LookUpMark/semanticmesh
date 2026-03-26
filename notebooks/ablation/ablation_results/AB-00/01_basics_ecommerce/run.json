@@ -1,0 +1,819 @@
+{
+  "study_id": "AB-00",
+  "dataset_id": "01_basics_ecommerce",
+  "run_tag": "run-20260326_192305",
+  "timestamp": "2026-03-26T18:34:38.026135+00:00",
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-mini",
+    "extraction_model": "gpt-5.4-nano",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 10,
+    "er_similarity_threshold": 0.75
+  },
+  "builder": {
+    "triplets": 319,
+    "entities": 65,
+    "tables_parsed": 7,
+    "tables_completed": 7
+  },
+  "query": {
+    "total_questions": 15,
+    "grounded_count": 15,
+    "grounded_rate": 1.0,
+    "avg_gt_coverage": 0.6444444444444444,
+    "avg_top_score": 0.4791894634318488,
+    "avg_chunk_count": 10.0,
+    "abstained_count": 0
+  },
+  "per_question": [
+    {
+      "query_id": "Q001",
+      "question": "What information is stored for each customer?",
+      "answer": "The context only says that CUSTOMER_MASTER stores the master record for all registered platform customers, with CUST_ID as the primary key. It does not provide further details on what customer information is stored, so I cannot be more specific.",
+      "sources": [
+        "chunk_2",
+        "Sales Order",
+        "Shipment",
+        "chunk_5",
+        "chunk_4",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "the customer, items, payment status, and delivery information",
+        "chunk_0",
+        "chunk_1",
+        "chunk_6"
+      ],
+      "contexts": [
+        "**Foreign Keys**: - PARENT_CATEGORY_ID \u2192 TB_CATEGORY(CATEGORY_ID) [self-reference] **Business Concept Mapping**: Category \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 SALES_ORDER_HDR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "Shipment: The table name, primary key SHIPMENT_ID, foreign key to SALES_ORDER_HDR, and shipping-related attributes (WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE) directly indicate a shipment record. The business entiti",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSHIPMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Physical delivery of products to customers. **Primary Key**: SHIPMENT_ID (BIGINT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | SHIPMENT_ID |",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Monetary transactions settling order amounts. **Primary Key**: PAYMENT_ID (BIGINT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | PAYMENT_ID |",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "the customer, items, payment status, and delivery information: Tracks customer, items, payment status, and delivery information for an order payment process.",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | IN",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 RELATIONSHIP SUMMARY \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550"
+      ],
+      "expected_answer": "Each customer has a unique ID, full name, email address, geographic region code, creation date, and active status. The email must be unique across all customers.",
+      "expected_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.36161547662615057,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.0,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.1249999999875,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "query_id": "Q002",
+      "question": "How are products categorized on the platform?",
+      "answer": "Products are categorized using the TB_CATEGORY table. The context shows that TB_PRODUCT references TB_CATEGORY via CATEGORY_ID \u2192 TB_CATEGORY.CATEGORY_ID, and TB_CATEGORY also has a self-reference through PARENT_CATEGORY_ID \u2192 TB_CATEGORY(CATEGORY_ID), indicating a hierarchical product category tree.",
+      "sources": [
+        "chunk_3",
+        "chunk_2",
+        "chunk_1",
+        "chunk_0",
+        "chunk_6",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "Order Line Item",
+        "chunk_7",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "**Foreign Keys**: - PARENT_CATEGORY_ID \u2192 TB_CATEGORY(CATEGORY_ID) [self-reference] **Business Concept Mapping**: Category \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 SALES_ORDER_HDR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive ship",
+        "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 RELATIONSHIP SUMMARY \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, and line amount matches the business",
+        "Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Products belong to categories which can have a parent category, forming a hierarchical tree structure. Each product references exactly one category through its CATEGORY_ID.",
+      "expected_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT",
+        "TB_CATEGORY"
+      ],
+      "covered_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT",
+        "TB_CATEGORY"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.35432135188103686,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.0625,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.5618126044543447,
+        "context_precision": 0.44999999998875,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q003",
+      "question": "What is the relationship between customers and sales orders?",
+      "answer": "A Customer places zero or more Sales Orders. In the simplified schema, SALES_ORDER_HDR references CUSTOMER_MASTER via the foreign key CUST_ID.",
+      "sources": [
+        "chunk_6",
+        "chunk_5",
+        "chunk_2",
+        "Sales Order",
+        "chunk_4",
+        "chunk_3",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "chunk_0",
+        "chunk_7",
+        "chunk_1"
+      ],
+      "contexts": [
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom. **Key Attributes**: - Unique Shipment ID - References exactly one Sales Order - Source Warehouse - Destinat",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. **Business Context**: Orders are created when customers complete checkout. They track the customer, items, pay",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: The monetary transaction that settles the total amount due for a Sales Order. **Business Context**: Payments authorize and transfer funds from the customer to the platform. Multiple payment methods are supported. **Key A",
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive ship",
+        "Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+      ],
+      "expected_answer": "Each sales order is placed by exactly one customer, referenced through the CUST_ID foreign key. A customer can place zero or more orders over time.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.986878728873449,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.05263157894736842,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.6359494986562843,
+        "context_precision": 0.7579365079238757,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q004",
+      "question": "What does an order line item contain?",
+      "answer": "An ORDER LINE ITEM contains a single product within a Sales Order, along with the quantity and unit price at the time of purchase. The context also indicates it has a line amount.",
+      "sources": [
+        "chunk_3",
+        "Order Line Item",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "chunk_2",
+        "chunk_6",
+        "Sales Order",
+        "chunk_4",
+        "Shipment",
+        "chunk_7"
+      ],
+      "contexts": [
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nORDER LINE ITEM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A single line within a Sales Order specifying a Product, quantity, and unit price at time of purchase. **Business Context**: Line items break down orders into individual product purchases. Each captures the price at the",
+        "Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, and line amount matches the business",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. **Business Context**: Orders are created when customers complete checkout. They track the customer, items, pay",
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Monetary transactions settling order amounts. **Primary Key**: PAYMENT_ID (BIGINT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | PAYMENT_ID |",
+        "Shipment: The table name, primary key SHIPMENT_ID, foreign key to SALES_ORDER_HDR, and shipping-related attributes (WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE) directly indicate a shipment record. The business entiti",
+        "Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT"
+      ],
+      "expected_answer": "An order line item specifies a product, the quantity ordered, the unit price at time of purchase, and the calculated extended amount. Each line item belongs to exactly one sales order.",
+      "expected_sources": [
+        "OrderLineItem",
+        "ORDER_LINE_ITEM",
+        "Product",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "ORDER_LINE_ITEM",
+        "Product"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.9791955100493928,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.125,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.866579105868326,
+        "context_precision": 0.99999999995,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q005",
+      "question": "How are payments linked to orders?",
+      "answer": "Payments are linked to orders through the PAYMENT table\u2019s foreign key ORDER_ID, which references SALES_ORDER_HDR.ORDER_ID.",
+      "sources": [
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "chunk_4",
+        "chunk_2",
+        "chunk_6",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "chunk_3",
+        "chunk_5",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "Sales Order",
+        "the customer, items, payment status, and delivery information"
+      ],
+      "contexts": [
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: The monetary transaction that settles the total amount due for a Sales Order. **Business Context**: Payments authorize and transfer funds from the customer to the platform. Multiple payment methods are supported. **Key A",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. **Business Context**: Orders are created when customers complete checkout. They track the customer, items, pay",
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom. **Key Attributes**: - Unique Shipment ID - References exactly one Sales Order - Source Warehouse - Destinat",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "the customer, items, payment status, and delivery information: Tracks customer, items, payment status, and delivery information for an order payment process."
+      ],
+      "expected_answer": "Each payment is associated with exactly one sales order through the ORDER_ID foreign key. Payments track the payment method, amount, status, and confirmation timestamp.",
+      "expected_sources": [
+        "Payment",
+        "PAYMENT",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "Payment",
+        "PAYMENT"
+      ],
+      "gt_coverage": 0.6666666666666666,
+      "grounded": true,
+      "top_score": 0.9231777955470523,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.0,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.908307590617972,
+        "context_precision": 0.7361111110927084,
+        "context_recall": 0.5
+      }
+    },
+    {
+      "query_id": "Q006",
+      "question": "What statuses can an order have?",
+      "answer": "The retrieved context shows that a Sales Order tracks \u201cfulfillment/payment status,\u201d and another business concept description says it tracks \u201cpayment status and delivery information,\u201d but it does not list the actual status values an order can have. So I can confirm that order status exists in the Sales Order concept, but the specific statuses are not provided in the context.",
+      "sources": [
+        "chunk_2",
+        "chunk_5",
+        "Sales Order",
+        "chunk_4",
+        "Shipment",
+        "chunk_6",
+        "chunk_3",
+        "chunk_0",
+        "chunk_1",
+        "the customer, items, payment status, and delivery information"
+      ],
+      "contexts": [
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. **Business Context**: Orders are created when customers complete checkout. They track the customer, items, pay",
+        "**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom. **Key Attributes**: - Unique Shipment ID - References exactly one Sales Order - Source Warehouse - Destinat",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: The monetary transaction that settles the total amount due for a Sales Order. **Business Context**: Payments authorize and transfer funds from the customer to the platform. Multiple payment methods are supported. **Key A",
+        "Shipment: The table name, primary key SHIPMENT_ID, foreign key to SALES_ORDER_HDR, and shipping-related attributes (WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE) directly indicate a shipment record. The business entiti",
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive ship",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "the customer, items, payment status, and delivery information: Tracks customer, items, payment status, and delivery information for an order payment process."
+      ],
+      "expected_answer": "Orders can have one of five statuses: PENDING (initial state), CONFIRMED (payment received), SHIPPED (sent to customer), DELIVERED (received by customer), or CANCELLED.",
+      "expected_sources": [
+        "SalesOrder",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 0.0,
+      "grounded": true,
+      "top_score": 0.7018152707906092,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.058823529411764705,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      }
+    },
+    {
+      "query_id": "Q007",
+      "question": "Which table stores the product SKU information?",
+      "answer": "The SKU information is stored in the TB_PRODUCT table, in the SKU column.",
+      "sources": [
+        "Order Line Item",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "chunk_1",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "Shipment",
+        "chunk_6",
+        "chunk_7",
+        "chunk_0",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "Sales Order"
+      ],
+      "contexts": [
+        "Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, and line amount matches the business",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "**Primary Key**: PRODUCT_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | PRODUCT_ID | INT | Unique product identifier | NO | | SKU | VARCHAR(50) | Stock",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Shipment: The table name, primary key SHIPMENT_ID, foreign key to SALES_ORDER_HDR, and shipping-related attributes (WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE) directly indicate a shipment record. The business entiti",
+        "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 RELATIONSHIP SUMMARY \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+        "Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | IN",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE"
+      ],
+      "expected_answer": "The TB_PRODUCT table stores the SKU (Stock Keeping Unit) code for each product, along with product name, category, price, and active status.",
+      "expected_sources": [
+        "Product",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.032405517498642296,
+      "chunk_count": 10,
+      "gate_decision": "proceed_with_warning",
+      "overlap": 0.0,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.7513026536414199,
+        "context_precision": 0.8761904761729524,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q008",
+      "question": "How can I find all orders placed by a specific customer?",
+      "answer": "You can find a customer\u2019s orders by using the `SALES_ORDER_HDR` table and filtering on the foreign key `CUST_ID`, which references `CUSTOMER_MASTER(CUST_ID)`. The context says `SALES_ORDER_HDR` stores the sales order header and is linked to the customer through `CUST_ID -> CUSTOMER_MASTER.CUST_ID`.",
+      "sources": [
+        "chunk_2",
+        "chunk_6",
+        "Sales Order",
+        "chunk_3",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "chunk_4",
+        "chunk_5",
+        "chunk_0",
+        "chunk_1",
+        "the customer, items, payment status, and delivery information"
+      ],
+      "contexts": [
+        "**Foreign Keys**: - PARENT_CATEGORY_ID \u2192 TB_CATEGORY(CATEGORY_ID) [self-reference] **Business Concept Mapping**: Category \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 SALES_ORDER_HDR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Monetary transactions settling order amounts. **Primary Key**: PAYMENT_ID (BIGINT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | PAYMENT_ID |",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSHIPMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Physical delivery of products to customers. **Primary Key**: SHIPMENT_ID (BIGINT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | SHIPMENT_ID |",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | IN",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "the customer, items, payment status, and delivery information: Tracks customer, items, payment status, and delivery information for an order payment process."
+      ],
+      "expected_answer": "Query the SALES_ORDER_HDR table filtering by CUST_ID. Each order has a foreign key reference to CUSTOMER_MASTER.CUST_ID, so joining these tables on CUST_ID will show all orders for a customer along with their details.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.3603764850096889,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.058823529411764705,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.6211922887326975,
+        "context_precision": 0.9583333333173611,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q009",
+      "question": "What products were included in a specific order?",
+      "answer": "The products included in a specific order are captured in the ORDER_LINE_ITEM table. It records each product line within a Sales Order, with a foreign key to TB_PRODUCT via PRODUCT_ID, along with quantity and unit price.",
+      "sources": [
+        "chunk_3",
+        "Order Line Item",
+        "chunk_2",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "Shipment",
+        "chunk_4",
+        "chunk_6",
+        "chunk_1",
+        "chunk_0",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nORDER LINE ITEM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A single line within a Sales Order specifying a Product, quantity, and unit price at time of purchase. **Business Context**: Line items break down orders into individual product purchases. Each captures the price at the",
+        "Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, and line amount matches the business",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. **Business Context**: Orders are created when customers complete checkout. They track the customer, items, pay",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Shipment: The table name, primary key SHIPMENT_ID, foreign key to SALES_ORDER_HDR, and shipping-related attributes (WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE) directly indicate a shipment record. The business entiti",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Monetary transactions settling order amounts. **Primary Key**: PAYMENT_ID (BIGINT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | PAYMENT_ID |",
+        "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 RELATIONSHIP SUMMARY \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | IN",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Join ORDER_LINE_ITEM with TB_PRODUCT on PRODUCT_ID. For order ORDER_ID, the line items show which products were ordered, in what quantity, and at what price.",
+      "expected_sources": [
+        "SalesOrder",
+        "OrderLineItem",
+        "Product",
+        "SALES_ORDER_HDR",
+        "ORDER_LINE_ITEM",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product",
+        "ORDER_LINE_ITEM",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.079782013464093,
+      "chunk_count": 10,
+      "gate_decision": "proceed_with_warning",
+      "overlap": 0.0,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.7098248068554563,
+        "context_precision": 0.8303571428363838,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q010",
+      "question": "Show me the order hierarchy from customer to line items.",
+      "answer": "The order hierarchy is CUSTOMER_MASTER \u2192 SALES_ORDER_HDR \u2192 ORDER_LINE_ITEM.\n\nFrom the retrieved context, CUSTOMER_MASTER.CUST_ID maps to SALES_ORDER_HDR.CUST_ID, and SALES_ORDER_HDR.ORDER_ID maps to ORDER_LINE_ITEM.ORDER_ID.",
+      "sources": [
+        "chunk_3",
+        "Order Line Item",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "chunk_2",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "chunk_1",
+        "Sales Order",
+        "chunk_6",
+        "chunk_7",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, and line amount matches the business",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "**Foreign Keys**: - PARENT_CATEGORY_ID \u2192 TB_CATEGORY(CATEGORY_ID) [self-reference] **Business Concept Mapping**: Category \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 SALES_ORDER_HDR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "**Primary Key**: PRODUCT_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | PRODUCT_ID | INT | Unique product identifier | NO | | SKU | VARCHAR(50) | Stock",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 RELATIONSHIP SUMMARY \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+        "Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "The hierarchy is: Customer (CUSTOMER_MASTER) \u2192 SalesOrder (SALES_ORDER_HDR) \u2192 OrderLineItem (ORDER_LINE_ITEM) \u2192 Product (TB_PRODUCT). Each customer has orders, each order has line items, and each line item references a product.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "OrderLineItem",
+        "Product"
+      ],
+      "covered_sources": [
+        "Product"
+      ],
+      "gt_coverage": 0.25,
+      "grounded": true,
+      "top_score": 0.32145999988445906,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.0,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.6744170926565943,
+        "context_precision": 0.5548611110972396,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q011",
+      "question": "What happens when a payment is confirmed for an order?",
+      "answer": "When a payment is confirmed, the PAYMENT concept indicates that the monetary transaction settles the total amount due for the Sales Order, authorizing and transferring funds from the customer to the platform. The context also suggests it affects the order\u2019s payment status, but that part is only partially stated in the retrieved text.",
+      "sources": [
+        "chunk_4",
+        "chunk_2",
+        "Sales Order",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "chunk_3",
+        "chunk_6",
+        "chunk_5",
+        "the customer, items, payment status, and delivery information",
+        "chunk_1",
+        "chunk_0"
+      ],
+      "contexts": [
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: The monetary transaction that settles the total amount due for a Sales Order. **Business Context**: Payments authorize and transfer funds from the customer to the platform. Multiple payment methods are supported. **Key A",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. **Business Context**: Orders are created when customers complete checkout. They track the customer, items, pay",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSHIPMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Physical delivery of products to customers. **Primary Key**: SHIPMENT_ID (BIGINT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | SHIPMENT_ID |",
+        "the customer, items, payment status, and delivery information: Tracks customer, items, payment status, and delivery information for an order payment process.",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive ship"
+      ],
+      "expected_answer": "When payment is confirmed, the PAYMENT record's STATUS_CODE becomes 'CONFIRMED', the CONFIRMED_AT timestamp is set, and the associated SALES_ORDER_HDR can progress from PENDING to CONFIRMED status.",
+      "expected_sources": [
+        "Payment",
+        "SalesOrder",
+        "PAYMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Payment",
+        "PAYMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.5019931687634487,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.05555555555555555,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.6730841900685632,
+        "context_precision": 0.8333333332916666,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q012",
+      "question": "How are shipments related to orders and warehouses?",
+      "answer": "Shipments are tied to orders through the Shipment entity/table: each shipment references exactly one Sales Order, via the SHIPMENT table and its foreign key to SALES_ORDER_HDR. Shipments also include a warehouse-related attribute, WAREHOUSE_CODE, which indicates the source warehouse.",
+      "sources": [
+        "chunk_5",
+        "Shipment",
+        "chunk_6",
+        "chunk_4",
+        "chunk_2",
+        "chunk_1",
+        "chunk_0",
+        "the customer, items, payment status, and delivery information",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "chunk_7"
+      ],
+      "contexts": [
+        "**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom. **Key Attributes**: - Unique Shipment ID - References exactly one Sales Order - Source Warehouse - Destinat",
+        "Shipment: The table name, primary key SHIPMENT_ID, foreign key to SALES_ORDER_HDR, and shipping-related attributes (WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE) directly indicate a shipment record. The business entiti",
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: The monetary transaction that settles the total amount due for a Sales Order. **Business Context**: Payments authorize and transfer funds from the customer to the platform. Multiple payment methods are supported. **Key A",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. **Business Context**: Orders are created when customers complete checkout. They track the customer, items, pay",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive ship",
+        "the customer, items, payment status, and delivery information: Tracks customer, items, payment status, and delivery information for an order payment process.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT"
+      ],
+      "expected_answer": "Each shipment is for exactly one sales order (ORDER_ID in SHIPMENT references SALES_ORDER_HDR). The shipment also specifies the source warehouse code and includes tracking information and delivery status.",
+      "expected_sources": [
+        "Shipment",
+        "SalesOrder",
+        "SHIPMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Shipment",
+        "SHIPMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.9046505351008906,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.05555555555555555,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.7551782858464696,
+        "context_precision": 0.7777777777518519,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q013",
+      "question": "Can a product belong to multiple categories?",
+      "answer": "No. In the retrieved context, the Product relationship states that a product belongs to exactly one Category.",
+      "sources": [
+        "chunk_6",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "chunk_2",
+        "chunk_5",
+        "chunk_3",
+        "chunk_1",
+        "Hierarchical product category tree",
+        "chunk_7",
+        "chunk_0",
+        "TB_CATEGORY\u2192TB_CATEGORY"
+      ],
+      "contexts": [
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "**Foreign Keys**: - PARENT_CATEGORY_ID \u2192 TB_CATEGORY(CATEGORY_ID) [self-reference] **Business Concept Mapping**: Category \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 SALES_ORDER_HDR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom. **Key Attributes**: - Unique Shipment ID - References exactly one Sales Order - Source Warehouse - Destinat",
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Hierarchical product category tree",
+        "Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive ship",
+        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID."
+      ],
+      "expected_answer": "No, each product belongs to exactly one category. The TB_PRODUCT table has a CATEGORY_ID foreign key referencing TB_CATEGORY, which stores a single category value per product.",
+      "expected_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.537982106555605,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.058823529411764705,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.7897088871233464,
+        "context_precision": 0.9999999999666667,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q014",
+      "question": "Is it possible for a customer to place an order without payment?",
+      "answer": "The context does not say whether a customer can place an order without payment. It only states that a Customer can place zero or more Sales Orders, that Sales Orders are created when customers complete checkout, and that PAYMENT settles the total amount due for a Sales Order. So, from the provided context, it cannot be determined whether payment is required at the time an order is placed.",
+      "sources": [
+        "chunk_4",
+        "chunk_6",
+        "chunk_2",
+        "Sales Order",
+        "chunk_3",
+        "chunk_5",
+        "chunk_0",
+        "the customer, items, payment status, and delivery information",
+        "chunk_1",
+        "chunk_7"
+      ],
+      "contexts": [
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: The monetary transaction that settles the total amount due for a Sales Order. **Business Context**: Payments authorize and transfer funds from the customer to the platform. Multiple payment methods are supported. **Key A",
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. **Business Context**: Orders are created when customers complete checkout. They track the customer, items, pay",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSHIPMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Physical delivery of products to customers. **Primary Key**: SHIPMENT_ID (BIGINT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | SHIPMENT_ID |",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | IN",
+        "the customer, items, payment status, and delivery information: Tracks customer, items, payment status, and delivery information for an order payment process.",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT"
+      ],
+      "expected_answer": "Technically yes, an order can be created in PENDING status without immediate payment. However, the order cannot be shipped until payment is confirmed (PAYMENT_CONFIRMED_AT is set). The business workflow requires payment confirmation before fulfillment.",
+      "expected_sources": [
+        "SalesOrder",
+        "Payment",
+        "SALES_ORDER_HDR",
+        "PAYMENT"
+      ],
+      "covered_sources": [
+        "Payment",
+        "PAYMENT"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.07682220445294782,
+      "chunk_count": 10,
+      "gate_decision": "proceed_with_warning",
+      "overlap": 0.05555555555555555,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.7683333333179667,
+        "context_recall": 1.0
+      }
+    },
+    {
+      "query_id": "Q015",
+      "question": "What is the total value of all orders placed by a customer?",
+      "answer": "The closest grounded concept in the context is Sales Order, which has a total amount field. The context does not explicitly define a customer-level aggregate for the total value of all orders, so I cannot confirm the exact term from the knowledge graph.",
+      "sources": [
+        "chunk_2",
+        "chunk_4",
+        "Sales Order",
+        "chunk_6",
+        "chunk_5",
+        "chunk_3",
+        "chunk_0",
+        "chunk_1",
+        "the customer, items, payment status, and delivery information",
+        "Order Line Item"
+      ],
+      "contexts": [
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nSALES ORDER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. **Business Context**: Orders are created when customers complete checkout. They track the customer, items, pay",
+        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nPAYMENT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: The monetary transaction that settles the total amount due for a Sales Order. **Business Context**: Payments authorize and transfer funds from the customer to the platform. Multiple payment methods are supported. **Key A",
+        "Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business entities explicitly reference SALE",
+        "Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly one Category - A Product appears on zero or m",
+        "**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom. **Key Attributes**: - Unique Shipment ID - References exactly one Sales Order - Source Warehouse - Destinat",
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **De",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | IN",
+        "**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "the customer, items, payment status, and delivery information: Tracks customer, items, payment status, and delivery information for an order payment process.",
+        "Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, and line amount matches the business"
+      ],
+      "expected_answer": "Sum the TOTAL_AMT column from SALES_ORDER_HDR for all records where CUST_ID matches the customer's ID. This aggregates the monetary value of all orders placed by that customer.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer"
+      ],
+      "gt_coverage": 0.25,
+      "grounded": true,
+      "top_score": 0.06536578698026635,
+      "chunk_count": 10,
+      "gate_decision": "proceed_with_warning",
+      "overlap": 0.058823529411764705,
+      "ragas_scores": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.9240362811659378,
+        "context_recall": 1.0
+      }
+    }
+  ],
+  "ragas": {
+    "faithfulness": 1.0,
+    "answer_relevancy": 0.5298238003014316,
+    "context_precision": 0.7061513605240574,
+    "context_recall": 0.8333333333333334
+  }
+}
