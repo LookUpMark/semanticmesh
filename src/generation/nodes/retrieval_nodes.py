@@ -19,6 +19,7 @@ from src.retrieval.embeddings import get_embeddings
 from src.retrieval.hybrid_retriever import (
     bm25_search,
     build_node_index,
+    chunk_vector_search,
     fetch_all_concepts,
     fetch_fk_relationships,
     graph_traversal,
@@ -190,6 +191,9 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
             vec_results = vector_search(
                 query, client, top_k=settings.retrieval_vector_top_k, model=model
             )
+            chunk_vec_results = chunk_vector_search(
+                query, client, top_k=settings.retrieval_vector_top_k, model=model
+            )
             trav_results = graph_traversal(
                 seed_names=[c.node_id for c in vec_results[:5]],
                 client=client,
@@ -199,7 +203,9 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
             fk_chunks = fetch_fk_relationships(client)
             bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
             merged = merge_results(
-                vec_results, bm25_results, trav_results + all_concepts + fk_chunks
+                vec_results + chunk_vec_results,
+                bm25_results,
+                trav_results + all_concepts + fk_chunks,
             )
 
             if getattr(settings, "enable_lazy_expansion", False):
@@ -221,7 +227,9 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                         depth=max(1, settings.retrieval_graph_depth + 1),
                     )
                     merged = merge_results(
-                        vec_results, bm25_results, trav_results + extra + all_concepts + fk_chunks
+                        vec_results + chunk_vec_results,
+                        bm25_results,
+                        trav_results + extra + all_concepts + fk_chunks,
                     )
     logger.info(
         "Retrieval complete: %d merged chunks (mode=%s).",

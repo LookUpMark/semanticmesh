@@ -4,7 +4,8 @@ Supports two backends:
 - **OpenAI** (``text-embedding-3-large``, ``text-embedding-3-small``): cloud API,
   uses ``settings.openai_api_key``.  Dimension is controlled by
   ``settings.embedding_dimensions`` (default 1024, matches Neo4j vector index).
-- **BGE-M3** (``BAAI/bge-m3``): local FlagEmbedding model, CPU-only.
+- **BGE-M3** (``BAAI/bge-m3``): local FlagEmbedding model. Uses GPU (``cuda:0``)
+  if available, falls back to CPU automatically.
 
 The active backend is auto-detected from ``settings.embedding_model``:
 - starts with ``text-`` → OpenAI
@@ -76,12 +77,17 @@ def get_embeddings():
     except ImportError as exc:
         raise ImportError("FlagEmbedding is not installed. Run: pip install FlagEmbedding") from exc
 
-    logger.info("Loading embedding model '%s' on CPU...", model_name)
+    import torch  # noqa: PLC0415
+
+    _cuda = torch.cuda.is_available()
+    _device = "cuda:0" if _cuda else "cpu"
+    _fp16 = _cuda
+    logger.info("Loading embedding model '%s' on %s...", model_name, _device.upper())
     model = FlagModel(
         model_name,
-        use_fp16=False,
+        use_fp16=_fp16,
         query_instruction_for_retrieval="Represent this sentence for retrieval: ",
-        devices=["cpu"],
+        devices=[_device],
     )
     logger.info("Embedding model loaded.")
     return model

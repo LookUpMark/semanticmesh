@@ -236,10 +236,10 @@ Settings boolean flags to disable pipeline components:
 - Called from `_node_build_graph` after the main table upsert — creates stub `PhysicalTable` nodes for referenced tables not yet processed
 - All MERGE-based, idempotent — safe to re-run
 
-### Embeddings & Reranker (GPU considerations)
-- BGE-M3 (`get_embeddings()`): `FlagModel(model_name, use_fp16=False, devices=["cpu"])` — must run on CPU when GPU is shared with LM Studio
-- bge-reranker-large (`get_reranker()`): `FlagReranker(model_name, use_fp16=False, device="cpu")` — same reason
-- Reranker CUDA guard: `get_reranker()` temporarily sets `CUDA_VISIBLE_DEVICES=""` during `FlagReranker.__init__` to prevent OOM on shared GPUs; the env var is restored after init
+### Embeddings & Reranker (GPU auto-detection)
+- BGE-M3 (`get_embeddings()`): auto-detects GPU via `torch.cuda.is_available()` — uses `devices=["cuda:0"]` + `use_fp16=True` if available, else falls back to CPU
+- bge-reranker-v2-m3 (`get_reranker()`): same auto-detection — uses `device="cuda:0"` + `use_fp16=True` if available, else CPU
+- The old CUDA_VISIBLE_DEVICES="" guard was removed — it was only needed when sharing GPU with LM Studio; since pipeline LLMs now use OpenAI API, there is no GPU contention
 - Do NOT pass `show_progress_bar` to `model.encode()` — FlagEmbedding propagates kwargs to tokenizer which rejects it
 
 ### Hybrid Retrieval with RRF

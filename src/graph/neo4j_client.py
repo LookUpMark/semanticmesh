@@ -25,9 +25,16 @@ _SCHEMA_STATEMENTS: list[str] = [
     "CREATE CONSTRAINT datatable_qualified_unique IF NOT EXISTS "
     "FOR (n:DataTable) REQUIRE n.qualified_name IS UNIQUE",
     "CREATE INDEX chunk_source_doc IF NOT EXISTS FOR (c:Chunk) ON (c.source_doc)",
+    "CREATE INDEX parentchunk_source_doc IF NOT EXISTS FOR (pc:ParentChunk) ON (pc.source_doc)",
     (
         "CREATE VECTOR INDEX businessconcept_embedding IF NOT EXISTS "
         "FOR (n:BusinessConcept) ON n.embedding "
+        "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
+    )
+    % _EMBEDDING_DIMENSION,
+    (
+        "CREATE VECTOR INDEX chunk_embedding IF NOT EXISTS "
+        "FOR (c:Chunk) ON c.embedding "
         "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
     )
     % _EMBEDDING_DIMENSION,

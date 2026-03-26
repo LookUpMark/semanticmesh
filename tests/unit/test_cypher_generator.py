@@ -235,7 +235,7 @@ class TestGenerateCypher:
         assert "CREATE TABLE test (id INT)" in user_content
         assert "MERGE (n:test {id: $id})" in user_content
 
-    def test_empty_synonyms_becomes_none_text(self) -> None:
+    def test_empty_synonyms_becomes_empty_text(self) -> None:
         entity = _make_entity(synonyms=[])
         table = _make_table()
         mapping = _make_mapping()
@@ -248,7 +248,8 @@ class TestGenerateCypher:
 
         call_args = llm_mock.invoke.call_args
         user_content = call_args[0][0][1].content
-        assert "synonyms: none" in user_content.lower()
+        # Empty synonyms should NOT produce the string "none"
+        assert "synonyms: none" not in user_content.lower()
 
     def test_synonyms_joined_with_comma(self) -> None:
         entity = _make_entity(synonyms=["Client", "Buyer"])

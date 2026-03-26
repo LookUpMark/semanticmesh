@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 
-from src.models.schemas import EnrichedTableSchema, MappingProposal
+from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
 
 _UPSERT_CYPHER = """\
 MERGE (bc:BusinessConcept {name: $concept_name})
@@ -48,6 +48,7 @@ ON MATCH SET  r.confidence = $confidence,
 def build_upsert_cypher(
     proposal: MappingProposal,
     table: EnrichedTableSchema,
+    entity: Entity | None = None,
 ) -> tuple[str, dict]:
     """Build a parameterized MERGE Cypher and a params dict.
 
@@ -55,6 +56,9 @@ def build_upsert_cypher(
         proposal: The validated :class:`~src.models.schemas.MappingProposal`.
         table:    The :class:`~src.models.schemas.EnrichedTableSchema` for the
                   table being mapped.
+        entity:   Optional resolved :class:`~src.models.schemas.Entity` — when
+                  provided its ``provenance_text``, ``source_doc`` and
+                  ``synonyms`` are propagated to the graph node.
 
     Returns:
         A ``(cypher_template, params)`` tuple ready for
@@ -66,9 +70,9 @@ def build_upsert_cypher(
     params: dict = {
         "concept_name": proposal.mapped_concept or "Unknown",
         "concept_definition": proposal.reasoning or "",
-        "provenance_text": "",
-        "source_doc": "",
-        "synonyms": [],
+        "provenance_text": entity.provenance_text if entity else "",
+        "source_doc": entity.source_doc if entity else "",
+        "synonyms": entity.synonyms if entity else [],
         "confidence_score": proposal.confidence,
         "table_name": table.table_name,
         "schema_name": table.schema_name,

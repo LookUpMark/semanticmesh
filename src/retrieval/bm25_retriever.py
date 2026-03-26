@@ -56,22 +56,41 @@ def bm25_search(
     chunks: list[RetrievedChunk] = []
     for idx, score in indexed:
         node = all_nodes[idx]
-        name = (node.get("name") or "").strip()
-        definition = node.get("definition") or ""
-        if not name:
-            continue
-        text = f"{name}: {definition}" if definition else name
-        chunks.append(
-            RetrievedChunk(
-                node_id=name,
-                node_type=node.get("node_type", "BusinessConcept"),
-                text=text,
-                score=score,
-                source_type="bm25",
-                metadata={
-                    key: val for key, val in node.items() if key not in ("name", "definition")
-                },
+        node_type = node.get("node_type", "BusinessConcept")
+        # ParentChunk nodes carry raw text; other nodes use name + definition
+        if node_type == "ParentChunk":
+            raw_text = (node.get("text") or "").strip()
+            if not raw_text:
+                continue
+            chunk_idx = node.get("chunk_index", 0)
+            src = node.get("source_doc") or ""
+            chunks.append(
+                RetrievedChunk(
+                    node_id=f"parent_chunk_{src}_{chunk_idx}",
+                    node_type="ParentChunk",
+                    text=raw_text,
+                    score=score,
+                    source_type="bm25",
+                    metadata={"chunk_index": chunk_idx, "source_doc": src},
+                )
             )
-        )
+        else:
+            name = (node.get("name") or "").strip()
+            definition = node.get("definition") or ""
+            if not name:
+                continue
+            text = f"{name}: {definition}" if definition else name
+            chunks.append(
+                RetrievedChunk(
+                    node_id=name,
+                    node_type=node_type,
+                    text=text,
+                    score=score,
+                    source_type="bm25",
+                    metadata={
+                        key: val for key, val in node.items() if key not in ("name", "definition")
+                    },
+                )
+            )
     logger.debug("bm25_search: %d results for query '%s'.", len(chunks), query[:60])
     return chunks

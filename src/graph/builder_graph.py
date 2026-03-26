@@ -29,7 +29,7 @@ from src.graph.build_nodes import (
 from src.graph.neo4j_client import Neo4jClient, setup_schema
 from src.graph.validation_nodes import _node_validate_mapping, _route_after_validate
 from src.ingestion.ddl_parser import parse_ddl_file
-from src.ingestion.pdf_loader import load_and_chunk_pdf
+from src.ingestion.pdf_loader import chunk_documents_hierarchical, load_pdf
 from src.ingestion.schema_enricher import enrich_all
 from src.mapping.hitl import hitl_node
 from src.mapping.rag_mapper import propose_mapping, propose_mapping_heuristic
@@ -290,9 +290,15 @@ def run_builder(
         Final ``BuilderState`` after graph completion.
     """
     settings = get_settings()
-    chunks = []
+    # Load all documents first, then chunk in one pass so parent_chunk_index is
+    # globally unique across all source files (avoids index collisions in Neo4j).
+    all_docs = []
     for doc_path in raw_documents:
-        chunks.extend(load_and_chunk_pdf(Path(doc_path)))
+        all_docs.extend(load_pdf(Path(doc_path)))
+    all_parents, all_children = chunk_documents_hierarchical(all_docs)
+
+    # Triplet extraction and MENTIONS edges operate on parents (richer 512-tok context).
+    chunks = all_parents
 
     # Initialize trace if enabled
     builder_trace: BuilderTrace | None = None
@@ -305,7 +311,7 @@ def run_builder(
             doc_paths=doc_paths,
             ddl_paths=ddl_path_objs,
         )
-        # Record initial chunks
+        # Record initial chunks (parents used for extraction)
         chunk_dicts = [
             {
                 "chunk_id": i,
@@ -325,6 +331,59 @@ def run_builder(
             client.execute_cypher("MATCH (n) DETACH DELETE n")
             logger.info("Graph cleared before builder run.")
         setup_schema(client)
+
+        # ── Persist parent chunks (no embedding — full context for LLM) ──────
+        for parent in all_parents:
+            client.execute_cypher(
+                "MERGE (pc:ParentChunk {parent_chunk_index: $idx, source_doc: $src}) "
+                "ON CREATE SET pc.text = $text, pc.page = $page, "
+                "pc.created_at = datetime() "
+                "ON MATCH SET pc.text = $text, pc.updated_at = datetime()",
+                {
+                    "idx": parent.chunk_index,
+                    "src": parent.metadata.get("source", ""),
+                    "text": parent.text,
+                    "page": parent.metadata.get("page", ""),
+                },
+            )
+        logger.info("Persisted %d ParentChunk nodes.", len(all_parents))
+
+        # ── Persist child chunks with embeddings for vector search ────────────
+        if all_children:
+            emb_model = get_embeddings()
+            child_texts = [c.text for c in all_children]
+            vectors = emb_model.encode(child_texts, batch_size=32)
+            for i, child in enumerate(all_children):
+                client.execute_cypher(
+                    "MERGE (c:Chunk {chunk_index: $idx, source_doc: $src}) "
+                    "ON CREATE SET c.text = $text, c.page = $page, "
+                    "c.embedding = $emb, c.created_at = datetime() "
+                    "ON MATCH SET c.text = $text, c.embedding = $emb, "
+                    "c.updated_at = datetime()",
+                    {
+                        "idx": child.chunk_index,
+                        "src": child.metadata.get("source", ""),
+                        "text": child.text,
+                        "page": child.metadata.get("page", ""),
+                        "emb": vectors[i].tolist(),
+                    },
+                )
+            logger.info("Persisted %d Chunk nodes with embeddings.", len(all_children))
+
+        # ── Wire CHILD_OF edges ───────────────────────────────────────────────
+        for child in all_children:
+            if child.parent_chunk_index is not None:
+                client.execute_cypher(
+                    "MATCH (c:Chunk {chunk_index: $cidx, source_doc: $src}) "
+                    "MATCH (pc:ParentChunk {parent_chunk_index: $pidx, source_doc: $src}) "
+                    "MERGE (c)-[:CHILD_OF]->(pc)",
+                    {
+                        "cidx": child.chunk_index,
+                        "pidx": child.parent_chunk_index,
+                        "src": child.metadata.get("source", ""),
+                    },
+                )
+        logger.info("Created CHILD_OF edges for %d children.", len(all_children))
 
     graph = build_builder_graph(production=production)
     lazy_mode = settings.use_lazy_extraction if use_lazy_extraction is None else use_lazy_extraction

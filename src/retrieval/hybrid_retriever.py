@@ -57,7 +57,11 @@ def build_node_index(client: Neo4jClient) -> list[dict[str, Any]]:
         "[] AS synonyms, n.source_doc AS source_doc, "
         "n.column_names AS column_names"
     )
-    all_nodes = concept_records + table_records
+    chunk_records = client.execute_cypher(
+        "MATCH (pc:ParentChunk) RETURN pc.text AS text, "
+        "pc.parent_chunk_index AS chunk_index, pc.source_doc AS source_doc, 'ParentChunk' AS node_type"
+    )
+    all_nodes = concept_records + table_records + chunk_records
     logger.debug("build_node_index: %d nodes fetched.", len(all_nodes))
     return all_nodes
 
@@ -117,6 +121,72 @@ def vector_search(
             )
         )
     logger.debug("vector_search: %d results for query '%s'.", len(chunks), query[:60])
+    return chunks
+
+
+# ── Chunk Vector Search ────────────────────────────────────────────────────────
+
+
+def chunk_vector_search(
+    query: str,
+    client: Neo4jClient,
+    top_k: int | None = None,
+    model=None,
+) -> list[RetrievedChunk]:
+    """Embed the query and search the ``chunk_embedding`` vector index.
+
+    Returns original document chunks — the raw text that was ingested before
+    triplet extraction. These chunks carry richer context than the LLM-generated
+    BusinessConcept definitions.
+
+    Args:
+        query: Natural language query string.
+        client: Active ``Neo4jClient``.
+        top_k: Number of results; defaults to ``settings.retrieval_vector_top_k``.
+        model: Optional pre-loaded FlagModel; passed to ``embed_text``.
+
+    Returns:
+        Sorted list of ``RetrievedChunk`` with ``source_type="chunk_vector"``.
+    """
+    settings = get_settings()
+    n = top_k or settings.retrieval_vector_top_k
+    query_vector: list[float] = embed_text(query, model=model)
+
+    # Search children for precision, then expand to parents for context richness.
+    # Deduplicate by (source_doc, parent_chunk_index) so multiple children of the
+    # same parent collapse into one result carrying max(score). Including source_doc
+    # prevents cross-document collisions when two files share the same numeric index.
+    cypher = (
+        "CALL db.index.vector.queryNodes('chunk_embedding', $k, $embedding) "
+        "YIELD node AS child, score "
+        "OPTIONAL MATCH (child)-[:CHILD_OF]->(parent:ParentChunk) "
+        "WITH COALESCE(parent.parent_chunk_index, child.chunk_index) AS pid, "
+        "     COALESCE(parent.source_doc, child.source_doc) AS src, "
+        "     COALESCE(parent.text, child.text) AS text, "
+        "     max(score) AS max_score "
+        "RETURN pid AS chunk_index, src AS source_doc, text, max_score AS score "
+        "ORDER BY max_score DESC"
+    )
+    records = client.execute_cypher(cypher, {"k": n, "embedding": query_vector})
+
+    chunks: list[RetrievedChunk] = []
+    for rec in records:
+        text = (rec.get("text") or "").strip()
+        if not text:
+            continue
+        idx = rec.get("chunk_index", 0)
+        src = rec.get("source_doc") or ""
+        chunks.append(
+            RetrievedChunk(
+                node_id=f"parent_chunk_{src}_{idx}",
+                node_type="ParentChunk",
+                text=text,
+                score=float(rec.get("score", 0.0)),
+                source_type="parent_chunk",
+                metadata={"chunk_index": idx, "source_doc": src},
+            )
+        )
+    logger.debug("chunk_vector_search: %d parent results for query '%s'.", len(chunks), query[:60])
     return chunks
 
 

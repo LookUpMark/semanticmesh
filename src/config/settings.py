@@ -64,6 +64,8 @@ class Settings(BaseSettings):
     max_llm_retries: int = DEFAULT_CONFIG.max_llm_retries
 
     # ── Chunking ───────────────────────────────────────────────────────────────
+    parent_chunk_size: int = DEFAULT_CONFIG.parent_chunk_size
+    parent_chunk_overlap: int = DEFAULT_CONFIG.parent_chunk_overlap
     chunk_size: int = DEFAULT_CONFIG.chunk_size
     chunk_overlap: int = DEFAULT_CONFIG.chunk_overlap
     extraction_concurrency: int = DEFAULT_CONFIG.extraction_concurrency

@@ -39,9 +39,9 @@ class AppConfig:
     llm_max_tokens_reasoning: int = 4096
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
-    embedding_model: str = "text-embedding-3-large"
+    embedding_model: str = "BAAI/bge-m3"
     embedding_dimensions: int = 1024
-    reranker_model: str = "BAAI/bge-reranker-large"
+    reranker_model: str = "BAAI/bge-reranker-v2-m3"
     reranker_top_k: int = 10
 
     # ── Entity Resolution ──────────────────────────────────────────────────────
@@ -56,6 +56,10 @@ class AppConfig:
     max_llm_retries: int = 3
 
     # ── Chunking ───────────────────────────────────────────────────────────────
+    # Parent chunks: full-context nodes returned to the LLM (no embedding)
+    parent_chunk_size: int = 600
+    parent_chunk_overlap: int = 64
+    # Child chunks: small nodes used for precise vector search (with embedding)
     chunk_size: int = 256
     chunk_overlap: int = 32
     extraction_concurrency: int = 10
@@ -76,7 +80,7 @@ class AppConfig:
     retrieval_mode: str = "hybrid"
     enable_cypher_healing: bool = True
     enable_critic_validation: bool = True
-    enable_reranker: bool = False
+    enable_reranker: bool = True
     enable_hallucination_grader: bool = True
     enable_retrieval_quality_gate: bool = True
     enable_semantic_verifier: bool = True

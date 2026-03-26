@@ -1,16 +1,20 @@
  #!/usr/bin/env python
-"""Unified runner for AB-00 ablation study.
+"""Unified runner for ablation studies.
 
-Replaces the three separate scripts (run_ab00_debug.py, run_ab00_lazy.py,
-run_ab00_logged.py) with a single CLI-driven entry point.
+Supports multiple datasets and writes structured output:
+  notebooks/ablation/ablation_results/{study_id}/{dataset_id}/
+    run.json      — full results
+    run.log       — full log
+    analysis.md   — auto-generated deep-dive analysis
 
 Usage:
-    python scripts/run_ab00.py                         # LLM extraction, full pipeline
-    python scripts/run_ab00.py --lazy                  # Heuristic extraction (no LLM)
-    python scripts/run_ab00.py --max-samples 5         # Quick test with 5 questions
+    python scripts/run_ab00.py                         # LLM extraction, full pipeline, 01_basics_ecommerce
+    python scripts/run_ab00.py --lazy                  # Heuristic extraction
+    python scripts/run_ab00.py --max-samples 5         # Quick test
     python scripts/run_ab00.py --no-builder            # Query-only (reuse existing graph)
     python scripts/run_ab00.py --ragas                 # Enable RAGAS evaluation
-    python scripts/run_ab00.py --run-tag my-run-v1     # Custom tag for trace files
+    python scripts/run_ab00.py --dataset tests/fixtures/02_intermediate_finance/gold_standard.json
+    python scripts/run_ab00.py --study-id AB-01        # Custom study ID
 """
 
 from __future__ import annotations
@@ -29,6 +33,252 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from dotenv import load_dotenv  # noqa: E402  # type: ignore[import]
 
 load_dotenv(Path(__file__).parent.parent / ".env")
+
+
+# ── Dataset helpers ────────────────────────────────────────────────────────────
+
+def _find_doc_files(fixture_dir: Path) -> list[str]:
+    """Auto-detect business documentation files (.txt or .md).
+
+    Looks for standard stems first; falls back to any .md/.txt file that
+    isn't a schema file (handles datasets like 07 that use complex_scenarios.md).
+    """
+    # Standard stems in priority order
+    known_stems = ("business_glossary", "data_dictionary", "complex_scenarios")
+    doc_files: list[str] = []
+    found_stems: set[str] = set()
+
+    for stem in known_stems:
+        for ext in (".txt", ".md"):
+            candidate = fixture_dir / f"{stem}{ext}"
+            if candidate.exists():
+                doc_files.append(str(candidate))
+                found_stems.add(stem)
+                break  # take first match per stem
+
+    # Fallback: if we found nothing, grab all .md/.txt files (except README/schema)
+    if not doc_files:
+        skip = {"readme", "dataset_summary", "schema"}
+        for f in sorted(fixture_dir.glob("*")):
+            if f.suffix.lower() in (".txt", ".md") and f.stem.lower() not in skip:
+                doc_files.append(str(f))
+
+    return doc_files
+
+
+def _load_pairs(dataset_path: Path) -> tuple[str, list[dict]]:
+    """Load QA pairs from a gold standard JSON, handling all dataset schemas.
+
+    Returns (dataset_id, normalized_pairs).
+    """
+    with open(dataset_path) as f:
+        dataset = json.load(f)
+
+    # Resolve dataset_id from multiple possible locations
+    dataset_id: str = (
+        dataset.get("dataset_id")
+        or (dataset.get("dataset", {}).get("id") if isinstance(dataset.get("dataset"), dict) else None)
+        or dataset_path.parent.name
+    )
+
+    # Try all known container keys for QA pairs
+    pairs_raw = (
+        dataset.get("pairs")
+        or dataset.get("qa_pairs")
+        or dataset.get("questions")
+        or (dataset if isinstance(dataset, list) else None)
+        or []
+    )
+
+    # Normalize each pair to canonical field names
+    normalized: list[dict] = []
+    for i, p in enumerate(pairs_raw):
+        norm = dict(p)
+        # query_id: prefer string, fall back to zero-padded index
+        if "query_id" not in norm:
+            raw_id = p.get("id", f"Q{i+1:03d}")
+            norm["query_id"] = str(raw_id) if not isinstance(raw_id, str) else raw_id
+        # expected_answer
+        if "expected_answer" not in norm:
+            norm["expected_answer"] = p.get("answer") or p.get("ground_truth") or ""
+        # expected_sources (optional in some datasets)
+        if "expected_sources" not in norm:
+            norm["expected_sources"] = p.get("tables_involved") or p.get("relevant_tables") or []
+        normalized.append(norm)
+
+    return dataset_id, normalized
+
+
+# ── Analysis Markdown Generator ────────────────────────────────────────────────
+
+def _generate_analysis_md(summary: dict, dataset_id: str) -> str:
+    """Generate a detailed analysis markdown from a run summary dict."""
+    ts = summary.get("timestamp", "")[:19].replace("T", " ")
+    cfg = summary.get("config", {})
+    bld = summary.get("builder", {})
+    qry = summary.get("query", {})
+    ragas = summary.get("ragas", {})
+    pq = summary.get("per_question", [])
+
+    lines: list[str] = []
+
+    # Header
+    lines += [
+        f"# {summary.get('study_id', 'AB-00')} \u2014 {dataset_id} \u2014 Run Analysis",
+        "",
+        f"**Timestamp:** {ts}  ",
+        f"**Run tag:** `{summary.get('run_tag', '')}`",
+        "",
+    ]
+
+    # Configuration
+    lines += [
+        "## Configuration",
+        "",
+        "| Parameter | Value |",
+        "|-----------|-------|",
+        f"| Extraction model | `{cfg.get('extraction_mode', '-')}` |",
+        f"| Reasoning model | `{cfg.get('reasoning_model', '-')}` |",
+        f"| Embedding model | `{cfg.get('embedding_model', '-')}` |",
+        f"| Retrieval mode | `{cfg.get('retrieval_mode', '-')}` |",
+        f"| Reranker | `{cfg.get('enable_reranker', '-')}` |",
+        f"| Reranker top_k | `{cfg.get('reranker_top_k', '-')}` |",
+        f"| Chunk size / overlap | `{cfg.get('chunk_size', '-')} / {cfg.get('chunk_overlap', '-')}` |",
+        f"| ER similarity threshold | `{cfg.get('er_similarity_threshold', '-')}` |",
+        "",
+    ]
+
+    # Builder
+    if bld.get("triplets", 0) > 0:
+        lines += [
+            "## Builder Results",
+            "",
+            "| Metric | Value |",
+            "|--------|-------|",
+            f"| Triplets extracted | {bld.get('triplets', 0)} |",
+            f"| Entities resolved | {bld.get('entities', 0)} |",
+            f"| Tables parsed | {bld.get('tables_parsed', 0)} |",
+            f"| Tables completed | {bld.get('tables_completed', 0)} |",
+            "",
+        ]
+    else:
+        lines += ["## Builder Results\n\nBuilder skipped (`--no-builder`).\n"]
+
+    # Query summary
+    total = qry.get("total_questions", 0)
+    grounded = qry.get("grounded_count", 0)
+    rate = qry.get("grounded_rate", 0)
+    lines += [
+        "## Query Evaluation Summary",
+        "",
+        "| Metric | Value |",
+        "|--------|-------|",
+        f"| Questions | {total} |",
+        f"| Grounded | **{grounded}/{total} ({rate:.0%})** |",
+        f"| Avg GT Coverage | {qry.get('avg_gt_coverage', 0):.0%} |",
+        f"| Avg Top Score | {qry.get('avg_top_score', 0):.4f} |",
+        f"| Avg Chunk Count | {qry.get('avg_chunk_count', 0):.1f} |",
+        f"| Abstained | {qry.get('abstained_count', 0)} |",
+        "",
+    ]
+
+    # RAGAS metrics
+    if ragas and "error" not in ragas:
+        lines += [
+            "## RAGAS Metrics",
+            "",
+            "| Metric | Value | Interpretation |",
+            "|--------|-------|----------------|",
+            f"| Faithfulness | **{ragas.get('faithfulness', 0):.4f}** | Answers grounded in context |",
+            f"| Answer Relevancy | **{ragas.get('answer_relevancy', 0):.4f}** | Answers relevant to question |",
+            f"| Context Precision | **{ragas.get('context_precision', 0):.4f}** | Retrieved chunks are on-topic |",
+            f"| Context Recall | **{ragas.get('context_recall', 0):.4f}** | All needed context retrieved |",
+            "",
+        ]
+    elif ragas and "error" in ragas:
+        lines += [f"## RAGAS Metrics\n\n> \u26a0\ufe0f RAGAS failed: `{ragas['error']}`\n"]
+    else:
+        lines += ["## RAGAS Metrics\n\nRAGAS evaluation not enabled for this run.\n"]
+
+    # Per-question deep dive
+    lines += ["## Per-Question Deep Dive", ""]
+    anomalies: list[str] = []
+
+    for r in pq:
+        qid = r.get("query_id", "?")
+        question = r.get("question", "")
+        answer = r.get("answer", "")
+        expected = r.get("expected_answer", "")
+        grounded_flag = r.get("grounded", False)
+        gt_cov = r.get("gt_coverage", 0)
+        top_score = r.get("top_score", 0)
+        gate = r.get("gate_decision", "proceed")
+        sources = r.get("sources", [])
+        contexts = r.get("contexts", [])
+        rscores = r.get("ragas_scores") or {}
+
+        if gate == "abstain_early":
+            icon, status_label = "\u26d4", "ABSTAINED"
+        elif not grounded_flag:
+            icon, status_label = "\u274c", "UNGROUNDED"
+        else:
+            icon, status_label = "\u2705", "GROUNDED"
+
+        lines += [
+            f"### {icon} {qid} \u2014 {question}",
+            "",
+            f"**Status:** {status_label}  ",
+            f"**GT Coverage:** {gt_cov:.0%} | **Top Score:** {top_score:.4f} | **Gate:** `{gate}`",
+            "",
+            "**Expected answer:**",
+            f"> {expected[:300]}{'\u2026' if len(expected) > 300 else ''}",
+            "",
+            "**System answer:**",
+            f"> {answer[:400]}{'\u2026' if len(answer) > 400 else ''}",
+            "",
+        ]
+
+        if rscores:
+            ar = rscores.get("answer_relevancy", 0)
+            lines += [
+                "**RAGAS scores:**",
+                "",
+                "| f | ar | cp | cr |",
+                "|---|----|----|-----|",
+                f"| {rscores.get('faithfulness', 0):.2f} | {ar:.2f} | {rscores.get('context_precision', 0):.2f} | {rscores.get('context_recall', 0):.2f} |",
+                "",
+            ]
+
+        if sources:
+            lines += [
+                f"**Sources retrieved ({len(sources)}):** " + ", ".join(f"`{s}`" for s in sources[:8]),
+                "",
+            ]
+
+        if contexts:
+            lines += ["**Context previews (first 3):**", ""]
+            for j, ctx in enumerate(contexts[:3]):
+                preview = ctx[:200].replace("\n", " ")
+                lines += [f"{j+1}. _{preview}\u2026_", ""]
+
+        if not grounded_flag:
+            anomalies.append(f"- **{qid}**: UNGROUNDED \u2014 answer could not be verified against context")
+        if gate == "abstain_early":
+            anomalies.append(f"- **{qid}**: ABSTAINED early \u2014 retrieval quality gate rejected all chunks")
+        if rscores.get("faithfulness", 1.0) < 0.8:
+            anomalies.append(f"- **{qid}**: Low faithfulness ({rscores['faithfulness']:.2f}) \u2014 answer may hallucinate")
+        if rscores.get("context_precision", 1.0) < 0.2:
+            anomalies.append(f"- **{qid}**: Very low context precision ({rscores.get('context_precision', 0):.2f}) \u2014 many off-topic chunks retrieved")
+
+        lines += ["---", ""]
+
+    lines += ["## Anomalies & Observations", ""]
+    if anomalies:
+        lines += anomalies + [""]
+    else:
+        lines += ["No anomalies detected. All questions grounded with acceptable RAGAS scores.", ""]
+
+    return "\n".join(lines)
 
 
 def main() -> None:
@@ -87,17 +337,30 @@ def main() -> None:
     if args.lazy:
         os.environ["USE_LAZY_EXTRACTION"] = "true"
 
-    # Setup file logging
-    log_dir = Path("notebooks/ablation/ablation_results/logs")
-    log_dir.mkdir(parents=True, exist_ok=True)
+    # Verify dataset exists before doing anything else
+    if not args.dataset.exists():
+        print(f"ERROR: Dataset not found: {args.dataset}")
+        for d in Path("tests/fixtures").glob("*/gold_standard.json"):
+            print(f"  Available: {d}")
+        sys.exit(1)
+
+    # Load pairs and resolve dataset_id BEFORE setting up logging
+    dataset_id, all_pairs = _load_pairs(args.dataset)
+    if args.max_samples:
+        all_pairs = all_pairs[: args.max_samples]
+
+    # ── Structured output directory (study_id / dataset_id) ──
     timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = log_dir / f"ab00_run_{timestamp_str}.log"
+    run_tag = args.run_tag or f"run-{timestamp_str}"
+    out_dir = Path("notebooks/ablation/ablation_results") / args.study_id / dataset_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+    log_file = out_dir / "run.log"
 
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
-            logging.FileHandler(log_file),
+            logging.FileHandler(log_file, mode="w"),
             logging.StreamHandler(sys.stdout),
         ],
     )
@@ -109,38 +372,25 @@ def main() -> None:
     from src.graph.neo4j_client import Neo4jClient, setup_schema
 
     settings = get_settings()
-    run_tag = args.run_tag or f"run-{timestamp_str}"
     extraction_mode = "heuristic (lazy)" if args.lazy else f"LLM ({settings.llm_model_extraction})"
-
-    # Verify dataset exists
-    if not args.dataset.exists():
-        run_logger.error("Dataset not found: %s", args.dataset)
-        for d in Path("tests/fixtures").glob("*/gold_standard.json"):
-            run_logger.info("  Available: %s", d)
-        sys.exit(1)
 
     # Print configuration
     run_logger.info("=" * 70)
-    run_logger.info("%s ABLATION STUDY", args.study_id)
+    run_logger.info("%s ABLATION STUDY \u2014 %s", args.study_id, dataset_id)
     run_logger.info("=" * 70)
     run_logger.info("Extraction:     %s", extraction_mode)
+    run_logger.info("Embedding:      %s", settings.embedding_model)
     run_logger.info("Reasoning:      %s", settings.llm_model_reasoning)
+    run_logger.info("Reranker:       %s (top_k=%d)", settings.reranker_model if settings.enable_reranker else "OFF", settings.reranker_top_k)
     run_logger.info("Dataset:        %s", args.dataset)
-    run_logger.info("Max samples:    %s", args.max_samples or "All")
+    run_logger.info("Dataset ID:     %s", dataset_id)
+    run_logger.info("Samples:        %d", len(all_pairs))
     run_logger.info("Builder:        %s", "SKIP" if args.no_builder else "ENABLED")
     run_logger.info("RAGAS:          %s", "ENABLED" if args.ragas else "DISABLED")
-    run_logger.info("Debug trace:    ENABLED")
-    run_logger.info("Run tag:        %s", run_tag)
-    run_logger.info("Log file:       %s", log_file)
+    run_logger.info("Output dir:     %s", out_dir)
     run_logger.info("")
 
-    # Load gold standard dataset
-    with open(args.dataset) as f:
-        dataset = json.load(f)
-    pairs = dataset.get("pairs", dataset) if isinstance(dataset, dict) else dataset
-    if args.max_samples:
-        pairs = pairs[: args.max_samples]
-    run_logger.info("Loaded %d QA pairs from dataset.", len(pairs))
+    run_logger.info("Loaded %d QA pairs from dataset.", len(all_pairs))
 
     # ── STAGE 1: Builder Graph ──
     builder_state = None
@@ -153,19 +403,20 @@ def main() -> None:
 
         from src.graph.builder_graph import run_builder
 
-        # Resolve fixture paths for 01_basics_ecommerce
         fixture_dir = args.dataset.parent
-        doc_paths = [
-            str(fixture_dir / "business_glossary.txt"),
-            str(fixture_dir / "data_dictionary.txt"),
-        ]
+        doc_paths = _find_doc_files(fixture_dir)
         ddl_paths = [str(fixture_dir / "schema.sql")]
 
-        # Verify all fixture files exist
-        for p in doc_paths + ddl_paths:
+        if not doc_paths:
+            run_logger.error("No business_glossary or data_dictionary files found in %s", fixture_dir)
+            sys.exit(1)
+        for p in ddl_paths:
             if not Path(p).exists():
-                run_logger.error("Fixture file not found: %s", p)
+                run_logger.error("DDL file not found: %s", p)
                 sys.exit(1)
+
+        run_logger.info("Doc files: %s", doc_paths)
+        run_logger.info("DDL files: %s", ddl_paths)
 
         builder_state = run_builder(
             raw_documents=doc_paths,
@@ -173,7 +424,7 @@ def main() -> None:
             production=False,
             clear_graph=True,
             trace_enabled=True,
-            study_id="AB-00",
+            study_id=args.study_id,
         )
 
         triplets = builder_state.get("triplets", [])
@@ -209,25 +460,25 @@ def main() -> None:
     # ── STAGE 2: Query Evaluation ──
     run_logger.info("")
     run_logger.info("=" * 50)
-    run_logger.info("STAGE 2: Query Evaluation (%d questions)", len(pairs))
+    run_logger.info("STAGE 2: Query Evaluation (%d questions)", len(all_pairs))
     run_logger.info("=" * 50)
 
-    results = []
+    results: list[dict] = []
     grounded_count = 0
-    for i, pair in enumerate(pairs):
+    for i, pair in enumerate(all_pairs):
         question = pair["question"]
         expected_answer = pair.get("expected_answer", "")
         expected_sources = pair.get("expected_sources", [])
 
         run_logger.info("")
-        run_logger.info("[Q%03d] %s", i + 1, question)
+        run_logger.info("[%s] %s", pair.get("query_id", f"Q{i+1:03d}"), question)
 
         result = run_query(
             user_query=question,
             trace_enabled=True,
             query_index=i,
             builder_trace_id=builder_trace_id,
-            study_id="AB-00",
+            study_id=args.study_id,
         )
 
         answer = result.get("final_answer", "")
@@ -235,8 +486,10 @@ def main() -> None:
         gate = result.get("retrieval_gate_decision", "proceed")
         top_score = result.get("retrieval_quality_score", 0.0)
         chunk_count = result.get("retrieval_chunk_count", 0)
-        grounded = result.get("semantic_verification_passed", True)
+        sem_passed = result.get("semantic_verification_passed", True)
+        grader_grounded = result.get("grader_grounded", True)
         overlap = result.get("semantic_verification_overlap", 0.0)
+        grounded = sem_passed or grader_grounded
 
         if grounded and gate != "abstain_early":
             grounded_count += 1
@@ -265,7 +518,7 @@ def main() -> None:
                 run_logger.info("  Missing sources: %s", missing)
 
         results.append({
-            "query_id": pair.get("query_id", f"Q{i+1:03d}"),
+            "query_id": pair.get("query_id", str(pair.get("id", f"Q{i+1:03d}"))),
             "question": question,
             "answer": answer,
             "sources": sources,
@@ -345,22 +598,22 @@ def main() -> None:
         run_logger.info("    Entities:       %d", len(builder_state.get("entities", [])))
         run_logger.info("    Tables done:    %d/%d", len(builder_state.get("completed_tables", [])), len(builder_state.get("tables", [])))
 
-    # Save results JSON
-    results_dir = Path("notebooks/ablation/ablation_results/runs")
-    results_dir.mkdir(parents=True, exist_ok=True)
-    results_file = results_dir / f"{args.study_id}.{run_tag}.json"
+    # ── Save results JSON ──
     summary = {
         "study_id": args.study_id,
+        "dataset_id": dataset_id,
         "run_tag": run_tag,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "config": {
             "extraction_mode": extraction_mode,
+            "embedding_model": settings.embedding_model,
             "reasoning_model": settings.llm_model_reasoning,
             "extraction_model": settings.llm_model_extraction,
             "chunk_size": settings.chunk_size,
             "chunk_overlap": settings.chunk_overlap,
             "retrieval_mode": settings.retrieval_mode,
             "enable_reranker": settings.enable_reranker,
+            "reranker_model": settings.reranker_model,
             "reranker_top_k": settings.reranker_top_k,
             "er_similarity_threshold": settings.er_similarity_threshold,
         },
@@ -383,11 +636,20 @@ def main() -> None:
     }
     if ragas_metrics is not None:
         summary["ragas"] = ragas_metrics
+
+    results_file = out_dir / "run.json"
     with open(results_file, "w") as f:
         json.dump(summary, f, indent=2, default=str)
 
+    # Generate analysis.md
+    analysis_md = _generate_analysis_md(summary, dataset_id)
+    analysis_file = out_dir / "analysis.md"
+    analysis_file.write_text(analysis_md, encoding="utf-8")
+
     run_logger.info("")
-    run_logger.info("Results saved to: %s", results_file)
+    run_logger.info("Results saved to:  %s", results_file)
+    run_logger.info("Analysis saved to: %s", analysis_file)
+    run_logger.info("Log saved to:      %s", log_file)
     run_logger.info("Log saved to:     %s", log_file)
     run_logger.info("Trace dir:        %s", settings.trace_output_dir)
 

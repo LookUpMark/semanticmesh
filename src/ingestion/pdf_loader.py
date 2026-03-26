@@ -42,7 +42,7 @@ def load_pdf(path: Path) -> list[Document]:
     if not path.exists():
         raise IngestionError(f"File not found: {path}")
 
-    if path.suffix.lower() == ".txt":
+    if path.suffix.lower() in (".txt", ".md"):
         try:
             with open(path, encoding="utf-8") as f:
                 text = f.read().strip()
@@ -150,3 +150,90 @@ def load_and_chunk_pdf(path: Path) -> list[Chunk]:
     """
     docs = load_pdf(path)
     return chunk_documents(docs)
+
+
+def chunk_documents_hierarchical(
+    docs: list[Document],
+) -> tuple[list[Chunk], list[Chunk]]:
+    """Split documents into parent (512-tok) and child (128-tok) chunk hierarchies.
+
+    Implements the Small-to-Big retrieval pattern:
+    - Parents are large context nodes returned verbatim to the LLM.  They are
+      NOT embedded; they are never searched directly.
+    - Children are small, precisely-embedded nodes used for vector search.
+      Each child carries ``parent_chunk_index`` pointing to its parent.
+
+    Two independent splitters are created each call so that changes to
+    ``settings`` (e.g. during ablation) are respected at runtime.
+
+    Args:
+        docs: List of ``Document`` objects (typically from ``load_pdf``).
+
+    Returns:
+        A ``(parents, children)`` tuple.  ``parents`` contains full-context
+        chunks; ``children`` contains sub-chunks with ``parent_chunk_index`` set.
+    """
+    settings = get_settings()
+
+    parent_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=settings.parent_chunk_size,
+        chunk_overlap=settings.parent_chunk_overlap,
+        # Priority: Markdown heading > paragraph > sentence > word.
+        # "\n## " keeps each H2 concept section as one parent for business glossary docs.
+        separators=["\n## ", "\n\n", "\n", ". ", " "],
+        length_function=lambda t: len(_TOKENIZER.encode(t)),
+    )
+    child_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=settings.chunk_size,
+        chunk_overlap=settings.chunk_overlap,
+        separators=["\n\n", "\n", ". ", " "],
+        length_function=lambda t: len(_TOKENIZER.encode(t)),
+    )
+
+    parents: list[Chunk] = []
+    children: list[Chunk] = []
+    parent_index = 0
+    child_index = 0
+
+    for doc in docs:
+        parent_splits = parent_splitter.split_text(doc.text)
+        for parent_text in parent_splits:
+            parent_token_count = len(_TOKENIZER.encode(parent_text))
+            parents.append(
+                Chunk(
+                    text=parent_text,
+                    chunk_index=parent_index,
+                    metadata={
+                        **doc.metadata,
+                        "token_count": str(parent_token_count),
+                    },
+                )
+            )
+
+            child_splits = child_splitter.split_text(parent_text)
+            for child_text in child_splits:
+                child_token_count = len(_TOKENIZER.encode(child_text))
+                children.append(
+                    Chunk(
+                        text=child_text,
+                        chunk_index=child_index,
+                        parent_chunk_index=parent_index,
+                        metadata={
+                            **doc.metadata,
+                            "token_count": str(child_token_count),
+                        },
+                    )
+                )
+                child_index += 1
+
+            parent_index += 1
+
+    logger.info(
+        "Hierarchical chunking: %d documents → %d parents (size=%d) / %d children (size=%d)",
+        len(docs),
+        len(parents),
+        settings.parent_chunk_size,
+        len(children),
+        settings.chunk_size,
+    )
+    return parents, children
