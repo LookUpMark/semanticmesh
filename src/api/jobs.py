@@ -16,7 +16,7 @@ _lock = Lock()
 def create_job(meta: dict[str, Any]) -> str:
     job_id = uuid.uuid4().hex[:12]
     with _lock:
-        _store[job_id] = {"status": "queued", **meta}
+        _store[job_id] = {"status": "queued", "meta": meta}
     return job_id
 
 

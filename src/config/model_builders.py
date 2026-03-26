@@ -85,7 +85,11 @@ def _build_openai_chat(
     """
     import os
 
-    api_key = openai_api_key or os.environ.get("OPENAI_API_KEY", "")
+    api_key = (
+        openai_api_key
+        or os.environ.get("OPENAI_API_KEY")
+        or get_settings().openai_api_key.get_secret_value()
+    )
     mkwargs: dict = dict(extra_model_kwargs) if extra_model_kwargs else {}
     reasoning_effort: str | None = mkwargs.pop("reasoning_effort", None)
     chat_kwargs: dict = {
