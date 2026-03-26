@@ -27,8 +27,8 @@ class AppConfig:
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # ── LLM Models ─────────────────────────────────────────────────────────────
-    llm_model_reasoning: str = "openai/gpt-oss-120b:free"
-    llm_model_extraction: str = "local-model"
+    llm_model_reasoning: str = "gpt-5.4-mini"
+    llm_model_extraction: str = "gpt-5.4-nano"
 
     # Temperature: extraction/reasoning at 0.0 for deterministic JSON, generation at 0.3 for fluency
     llm_temperature_extraction: float = 0.0
@@ -36,10 +36,11 @@ class AppConfig:
     llm_temperature_generation: float = 0.3
 
     llm_max_tokens_extraction: int = 8192
-    llm_max_tokens_reasoning: int = 16384
+    llm_max_tokens_reasoning: int = 4096
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
-    embedding_model: str = "BAAI/bge-m3"
+    embedding_model: str = "text-embedding-3-large"
+    embedding_dimensions: int = 1024
     reranker_model: str = "BAAI/bge-reranker-large"
     reranker_top_k: int = 10
 
@@ -57,7 +58,7 @@ class AppConfig:
     # ── Chunking ───────────────────────────────────────────────────────────────
     chunk_size: int = 256
     chunk_overlap: int = 32
-    extraction_concurrency: int = 5
+    extraction_concurrency: int = 10
 
     # ── Retrieval ──────────────────────────────────────────────────────────────
     retrieval_vector_top_k: int = 20
@@ -71,11 +72,11 @@ class AppConfig:
     few_shot_cypher_examples: int = 5
 
     # ── Ablation Flags ─────────────────────────────────────────────────────────
-    enable_schema_enrichment: bool = True
+    enable_schema_enrichment: bool = False
     retrieval_mode: str = "hybrid"
     enable_cypher_healing: bool = True
     enable_critic_validation: bool = True
-    enable_reranker: bool = True
+    enable_reranker: bool = False
     enable_hallucination_grader: bool = True
     enable_retrieval_quality_gate: bool = True
     enable_semantic_verifier: bool = True

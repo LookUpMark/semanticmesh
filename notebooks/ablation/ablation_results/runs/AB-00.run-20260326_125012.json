@@ -1,0 +1,198 @@
+{
+  "study_id": "AB-00",
+  "run_tag": "run-20260326_125012",
+  "timestamp": "2026-03-26T11:50:30.337510+00:00",
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano)",
+    "reasoning_model": "gpt-5.4-mini",
+    "extraction_model": "gpt-5.4-nano",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": false,
+    "reranker_top_k": 10,
+    "er_similarity_threshold": 0.75
+  },
+  "builder": {
+    "triplets": 0,
+    "entities": 0,
+    "tables_parsed": 0,
+    "tables_completed": 0
+  },
+  "query": {
+    "total_questions": 5,
+    "grounded_count": 1,
+    "grounded_rate": 0.2,
+    "avg_gt_coverage": 0.7833333333333333,
+    "avg_top_score": 2.4483226422931237,
+    "avg_chunk_count": 10.0,
+    "abstained_count": 0
+  },
+  "per_question": [
+    {
+      "query_id": "Q001",
+      "question": "What information is stored for each customer?",
+      "answer": "The retrieved context does not describe the attributes stored in CUSTOMER_MASTER, so I cannot say exactly what information is stored for each customer. The only customer-related detail shown is that SALES_ORDER_HDR references CUSTOMER_MASTER through CUST_ID, which indicates customers are represented in CUSTOMER_MASTER and are linked to sales orders.",
+      "sources": [
+        "Shipment",
+        "Product",
+        "Customer Order",
+        "Payment",
+        "Order Line Item",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "TB_CATEGORY\u2192TB_CATEGORY",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR"
+      ],
+      "expected_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": false,
+      "top_score": 3.3439455161182945,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.0
+    },
+    {
+      "query_id": "Q002",
+      "question": "How are products categorized on the platform?",
+      "answer": "Products are categorized through the `TB_PRODUCT` table\u2019s `CATEGORY_ID` foreign key, which references `TB_CATEGORY.CATEGORY_ID`. This indicates each product is linked to a category in `TB_CATEGORY`.",
+      "sources": [
+        "Shipment",
+        "TB_CATEGORY\u2192TB_CATEGORY",
+        "Product",
+        "Order Line Item",
+        "Customer Order",
+        "Payment",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR"
+      ],
+      "expected_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT",
+        "TB_CATEGORY"
+      ],
+      "covered_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT",
+        "TB_CATEGORY"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": false,
+      "top_score": 0.6296920776367188,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.09090909090909091
+    },
+    {
+      "query_id": "Q003",
+      "question": "What is the relationship between customers and sales orders?",
+      "answer": "The retrieved context shows that SALES_ORDER_HDR references CUSTOMER_MASTER via the foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID. So the relationship is that each sales order is linked to a customer through CUSTOMER_MASTER.",
+      "sources": [
+        "Order Line Item",
+        "Shipment",
+        "Customer Order",
+        "Payment",
+        "Product",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "TB_PRODUCT\u2192TB_CATEGORY"
+      ],
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": false,
+      "top_score": 2.332556887307353,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.09090909090909091
+    },
+    {
+      "query_id": "Q004",
+      "question": "What does an order line item contain?",
+      "answer": "An Order Line Item contains a unique line identifier, a foreign key to SALES_ORDER_HDR, a foreign key to the product, and line-level quantity, unit price, and extended amount.",
+      "sources": [
+        "Order Line Item",
+        "Customer Order",
+        "Shipment",
+        "Product",
+        "Payment",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR"
+      ],
+      "expected_sources": [
+        "OrderLineItem",
+        "ORDER_LINE_ITEM",
+        "Product",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "ORDER_LINE_ITEM",
+        "Product"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 5.266201620723077,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.18181818181818182
+    },
+    {
+      "query_id": "Q005",
+      "question": "How are payments linked to orders?",
+      "answer": "Payments are linked to orders through the PAYMENT table\u2019s foreign key ORDER_ID, which references SALES_ORDER_HDR.ORDER_ID.",
+      "sources": [
+        "Shipment",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "TB_CATEGORY\u2192TB_CATEGORY",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "Customer Order",
+        "Order Line Item"
+      ],
+      "expected_sources": [
+        "Payment",
+        "PAYMENT",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "Payment",
+        "PAYMENT"
+      ],
+      "gt_coverage": 0.6666666666666666,
+      "grounded": false,
+      "top_score": 0.6692171096801758,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.0
+    }
+  ]
+}

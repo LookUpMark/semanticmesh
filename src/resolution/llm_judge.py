@@ -23,7 +23,7 @@ from src.models.schemas import (
     Triplet,
 )
 from src.prompts.templates import ER_JUDGE_SYSTEM, ER_JUDGE_USER, REFLECTION_TEMPLATE
-from src.utils.json_utils import clean_json
+from src.utils.json_utils import clean_json, extract_text_content
 
 if TYPE_CHECKING:
     import logging
@@ -126,15 +126,15 @@ def judge_cluster(
                     HumanMessage(content=user_prompt),
                 ]
             )
-            content = response.content
-            if not isinstance(content, str):
+            content = extract_text_content(response.content)
+            if not content.strip():
                 logger.warning(
-                    "LLM returned non-string content for cluster %s — returning no-merge decision.",
+                    "LLM returned empty content for cluster %s — returning no-merge decision.",
                     cluster.canonical_candidate,
                 )
                 return _no_merge_decision(
                     cluster,
-                    "LLM returned non-string content — conservative no-merge default.",
+                    "LLM returned empty content — conservative no-merge default.",
                 )
             raw_json: str = content.strip()
         except Exception as exc:
@@ -169,9 +169,11 @@ def judge_cluster(
             )
             if attempt == max_attempts:
                 return _no_merge
-            raw_json = llm.invoke(
-                [HumanMessage(content=_reflection_prompt(_fmt, str(exc), raw_json))]
-            ).content.strip()
+            raw_json = extract_text_content(
+                llm.invoke(
+                    [HumanMessage(content=_reflection_prompt(_fmt, str(exc), raw_json))]
+                ).content
+            ).strip()
             continue
 
         try:
@@ -186,9 +188,11 @@ def judge_cluster(
             )
             if attempt == max_attempts:
                 return _no_merge
-            raw_json = llm.invoke(
-                [HumanMessage(content=_reflection_prompt(_fmt, str(exc), json.dumps(data)))]
-            ).content.strip()
+            raw_json = extract_text_content(
+                llm.invoke(
+                    [HumanMessage(content=_reflection_prompt(_fmt, str(exc), json.dumps(data)))]
+                ).content
+            ).strip()
             continue
 
         logger.info(

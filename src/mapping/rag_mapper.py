@@ -29,7 +29,7 @@ from src.models.schemas import (
 )
 from src.prompts.templates import MAPPING_SYSTEM, MAPPING_USER, REFLECTION_TEMPLATE
 from src.retrieval.embeddings import embed_text
-from src.utils.json_utils import clean_json
+from src.utils.json_utils import clean_json, extract_text_content
 
 if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
@@ -114,7 +114,7 @@ def propose_mapping(
                     HumanMessage(content=user_prompt),
                 ]
             )
-            raw_json: str = response.content.strip()
+            raw_json: str = extract_text_content(response.content).strip()
         except Exception as exc:
             logger.warning(
                 "LLM mapping call failed for table '%s': %s — returning null mapping.",
@@ -148,9 +148,11 @@ def propose_mapping(
                 return _null_mapping(
                     table.table_name, "JSON parse error after self-reflection exhausted."
                 )
-            raw_json = llm.invoke(
-                [HumanMessage(content=_mapping_reflection_prompt(str(exc), raw_json))]
-            ).content.strip()
+            raw_json = extract_text_content(
+                llm.invoke(
+                    [HumanMessage(content=_mapping_reflection_prompt(str(exc), raw_json))]
+                ).content
+            ).strip()
             continue
 
         try:
@@ -168,9 +170,11 @@ def propose_mapping(
                     table.table_name,
                     f"Pydantic validation error after self-reflection exhausted: {exc}",
                 )
-            raw_json = llm.invoke(
-                [HumanMessage(content=_mapping_reflection_prompt(str(exc), json.dumps(data)))]
-            ).content.strip()
+            raw_json = extract_text_content(
+                llm.invoke(
+                    [HumanMessage(content=_mapping_reflection_prompt(str(exc), json.dumps(data)))]
+                ).content
+            ).strip()
             continue
 
         logger.info(

@@ -16,7 +16,7 @@ from pydantic import ValidationError
 from src.config.logging import NodeTimer, get_logger
 from src.models.schemas import EnrichedColumn, EnrichedTableSchema, TableSchema
 from src.prompts.templates import ENRICHMENT_SYSTEM, ENRICHMENT_USER
-from src.utils.json_utils import clean_json
+from src.utils.json_utils import clean_json, extract_text_content
 
 if TYPE_CHECKING:
     import logging
@@ -79,12 +79,10 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
                     HumanMessage(content=user_prompt),
                 ]
             )
-            # AIMessage.content can be str | list[str | dict[Any, Any]]
-            # For enrichment, we expect plain JSON string
-            content = response.content
-            if not isinstance(content, str):
+            content = extract_text_content(response.content)
+            if not content.strip():
                 logger.warning(
-                    "LLM returned non-string content for table '%s' -- "
+                    "LLM returned empty content for table '%s' -- "
                     "returning unenriched schema.",
                     table.table_name,
                 )

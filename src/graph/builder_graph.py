@@ -34,7 +34,7 @@ from src.ingestion.schema_enricher import enrich_all
 from src.mapping.hitl import hitl_node
 from src.mapping.rag_mapper import propose_mapping, propose_mapping_heuristic
 from src.mapping.retrieval import build_retrieval_query, retrieve_top_entities
-from src.models.schemas import Entity
+from src.models.schemas import EnrichedTableSchema, Entity
 from src.models.state import BuilderState
 from src.resolution.entity_resolver import resolve_entities
 from src.retrieval.embeddings import get_embeddings
@@ -78,7 +78,7 @@ def _node_parse_ddl(state: BuilderState) -> dict[str, Any]:
     ddl_paths: list[str] = state.get("ddl_paths") or []
     tables = []
     for path in ddl_paths:
-        tables.extend(parse_ddl_file(path))
+        tables.extend(parse_ddl_file(Path(path)))
     return {"tables": tables}
 
 
@@ -87,8 +87,9 @@ def _node_enrich_schema(state: BuilderState) -> dict[str, Any]:
     settings = get_settings()
     if not settings.enable_schema_enrichment:
         tables = state.get("tables") or []
-        logger.info("Schema enrichment disabled — forwarding raw parsed tables.")
-        return {"enriched_tables": tables}
+        logger.info("Schema enrichment disabled — promoting raw parsed tables.")
+        promoted = [EnrichedTableSchema.from_table_schema(t) for t in tables]
+        return {"enriched_tables": promoted}
     llm = get_reasoning_llm()
     tables = state.get("tables") or []
     enriched = enrich_all(tables, llm)
@@ -174,19 +175,12 @@ def _route_after_build(state: BuilderState) -> str:
 
 
 def _node_save_trace(state: BuilderState) -> dict[str, Any]:
-    """Save debug trace if enabled."""
-    if not state.get("trace_enabled"):
-        return {}
+    """No-op graph node — trace is saved AFTER graph.invoke() in run_builder().
 
-    trace: BuilderTrace | None = state.get("builder_trace")
-    if not trace:
-        logger.warning("Trace enabled but no trace object found in state.")
-        return {}
-
-    output_dir = Path(state.get("trace_output_dir", "notebooks/ablation/ablation_results/traces/debug"))
-    trace_path = trace.save(output_dir)
-    logger.info(f"Builder trace saved to {trace_path}")
-
+    This node exists only to provide a terminal routing target for
+    _route_after_build. The actual trace.save() happens after the trace
+    has been fully populated with final state data.
+    """
     return {}
 
 
@@ -298,13 +292,11 @@ def run_builder(
     settings = get_settings()
     chunks = []
     for doc_path in raw_documents:
-        chunks.extend(load_and_chunk_pdf(doc_path))
+        chunks.extend(load_and_chunk_pdf(Path(doc_path)))
 
     # Initialize trace if enabled
     builder_trace: BuilderTrace | None = None
     if trace_enabled:
-        from pathlib import Path
-
         doc_paths = [Path(p) for p in raw_documents]
         ddl_path_objs = [Path(p) for p in ddl_paths]
         builder_trace = BuilderTrace.create(
@@ -418,6 +410,9 @@ def run_builder(
                 "completed_tables": len(final_state.get("completed_tables", [])),
             }
 
-        logger.info(f"Trace data collected for study {study_id}")
+        # Save trace AFTER it has been fully populated (fixes timing bug)
+        output_dir = Path(settings.trace_output_dir)
+        trace_path = builder_trace.save(output_dir)
+        logger.info("Builder trace saved to %s", trace_path)
 
     return final_state

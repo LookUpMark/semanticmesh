@@ -77,17 +77,28 @@ def _build_openai_chat(
     openai_api_key: str | None,
     extra_model_kwargs: dict | None,
 ) -> ChatOpenAI:
-    """Build a ChatOpenAI instance for OpenAI direct API."""
+    """Build a ChatOpenAI instance for OpenAI direct API.
+
+    ``reasoning_effort`` is extracted from *extra_model_kwargs* and passed as a
+    top-level ChatOpenAI parameter (not via ``model_kwargs``) to avoid the
+    LangChain UserWarning about explicit parameters.
+    """
     import os
 
     api_key = openai_api_key or os.environ.get("OPENAI_API_KEY", "")
-    return ChatOpenAI(
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        api_key=api_key,
-        **_optional_model_kwargs(extra_model_kwargs),
-    )
+    mkwargs: dict = dict(extra_model_kwargs) if extra_model_kwargs else {}
+    reasoning_effort: str | None = mkwargs.pop("reasoning_effort", None)
+    chat_kwargs: dict = {
+        "model": model,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "api_key": api_key,
+    }
+    if mkwargs:
+        chat_kwargs["model_kwargs"] = mkwargs
+    if reasoning_effort is not None:
+        chat_kwargs["reasoning_effort"] = reasoning_effort
+    return ChatOpenAI(**chat_kwargs)
 
 
 def _build_anthropic_chat(

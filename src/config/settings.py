@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     lmstudio_base_url: str = DEFAULT_CONFIG.lmstudio_base_url
     openrouter_base_url: str = DEFAULT_CONFIG.openrouter_base_url
     openrouter_api_key: SecretStr = SecretStr("")
+    openai_api_key: SecretStr = SecretStr("")
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
     llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = DEFAULT_CONFIG.embedding_model
+    embedding_dimensions: int = DEFAULT_CONFIG.embedding_dimensions
     reranker_model: str = DEFAULT_CONFIG.reranker_model
     reranker_top_k: int = DEFAULT_CONFIG.reranker_top_k
 

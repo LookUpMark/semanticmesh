@@ -171,10 +171,13 @@ def _node_semantic_verification(state: QueryState) -> dict[str, Any]:
     overlap = overlap_hits / len(entity_names)
     has_structural_evidence = _has_structural_relationship_evidence(chunks)
     relation_query = any(k in query.lower() for k in ("related", "relationship", "linked", "link"))
-    min_overlap = 0.2
+    # Lowered from 0.20 to 0.08: focused single-entity answers legitimately cover
+    # only 1–2 of the retrieved concepts (e.g. "Customer" for a customer-info query),
+    # so requiring 20% overlap produces false negatives for correct narrow answers.
+    min_overlap = 0.08
     if relation_query or has_structural_evidence:
-        # Relationship-focused answers often paraphrase entity labels.
-        min_overlap = 0.1
+        # Relationship answers often paraphrase entity labels — be even more lenient.
+        min_overlap = 0.05
 
     passed = overlap >= min_overlap
     warning = None
@@ -331,22 +334,11 @@ def build_query_graph():
 
 
 def _node_save_query_trace(state: QueryState) -> dict[str, Any]:
-    """Save debug query trace if enabled."""
-    if not state.get("query_trace_enabled"):
-        return {}
+    """No-op graph node — query trace is saved AFTER graph.invoke() in run_query().
 
-    from pathlib import Path
-
-    trace = state.get("query_trace")
-    if not trace:
-        logger.warning("Query trace enabled but no trace object found in state.")
-        return {}
-
-    output_dir = Path(state.get("trace_output_dir", "notebooks/ablation/ablation_results/traces/debug"))
-    trace_file = output_dir / f"query_traces_{trace.study_id}.jsonl"
-    trace.save(trace_file)
-    logger.info(f"Query trace saved to {trace_file}")
-
+    This node exists only as a terminal graph node before END.
+    The actual trace save happens after the trace has been fully populated.
+    """
     return {}
 
 
@@ -435,15 +427,14 @@ def run_query(
     }
     result = graph.invoke(initial, config=config)
 
-    # Populate trace with final state data
+    # Populate trace with final state data and save
     if trace_enabled and query_trace:
-        # Record retrieval details
+        from pathlib import Path
+
+        # Record retrieval details from final state
         retrieved = result.get("retrieved_chunks", [])
         query_trace.record_retrieval(
-            vector_results=None,  # Would need to be tracked in retrieval node
-            bm25_results=None,
-            graph_results=None,
-            rrf_fused=[{"node": r.node_id, "rrf_score": r.score, "sources": []} for r in retrieved],
+            rrf_fused=[{"node": r.node_id, "rrf_score": r.score, "sources": [r.source_type]} for r in retrieved],
         )
 
         # Record reranking
@@ -457,11 +448,11 @@ def run_query(
         # Record context preparation
         generation_chunks = result.get("generation_chunks", reranked)
         query_trace.record_context_preparation(
-            contexts=[{"node": c.node_id, "text": c.text, "source": c.source} for c in generation_chunks],
+            contexts=[{"node": c.node_id, "text": c.text, "source": c.source_type} for c in generation_chunks],
             context_limit=None,
         )
 
-        # Record generation attempts (simplified - would need more detailed tracking)
+        # Record generation attempts
         query_trace.record_generation_attempt(
             answer=result.get("current_answer", result.get("final_answer", "")),
             critique=result.get("last_critique", ""),
@@ -478,6 +469,12 @@ def run_query(
             grader_decision=str(result.get("grader_decision", "")),
             sources=result.get("sources", []),
         )
+
+        # Save trace to JSONL
+        output_dir = Path(settings.trace_output_dir)
+        trace_file = output_dir / f"query_traces_{study_id}.jsonl"
+        query_trace.save(trace_file)
+        logger.info("Query trace saved to %s", trace_file)
 
     return {
         "final_answer": result.get("final_answer", ""),

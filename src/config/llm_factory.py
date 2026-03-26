@@ -182,22 +182,28 @@ def reconfigure_from_env() -> None:
 
 @lru_cache(maxsize=1)
 def get_reasoning_llm() -> LLMProtocol:
-    """Reasoning LLM — OpenRouter, T=0.0.
+    """Reasoning LLM — T=0.0.
 
     Used for: schema mapping, Actor-Critic, LLM judge, hallucination grader,
     schema enrichment, Cypher generation/healing.
 
-    Note: ``openai/gpt-oss-120b:free`` has mandatory thinking on OpenRouter.
-    Thinking tokens are isolated in the ``reasoning`` field by OpenRouter;
-    the ``content`` field always contains the clean response (no leakage).
-    ``max_tokens`` caps combined thinking+output to avoid empty content on
-    very long thinking runs.
+    ``reasoning_effort=low`` (OpenAI) / ``reasoning.effort=low`` (OpenRouter)
+    reduces thinking tokens, cutting latency while keeping quality.
     """
+    s = get_settings()
+    provider = detect_provider(s.llm_model_reasoning)
+    if provider == "openrouter":
+        low_reasoning: dict | None = {"reasoning": {"effort": "low"}}
+    elif provider == "openai":
+        low_reasoning = {"reasoning_effort": "low"}
+    else:
+        low_reasoning = None
     return make_llm(
-        model=get_settings().llm_model_reasoning,
-        temperature=get_settings().llm_temperature_reasoning,
-        max_tokens=get_settings().llm_max_tokens_reasoning,
+        model=s.llm_model_reasoning,
+        temperature=s.llm_temperature_reasoning,
+        max_tokens=s.llm_max_tokens_reasoning,
         role="reasoning",
+        extra_model_kwargs=low_reasoning,
     )
 
 
@@ -229,11 +235,17 @@ def get_extraction_llm() -> LLMProtocol:
         )
 
     # Cloud model (OpenRouter, OpenAI, Anthropic): use make_llm for provider routing
+    # Disable reasoning tokens for extraction — deterministic JSON, no chain-of-thought needed.
+    no_reasoning: dict | None = None
+    if provider == "openai":
+        no_reasoning = {"reasoning_effort": "none"}
+    # Note: OpenRouter gpt-5-nano has mandatory reasoning that cannot be disabled.
     return make_llm(
         model=s.llm_model_extraction,
         temperature=s.llm_temperature_extraction,
         max_tokens=s.llm_max_tokens_extraction,
         role="extraction",
+        extra_model_kwargs=no_reasoning,
     )
 
 

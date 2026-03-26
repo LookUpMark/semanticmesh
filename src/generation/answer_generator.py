@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config.logging import get_logger
+from src.utils.json_utils import extract_text_content
 from src.prompts.templates import (
     ANSWER_SYSTEM_ADEQUATE,
     ANSWER_SYSTEM_INSUFFICIENT,
@@ -113,7 +114,7 @@ def generate_answer(
             HumanMessage(content=user_prompt),
         ]
     )
-    answer: str = response.content.strip()
+    answer: str = extract_text_content(response.content).strip()
 
     if _is_abstention(answer) and chunks:
         top_score = max(float(c.score) for c in chunks)
@@ -139,7 +140,7 @@ def generate_answer(
                     HumanMessage(content=corrective_prompt),
                 ]
             )
-            answer = second_response.content.strip()
+            answer = extract_text_content(second_response.content).strip()
 
     logger.info("Answer generated (%d chars).", len(answer))
     return answer

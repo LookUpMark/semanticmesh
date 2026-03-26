@@ -82,6 +82,10 @@ def _query_terms(query: str) -> set[str]:
         "with",
         "into",
         "from",
+        "each",
+        "for",
+        "and",
+        "are",
         "table",
         "database",
         "business",
@@ -126,8 +130,10 @@ def _pre_filter_rerank_pool(
         nid_l = chunk.node_id.lower()
         has_structure = int("→" in chunk.node_id or _has_priority_structure_tokens(text_l))
         keyword_hits = int(any(term in text_l or term in nid_l for term in terms))
+        # source_rank before has_structure: ensures high-quality vector/BM25 entity hits
+        # are not displaced by FK-edge graph chunks when keyword relevance is equal.
         source_rank = 2 if chunk.source_type in {"vector", "bm25"} else 1
-        return (has_structure, keyword_hits, source_rank, float(chunk.score))
+        return (keyword_hits, source_rank, has_structure, float(chunk.score))
 
     selected: list[RetrievedChunk] = []
     dropped_noise = 0
@@ -217,6 +223,14 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                     merged = merge_results(
                         vec_results, bm25_results, trav_results + extra + all_concepts + fk_chunks
                     )
+    logger.info(
+        "Retrieval complete: %d merged chunks (mode=%s).",
+        len(merged),
+        retrieval_mode,
+    )
+    if not merged:
+        logger.warning("Retrieval returned 0 chunks for query: %.80s", query)
+
     return {"retrieved_chunks": merged}
 
 
@@ -239,6 +253,12 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
 
     valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
     if not valid:
+        logger.warning(
+            "Rerank produced 0 valid chunks (pool=%d, candidates=%d) for query: %.80s",
+            len(pool),
+            len(candidates),
+            query,
+        )
         return {
             "reranked_chunks": [],
             "retrieval_quality_score": 0.0,

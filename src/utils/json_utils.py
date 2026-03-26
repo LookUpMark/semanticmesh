@@ -17,6 +17,35 @@ if TYPE_CHECKING:
 _FENCE_RE = re.compile(r"^```[a-zA-Z]*\n?|```$", re.MULTILINE)
 
 
+def extract_text_content(content: str | list) -> str:
+    """Extract plain text from an LLM response content field.
+
+    OpenRouter models with reasoning tokens (e.g. gpt-oss-120b, gpt-5-nano)
+    return ``response.content`` as a list of content blocks instead of a plain
+    string.  This helper normalises both forms to a single string.
+
+    Args:
+        content: Either a plain ``str`` or a list of content blocks
+                 (dicts with ``{"type": "text", "text": "..."}`` or objects
+                 with ``.type`` / ``.text`` attributes).
+
+    Returns:
+        Concatenated text content, or ``""`` if no text blocks are found.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, dict):
+                if block.get("type") == "text":
+                    parts.append(block.get("text", ""))
+            elif hasattr(block, "type") and block.type == "text":
+                parts.append(getattr(block, "text", ""))
+        return "\n".join(parts)
+    return str(content)
+
+
 def clean_json(raw: str) -> str:
     """Strip markdown fences and extract JSON from LLM output.
 
@@ -130,8 +159,8 @@ def reflect_on_json(
 
     try:
         response = llm.invoke([{"role": "user", "content": prompt}])
-        content = response.content
-        cleaned = clean_json(content) if isinstance(content, str) else ""
+        content = extract_text_content(response.content)
+        cleaned = clean_json(content) if content else ""
         return ReflectionResult(success=True, content=cleaned, error=None)
     except Exception as exc:
         return ReflectionResult(success=False, content="", error=str(exc))

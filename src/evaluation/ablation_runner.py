@@ -263,15 +263,15 @@ def run_ablation(
         # Use default fixtures if not provided
         if doc_paths is None:
             root = Path(__file__).parent.parent.parent
-            fixture_dir = root / "tests" / "fixtures"
+            fixture_dir = root / "tests" / "fixtures" / "01_basics_ecommerce"
             doc_paths = [
-                fixture_dir / "00_legacy" / "sample_docs" / "business_glossary.txt",
-                fixture_dir / "00_legacy" / "sample_docs" / "data_dictionary.txt",
+                fixture_dir / "business_glossary.txt",
+                fixture_dir / "data_dictionary.txt",
             ]
         if ddl_paths is None:
             root = Path(__file__).parent.parent.parent
-            fixture_dir = root / "tests" / "fixtures"
-            ddl_paths = [fixture_dir / "00_legacy" / "sample_ddl" / "complex_schema.sql"]
+            fixture_dir = root / "tests" / "fixtures" / "01_basics_ecommerce"
+            ddl_paths = [fixture_dir / "schema.sql"]
 
         # Run the builder graph
         logger.info("Running builder graph...")
