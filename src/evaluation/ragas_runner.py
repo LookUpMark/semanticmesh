@@ -35,7 +35,7 @@ _DEFAULT_DATASET: Path = (
     Path(__file__).parent.parent.parent / "tests" / "fixtures" / "00_legacy" / "gold_standard.json"
 )
 
-_DEFAULT_EVALUATOR_MODEL: str = "gpt-5.4-mini"
+_DEFAULT_EVALUATOR_MODEL: str = "gpt-4.1-mini"
 _OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 _TRACE_PREVIEW_CHARS: int = 240
 

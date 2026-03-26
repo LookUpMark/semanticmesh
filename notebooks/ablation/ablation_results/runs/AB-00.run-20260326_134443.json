@@ -1,0 +1,733 @@
+{
+  "study_id": "AB-00",
+  "run_tag": "run-20260326_134443",
+  "timestamp": "2026-03-26T12:56:31.227242+00:00",
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano)",
+    "reasoning_model": "gpt-5.4-mini",
+    "extraction_model": "gpt-5.4-nano",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": false,
+    "reranker_top_k": 10,
+    "er_similarity_threshold": 0.75
+  },
+  "builder": {
+    "triplets": 0,
+    "entities": 0,
+    "tables_parsed": 0,
+    "tables_completed": 0
+  },
+  "query": {
+    "total_questions": 15,
+    "grounded_count": 14,
+    "grounded_rate": 0.9333333333333333,
+    "avg_gt_coverage": 0.7555555555555556,
+    "avg_top_score": 2.802370837392266,
+    "avg_chunk_count": 10.0,
+    "abstained_count": 0
+  },
+  "per_question": [
+    {
+      "query_id": "Q001",
+      "question": "What information is stored for each customer?",
+      "answer": "For each customer, the Customer concept/table stores CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, and CREATED_AT.",
+      "sources": [
+        "Shipment",
+        "Order Line Item",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "TB_CATEGORY\u2192TB_CATEGORY",
+        "Sales Order Header",
+        "Customer",
+        "Payment",
+        "Product",
+        "Category"
+      ],
+      "contexts": [
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi",
+        "Category: The table name, primary key, and name column all directly indicate a category master record, and the self-referencing parent key models a hierarchical category tree. The provided business entities explicitly include \"Cat"
+      ],
+      "expected_answer": "Each customer has a unique ID, full name, email address, geographic region code, creation date, and active status. The email must be unique across all customers.",
+      "expected_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 3.800662548578713,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.09090909090909091
+    },
+    {
+      "query_id": "Q002",
+      "question": "How are products categorized on the platform?",
+      "answer": "Products are categorized through the Product concept/table using CATEGORY_ID, which references Category. The retrieved context shows TB_PRODUCT references TB_CATEGORY via CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID, so products are assigned to a category in the Category master record.",
+      "sources": [
+        "Shipment",
+        "TB_CATEGORY\u2192TB_CATEGORY",
+        "Product",
+        "Payment",
+        "Category",
+        "Order Line Item",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "Customer",
+        "Sales Order Header"
+      ],
+      "contexts": [
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Category: The table name, primary key, and name column all directly indicate a category master record, and the self-referencing parent key models a hierarchical category tree. The provided business entities explicitly include \"Cat",
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus"
+      ],
+      "expected_answer": "Products belong to categories which can have a parent category, forming a hierarchical tree structure. Each product references exactly one category through its CATEGORY_ID.",
+      "expected_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT",
+        "TB_CATEGORY"
+      ],
+      "covered_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT",
+        "TB_CATEGORY"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.6298079490661621,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.18181818181818182
+    },
+    {
+      "query_id": "Q003",
+      "question": "What is the relationship between customers and sales orders?",
+      "answer": "The relationship is that Sales Order Header references Customer via the foreign key `CUST_ID -> CUSTOMER_MASTER.CUST_ID`. In other words, each sales order header is linked to a customer.",
+      "sources": [
+        "Order Line Item",
+        "Shipment",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "Sales Order Header",
+        "Customer",
+        "Payment",
+        "Product"
+      ],
+      "contexts": [
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi"
+      ],
+      "expected_answer": "Each sales order is placed by exactly one customer, referenced through the CUST_ID foreign key. A customer can place zero or more orders over time.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 1.8854581007394704,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.2727272727272727
+    },
+    {
+      "query_id": "Q004",
+      "question": "What does an order line item contain?",
+      "answer": "An Order Line Item contains a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing and quantity fields.",
+      "sources": [
+        "Order Line Item",
+        "Shipment",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "Sales Order Header",
+        "Payment",
+        "Product"
+      ],
+      "contexts": [
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi"
+      ],
+      "expected_answer": "An order line item specifies a product, the quantity ordered, the unit price at time of purchase, and the calculated extended amount. Each line item belongs to exactly one sales order.",
+      "expected_sources": [
+        "OrderLineItem",
+        "ORDER_LINE_ITEM",
+        "Product",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "ORDER_LINE_ITEM",
+        "Product"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 5.801608776780241,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.18181818181818182
+    },
+    {
+      "query_id": "Q005",
+      "question": "How are payments linked to orders?",
+      "answer": "Payments are linked to orders through the PAYMENT table\u2019s foreign key ORDER_ID, which references SALES_ORDER_HDR.ORDER_ID.",
+      "sources": [
+        "Shipment",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "TB_CATEGORY\u2192TB_CATEGORY",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "Product",
+        "Order Line Item"
+      ],
+      "contexts": [
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi",
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind"
+      ],
+      "expected_answer": "Each payment is associated with exactly one sales order through the ORDER_ID foreign key. Payments track the payment method, amount, status, and confirmation timestamp.",
+      "expected_sources": [
+        "Payment",
+        "PAYMENT",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "Payment",
+        "PAYMENT"
+      ],
+      "gt_coverage": 0.6666666666666666,
+      "grounded": false,
+      "top_score": 0.1,
+      "chunk_count": 10,
+      "gate_decision": "proceed_with_warning",
+      "overlap": 0.0
+    },
+    {
+      "query_id": "Q006",
+      "question": "What statuses can an order have?",
+      "answer": "The retrieved context shows that the Sales Order Header table includes a `STATUS_CODE` column, but it does not provide any allowed status values or status meanings. So, from the context, I can confirm that orders have a status field, but I cannot determine what statuses an order can have.",
+      "sources": [
+        "Shipment",
+        "Order Line Item",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "Sales Order Header",
+        "Payment",
+        "Customer"
+      ],
+      "contexts": [
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as"
+      ],
+      "expected_answer": "Orders can have one of five statuses: PENDING (initial state), CONFIRMED (payment received), SHIPPED (sent to customer), DELIVERED (received by customer), or CANCELLED.",
+      "expected_sources": [
+        "SalesOrder",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 2.702043900896955,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.09090909090909091
+    },
+    {
+      "query_id": "Q007",
+      "question": "Which table stores the product SKU information?",
+      "answer": "The SKU information is stored in the TB_PRODUCT table, which corresponds to the Product concept.",
+      "sources": [
+        "Order Line Item",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "Product",
+        "Shipment",
+        "TB_CATEGORY\u2192TB_CATEGORY",
+        "Sales Order Header",
+        "Category",
+        "Customer",
+        "Payment"
+      ],
+      "contexts": [
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi",
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Category: The table name, primary key, and name column all directly indicate a category master record, and the self-referencing parent key models a hierarchical category tree. The provided business entities explicitly include \"Cat",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD"
+      ],
+      "expected_answer": "The TB_PRODUCT table stores the SKU (Stock Keeping Unit) code for each product, along with product name, category, price, and active status.",
+      "expected_sources": [
+        "Product",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 2.9120478038699025,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.09090909090909091
+    },
+    {
+      "query_id": "Q008",
+      "question": "How can I find all orders placed by a specific customer?",
+      "answer": "You can find them in the Sales Order Header table by filtering on the customer key. The context says SALES_ORDER_HDR references CUSTOMER_MASTER via CUST_ID -> CUSTOMER_MASTER.CUST_ID, so all orders for a specific customer would be the rows in Sales Order Header where CUST_ID matches that customer\u2019s CUST_ID.",
+      "sources": [
+        "Shipment",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "Product",
+        "Payment",
+        "Category",
+        "Sales Order Header",
+        "Customer",
+        "Order Line Item",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "TB_CATEGORY\u2192TB_CATEGORY"
+      ],
+      "contexts": [
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Category: The table name, primary key, and name column all directly indicate a category master record, and the self-referencing parent key models a hierarchical category tree. The provided business entities explicitly include \"Cat",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID."
+      ],
+      "expected_answer": "Query the SALES_ORDER_HDR table filtering by CUST_ID. Each order has a foreign key reference to CUSTOMER_MASTER.CUST_ID, so joining these tables on CUST_ID will show all orders for a customer along with their details.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.6092581748962402,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.18181818181818182
+    },
+    {
+      "query_id": "Q009",
+      "question": "What products were included in a specific order?",
+      "answer": "The retrieved context indicates that products included in a specific order would be found through the Order Line Item table, which links SALES_ORDER_HDR to TB_PRODUCT via ORDER_ID and PRODUCT_ID. However, the context does not provide the actual products for any specific order, so I cannot identify them exactly.",
+      "sources": [
+        "Order Line Item",
+        "Shipment",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "Sales Order Header",
+        "Payment",
+        "Product"
+      ],
+      "contexts": [
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi"
+      ],
+      "expected_answer": "Join ORDER_LINE_ITEM with TB_PRODUCT on PRODUCT_ID. For order ORDER_ID, the line items show which products were ordered, in what quantity, and at what price.",
+      "expected_sources": [
+        "SalesOrder",
+        "OrderLineItem",
+        "Product",
+        "SALES_ORDER_HDR",
+        "ORDER_LINE_ITEM",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product",
+        "SALES_ORDER_HDR",
+        "ORDER_LINE_ITEM",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 0.6666666666666666,
+      "grounded": true,
+      "top_score": 0.7578392028808594,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.18181818181818182
+    },
+    {
+      "query_id": "Q010",
+      "question": "Show me the order hierarchy from customer to line items.",
+      "answer": "The order hierarchy in the retrieved context is Customer to Sales Order Header to Order Line Item.\n\nSpecifically, Customer maps to CUSTOMER_MASTER, SALES_ORDER_HDR references CUSTOMER_MASTER via CUST_ID, and ORDER_LINE_ITEM references SALES_ORDER_HDR via ORDER_ID.",
+      "sources": [
+        "Order Line Item",
+        "Shipment",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "Customer",
+        "Sales Order Header",
+        "Payment"
+      ],
+      "contexts": [
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD"
+      ],
+      "expected_answer": "The hierarchy is: Customer (CUSTOMER_MASTER) \u2192 SalesOrder (SALES_ORDER_HDR) \u2192 OrderLineItem (ORDER_LINE_ITEM) \u2192 Product (TB_PRODUCT). Each customer has orders, each order has line items, and each line item references a product.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "OrderLineItem",
+        "Product"
+      ],
+      "covered_sources": [
+        "Customer",
+        "Product"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 4.768932215083311,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.2727272727272727
+    },
+    {
+      "query_id": "Q011",
+      "question": "What happens when a payment is confirmed for an order?",
+      "answer": "The retrieved context does not explicitly say what happens when a payment is confirmed. The closest grounded information is that the Payment concept represents monetary transactions settling order amounts, and PAYMENT is related to SALES_ORDER_HDR through ORDER_ID. So, with uncertainty, a confirmed payment would be associated with settling the order amount for that sales order.",
+      "sources": [
+        "Shipment",
+        "Order Line Item",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "Sales Order Header",
+        "Payment",
+        "Customer"
+      ],
+      "contexts": [
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as"
+      ],
+      "expected_answer": "When payment is confirmed, the PAYMENT record's STATUS_CODE becomes 'CONFIRMED', the CONFIRMED_AT timestamp is set, and the associated SALES_ORDER_HDR can progress from PENDING to CONFIRMED status.",
+      "expected_sources": [
+        "Payment",
+        "SalesOrder",
+        "PAYMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Payment",
+        "PAYMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 4.6467293393792,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.09090909090909091
+    },
+    {
+      "query_id": "Q012",
+      "question": "How are shipments related to orders and warehouses?",
+      "answer": "The retrieved context confirms that the Shipment table includes shipment-specific attributes such as a warehouse field and shipment status, so shipments are associated with warehouses. The context also says Shipment has a foreign key to \u201cS\u2026\u201d, but it is truncated, so I cannot confirm from the provided context exactly how shipments relate to orders.",
+      "sources": [
+        "Shipment",
+        "Order Line Item",
+        "TB_CATEGORY\u2192TB_CATEGORY",
+        "Product",
+        "Category",
+        "Payment",
+        "Customer",
+        "Sales Order Header",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER"
+      ],
+      "contexts": [
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi",
+        "Category: The table name, primary key, and name column all directly indicate a category master record, and the self-referencing parent key models a hierarchical category tree. The provided business entities explicitly include \"Cat",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID."
+      ],
+      "expected_answer": "Each shipment is for exactly one sales order (ORDER_ID in SHIPMENT references SALES_ORDER_HDR). The shipment also specifies the source warehouse code and includes tracking information and delivery status.",
+      "expected_sources": [
+        "Shipment",
+        "SalesOrder",
+        "SHIPMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Shipment",
+        "SHIPMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 1.762524921272401,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.09090909090909091
+    },
+    {
+      "query_id": "Q013",
+      "question": "Can a product belong to multiple categories?",
+      "answer": "Based on the context, TB_PRODUCT has a single CATEGORY_ID foreign key to TB_CATEGORY, so a product appears to be linked to one category. The context does not explicitly state support for multiple categories.",
+      "sources": [
+        "Order Line Item",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "Product",
+        "Shipment",
+        "TB_CATEGORY\u2192TB_CATEGORY",
+        "Customer",
+        "Category",
+        "Sales Order Header",
+        "Payment"
+      ],
+      "contexts": [
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi",
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Category: The table name, primary key, and name column all directly indicate a category master record, and the self-referencing parent key models a hierarchical category tree. The provided business entities explicitly include \"Cat",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD"
+      ],
+      "expected_answer": "No, each product belongs to exactly one category. The TB_PRODUCT table has a CATEGORY_ID foreign key referencing TB_CATEGORY, which stores a single category value per product.",
+      "expected_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 1.8793712421729727,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.18181818181818182
+    },
+    {
+      "query_id": "Q014",
+      "question": "Is it possible for a customer to place an order without payment?",
+      "answer": "The context shows that a Sales Order Header can exist for a Customer and that Payment references SALES_ORDER_HDR, but it does not state whether a customer can place an order without payment. I cannot determine that from the knowledge graph.",
+      "sources": [
+        "Shipment",
+        "Order Line Item",
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "SHIPMENT\u2192SALES_ORDER_HDR",
+        "Sales Order Header",
+        "Customer",
+        "Payment"
+      ],
+      "contexts": [
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD"
+      ],
+      "expected_answer": "Technically yes, an order can be created in PENDING status without immediate payment. However, the order cannot be shipped until payment is confirmed (PAYMENT_CONFIRMED_AT is set). The business workflow requires payment confirmation before fulfillment.",
+      "expected_sources": [
+        "SalesOrder",
+        "Payment",
+        "SALES_ORDER_HDR",
+        "PAYMENT"
+      ],
+      "covered_sources": [
+        "Payment",
+        "SALES_ORDER_HDR",
+        "PAYMENT"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 6.959761883383664,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.2727272727272727
+    },
+    {
+      "query_id": "Q015",
+      "question": "What is the total value of all orders placed by a customer?",
+      "answer": "From the context, the Sales Order Header concept in `SALES_ORDER_HDR` includes `TOTAL_AMT` for each order and `CUST_ID` linking the order to a customer. However, the context does not provide any aggregation or customer-specific total, so the total value of all orders placed by a customer cannot be determined from the knowledge graph.",
+      "sources": [
+        "SALES_ORDER_HDR\u2192CUSTOMER_MASTER",
+        "Product",
+        "Payment",
+        "Category",
+        "Sales Order Header",
+        "Customer",
+        "Shipment",
+        "Order Line Item",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "TB_CATEGORY\u2192TB_CATEGORY"
+      ],
+      "contexts": [
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Product: The table structure directly matches a product master entity: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, and IS_ACTIVE are all core product attributes. The business entities explicitly include a direct mappi",
+        "Payment: The table name and primary key directly align with the business concept Payment, and the description/provenance explicitly states it represents monetary transactions settling order amounts. Supporting columns such as ORD",
+        "Category: The table name, primary key, and name column all directly indicate a category master record, and the self-referencing parent key models a hierarchical category tree. The provided business entities explicitly include \"Cat",
+        "Sales Order Header: The table name and columns (ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE) clearly implement the header record for a customer sales order. The business entities explicitly include both \"Header record for each cus",
+        "Customer: The table name and columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, IS_ACTIVE, CREATED_AT) clearly indicate a master customer entity. The business glossary explicitly maps Customer to CUSTOMER_MASTER and describes it as",
+        "Shipment: The table name and primary key directly align with the Shipment concept, and the columns describe shipment-specific attributes such as tracking number, ship timestamp, warehouse, and shipment status. The foreign key to S",
+        "Order Line Item: The table structure matches a sales order line entity: it has a line identifier, foreign keys to SALES_ORDER_HDR and PRODUCT, and line-level pricing/quantity fields. The provided business concept explicitly describes ind",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID."
+      ],
+      "expected_answer": "Sum the TOTAL_AMT column from SALES_ORDER_HDR for all records where CUST_ID matches the customer's ID. This aggregates the monetary value of all orders placed by that customer.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 2.819516501883897,
+      "chunk_count": 10,
+      "gate_decision": "proceed",
+      "overlap": 0.18181818181818182
+    }
+  ],
+  "ragas": {
+    "faithfulness": 0.9866666666666667,
+    "answer_relevancy": 0.4632189774615065,
+    "context_precision": 0.5083730158443488,
+    "context_recall": 0.7
+  }
+}

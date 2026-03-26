@@ -59,6 +59,12 @@ def main() -> None:
         help="Enable RAGAS evaluation",
     )
     parser.add_argument(
+        "--ragas-model",
+        type=str,
+        default="gpt-4.1-mini",
+        help="Model for RAGAS evaluator (must support max_tokens, not reasoning-only)",
+    )
+    parser.add_argument(
         "--no-builder",
         action="store_true",
         help="Skip builder, only run query evaluation (requires existing graph)",
@@ -68,6 +74,12 @@ def main() -> None:
         type=str,
         default=None,
         help="Custom run tag for trace file naming",
+    )
+    parser.add_argument(
+        "--study-id",
+        type=str,
+        default="AB-00",
+        help="Study ID prefix for output files (default: AB-00)",
     )
     args = parser.parse_args()
 
@@ -109,7 +121,7 @@ def main() -> None:
 
     # Print configuration
     run_logger.info("=" * 70)
-    run_logger.info("AB-00 ABLATION STUDY")
+    run_logger.info("%s ABLATION STUDY", args.study_id)
     run_logger.info("=" * 70)
     run_logger.info("Extraction:     %s", extraction_mode)
     run_logger.info("Reasoning:      %s", settings.llm_model_reasoning)
@@ -257,6 +269,8 @@ def main() -> None:
             "question": question,
             "answer": answer,
             "sources": sources,
+            "contexts": result.get("retrieved_contexts", []),
+            "expected_answer": expected_answer,
             "expected_sources": expected_sources,
             "covered_sources": covered,
             "gt_coverage": gt_coverage,
@@ -267,7 +281,46 @@ def main() -> None:
             "overlap": overlap,
         })
 
-    # ── STAGE 3: Summary ──
+    # ── STAGE 3: RAGAS Evaluation (optional) ──
+    ragas_metrics = None
+    if args.ragas:
+        run_logger.info("")
+        run_logger.info("=" * 50)
+        run_logger.info("STAGE 3: RAGAS Evaluation (%d samples)", len(results))
+        run_logger.info("=" * 50)
+
+        from src.evaluation.ragas_runner import _compute_ragas_metrics  # noqa: E402
+
+        ragas_rows = [
+            {
+                "question": r["question"],
+                "answer": r["answer"],
+                "contexts": r["contexts"],
+                "ground_truth": r["expected_answer"],
+                "sources": r["sources"],
+            }
+            for r in results
+        ]
+        try:
+            ragas_trace: list[dict] = []
+            ragas_metrics = _compute_ragas_metrics(
+                ragas_rows,
+                evaluator_model=args.ragas_model,
+                trace_rows=ragas_trace,
+            )
+            # Merge per-question RAGAS scores into results
+            for tr in ragas_trace:
+                idx = tr.get("sample_index")
+                if idx is not None and idx < len(results):
+                    results[idx]["ragas_scores"] = tr.get("ragas_scores")
+            run_logger.info("RAGAS Results:")
+            for metric_name, metric_val in ragas_metrics.items():
+                run_logger.info("  %-25s %.4f", metric_name, metric_val)
+        except Exception as exc:
+            run_logger.error("RAGAS evaluation failed: %s", exc, exc_info=True)
+            ragas_metrics = {"error": str(exc)}
+
+    # ── STAGE 4: Summary ──
     run_logger.info("")
     run_logger.info("=" * 70)
     run_logger.info("RESULTS SUMMARY")
@@ -295,9 +348,9 @@ def main() -> None:
     # Save results JSON
     results_dir = Path("notebooks/ablation/ablation_results/runs")
     results_dir.mkdir(parents=True, exist_ok=True)
-    results_file = results_dir / f"AB-00.{run_tag}.json"
+    results_file = results_dir / f"{args.study_id}.{run_tag}.json"
     summary = {
-        "study_id": "AB-00",
+        "study_id": args.study_id,
         "run_tag": run_tag,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "config": {
@@ -328,6 +381,8 @@ def main() -> None:
         },
         "per_question": results,
     }
+    if ragas_metrics is not None:
+        summary["ragas"] = ragas_metrics
     with open(results_file, "w") as f:
         json.dump(summary, f, indent=2, default=str)
 
