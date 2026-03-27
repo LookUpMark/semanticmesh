@@ -1,18 +1,18 @@
 # AB-00 — 01_basics_ecommerce — Run Analysis
 
-**Timestamp:** 2026-03-26 18:34:38  
-**Run tag:** `run-20260326_192305`
+**Timestamp:** 2026-03-27 11:33:31  
+**Run tag:** `ds01-v2`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
-| Extraction model | `LLM (gpt-5.4-nano)` |
-| Reasoning model | `gpt-5.4-mini` |
+| Extraction model | `LLM (gpt-5.4-nano-2026-03-17)` |
+| Reasoning model | `gpt-5.4-nano-2026-03-17` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
-| Reranker top_k | `10` |
+| Reranker top_k | `12` |
 | Chunk size / overlap | `256 / 32` |
 | ER similarity threshold | `0.75` |
 
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 319 |
-| Entities resolved | 65 |
+| Triplets extracted | 214 |
+| Entities resolved | 73 |
 | Tables parsed | 7 |
 | Tables completed | 7 |
 
@@ -31,135 +31,108 @@
 |--------|-------|
 | Questions | 15 |
 | Grounded | **15/15 (100%)** |
-| Avg GT Coverage | 64% |
-| Avg Top Score | 0.4792 |
-| Avg Chunk Count | 10.0 |
+| Avg GT Coverage | 74% |
+| Avg Top Score | 0.4290 |
+| Avg Chunk Count | 12.0 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
 
-| Metric | Value | Interpretation |
-|--------|-------|----------------|
-| Faithfulness | **1.0000** | Answers grounded in context |
-| Answer Relevancy | **0.5298** | Answers relevant to question |
-| Context Precision | **0.7062** | Retrieved chunks are on-topic |
-| Context Recall | **0.8333** | All needed context retrieved |
+RAGAS evaluation not enabled for this run.
 
 ## Per-Question Deep Dive
 
 ### ✅ Q001 — What information is stored for each customer?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.3616 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.1827 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Each customer has a unique ID, full name, email address, geographic region code, creation date, and active status. The email must be unique across all customers.
 
 **System answer:**
-> The context only says that CUSTOMER_MASTER stores the master record for all registered platform customers, with CUST_ID as the primary key. It does not provide further details on what customer information is stored, so I cannot be more specific.
+> For each customer, the database stores the master customer attributes in the table `CUSTOMER_MASTER`. This table includes a unique customer identifier `CUST_ID`, identity fields `FULL_NAME` and `EMAIL`, optional geographic information `REGION_CODE` (for tax), an account creation timestamp `CREATED_AT`, and an activity flag `IS_ACTIVE` indicating whether the customer can place orders. The business …
 
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.12 | 0.00 |
-
-**Sources retrieved (10):** `chunk_2`, `Sales Order`, `Shipment`, `chunk_5`, `chunk_4`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `the customer, items, payment status, and delivery information`, `chunk_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_data_dictionary.txt_4`, `Sales Order Header`, `Registered Customer Master`
 
 **Context previews (first 3):**
 
-1. _**Foreign Keys**: - PARENT_CATEGORY_ID → TB_CATEGORY(CATEGORY_ID) [self-reference] **Business Concept Mapping**: Category ──────────────────────────────────────────────────────────── SALES_ORDER_HDR ─…_
+1. _# Data Dictionary - E-Commerce Database (Simplified)  This document describes the physical database schema for the simplified e-commerce test dataset.  ────────────────────────────────────────────────…_
 
-2. _Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business e…_
+2. _# Business Glossary - E-Commerce Domain (Simplified)  This document defines the core business concepts for the e-commerce platform test dataset.  ──────────────────────────────────────────────────────…_
 
-3. _Shipment: The table name, primary key SHIPMENT_ID, foreign key to SALES_ORDER_HDR, and shipping-related attributes (WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE) directly indicate a shipme…_
+3. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
 ---
 
 ### ✅ Q002 — How are products categorized on the platform?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.3543 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.1590 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Products belong to categories which can have a parent category, forming a hierarchical tree structure. Each product references exactly one category through its CATEGORY_ID.
 
 **System answer:**
-> Products are categorized using the TB_CATEGORY table. The context shows that TB_PRODUCT references TB_CATEGORY via CATEGORY_ID → TB_CATEGORY.CATEGORY_ID, and TB_CATEGORY also has a self-reference through PARENT_CATEGORY_ID → TB_CATEGORY(CATEGORY_ID), indicating a hierarchical product category tree.
+> Products are categorized using the category hierarchy in `TB_CATEGORY` and are linked from the product catalogue table `TB_PRODUCT`.
 
-**RAGAS scores:**
+`TB_PRODUCT` includes a `CATEGORY_ID` that references `TB_CATEGORY.CATEGORY_ID`, via the foreign key `TB_PRODUCT.CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID`. `TB_CATEGORY` also supports a hierarchical structure through `PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID` (a …
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.56 | 0.45 | 1.00 |
-
-**Sources retrieved (10):** `chunk_3`, `chunk_2`, `chunk_1`, `chunk_0`, `chunk_6`, `TB_PRODUCT→TB_CATEGORY`, `ORDER_LINE_ITEM→TB_PRODUCT`, `Order Line Item`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_4`, `TB_CATEGORY→TB_CATEGORY`, `Product Catalogue`, `parent_chunk_data_dictionary.txt_5`, `Registered Customer Master`
 
 **Context previews (first 3):**
 
-1. _**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ───────────────────────────…_
+1. _# Business Glossary - E-Commerce Domain (Simplified)  This document defines the core business concepts for the e-commerce platform test dataset.  ──────────────────────────────────────────────────────…_
 
-2. _**Foreign Keys**: - PARENT_CATEGORY_ID → TB_CATEGORY(CATEGORY_ID) [self-reference] **Business Concept Mapping**: Category ──────────────────────────────────────────────────────────── SALES_ORDER_HDR ─…_
+2. _# Data Dictionary - E-Commerce Database (Simplified)  This document describes the physical database schema for the simplified e-commerce test dataset.  ────────────────────────────────────────────────…_
 
-3. _**Examples**: - A new user registers and places their first order - An existing customer updates their shipping address ──────────────────────────────────────────────────────────── PRODUCT ───────────…_
+3. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
 ---
 
 ### ✅ Q003 — What is the relationship between customers and sales orders?
 
 **Status:** GROUNDED  
-**GT Coverage:** 75% | **Top Score:** 0.9869 | **Gate:** `proceed`
+**GT Coverage:** 75% | **Top Score:** 0.9847 | **Gate:** `proceed`
 
 **Expected answer:**
 > Each sales order is placed by exactly one customer, referenced through the CUST_ID foreign key. A customer can place zero or more orders over time.
 
 **System answer:**
-> A Customer places zero or more Sales Orders. In the simplified schema, SALES_ORDER_HDR references CUSTOMER_MASTER via the foreign key CUST_ID.
+> In the e-commerce schema, each Sales Order is placed by exactly one Customer. This is implemented by the foreign key relationship between `CUSTOMER_MASTER` and `SALES_ORDER_HDR`: `SALES_ORDER_HDR.CUST_ID` references `CUSTOMER_MASTER.CUST_ID` (and the Sales Order header includes `CUST_ID`).
 
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.64 | 0.76 | 1.00 |
-
-**Sources retrieved (10):** `chunk_6`, `chunk_5`, `chunk_2`, `Sales Order`, `chunk_4`, `chunk_3`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `chunk_0`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_4`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `parent_chunk_data_dictionary.txt_3`, `PAYMENT→SALES_ORDER_HDR`, `parent_chunk_data_dictionary.txt_5`
 
 **Context previews (first 3):**
 
-1. _Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly o…_
+1. _Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more S…_
 
-2. _**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom. **Key Attributes**: - Unique Shipment ID - References exactly one…_
+2. _# Business Glossary - E-Commerce Domain (Simplified)  This document defines the core business concepts for the e-commerce platform test dataset.  ──────────────────────────────────────────────────────…_
 
-3. _──────────────────────────────────────────────────────────── SALES ORDER ──────────────────────────────────────────────────────────── **Definition**: A formal transaction document recording the agreem…_
+3. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
 ---
 
 ### ✅ Q004 — What does an order line item contain?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.9792 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.8739 | **Gate:** `proceed`
 
 **Expected answer:**
 > An order line item specifies a product, the quantity ordered, the unit price at time of purchase, and the calculated extended amount. Each line item belongs to exactly one sales order.
 
 **System answer:**
-> An ORDER LINE ITEM contains a single product within a Sales Order, along with the quantity and unit price at the time of purchase. The context also indicates it has a line amount.
+> An order line item (table **ORDER_LINE_ITEM**, per “Business Context: Line items break down orders into individual product purchases”) contains a unique line identifier (**LINE_ID**), a reference to exactly one product (**PRODUCT_ID**), the quantity of units ordered (**QUANTITY**), and the unit price captured at the moment of ordering (**UNIT_PRICE**). It also stores the extended amount (**LINE_AM…
 
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.87 | 1.00 | 1.00 |
-
-**Sources retrieved (10):** `chunk_3`, `Order Line Item`, `ORDER_LINE_ITEM→TB_PRODUCT`, `ORDER_LINE_ITEM→SALES_ORDER_HDR`, `chunk_2`, `chunk_6`, `Sales Order`, `chunk_4`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `ORDER_LINE_ITEM→TB_PRODUCT`, `ORDER_LINE_ITEM→SALES_ORDER_HDR`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_0`, `Historical unit price`, `parent_chunk_data_dictionary.txt_5`
 
 **Context previews (first 3):**
 
-1. _──────────────────────────────────────────────────────────── ORDER LINE ITEM ──────────────────────────────────────────────────────────── **Definition**: A single line within a Sales Order specifying …_
+1. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
-2. _Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, …_
+2. _Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.…_
 
-3. _Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.…_
+3. _Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.…_
 
 ---
 
@@ -172,319 +145,266 @@
 > Each payment is associated with exactly one sales order through the ORDER_ID foreign key. Payments track the payment method, amount, status, and confirmation timestamp.
 
 **System answer:**
-> Payments are linked to orders through the PAYMENT table’s foreign key ORDER_ID, which references SALES_ORDER_HDR.ORDER_ID.
+> In the schema, each **PAYMENT** is linked to a **sales order** through the foreign key **PAYMENT.ORDER_ID** referencing **SALES_ORDER_HDR.ORDER_ID**. The payment concept also states that a **Payment is for exactly one Sales Order**.
 
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.91 | 0.74 | 0.50 |
-
-**Sources retrieved (10):** `PAYMENT→SALES_ORDER_HDR`, `chunk_4`, `chunk_2`, `chunk_6`, `SHIPMENT→SALES_ORDER_HDR`, `chunk_3`, `chunk_5`, `ORDER_LINE_ITEM→SALES_ORDER_HDR`
+**Sources retrieved (12):** `PAYMENT→SALES_ORDER_HDR`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_data_dictionary.txt_4`, `SHIPMENT→SALES_ORDER_HDR`, `ORDER_LINE_ITEM→SALES_ORDER_HDR`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `parent_chunk_business_glossary.txt_0`
 
 **Context previews (first 3):**
 
 1. _Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.…_
 
-2. _──────────────────────────────────────────────────────────── PAYMENT ──────────────────────────────────────────────────────────── **Definition**: The monetary transaction that settles the total amount…_
+2. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
-3. _──────────────────────────────────────────────────────────── SALES ORDER ──────────────────────────────────────────────────────────── **Definition**: A formal transaction document recording the agreem…_
+3. _Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more S…_
 
 ---
 
 ### ✅ Q006 — What statuses can an order have?
 
 **Status:** GROUNDED  
-**GT Coverage:** 0% | **Top Score:** 0.7018 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.5416 | **Gate:** `proceed`
 
 **Expected answer:**
 > Orders can have one of five statuses: PENDING (initial state), CONFIRMED (payment received), SHIPPED (sent to customer), DELIVERED (received by customer), or CANCELLED.
 
 **System answer:**
-> The retrieved context shows that a Sales Order tracks “fulfillment/payment status,” and another business concept description says it tracks “payment status and delivery information,” but it does not list the actual status values an order can have. So I can confirm that order status exists in the Sales Order concept, but the specific statuses are not provided in the context.
+> The retrieved context explicitly lists shipment lifecycle statuses in the shipment/logistics business concept as PREPARING, SHIPPED, IN_TRANSIT, and DELIVERED (described in the logistics-side table referenced as implementing “shipment status (PREPARING/SHIPPED/IN_TRANSIT/DELIVERED)”).
 
-**RAGAS scores:**
+However, the context does not enumerate the allowed values for `SALES_ORDER_HDR.STATUS_CODE`—it only states that …
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `chunk_2`, `chunk_5`, `Sales Order`, `chunk_4`, `Shipment`, `chunk_6`, `chunk_3`, `chunk_0`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_3`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `Order Fulfillment Logistics`, `Sales Order Header`
 
 **Context previews (first 3):**
 
-1. _──────────────────────────────────────────────────────────── SALES ORDER ──────────────────────────────────────────────────────────── **Definition**: A formal transaction document recording the agreem…_
+1. _# Business Glossary - E-Commerce Domain (Simplified)  This document defines the core business concepts for the e-commerce platform test dataset.  ──────────────────────────────────────────────────────…_
 
-2. _**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom. **Key Attributes**: - Unique Shipment ID - References exactly one…_
+2. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
-3. _Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business e…_
+3. _Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more S…_
 
 ---
 
 ### ✅ Q007 — Which table stores the product SKU information?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0324 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 100% | **Top Score:** 0.7610 | **Gate:** `proceed`
 
 **Expected answer:**
 > The TB_PRODUCT table stores the SKU (Stock Keeping Unit) code for each product, along with product name, category, price, and active status.
 
 **System answer:**
-> The SKU information is stored in the TB_PRODUCT table, in the SKU column.
+> The table that stores the product SKU information is **TB_PRODUCT** (it includes master data columns such as **PRODUCT_ID, SKU, PRODUCT_NAME**, and **CATEGORY_ID**).
 
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.75 | 0.88 | 1.00 |
-
-**Sources retrieved (10):** `Order Line Item`, `ORDER_LINE_ITEM→TB_PRODUCT`, `chunk_1`, `TB_PRODUCT→TB_CATEGORY`, `Shipment`, `chunk_6`, `chunk_7`, `chunk_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `ORDER_LINE_ITEM→TB_PRODUCT`, `parent_chunk_business_glossary.txt_0`, `TB_PRODUCT→TB_CATEGORY`, `parent_chunk_data_dictionary.txt_4`, `Product Catalogue`, `parent_chunk_data_dictionary.txt_5`, `Order Payment`
 
 **Context previews (first 3):**
 
-1. _Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, …_
+1. _# Data Dictionary - E-Commerce Database (Simplified)  This document describes the physical database schema for the simplified e-commerce test dataset.  ────────────────────────────────────────────────…_
 
 2. _Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.…_
 
-3. _**Primary Key**: PRODUCT_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | PRODUCT_ID | INT | Unique product identifi…_
+3. _# Business Glossary - E-Commerce Domain (Simplified)  This document defines the core business concepts for the e-commerce platform test dataset.  ──────────────────────────────────────────────────────…_
 
 ---
 
 ### ✅ Q008 — How can I find all orders placed by a specific customer?
 
 **Status:** GROUNDED  
-**GT Coverage:** 75% | **Top Score:** 0.3604 | **Gate:** `proceed`
+**GT Coverage:** 75% | **Top Score:** 0.1428 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Query the SALES_ORDER_HDR table filtering by CUST_ID. Each order has a foreign key reference to CUSTOMER_MASTER.CUST_ID, so joining these tables on CUST_ID will show all orders for a customer along with their details.
 
 **System answer:**
-> You can find a customer’s orders by using the `SALES_ORDER_HDR` table and filtering on the foreign key `CUST_ID`, which references `CUSTOMER_MASTER(CUST_ID)`. The context says `SALES_ORDER_HDR` stores the sales order header and is linked to the customer through `CUST_ID -> CUSTOMER_MASTER.CUST_ID`.
+> To find all orders placed by a specific customer, use the relationship between the customer master and the sales order header.
 
-**RAGAS scores:**
+First, identify the customer in `CUSTOMER_MASTER` using `CUST_ID` (primary key) and/or `EMAIL` (unique, required for login). Then retrieve the orders from `SALES_ORDER_HDR` by filtering on `SALES_ORDER_HDR.CUST_ID = CUSTOMER_MASTER.CUST_ID`.
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.62 | 0.96 | 1.00 |
+This works because each `Sale…
 
-**Sources retrieved (10):** `chunk_2`, `chunk_6`, `Sales Order`, `chunk_3`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `chunk_4`, `chunk_5`, `chunk_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_4`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `parent_chunk_business_glossary.txt_1`, `Sales Order Header`, `Registered Customer Master`
 
 **Context previews (first 3):**
 
-1. _**Foreign Keys**: - PARENT_CATEGORY_ID → TB_CATEGORY(CATEGORY_ID) [self-reference] **Business Concept Mapping**: Category ──────────────────────────────────────────────────────────── SALES_ORDER_HDR ─…_
+1. _# Data Dictionary - E-Commerce Database (Simplified)  This document describes the physical database schema for the simplified e-commerce test dataset.  ────────────────────────────────────────────────…_
 
-2. _Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly o…_
+2. _Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more S…_
 
-3. _Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business e…_
+3. _# Business Glossary - E-Commerce Domain (Simplified)  This document defines the core business concepts for the e-commerce platform test dataset.  ──────────────────────────────────────────────────────…_
 
 ---
 
 ### ✅ Q009 — What products were included in a specific order?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0798 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 50% | **Top Score:** 0.0782 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Join ORDER_LINE_ITEM with TB_PRODUCT on PRODUCT_ID. For order ORDER_ID, the line items show which products were ordered, in what quantity, and at what price.
 
 **System answer:**
-> The products included in a specific order are captured in the ORDER_LINE_ITEM table. It records each product line within a Sales Order, with a foreign key to TB_PRODUCT via PRODUCT_ID, along with quantity and unit price.
+> The products included in a specific order would be the products referenced by `ORDER_LINE_ITEM.PRODUCT_ID` for that order’s `ORDER_LINE_ITEM.ORDER_ID` (where `ORDER_LINE_ITEM.ORDER_ID` links to `SALES_ORDER_HDR.ORDER_ID`, and `ORDER_LINE_ITEM.PRODUCT_ID` links to `TB_PRODUCT.PRODUCT_ID`).
 
-**RAGAS scores:**
+However, the retrieved context only defines these schema relationships and business rules; it does not provid…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.71 | 0.83 | 1.00 |
-
-**Sources retrieved (10):** `chunk_3`, `Order Line Item`, `chunk_2`, `ORDER_LINE_ITEM→TB_PRODUCT`, `Shipment`, `chunk_4`, `chunk_6`, `chunk_1`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `ORDER_LINE_ITEM→TB_PRODUCT`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_2`, `Order Payment`, `parent_chunk_data_dictionary.txt_5`
 
 **Context previews (first 3):**
 
-1. _──────────────────────────────────────────────────────────── ORDER LINE ITEM ──────────────────────────────────────────────────────────── **Definition**: A single line within a Sales Order specifying …_
+1. _**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ───────────────────────────…_
 
-2. _Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, …_
+2. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
-3. _──────────────────────────────────────────────────────────── SALES ORDER ──────────────────────────────────────────────────────────── **Definition**: A formal transaction document recording the agreem…_
+3. _Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.…_
 
 ---
 
 ### ✅ Q010 — Show me the order hierarchy from customer to line items.
 
 **Status:** GROUNDED  
-**GT Coverage:** 25% | **Top Score:** 0.3215 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.3719 | **Gate:** `proceed`
 
 **Expected answer:**
 > The hierarchy is: Customer (CUSTOMER_MASTER) → SalesOrder (SALES_ORDER_HDR) → OrderLineItem (ORDER_LINE_ITEM) → Product (TB_PRODUCT). Each customer has orders, each order has line items, and each line item references a product.
 
 **System answer:**
-> The order hierarchy is CUSTOMER_MASTER → SALES_ORDER_HDR → ORDER_LINE_ITEM.
+> From the retrieved context, the order hierarchy goes like this:
 
-From the retrieved context, CUSTOMER_MASTER.CUST_ID maps to SALES_ORDER_HDR.CUST_ID, and SALES_ORDER_HDR.ORDER_ID maps to ORDER_LINE_ITEM.ORDER_ID.
+A Customer maps to the sales order header table SALES_ORDER_HDR via the foreign key SALES_ORDER_HDR.CUST_ID → CUSTOMER_MASTER.CUST_ID (shown as “Sales Order Header” and “Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID”).
 
-**RAGAS scores:**
+From SALES_ORDER_HDR to its line items, the line item…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.67 | 0.55 | 1.00 |
-
-**Sources retrieved (10):** `chunk_3`, `Order Line Item`, `ORDER_LINE_ITEM→TB_PRODUCT`, `chunk_2`, `ORDER_LINE_ITEM→SALES_ORDER_HDR`, `chunk_1`, `Sales Order`, `chunk_6`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_2`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `ORDER_LINE_ITEM→TB_PRODUCT`, `ORDER_LINE_ITEM→SALES_ORDER_HDR`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_3`, `SALES_ORDER_HDR→CUSTOMER_MASTER`
 
 **Context previews (first 3):**
 
-1. _**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ───────────────────────────…_
+1. _Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more S…_
 
-2. _Order Line Item: The table name and columns clearly represent individual product lines within a sales order, with foreign keys to SALES_ORDER_HDR and TB_PRODUCT. The presence of quantity, unit price, …_
+2. _**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ───────────────────────────…_
 
-3. _Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.…_
+3. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
 ---
 
 ### ✅ Q011 — What happens when a payment is confirmed for an order?
 
 **Status:** GROUNDED  
-**GT Coverage:** 75% | **Top Score:** 0.5020 | **Gate:** `proceed`
+**GT Coverage:** 75% | **Top Score:** 0.3521 | **Gate:** `proceed`
 
 **Expected answer:**
 > When payment is confirmed, the PAYMENT record's STATUS_CODE becomes 'CONFIRMED', the CONFIRMED_AT timestamp is set, and the associated SALES_ORDER_HDR can progress from PENDING to CONFIRMED status.
 
 **System answer:**
-> When a payment is confirmed, the PAYMENT concept indicates that the monetary transaction settles the total amount due for the Sales Order, authorizing and transferring funds from the customer to the platform. The context also suggests it affects the order’s payment status, but that part is only partially stated in the retrieved text.
+> When a payment is confirmed for a sales order, the payment confirmation timestamp is recorded in the payment data and reflected at the order-header level.
 
-**RAGAS scores:**
+Specifically, the table **PAYMENT** stores payment attributes including **PAYMENT_METHOD**, **AMOUNT**, **STATUS_CODE**, and **CONFIRMED_AT**, and each **PAYMENT** record links to its order via **ORDER_ID → SALES_ORDER_HDR.ORDER_ID**. The sales…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.67 | 0.83 | 1.00 |
-
-**Sources retrieved (10):** `chunk_4`, `chunk_2`, `Sales Order`, `PAYMENT→SALES_ORDER_HDR`, `chunk_3`, `chunk_6`, `chunk_5`, `the customer, items, payment status, and delivery information`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `PAYMENT→SALES_ORDER_HDR`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Order Payment`, `Sales Order Header`
 
 **Context previews (first 3):**
 
-1. _──────────────────────────────────────────────────────────── PAYMENT ──────────────────────────────────────────────────────────── **Definition**: The monetary transaction that settles the total amount…_
+1. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
-2. _──────────────────────────────────────────────────────────── SALES ORDER ──────────────────────────────────────────────────────────── **Definition**: A formal transaction document recording the agreem…_
+2. _Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.…_
 
-3. _Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business e…_
+3. _**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ───────────────────────────…_
 
 ---
 
 ### ✅ Q012 — How are shipments related to orders and warehouses?
 
 **Status:** GROUNDED  
-**GT Coverage:** 75% | **Top Score:** 0.9047 | **Gate:** `proceed`
+**GT Coverage:** 75% | **Top Score:** 0.6001 | **Gate:** `proceed`
 
 **Expected answer:**
 > Each shipment is for exactly one sales order (ORDER_ID in SHIPMENT references SALES_ORDER_HDR). The shipment also specifies the source warehouse code and includes tracking information and delivery status.
 
 **System answer:**
-> Shipments are tied to orders through the Shipment entity/table: each shipment references exactly one Sales Order, via the SHIPMENT table and its foreign key to SALES_ORDER_HDR. Shipments also include a warehouse-related attribute, WAREHOUSE_CODE, which indicates the source warehouse.
+> In the schema, shipments are related to orders through `SHIPMENT.ORDER_ID` referencing `SALES_ORDER_HDR.ORDER_ID` (“A Shipment is for exactly one Sales Order”). Shipments are also tied to a single warehouse via `SHIPMENT.WAREHOUSE_CODE` (“A Shipment comes from exactly one Warehouse”).
 
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.76 | 0.78 | 1.00 |
-
-**Sources retrieved (10):** `chunk_5`, `Shipment`, `chunk_6`, `chunk_4`, `chunk_2`, `chunk_1`, `chunk_0`, `the customer, items, payment status, and delivery information`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_3`, `Order Fulfillment Logistics`, `parent_chunk_data_dictionary.txt_5`, `Sales Order Header`
 
 **Context previews (first 3):**
 
-1. _**Business Context**: Shipments represent the logistics side of order fulfillment. They track what items were sent, when, and to whom. **Key Attributes**: - Unique Shipment ID - References exactly one…_
+1. _Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more S…_
 
-2. _Shipment: The table name, primary key SHIPMENT_ID, foreign key to SALES_ORDER_HDR, and shipping-related attributes (WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE) directly indicate a shipme…_
+2. _# Business Glossary - E-Commerce Domain (Simplified)  This document defines the core business concepts for the e-commerce platform test dataset.  ──────────────────────────────────────────────────────…_
 
-3. _Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly o…_
+3. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
 ---
 
 ### ✅ Q013 — Can a product belong to multiple categories?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.5380 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.3613 | **Gate:** `proceed`
 
 **Expected answer:**
 > No, each product belongs to exactly one category. The TB_PRODUCT table has a CATEGORY_ID foreign key referencing TB_CATEGORY, which stores a single category value per product.
 
 **System answer:**
-> No. In the retrieved context, the Product relationship states that a product belongs to exactly one Category.
+> Based on the retrieved schema evidence, a product cannot belong to multiple categories in this dataset: `TB_PRODUCT` has a single `CATEGORY_ID` that references `TB_CATEGORY.CATEGORY_ID` (via `TB_PRODUCT` → `TB_CATEGORY` foreign key relationship). The context does not describe any alternative structure (e.g., a many-to-many mapping table) that would allow one product to be in multiple categories.
 
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.79 | 1.00 | 1.00 |
-
-**Sources retrieved (10):** `chunk_6`, `TB_PRODUCT→TB_CATEGORY`, `chunk_2`, `chunk_5`, `chunk_3`, `chunk_1`, `Hierarchical product category tree`, `chunk_7`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `TB_PRODUCT→TB_CATEGORY`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_4`, `ORDER_LINE_ITEM→TB_PRODUCT`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_data_dictionary.txt_5`
 
 **Context previews (first 3):**
 
-1. _Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly o…_
+1. _# Business Glossary - E-Commerce Domain (Simplified)  This document defines the core business concepts for the e-commerce platform test dataset.  ──────────────────────────────────────────────────────…_
 
 2. _Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.…_
 
-3. _**Foreign Keys**: - PARENT_CATEGORY_ID → TB_CATEGORY(CATEGORY_ID) [self-reference] **Business Concept Mapping**: Category ──────────────────────────────────────────────────────────── SALES_ORDER_HDR ─…_
+3. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
 ---
 
 ### ✅ Q014 — Is it possible for a customer to place an order without payment?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0768 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 75% | **Top Score:** 0.0719 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Technically yes, an order can be created in PENDING status without immediate payment. However, the order cannot be shipped until payment is confirmed (PAYMENT_CONFIRMED_AT is set). The business workflow requires payment confirmation before fulfillment.
 
 **System answer:**
-> The context does not say whether a customer can place an order without payment. It only states that a Customer can place zero or more Sales Orders, that Sales Orders are created when customers complete checkout, and that PAYMENT settles the total amount due for a Sales Order. So, from the provided context, it cannot be determined whether payment is required at the time an order is placed.
+> No. In the retrieved context, the business rules for sales orders state that a Sales Order “has one or more Payments.” Therefore, an order cannot exist without at least one associated payment record (via the relationship between `SALES_ORDER_HDR` and `PAYMENT`).
 
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.77 | 1.00 |
-
-**Sources retrieved (10):** `chunk_4`, `chunk_6`, `chunk_2`, `Sales Order`, `chunk_3`, `chunk_5`, `chunk_0`, `the customer, items, payment status, and delivery information`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_4`, `PAYMENT→SALES_ORDER_HDR`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `parent_chunk_data_dictionary.txt_5`
 
 **Context previews (first 3):**
 
-1. _──────────────────────────────────────────────────────────── PAYMENT ──────────────────────────────────────────────────────────── **Definition**: The monetary transaction that settles the total amount…_
+1. _# Data Dictionary - E-Commerce Database (Simplified)  This document describes the physical database schema for the simplified e-commerce test dataset.  ────────────────────────────────────────────────…_
 
-2. _Customer Relationships: - A Customer places zero or more Sales Orders - A Customer has one or more Customer Addresses (not in simplified schema) Product Relationships: - A Product belongs to exactly o…_
+2. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
-3. _──────────────────────────────────────────────────────────── SALES ORDER ──────────────────────────────────────────────────────────── **Definition**: A formal transaction document recording the agreem…_
+3. _Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more S…_
 
 ---
 
 ### ✅ Q015 — What is the total value of all orders placed by a customer?
 
 **Status:** GROUNDED  
-**GT Coverage:** 25% | **Top Score:** 0.0654 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 75% | **Top Score:** 0.0311 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Sum the TOTAL_AMT column from SALES_ORDER_HDR for all records where CUST_ID matches the customer's ID. This aggregates the monetary value of all orders placed by that customer.
 
 **System answer:**
-> The closest grounded concept in the context is Sales Order, which has a total amount field. The context does not explicitly define a customer-level aggregate for the total value of all orders, so I cannot confirm the exact term from the knowledge graph.
+> Based on the provided schema, the total value of all orders placed by a customer can be computed by summing the header-level order amounts in `SALES_ORDER_HDR.TOTAL_AMT` for that customer.
 
-**RAGAS scores:**
+`SALES_ORDER_HDR` is a sales order header table that contains `CUST_ID` (the customer who placed the order) and `TOTAL_AMT`. The relationship shown in the context links `SALES_ORDER_HDR.CUST_ID` to `CUSTOMER_MA…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.92 | 1.00 |
-
-**Sources retrieved (10):** `chunk_2`, `chunk_4`, `Sales Order`, `chunk_6`, `chunk_5`, `chunk_3`, `chunk_0`, `chunk_1`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_data_dictionary.txt_4`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `Sales Order Header`, `parent_chunk_data_dictionary.txt_5`
 
 **Context previews (first 3):**
 
-1. _──────────────────────────────────────────────────────────── SALES ORDER ──────────────────────────────────────────────────────────── **Definition**: A formal transaction document recording the agreem…_
+1. _**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exact…_
 
-2. _──────────────────────────────────────────────────────────── PAYMENT ──────────────────────────────────────────────────────────── **Definition**: The monetary transaction that settles the total amount…_
+2. _# Business Glossary - E-Commerce Domain (Simplified)  This document defines the core business concepts for the e-commerce platform test dataset.  ──────────────────────────────────────────────────────…_
 
-3. _Sales Order: The table name, primary key ORDER_ID, customer foreign key, order date, total amount, and fulfillment/payment status fields align directly with a sales order header record. The business e…_
+3. _# Data Dictionary - E-Commerce Database (Simplified)  This document describes the physical database schema for the simplified e-commerce test dataset.  ────────────────────────────────────────────────…_
 
 ---
 
 ## Anomalies & Observations
 
-- **Q001**: Very low context precision (0.12) — many off-topic chunks retrieved
-- **Q006**: Very low context precision (0.00) — many off-topic chunks retrieved
+No anomalies detected. All questions grounded with acceptable RAGAS scores.

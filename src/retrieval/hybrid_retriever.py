@@ -345,6 +345,57 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
     return chunks
 
 
+def fetch_concept_table_mappings(client: "Neo4jClient") -> list[RetrievedChunk]:
+    """Return all MAPS_TO edges (BusinessConcept → DataTable) as human-readable chunks.
+
+    Each edge is rendered as a sentence that names the business concept, the physical
+    table it maps to, and the table's columns.  This ensures that queries mentioning
+    a business concept name (e.g. "SalesOrder") will surface the corresponding
+    physical table even when the concept's vector embedding does not rank highly
+    for the query.
+
+    The baseline score (0.15) is above FK edges (0.1) so the reranker sees these
+    as slightly higher-priority hints, while still below real retrieval scores.
+
+    Args:
+        client: Active ``Neo4jClient``.
+
+    Returns:
+        One ``RetrievedChunk`` per ``[:MAPS_TO]`` edge.
+    """
+    records = client.execute_cypher(
+        "MATCH (bc:BusinessConcept)-[:MAPS_TO]->(dt:DataTable) "
+        "RETURN bc.name AS concept_name, bc.definition AS concept_def, "
+        "dt.table_name AS table_name, dt.column_names AS column_names"
+    )
+    chunks: list[RetrievedChunk] = []
+    for rec in records:
+        concept = (rec.get("concept_name") or "").strip()
+        table = (rec.get("table_name") or "").strip()
+        if not concept or not table:
+            continue
+        concept_def = (rec.get("concept_def") or "").strip()
+        columns = rec.get("column_names") or []
+        col_part = f" (columns: {', '.join(columns)})" if columns else ""
+        def_part = f" — {concept_def}" if concept_def else ""
+        text = (
+            f"Business concept '{concept}'{def_part} is implemented by "
+            f"physical table {table}{col_part}."
+        )
+        chunks.append(
+            RetrievedChunk(
+                node_id=f"{concept}→{table}",
+                node_type="ConceptTableMapping",
+                text=text,
+                score=0.15,
+                source_type="graph",
+                metadata={"concept_name": concept, "table_name": table},
+            )
+        )
+    logger.debug("fetch_concept_table_mappings: %d MAPS_TO edges fetched.", len(chunks))
+    return chunks
+
+
 # ── Result Fusion (RRF) ────────────────────────────────────────────────────────
 
 

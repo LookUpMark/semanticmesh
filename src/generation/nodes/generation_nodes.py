@@ -63,8 +63,8 @@ def _has_priority_structure_tokens(text: str) -> bool:
 def _compose_generation_chunks(
     query: str,
     chunks: list[RetrievedChunk],
-    max_core: int = 6,
-    max_support: int = 4,
+    max_core: int = 7,
+    max_support: int = 5,
 ) -> list[RetrievedChunk]:
     """Build a balanced context window for answer generation.
 
@@ -92,9 +92,9 @@ def _compose_generation_chunks(
     target = max_core + max_support
 
     source_caps: dict[str, int] = {
-        "vector": min(4, target),
+        "vector": min(5, target),
         "bm25": min(4, target),
-        "graph": min(5, target),
+        "graph": min(6, target),
     }
 
     selected: list[RetrievedChunk] = []

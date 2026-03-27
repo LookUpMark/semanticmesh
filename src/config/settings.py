@@ -89,7 +89,6 @@ class Settings(BaseSettings):
     enable_reranker: bool = DEFAULT_CONFIG.enable_reranker
     enable_hallucination_grader: bool = DEFAULT_CONFIG.enable_hallucination_grader
     enable_retrieval_quality_gate: bool = DEFAULT_CONFIG.enable_retrieval_quality_gate
-    enable_semantic_verifier: bool = DEFAULT_CONFIG.enable_semantic_verifier
     enable_grader_consistency_validator: bool = DEFAULT_CONFIG.enable_grader_consistency_validator
     grader_timeout_seconds: float = DEFAULT_CONFIG.grader_timeout_seconds
     use_lazy_extraction: bool = DEFAULT_CONFIG.use_lazy_extraction

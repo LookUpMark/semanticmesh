@@ -31,9 +31,29 @@ logger: logging.Logger = get_logger(__name__)
 
 _ABSTENTION_SENTINEL = "i cannot find this information in the knowledge graph."
 
+_PARTIAL_ABSTENTION_PHRASES = (
+    "i cannot find",
+    "i cannot determine",
+    "cannot be determined from",
+    "not present in the",
+    "not available in the",
+)
+
 
 def _is_abstention(answer: str) -> bool:
     return answer.strip().lower() == _ABSTENTION_SENTINEL
+
+
+def _is_partial_abstention(answer: str) -> bool:
+    """Detect answers that contain abstention phrases but aren't pure abstentions.
+
+    Used to trigger a best-effort rewrite when the model self-abstains despite
+    having relevant context available.
+    """
+    lower = answer.strip().lower()
+    if _is_abstention(answer):
+        return False  # Handled separately by _is_abstention
+    return any(phrase in lower for phrase in _PARTIAL_ABSTENTION_PHRASES)
 
 
 # ── Context Formatter ──
@@ -138,6 +158,33 @@ def generate_answer(
                 [
                     SystemMessage(content=system_prompt),
                     HumanMessage(content=corrective_prompt),
+                ]
+            )
+            answer = extract_text_content(second_response.content).strip()
+
+    elif _is_partial_abstention(answer) and chunks:
+        top_score = max(float(c.score) for c in chunks)
+        if top_score >= 0.3:
+            logger.info(
+                "Partial abstention detected (chunks=%d, top_score=%.3f) — requesting synthesis from available evidence.",
+                len(chunks),
+                top_score,
+            )
+            partial_critique = (
+                "Your answer said you cannot find certain information, but the context includes "
+                "relevant schema and concept evidence. Extract and synthesize ALL facts that ARE "
+                "present in the context. State explicitly which specific details remain unavailable, "
+                "but provide a complete answer for every part that CAN be answered from the context."
+            )
+            partial_prompt = ANSWER_WITH_CRITIQUE_USER.format(
+                context_chunks=context_block,
+                hallucination_critique=partial_critique,
+                user_query=query,
+            )
+            second_response = llm.invoke(
+                [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=partial_prompt),
                 ]
             )
             answer = extract_text_content(second_response.content).strip()

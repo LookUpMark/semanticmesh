@@ -39,7 +39,7 @@ def _query_result_to_response(result: dict[str, Any]) -> QueryResponse:
         retrieval_quality_score=float(result.get("retrieval_quality_score", 0.0)),
         retrieval_chunk_count=int(result.get("retrieval_chunk_count", 0)),
         gate_decision=result.get("retrieval_gate_decision", "proceed"),
-        grounded=bool(result.get("semantic_verification_passed", True)),
+        grounded=bool(result.get("grader_grounded", True)),
         context_previews=previews,
     )
 

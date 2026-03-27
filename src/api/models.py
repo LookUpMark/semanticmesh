@@ -1,14 +1,42 @@
 """Pydantic request/response models for both REST APIs."""
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel, Field
 
+# ── Shared LLM override fields ────────────────────────────────────────────────
+
+_LLM_REASONING_DESC = (
+    "Reasoning / generation model. Provider auto-detected from prefix:\n"
+    "  - `openai/gpt-4.1` (OpenRouter) | `gpt-4.1` (OpenAI direct)\n"
+    "  - `claude-3-5-sonnet-20241022` (Anthropic direct)\n"
+    "  - `ollama/llama3.1` (Ollama — needs langchain-ollama or compat mode)\n"
+    "  - `google/gemini-2.0-flash` or `gemini-2.0-flash` (Google Gemini)\n"
+    "  - `bedrock/anthropic.claude-3-sonnet-20240229-v1:0` (AWS Bedrock)\n"
+    "  - `groq/llama3-70b-8192` (Groq — OpenAI-compat, no extra package)\n"
+    "  - `mistral/mistral-large-latest` (Mistral AI)\n"
+    "  - `together/meta-llama/Llama-3-70b` (Together AI — OpenAI-compat)\n"
+    "  - `deepseek/deepseek-chat` or `deepseek-chat` (DeepSeek)\n"
+    "  - `xai/grok-2` or `grok-2` (xAI Grok — OpenAI-compat)\n"
+    "  - `nvidia/meta/llama-3.1-70b-instruct` (Nvidia NIM — OpenAI-compat)\n"
+    "Sets env var LLM_MODEL_REASONING for the pipeline run."
+)
+_LLM_EXTRACTION_DESC = (
+    "Extraction model for triplet extraction. Same prefix conventions as reasoning_model. "
+    "Sets env var LLM_MODEL_EXTRACTION."
+)
+_LLM_BASE_URL_DESC = (
+    "Override base URL for local / custom OpenAI-compatible endpoints "
+    "(Ollama, LMStudio, self-hosted Groq proxy, etc.). "
+    "Sets env var PROVIDER_BASE_URL."
+)
+
+
 # ── Ablation API ──────────────────────────────────────────────────────────────
 
-class AblationRunRequest(BaseModel):
-    """Launch a custom ablation run with any combination of flags/hyperparameters."""
+class CustomAblationRequest(BaseModel):
+    """Launch a fully custom ablation run with any combination of flags/hyperparameters."""
 
     dataset: str = Field(
         default="tests/fixtures/01_basics_ecommerce/gold_standard.json",
@@ -16,7 +44,7 @@ class AblationRunRequest(BaseModel):
         examples=["tests/fixtures/02_intermediate_finance/gold_standard.json"],
     )
     study_id: str = Field(
-        default="API-RUN",
+        default="CUSTOM",
         description="Output directory prefix under notebooks/ablation/ablation_results/.",
     )
     max_samples: int | None = Field(
@@ -98,12 +126,93 @@ class AblationRunRequest(BaseModel):
         description="Max output tokens for the extraction LLM.",
     )
 
+    # ── LLM model overrides ───────────────────────────────────────────────────
+    reasoning_model: str | None = Field(
+        default=None,
+        description=_LLM_REASONING_DESC,
+        examples=["groq/llama3-70b-8192", "gemini-2.0-flash", "ollama/llama3.1"],
+    )
+    extraction_model: str | None = Field(
+        default=None,
+        description=_LLM_EXTRACTION_DESC,
+        examples=["groq/llama3-8b-8192", "ollama/qwen2.5-coder:7b"],
+    )
+    provider_base_url: str | None = Field(
+        default=None,
+        description=_LLM_BASE_URL_DESC,
+        examples=["http://localhost:11434/v1", "http://localhost:1234/v1"],
+    )
+
+
+# Backward-compat alias — code that imports AblationRunRequest still works
+AblationRunRequest: TypeAlias = CustomAblationRequest
+
+
+class PresetAblationRequest(BaseModel):
+    """Launch a predefined AB-XX ablation study.
+
+    The study configuration (env overrides, feature flags) is automatically loaded
+    from the ablation matrix — no need to specify individual flags.
+
+    Use ``GET /ablation/matrix`` to browse all 21 predefined studies.
+    """
+
+    study_id: str = Field(
+        description="Ablation study ID to run (e.g. 'AB-00', 'AB-03', 'AB-15').",
+        examples=["AB-00", "AB-03", "AB-15"],
+    )
+    dataset: str = Field(
+        default="tests/fixtures/01_basics_ecommerce/gold_standard.json",
+        description="Path to the gold_standard.json fixture to evaluate against.",
+        examples=["tests/fixtures/02_intermediate_finance/gold_standard.json"],
+    )
+    max_samples: int | None = Field(
+        default=None, ge=1,
+        description="Limit evaluation to the first N QA pairs (None = all).",
+    )
+    run_ragas: bool = Field(
+        default=False,
+        description="Enable RAGAS evaluation. Adds ~2-5 min per 15 samples.",
+    )
+    ragas_model: str = Field(
+        default="gpt-4.1-mini",
+        description="OpenAI model used as RAGAS evaluator.",
+    )
+    skip_builder: bool = Field(
+        default=False,
+        description="Skip Knowledge Graph build — reuse the existing Neo4j graph.",
+    )
+
+    # ── LLM model overrides (win over matrix defaults) ───────────────────────
+    reasoning_model: str | None = Field(
+        default=None,
+        description=_LLM_REASONING_DESC,
+        examples=["groq/llama3-70b-8192", "gemini-2.0-flash", "ollama/llama3.1"],
+    )
+    extraction_model: str | None = Field(
+        default=None,
+        description=_LLM_EXTRACTION_DESC,
+        examples=["groq/llama3-8b-8192", "ollama/qwen2.5-coder:7b"],
+    )
+    provider_base_url: str | None = Field(
+        default=None,
+        description=_LLM_BASE_URL_DESC,
+        examples=["http://localhost:11434/v1", "http://localhost:1234/v1"],
+    )
+
 
 class AblationJobResponse(BaseModel):
     job_id: str
     status: Literal["queued", "running", "done", "failed"]
     study_id: str
     dataset: str
+
+
+class PresetAblationJobResponse(AblationJobResponse):
+    """Extended job response for preset runs — includes matrix metadata."""
+
+    description: str
+    applied_env_overrides: dict[str, str]
 
 
 class AblationResultResponse(BaseModel):

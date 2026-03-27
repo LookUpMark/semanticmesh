@@ -486,10 +486,9 @@ def main() -> None:
         gate = result.get("retrieval_gate_decision", "proceed")
         top_score = result.get("retrieval_quality_score", 0.0)
         chunk_count = result.get("retrieval_chunk_count", 0)
-        sem_passed = result.get("semantic_verification_passed", True)
         grader_grounded = result.get("grader_grounded", True)
-        overlap = result.get("semantic_verification_overlap", 0.0)
-        grounded = sem_passed or grader_grounded
+        context_sufficiency = result.get("context_sufficiency", "")
+        grounded = grader_grounded
 
         if grounded and gate != "abstain_early":
             grounded_count += 1
@@ -502,11 +501,10 @@ def main() -> None:
         gt_coverage = len(covered) / len(expected_sources) if expected_sources else 1.0
 
         run_logger.info(
-            "  %s | score=%.4f chunks=%d overlap=%.2f gt_coverage=%.0f%% (%d/%d)",
+            "  %s | score=%.4f chunks=%d gt_coverage=%.0f%% (%d/%d)",
             status,
             top_score,
             chunk_count,
-            overlap,
             gt_coverage * 100,
             len(covered),
             len(expected_sources),
@@ -520,6 +518,8 @@ def main() -> None:
         results.append({
             "query_id": pair.get("query_id", str(pair.get("id", f"Q{i+1:03d}"))),
             "question": question,
+            "query_type": pair.get("query_type", ""),
+            "difficulty": pair.get("difficulty", ""),
             "answer": answer,
             "sources": sources,
             "contexts": result.get("retrieved_contexts", []),
@@ -531,7 +531,7 @@ def main() -> None:
             "top_score": top_score,
             "chunk_count": chunk_count,
             "gate_decision": gate,
-            "overlap": overlap,
+            "context_sufficiency": context_sufficiency,
         })
 
     # ── STAGE 3: RAGAS Evaluation (optional) ──
@@ -682,11 +682,9 @@ def main() -> None:
             "gate_decision": r.get("gate_decision", "proceed"),
             "retrieval_quality_score": r.get("top_score", 0.0),
             "chunk_count": r.get("chunk_count", 0),
-            "semantic_verification_passed": r.get("grounded", False),
-            "semantic_verification_overlap": r.get("overlap", 0.0),
             "grader_rejection_count": 0,
             "grader_consistency_valid": True,
-            "context_sufficiency": "",
+            "context_sufficiency": r.get("context_sufficiency", ""),
         })
 
     bundle_path = write_evaluation_bundle(

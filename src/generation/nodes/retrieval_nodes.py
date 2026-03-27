@@ -21,6 +21,7 @@ from src.retrieval.hybrid_retriever import (
     build_node_index,
     chunk_vector_search,
     fetch_all_concepts,
+    fetch_concept_table_mappings,
     fetch_fk_relationships,
     graph_traversal,
     merge_results,
@@ -201,11 +202,12 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
             )
             all_concepts = fetch_all_concepts(client)
             fk_chunks = fetch_fk_relationships(client)
+            mapping_chunks = fetch_concept_table_mappings(client)
             bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
             merged = merge_results(
                 vec_results + chunk_vec_results,
                 bm25_results,
-                trav_results + all_concepts + fk_chunks,
+                trav_results + all_concepts + fk_chunks + mapping_chunks,
             )
 
             if getattr(settings, "enable_lazy_expansion", False):

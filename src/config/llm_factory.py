@@ -34,14 +34,23 @@ from langchain_openai import ChatOpenAI
 from src.config.llm_client import FallbackLLM, InstrumentedLLM, LLMProtocol
 from src.config.model_builders import (
     _build_anthropic_chat,
+    _build_azure_chat,
+    _build_bedrock_chat,
+    _build_cohere_chat,
+    _build_google_chat,
+    _build_huggingface_chat,
     _build_lmstudio_chat,
+    _build_mistral_chat,
+    _build_ollama_chat,
     _build_openai_chat,
+    _build_openai_compatible_chat,
     _build_openrouter_chat,
 )
 from src.config.provider_detection import (
     _is_free_model,
     _strip_free_suffix,
     detect_provider,
+    is_openai_reasoning_model,
 )
 from src.config.settings import get_settings, reload_settings
 
@@ -75,6 +84,9 @@ def make_llm(
     openrouter_base_url: str | None = None,
     openai_api_key: str | None = None,
     lmstudio_base_url: str | None = None,
+    # Generic base URL override — forwarded to any OpenAI-compatible provider
+    # (Ollama, LMStudio, Groq self-hosted, custom proxy, etc.)
+    provider_base_url: str | None = None,
     extra_model_kwargs: dict | None = None,
     enable_fallback: bool = True,
 ) -> LLMProtocol:
@@ -82,25 +94,43 @@ def make_llm(
 
     Provider detection
     ------------------
-    - ``provider/model`` (contains ``/``) → OpenRouter
-    - ``gpt-*``, ``o1-*``, ``o3-*`` (no slash) → OpenAI direct
-    - ``claude-*`` (no slash) → Anthropic direct (requires ``langchain-anthropic``)
+    Provider is inferred from the model name prefix (see
+    :func:`src.config.provider_detection.detect_provider`):
+
+    - ``ollama/<model>``    → Ollama (requires ``langchain-ollama``, falls back to compat)
+    - ``google/<model>``    → Google Gemini (requires ``langchain-google-genai``)
+    - ``bedrock/<model>``   → AWS Bedrock (requires ``langchain-aws``)
+    - ``azure/<model>``     → Azure OpenAI (already in ``langchain-openai``)
+    - ``groq/<model>``      → Groq API (OpenAI-compat, no extra package)
+    - ``mistral/<model>``   → Mistral AI (requires ``langchain-mistralai``)
+    - ``together/<model>``  → Together AI (OpenAI-compat, no extra package)
+    - ``huggingface/<model>`` / ``hf/<model>`` → HuggingFace Hub
+      (requires ``langchain-huggingface``)
+    - ``cohere/<model>``    → Cohere (requires ``langchain-cohere``, falls back to compat)
+    - ``nvidia/<model>``    → Nvidia NIM (OpenAI-compat, no extra package)
+    - ``deepseek/<model>``  → DeepSeek (OpenAI-compat, no extra package)
+    - ``xai/<model>``       → xAI Grok (OpenAI-compat, no extra package)
+    - ``<provider>/<model>`` (any other slash) → OpenRouter
+    - ``gpt-*``, ``o1-*``, ``o4-*`` (no slash) → OpenAI direct
+    - ``claude-*`` (no slash) → Anthropic direct
+    - ``gemini-*``, ``mistral-*``, ``deepseek-*``, ``grok-*`` → respective provider
     - anything else → LM Studio local endpoint
 
     Automatic free→paid fallback
     ----------------------------
     If *enable_fallback* is True (default) and the model name ends with ``:free``,
     a FallbackLLM is created that automatically switches to the paid version when
-    rate limits (HTTP 429) are encountered. This provides seamless operation without
-    manual intervention.
+    rate limits (HTTP 429) are encountered.
 
     Examples
     --------
     >>> make_llm("openai/gpt-oss-120b:free")          # → FallbackLLM (free→paid)
     >>> make_llm("gpt-4o")                            # → InstrumentedLLM (OpenAI)
     >>> make_llm("claude-3-5-sonnet-20241022")        # → InstrumentedLLM (Anthropic)
+    >>> make_llm("ollama/llama3.1")                   # → InstrumentedLLM (Ollama)
+    >>> make_llm("groq/llama3-70b-8192")              # → InstrumentedLLM (Groq)
+    >>> make_llm("gemini-2.0-flash")                  # → InstrumentedLLM (Google)
     >>> make_llm("local-model")                       # → InstrumentedLLM (LM Studio)
-    >>> make_llm("openai/gpt-oss-120b:free", enable_fallback=False)  # → No fallback
     """
     provider = detect_provider(model)
     is_free = _is_free_model(model)
@@ -152,14 +182,70 @@ def make_llm(
         return _instrument(chat, role)
 
     if provider == "anthropic":
-        chat = _build_anthropic_chat(model, temperature=temperature, max_tokens=max_tokens)
-        return _instrument(chat, role)
+        return _instrument(
+            _build_anthropic_chat(model, temperature=temperature, max_tokens=max_tokens),
+            role,
+        )
 
+    if provider == "ollama":
+        return _instrument(
+            _build_ollama_chat(
+                model, temperature=temperature, max_tokens=max_tokens, base_url=provider_base_url
+            ),
+            role,
+        )
+
+    if provider == "google":
+        return _instrument(
+            _build_google_chat(model, temperature=temperature, max_tokens=max_tokens), role
+        )
+
+    if provider == "bedrock":
+        return _instrument(
+            _build_bedrock_chat(model, temperature=temperature, max_tokens=max_tokens), role
+        )
+
+    if provider == "azure":
+        return _instrument(
+            _build_azure_chat(model, temperature=temperature, max_tokens=max_tokens), role
+        )
+
+    if provider == "mistral":
+        return _instrument(
+            _build_mistral_chat(model, temperature=temperature, max_tokens=max_tokens), role
+        )
+
+    if provider == "huggingface":
+        return _instrument(
+            _build_huggingface_chat(model, temperature=temperature, max_tokens=max_tokens), role
+        )
+
+    if provider == "cohere":
+        return _instrument(
+            _build_cohere_chat(model, temperature=temperature, max_tokens=max_tokens), role
+        )
+
+    # OpenAI-compatible providers: groq, together, nvidia, deepseek, xai
+    if provider in ("groq", "together", "nvidia", "deepseek", "xai"):
+        return _instrument(
+            _build_openai_compatible_chat(
+                model,
+                provider=provider,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                base_url_override=provider_base_url,
+                extra_model_kwargs=extra_model_kwargs,
+            ),
+            role,
+        )
+
+    # Default: LM Studio local endpoint
+    effective_base_url = provider_base_url or lmstudio_base_url
     chat = _build_lmstudio_chat(
         model,
         temperature=temperature,
         max_tokens=max_tokens,
-        lmstudio_base_url=lmstudio_base_url,
+        lmstudio_base_url=effective_base_url,
         extra_model_kwargs=extra_model_kwargs,
     )
     return _instrument(chat, role)
@@ -187,15 +273,15 @@ def get_reasoning_llm() -> LLMProtocol:
     Used for: schema mapping, Actor-Critic, LLM judge, hallucination grader,
     schema enrichment, Cypher generation/healing.
 
-    ``reasoning_effort=low`` (OpenAI) / ``reasoning.effort=low`` (OpenRouter)
-    reduces thinking tokens, cutting latency while keeping quality.
+    ``reasoning_effort=medium`` (OpenAI) / ``reasoning.effort=medium`` (OpenRouter)
+    gives the model sufficient thinking budget for multi-hop synthesis across chunks.
     """
     s = get_settings()
     provider = detect_provider(s.llm_model_reasoning)
     if provider == "openrouter":
-        low_reasoning: dict | None = {"reasoning": {"effort": "low"}}
+        low_reasoning: dict | None = {"reasoning": {"effort": "medium"}}
     elif provider == "openai":
-        low_reasoning = {"reasoning_effort": "low"}
+        low_reasoning = {"reasoning_effort": "medium"}
     else:
         low_reasoning = None
     return make_llm(
@@ -235,11 +321,13 @@ def get_extraction_llm() -> LLMProtocol:
         )
 
     # Cloud model (OpenRouter, OpenAI, Anthropic): use make_llm for provider routing
-    # Disable reasoning tokens for extraction — deterministic JSON, no chain-of-thought needed.
+    # For OpenAI reasoning models (o-series, gpt-5*): suppress chain-of-thought with
+    # reasoning_effort="none" to get deterministic JSON at minimal cost.
+    # Standard chat models (gpt-4o*) don't accept reasoning_effort at all → pass None.
+    # Note: OpenRouter models have mandatory reasoning that cannot be overridden here.
     no_reasoning: dict | None = None
-    if provider == "openai":
+    if provider == "openai" and is_openai_reasoning_model(s.llm_model_extraction):
         no_reasoning = {"reasoning_effort": "none"}
-    # Note: OpenRouter gpt-5-nano has mandatory reasoning that cannot be disabled.
     return make_llm(
         model=s.llm_model_extraction,
         temperature=s.llm_temperature_extraction,
