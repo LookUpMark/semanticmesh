@@ -34,6 +34,8 @@ from dotenv import load_dotenv  # noqa: E402  # type: ignore[import]
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
+from src.utils.text_utils import normalize_source_name as _normalize_source  # noqa: E402
+
 
 # ── Dataset helpers ────────────────────────────────────────────────────────────
 
@@ -497,7 +499,13 @@ def main() -> None:
             status = "ABSTAINED" if gate == "abstain_early" else "UNGROUNDED"
 
         # Check ground truth source coverage
-        covered = [s for s in expected_sources if any(s.lower() in src.lower() for src in sources)]
+        covered = [
+            s for s in expected_sources
+            if any(
+                _normalize_source(s) in _normalize_source(src)
+                for src in sources
+            )
+        ]
         gt_coverage = len(covered) / len(expected_sources) if expected_sources else 1.0
 
         run_logger.info(

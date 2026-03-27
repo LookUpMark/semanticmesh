@@ -304,7 +304,7 @@ def get_graph_stats() -> GraphStatsResponse:
         counts_query = "MATCH (n) " + cypher_nodes
         rel_query = "MATCH ()-[r]->() RETURN count(r) AS total_relationships"
         rel_mentions = "MATCH ()-[r:MENTIONS]->() RETURN count(r) AS n"
-        rel_maps = "MATCH ()-[r:MAPS_TO]->() RETURN count(r) AS n"
+        rel_maps = "MATCH ()-[r:MAPPED_TO]->() RETURN count(r) AS n"
         node_total = "MATCH (n) RETURN count(n) AS total_nodes"
 
         with Neo4jClient() as client:

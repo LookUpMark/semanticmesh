@@ -20,6 +20,7 @@ from src.api.models import (
     PresetAblationRequest,
 )
 from src.evaluation.ablation_runner import ABLATION_MATRIX, _settings_override
+from src.utils.text_utils import normalize_source_name as _normalize_source
 
 router = APIRouter(prefix="/ablation", tags=["Ablation Studies"])
 
@@ -194,7 +195,10 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
                 # GT source coverage
                 covered = [
                     s for s in expected_sources
-                    if any(s.lower() in src.lower() for src in sources)
+                    if any(
+                        _normalize_source(s) in _normalize_source(src)
+                        for src in sources
+                    )
                 ]
                 gt_coverage = len(covered) / len(expected_sources) if expected_sources else 1.0
 

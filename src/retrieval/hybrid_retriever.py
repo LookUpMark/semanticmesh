@@ -346,7 +346,7 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
 
 
 def fetch_concept_table_mappings(client: "Neo4jClient") -> list[RetrievedChunk]:
-    """Return all MAPS_TO edges (BusinessConcept → DataTable) as human-readable chunks.
+    """Return all MAPPED_TO edges (BusinessConcept → PhysicalTable) as human-readable chunks.
 
     Each edge is rendered as a sentence that names the business concept, the physical
     table it maps to, and the table's columns.  This ensures that queries mentioning
@@ -361,12 +361,12 @@ def fetch_concept_table_mappings(client: "Neo4jClient") -> list[RetrievedChunk]:
         client: Active ``Neo4jClient``.
 
     Returns:
-        One ``RetrievedChunk`` per ``[:MAPS_TO]`` edge.
+        One ``RetrievedChunk`` per ``[:MAPPED_TO]`` edge.
     """
     records = client.execute_cypher(
-        "MATCH (bc:BusinessConcept)-[:MAPS_TO]->(dt:DataTable) "
+        "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
         "RETURN bc.name AS concept_name, bc.definition AS concept_def, "
-        "dt.table_name AS table_name, dt.column_names AS column_names"
+        "pt.table_name AS table_name, pt.column_names AS column_names"
     )
     chunks: list[RetrievedChunk] = []
     for rec in records:
@@ -392,7 +392,7 @@ def fetch_concept_table_mappings(client: "Neo4jClient") -> list[RetrievedChunk]:
                 metadata={"concept_name": concept, "table_name": table},
             )
         )
-    logger.debug("fetch_concept_table_mappings: %d MAPS_TO edges fetched.", len(chunks))
+    logger.debug("fetch_concept_table_mappings: %d MAPPED_TO edges fetched.", len(chunks))
     return chunks
 
 

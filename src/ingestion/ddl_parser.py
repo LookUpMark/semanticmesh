@@ -26,6 +26,99 @@ class DDLParseError(Exception):
     """Raised when DDL cannot be parsed into at least one TableSchema."""
 
 
+# ── DDL Pre-strip ──────────────────────────────────────────────────────────────
+
+# Matches CREATE FUNCTION / PROCEDURE with $$ ... $$ dollar-quoted bodies (PL/pgSQL)
+_DOLLAR_BODY_RE = re.compile(
+    r"CREATE\s+(?:OR\s+REPLACE\s+)?(?:FUNCTION|PROCEDURE)\b[^;]*?\$\$.*?\$\$[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches CREATE TRIGGER (may span multiple lines until a final semicolon)
+_TRIGGER_RE = re.compile(
+    r"CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\b[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches CREATE TYPE ... AS ENUM (...);
+_TYPE_RE = re.compile(
+    r"CREATE\s+TYPE\b[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches CREATE [UNIQUE] INDEX statements
+_INDEX_RE = re.compile(
+    r"CREATE\s+(?:UNIQUE\s+)?INDEX\b[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches ALTER TABLE statements
+_ALTER_RE = re.compile(
+    r"ALTER\s+TABLE\b[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches standalone COMMENT ON statements
+_COMMENT_ON_RE = re.compile(
+    r"COMMENT\s+ON\b[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches GRANT / REVOKE statements
+_GRANT_RE = re.compile(
+    r"(?:GRANT|REVOKE)\b[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches SET / BEGIN / COMMIT / ROLLBACK utility statements
+_UTILITY_RE = re.compile(
+    r"(?:SET\b|BEGIN\b|COMMIT\b|ROLLBACK\b)[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _strip_non_table_ddl(ddl_text: str) -> str:
+    """Remove non-CREATE-TABLE statements from DDL to reduce sqlglot noise.
+
+    Strips: CREATE FUNCTION/PROCEDURE (with $$ bodies), CREATE TRIGGER,
+    CREATE TYPE, CREATE [UNIQUE] INDEX, ALTER TABLE, COMMENT ON,
+    GRANT/REVOKE, SET/BEGIN/COMMIT/ROLLBACK.
+
+    Keeps: CREATE TABLE and anything not matched by the patterns above.
+    """
+    result = ddl_text
+    for pattern in (
+        _DOLLAR_BODY_RE,
+        _TRIGGER_RE,
+        _TYPE_RE,
+        _INDEX_RE,
+        _ALTER_RE,
+        _COMMENT_ON_RE,
+        _GRANT_RE,
+        _UTILITY_RE,
+    ):
+        result = pattern.sub("", result)
+    return result
+
+
+# Matches CHECK (...) constraints (possibly nested parens) in DDL source
+_CHECK_RE = re.compile(
+    r",?\s*CHECK\s*\((?:[^()]*|\((?:[^()]*|\([^()]*\))*\))*\)",
+    re.IGNORECASE,
+)
+
+
+def _strip_check_constraints(ddl_source: str) -> str:
+    """Remove CHECK constraint clauses from a CREATE TABLE DDL string.
+
+    CHECK constraints contain string literals with single quotes that cause
+    Cypher syntax errors when the LLM copies them into generated Cypher.
+    Since CHECK constraints are not structurally relevant for KG construction,
+    stripping them is safe.
+    """
+    return _CHECK_RE.sub("", ddl_source)
+
+
 def _normalise_type(data_type: str) -> str:
     """Strip length/precision details for cleaner stored types.
 
@@ -144,6 +237,7 @@ def parse_ddl(ddl_text: str, dialect: str = "mysql") -> list[TableSchema]:
     Raises:
         DDLParseError: If no CREATE TABLE statements could be parsed.
     """
+    ddl_text = _strip_non_table_ddl(ddl_text)
     try:
         statements = sqlglot.parse(ddl_text, dialect=dialect, error_level=sqlglot.ErrorLevel.WARN)
     except Exception as exc:
@@ -155,7 +249,7 @@ def parse_ddl(ddl_text: str, dialect: str = "mysql") -> list[TableSchema]:
             continue
         if not isinstance(stmt, exp.Create):
             continue
-        table_ddl_source = stmt.sql(dialect=dialect)
+        table_ddl_source = _strip_check_constraints(stmt.sql(dialect=dialect))
         schema = _extract_table(stmt, ddl_source=table_ddl_source)
         if schema is not None:
             tables.append(schema)
