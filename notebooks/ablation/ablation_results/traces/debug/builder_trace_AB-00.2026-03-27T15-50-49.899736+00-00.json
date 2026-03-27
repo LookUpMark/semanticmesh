@@ -1,0 +1,2864 @@
+{
+  "study_id": "AB-00",
+  "timestamp": "2026-03-27T15:50:49.899736+00:00",
+  "trace_id": "AB-00.2026-03-27T15-50-49.899736+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": false,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "tests/fixtures/07_stress_large_scale/business_glossary.md",
+    "tests/fixtures/07_stress_large_scale/complex_scenarios.md"
+  ],
+  "ddl_files": [
+    "tests/fixtures/07_stress_large_scale/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Enterprise ERP Business Glossary\n\n## Sales & Customer Management\n\n### Customer\n**Definition**: An individual or organization that purchases goods or services from the company. Customers can be classified as retail (B2C) or business (B2B) with different credit terms and pricing structures.\n\n**Attributes**: customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, status\n\n**Related Concepts**: Sales Order, Invoice, Payment, Customer Address, Credit Score\n... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "537"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Inventory & Warehousing\n\n### Warehouse\n**Definition**: A physical location where inventory is stored. Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory.\n\n**Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status\n\n**Related Concepts**: Inventory Transaction, Bin Location, Warehouse Zone, Stock Transfer\n\n### Inventory Transaction\n**Definition**: A record of any movem... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "724"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Human Resources\n\n### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id\n\n**Related Concepts**: Department, Position, Employee Compensation, Time Entry, Performance Review\n\n### Department\n**Definition**: An... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "647"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## Quality & Compliance\n\n### Quality Inspection\n**Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping).\n\n**Attributes**: inspection_id, inspection_type, reference_type, reference_id, product_id, inspection_date, inspector_id, result, defects_found, status\n\n**Related Concepts**: Product, Supplier, Purchase Receipt, Work Order, Quality Standar... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "668"
+    },
+    {
+      "chunk_id": 4,
+      "text": "## Reporting & Analytics\n\n### Key Performance Indicator (KPI)\n**Definition**: A quantifiable metric used to evaluate performance against strategic objectives. KPIs can be financial, operational, customer-facing, or employee-related.\n\n**Common KPIs**: Order fulfillment rate, Inventory turnover, Supplier on-time delivery, Customer satisfaction, Employee productivity, Production yield\n\n### Financial Statement\n**Definition**: Formal reports summarizing financial performance and position. Primary sta... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "494"
+    },
+    {
+      "chunk_id": 5,
+      "text": "# Complex Enterprise Scenarios for Stress Testing\n\nThis document describes complex business scenarios that require joining multiple tables across business units, testing entity resolution, and evaluating system performance under realistic enterprise conditions.\n\n## Scenario 1: Order-to-Cash Cross-Business-Unit Analysis\n\n**Business Question**: Analyze the complete order-to-cash cycle for high-value customers who purchase products from multiple categories, tracking from sales order through payment... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "412"
+    },
+    {
+      "chunk_id": 6,
+      "text": "## Scenario 2: Procurement-to-Pay Performance Analysis\n\n**Business Question**: Evaluate supplier performance across quality, delivery, and cost dimensions for critical raw materials sourced from multiple suppliers.\n\n**Complexity Factors**:\n- Joins 9 tables: Supplier \u2192 Supplier Contract \u2192 Purchase Order \u2192 Purchase Order Line \u2192 Product \u2192 Purchase Receipt \u2192 Purchase Receipt Line \u2192 Quality Inspection \u2192 Accounts Payable\n- Filters on supplier rating, product types, and date ranges\n- Aggregates on-time... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "553"
+    },
+    {
+      "chunk_id": 7,
+      "text": "## Scenario 3: Multi-Warehouse Inventory Optimization\n\n**Business Question**: Optimize inventory distribution across warehouses by analyzing product demand, stock levels, transfer patterns, and holding costs.\n\n**Complexity Factors**:\n- Joins 10 tables: Product \u2192 Product Category \u2192 Inventory On Hand \u2192 Warehouse \u2192 Warehouse Zone \u2192 Bin Location \u2192 Inventory Transaction \u2192 Stock Transfer \u2192 Sales Order Line \u2192 Shipment\n- Filters on product category, warehouse type, and stock status\n- Aggregates inventor... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "765"
+    },
+    {
+      "chunk_id": 8,
+      "text": "## Scenario 4: Production Cost & Efficiency Analysis\n\n**Business Question**: Analyze production costs, scrap rates, and efficiency across production lines for complex manufactured products with multi-level bills of materials.\n\n**Complexity Factors**:\n- Joins 8 tables: Product \u2192 Bill of Materials (self-join for multi-level) \u2192 Work Order \u2192 Work Order Material \u2192 Production Schedule \u2192 Production Line \u2192 Quality Inspection \u2192 Inventory Transaction\n- Recursive BOM traversal (finished good \u2192 sub-assembli... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "729"
+    },
+    {
+      "chunk_id": 9,
+      "text": "Quality Inspection Results:\n- Final Inspections: 150 units, 142 Passed, 8 Failed (5.3% failure rate)\n- In-Process Inspections: 75 checks, 71 Passed, 4 Conditional Pass\n- Common Defects: Dimensional tolerance (40%), Surface finish (30%), Assembly errors (30%)\n\nProduction Schedule Adherence:\n- Scheduled Production Time: 600 hours (150 units \u00d7 4 hours)\n- Actual Production Time: 630 hours\n- Efficiency: 95.2%\n- Downtime: 18 hours (3% of scheduled time)\n  - Equipment Maintenance: 12 hours\n  - Material... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "346"
+    },
+    {
+      "chunk_id": 10,
+      "text": "## Scenario 5: Customer Entity Resolution & Deduplication\n\n**Business Question**: Identify and merge duplicate customer records across the system, analyzing relationships with orders, invoices, and payments.\n\n**Complexity Factors**:\n- Tests entity resolution across Customer, Customer Address, Customer Contact\n- Must detect duplicates based on name similarity, tax ID, address, phone, email\n- Evaluates impact on related records (orders, invoices, payments, AR)\n- Requires scoring confidence for mer... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "782"
+    },
+    {
+      "chunk_id": 11,
+      "text": "## Scenario 6: Financial Statement Generation with Multi-Level Account Rollup\n\n**Business Question**: Generate a trial balance and income statement for the accounting period, aggregating transactions across multiple account hierarchies and business units.\n\n**Complexity Factors**:\n- Joins 7 tables: Account Type \u2192 General Ledger Account (self-join for hierarchy) \u2192 Journal Entry \u2192 Journal Entry Line \u2192 Accounting Period \u2192 Budget \u2192 Department\n- Recursive account hierarchy traversal (parent-child rela... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "772"
+    },
+    {
+      "chunk_id": 12,
+      "text": "Net Income: $1,650,000 (Revenue $8,950,000 - Expenses $7,300,000)\n\nValidation:\n- Total Debits: $20,055,000\n- Total Credits: $20,055,000\n- Trial Balance: IN BALANCE \u2713\n\nBudget Variance Analysis - Q1 2024:\n\nRevenue:\n- Budgeted Revenue: $9,000,000\n- Actual Revenue: $8,950,000\n- Variance: -$50,000 (-0.6%) - Favorable variance is small\n\nExpenses:\n- Budgeted Expenses: $7,200,000\n- Actual Expenses: $7,300,000\n- Variance: +$100,000 (+1.4%) - Unfavorable, investigate\n  - Salaries: +$50,000 (overtime and t... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "437"
+    },
+    {
+      "chunk_id": 13,
+      "text": "## Scenario 7: Supply Chain Risk Assessment\n\n**Business Question**: Assess supply chain risk by analyzing supplier dependency, quality issues, lead time variability, and financial health across the procurement network.\n\n**Complexity Factors**:\n- Joins 8 tables: Supplier \u2192 Supplier Contract \u2192 Purchase Order \u2192 Purchase Order Line \u2192 Product \u2192 Purchase Receipt \u2192 Quality Inspection \u2192 Non-Conformance Report\n- Network analysis of supplier-product relationships\n- Aggregates risk indicators across multip... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "786"
+    },
+    {
+      "chunk_id": 14,
+      "text": "Impact if Supply Disrupted:\n   - Production halt on 12 finished goods\n   - Potential revenue loss: $850,000 per week\n   - Customer backlog: 45 orders affected\n\n2. Product: Precision Gearbox PGB-800\n   - Category: Power Transmission\n   - Used In: 8 finished goods (25% of production volume)\n   - Annual Usage: 3,000 units\n   - Unit Cost: $650, Annual Spend: $1,950,000\n   - Suppliers: 1 supplier (PrecisionTech Components)\n   - Lead Time: 35 days\n   - Quality Pass Rate: 92.0% (below threshold)\n   - C... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "699"
+    },
+    {
+      "chunk_id": 15,
+      "text": "## Scenario 8: Project Profitability & Resource Utilization\n\n**Business Question**: Analyze project profitability, resource utilization, and time tracking across customer projects with cross-departmental teams.\n\n**Complexity Factors**:\n- Joins 7 tables: Project \u2192 Customer \u2192 Employee \u2192 Department \u2192 Project Task \u2192 Time Entry \u2192 Invoice\n- Hierarchical project structure (parent-child tasks)\n- Aggregates time, costs, and revenue across multiple dimensions\n- Compares budgeted vs. actual costs and reven... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "715"
+    },
+    {
+      "chunk_id": 16,
+      "text": "4. Quality Assurance Department\n   - Budget: $30,000 (5.5% of total budget)\n   - Actual: $12,000 (40.0% of budget, 40.0% consumed)\n   - Variance: -$18,000 remaining\n   - Employees: 2 QA engineers assigned\n   - Hours Logged: 150 hours @ average $80.00/hour\n\nTask Progress & Budget Consumption:\n\nTask Hierarchy:\nPRJ-2024-015: Enterprise Automation System Implementation\n\u251c\u2500\u2500 Task 1: Requirements Analysis (COMPLETED)\n\u2502   \u251c\u2500\u2500 Budget: $30,000, Actual: $28,500 (95% consumed)\n\u2502   \u251c\u2500\u2500 Planned: 80 hours, Act... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "757"
+    },
+    {
+      "chunk_id": 17,
+      "text": "2. Maria Rodriguez (Lead Developer, Software Development)\n   - Hours: 280 (32% of total development hours)\n   - Cost: $18,200\n   - Tasks: Backend API (180h), Frontend UI (100h)\n   - Utilization: 92% (very high, consider resource augmentation)\n\n3. Sarah Chen (Project Manager, PM)\n   - Hours: 180 (63% of total PM hours)\n   - Cost: $14,400\n   - Tasks: Requirements Analysis (80h), Overall Coordination (100h)\n   - Utilization: 70% (appropriate for PM role)\n\n4. James Wilson (Systems Engineer, Engineer... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "653"
+    },
+    {
+      "chunk_id": 18,
+      "text": "## Performance Testing Considerations\n\nThese scenarios are designed to test the following aspects of a GraphRAG system:\n\n1. **Multi-Hop Query Performance**: Each scenario requires 6-10 table joins\n2. **Relationship Traversal**: Complex foreign key networks with many-to-many relationships\n3. **Hierarchical Data**: BOMs, account hierarchies, project task hierarchies\n4. **Aggregation Complexity**: Grouping and aggregating across multiple dimensions\n5. **Entity Resolution**: Duplicate detection and ... [TRUNCATED]",
+      "source": "complex_scenarios.md",
+      "page": "1",
+      "token_count": "238"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 19,
+    "total_tokens": 11714,
+    "avg_tokens": 616.5263157894736
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is defined as",
+      "object": "An individual or organization that purchases goods or services from the company",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customers",
+      "predicate": "can be classified as",
+      "object": "retail (B2C) or business (B2B)",
+      "confidence": 0.95
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customers",
+      "predicate": "have",
+      "object": "different credit terms and pricing structures",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has attributes",
+      "object": "customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, s... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is related to",
+      "object": "Sales Order, Invoice, Payment, Customer Address, Credit Score",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "is defined as",
+      "object": "A commercial document issued by a seller to a buyer indicating types, quantities, and agreed prices ... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales orders",
+      "predicate": "can be in",
+      "object": "draft, confirmed, shipped, or cancelled status",
+      "confidence": 0.95
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "has attributes",
+      "object": "order_id, customer_id, order_date, delivery_date, total_amount, status, sales_rep_id, warehouse_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "is related to",
+      "object": "Customer, Order Line, Invoice, Shipment, Sales Representative",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "is defined as",
+      "object": "A tangible item or service that the company sells to customers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Products",
+      "predicate": "can be",
+      "object": "finished goods, raw materials, or services",
+      "confidence": 0.95
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Products",
+      "predicate": "have",
+      "object": "different pricing and inventory tracking requirements",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has attributes",
+      "object": "product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "is related to",
+      "object": "Product Category, Bill of Materials, Inventory, Price List, Order Line",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "is defined as",
+      "object": "An external entity that provides goods or services to the company",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Suppliers",
+      "predicate": "are evaluated on",
+      "object": "quality, delivery performance, and cost",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Each supplier",
+      "predicate": "has",
+      "object": "a credit rating and payment terms",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "has attributes",
+      "object": "supplier_id, supplier_name, supplier_type, payment_terms, credit_rating, currency, lead_time_days, s... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "is related to",
+      "object": "Purchase Order, Supplier Contract, Purchase Receipt, Quality Inspection",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase Order",
+      "predicate": "is defined as",
+      "object": "A commercial document issued by a buyer to a seller indicating types, quantities, and agreed prices ... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase orders",
+      "predicate": "go through",
+      "object": "approval workflows before being sent to suppliers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase Order",
+      "predicate": "has attributes",
+      "object": "po_id, supplier_id, order_date, required_date, total_amount, status, approved_by, approval_date, war... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase Order",
+      "predicate": "is related to",
+      "object": "Supplier, Purchase Order Line, Purchase Receipt, Supplier Invoice, Approval Workflow",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier Contract",
+      "predicate": "is defined as",
+      "object": "A formal agreement between the company and a supplier defining terms, conditions, pricing, and servi... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Contracts",
+      "predicate": "can be",
+      "object": "fixed-price, cost-plus, or rate-based",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier Contract",
+      "predicate": "has attributes",
+      "object": "contract_id, supplier_id, contract_type, start_date, end_date, payment_terms, status, renewal_terms",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier Contract",
+      "predicate": "is related to",
+      "object": "Supplier, Purchase Order, Contract Amendment, Performance Review",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "is a",
+      "object": "physical location where inventory is stored",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouses",
+      "predicate": "can be",
+      "object": "company-owned",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouses",
+      "predicate": "can be",
+      "object": "third-party logistics (3PL) facilities",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouses",
+      "predicate": "can be",
+      "object": "virtual locations for transit inventory",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has attributes",
+      "object": "warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, s... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "is related concept to",
+      "object": "Inventory Transaction",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "is related concept to",
+      "object": "Bin Location",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "is related concept to",
+      "object": "Warehouse Zone",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "is related concept to",
+      "object": "Stock Transfer",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "is a",
+      "object": "record of any movement or change in inventory quantity",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "include",
+      "object": "receipts",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "include",
+      "object": "issues",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "include",
+      "object": "transfers",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "include",
+      "object": "adjustments",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "include",
+      "object": "cycle counts",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attributes",
+      "object": "transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_ty... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "is related concept to",
+      "object": "Product",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "is related concept to",
+      "object": "Warehouse",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "is related concept to",
+      "object": "Bin Location",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "is related concept to",
+      "object": "Purchase Receipt",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "is related concept to",
+      "object": "Sales Shipment",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "is a",
+      "object": "specific storage location within a warehouse",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin locations",
+      "predicate": "are organized into",
+      "object": "zones, aisles, shelves, and positions",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attributes",
+      "object": "bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "is related concept to",
+      "object": "Warehouse",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "is related concept to",
+      "object": "Warehouse Zone",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "is related concept to",
+      "object": "Product",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "is related concept to",
+      "object": "Inventory Transaction",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "is the movement of",
+      "object": "inventory between warehouses or locations",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock transfers",
+      "predicate": "can be planned as",
+      "object": "inter-warehouse transfers",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock transfers",
+      "predicate": "can be",
+      "object": "ad-hoc (emergency replenishment)",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "has attributes",
+      "object": "transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_nu... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "is related concept to",
+      "object": "Warehouse",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "is related concept to",
+      "object": "Product",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "is related concept to",
+      "object": "Inventory Transaction",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "is related concept to",
+      "object": "Shipment",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "is a",
+      "object": "chronological record of all financial transactions for a specific account type",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts",
+      "predicate": "are organized into",
+      "object": "a chart of accounts with hierarchies for balance sheet and income statement",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "has attributes",
+      "object": "account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, s... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "is related concept to",
+      "object": "Journal Entry",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "is related concept to",
+      "object": "Account Hierarchy",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "is related concept to",
+      "object": "Financial Statement",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "is related concept to",
+      "object": "Budget",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "is a",
+      "object": "recording of a financial transaction in double-entry bookkeeping",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Each journal entry",
+      "predicate": "must balance with",
+      "object": "equal debits and credits",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "has attributes",
+      "object": "entry_id, entry_date, period_id, source_document_type, source_document_id, created_by, approved_by, ... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "is related concept to",
+      "object": "Journal Entry Line",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "is related concept to",
+      "object": "General Ledger Account",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "is related concept to",
+      "object": "Accounting Period",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "is related concept to",
+      "object": "User",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "is",
+      "object": "Money owed to the company by customers for goods or services delivered on credit",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "AR aging",
+      "predicate": "tracks",
+      "object": "overdue payments",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "AR aging",
+      "predicate": "supports",
+      "object": "collections workflows",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has attributes",
+      "object": "ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "is related concept to",
+      "object": "Customer",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "is related concept to",
+      "object": "Invoice",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "is related concept to",
+      "object": "Payment",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "is related concept to",
+      "object": "Collections Note",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "is related concept to",
+      "object": "Credit Memo",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "is",
+      "object": "Money owed by the company to suppliers for goods or services received on credit",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "AP aging",
+      "predicate": "tracks",
+      "object": "payment due dates",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "AP aging",
+      "predicate": "supports",
+      "object": "payment approval workflows",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attributes",
+      "object": "ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, pa... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "is related concept to",
+      "object": "Supplier",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "is related concept to",
+      "object": "Supplier Invoice",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "is related concept to",
+      "object": "Payment",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "is related concept to",
+      "object": "Payment Term",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "is a",
+      "object": "financial plan that allocates resources to departments, projects, or accounts for a specific period",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budgets",
+      "predicate": "are compared to",
+      "object": "actual results for variance analysis",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attributes",
+      "object": "budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, varian... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "is related concept to",
+      "object": "Department",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "is related concept to",
+      "object": "Account",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "is related concept to",
+      "object": "Accounting Period",
+      "confidence": 0.8
+    },
+    "... [789 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 889,
+    "avg_confidence": 0.9665354330708661,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "entry_id, entry_date, period_id, source_document_type, source_document_id, created_by, approved_by, status, total_debit, total_credit",
+      "definition": "",
+      "synonyms": [
+        "$0 (0% consumed)",
+        "$1,000,000",
+        "$1,200",
+        "$1,200,000",
+        "$1,250,000",
+        "$1,250,000 (Debit)",
+        "$1,500",
+        "$1,575,000",
+        "$1,650,000",
+        "$1,800,000",
+        "$1,800,000 (85.7%)",
+        "$1,850,000 (Credit)",
+        "$1,950,000",
+        "$12,000 (40.0% of budget, 40.0% consumed)",
+        "$12,500",
+        "$120,000",
+        "$120,000 (21.8% of total budget)",
+        "$120,000, Actual: $42,000 (35% consumed)",
+        "$125,000",
+        "$137,500 (32.4% margin to date)",
+        "$14,160",
+        "$14,400",
+        "$145,000 (58% consumed)",
+        "$150,000 (Debit)",
+        "$18,000 (1.9% of paid amount)",
+        "$18,200",
+        "$180,000",
+        "$185,000 (52.9% of budget, 52.9% consumed)",
+        "$19,500",
+        "$2,000,000 (Credit)",
+        "$2,100,000",
+        "$2,200",
+        "$2,200,000 (Debit)",
+        "$2,350,000",
+        "$2,450,000 (Debit)",
+        "$2,500,000",
+        "$2,550,000",
+        "$2,670,000",
+        "$2,800",
+        "$2,850,000 (Credit)",
+        "$20,055,000",
+        "$22,000 (44.0% of budget, 44.0% consumed)",
+        "$225,000 (within payment terms)",
+        "$25,000",
+        "$250",
+        "$250,000",
+        "$250,000, Actual: $145,000 (58% consumed)",
+        "$26,400",
+        "$28,500 (95% consumed)",
+        "$287,500 (52.3% of budget)",
+        "$3,500",
+        "$3,800,000 (Debit)",
+        "$30,000",
+        "$30,000 (5.5% of total budget)",
+        "$300,000",
+        "$300,000 (35.3% margin)",
+        "$320,000 (Credit)",
+        "$35,000",
+        "$350",
+        "$350,000",
+        "$350,000 (63.6% of total budget)",
+        "$370,000",
+        "$4,850,000",
+        "$42,000 (35% consumed)",
+        "$42,500",
+        "$425,000 (50% of budget)",
+        "$425,000 (50% of contract value)",
+        "$45,000 / $42,000",
+        "$450",
+        "$450,000",
+        "$450,000 (Credit)",
+        "$450.00",
+        "$5,000 (Debit)",
+        "$5,000,000",
+        "$5,100,000",
+        "$5,100,000 (Debit)",
+        "$5,200,000",
+        "$5,650",
+        "$50,000 (9.1% of total budget)",
+        "$500,000",
+        "$500,000 (Credit)",
+        "$550,000",
+        "$6,850",
+        "$60,000 / $0",
+        "$600,000",
+        "$650",
+        "$68,500 (57.1% of budget, 57.1% consumed)",
+        "$7,000 (+9%)",
+        "$7,200,000",
+        "$7,300,000",
+        "$7,655,000",
+        "$75,000",
+        "$75,000, Actual: $0 (0% consumed)",
+        "$75,000, Actual: $82,000 (109% consumed - over budget!)",
+        "$750,000",
+        "$8,500,000 (Credit)",
+        "$8,950,000",
+        "$80,000 / $52,000",
+        "$800",
+        "$800,000",
+        "$82,000 (109% consumed - over budget!)",
+        "$83,500",
+        "$847,500 (150 units \u00d7 $5,650)",
+        "$850,000",
+        "$850,000 per week",
+        "$850.00",
+        "$892,500",
+        "$9,000,000",
+        "$900",
+        "$900,000",
+        "+$100,000 (+1.4%)",
+        "+$45,000 (+5.3%)",
+        "+$50,000 (+2.0%)",
+        "0 hours",
+        "1 invoice, $200,000 paid",
+        "1 unit",
+        "1,100",
+        "1,150 hours @ average $59.60/hour",
+        "1,200 hours",
+        "1,200 units",
+        "1,500 units",
+        "100 units",
+        "1001 - Petty Cash: $5,000 (Debit)",
+        "1002 - Bank Accounts",
+        "1002 - Bank Accounts: $1,250,000 (Debit)",
+        "11 invoices",
+        "1100 - Accounts Receivable",
+        "1100 - Accounts Receivable: $2,450,000 (Debit)",
+        "12 Payments (update customer_id from 2847 \u2192 1001)",
+        "12 hours",
+        "12 orders",
+        "1200 - Inventory",
+        "1200 - Inventory: $3,800,000 (Debit)",
+        "1300 - Prepaid Expenses",
+        "1300 - Prepaid Expenses: $150,000 (Debit)",
+        "15 orders, Total Value: $1,250,000",
+        "150 hours @ average $80.00/hour",
+        "150 units",
+        "18 hours (3% of scheduled time)",
+        "195 hours (39% consumed)",
+        "2 hours",
+        "2 invoices, $25,000",
+        "2 invoices, $425,000 total",
+        "2 units",
+        "2,300 units",
+        "2,450 hours @ average $75.50/hour",
+        "20 Accounts Receivable records (update customer_id from 2847 \u2192 1001)",
+        "20 units",
+        "200 units",
+        "2000 - Accounts Payable",
+        "2000 - Accounts Payable: $1,850,000 (Credit)",
+        "2100 - Accrued Expenses",
+        "2100 - Accrued Expenses: $320,000 (Credit)",
+        "2200 - Short-Term Debt",
+        "2200 - Short-Term Debt: $500,000 (Credit)",
+        "25 orders",
+        "25,000 units",
+        "250 hours",
+        "250 units",
+        "280 (32% of total development hours)",
+        "285 hours @ average $77.20/hour",
+        "295 hours (+18% over)",
+        "3,000 units",
+        "3,500 units across 5 warehouses",
+        "300 units",
+        "3000 - Common Stock",
+        "3000 - Common Stock: $2,000,000 (Credit)",
+        "310 units from this warehouse",
+        "3100 - Retained Earnings",
+        "3100 - Retained Earnings: $2,850,000 (Credit)",
+        "320 (39% of total engineering hours)",
+        "350",
+        "350 units",
+        "4 hours",
+        "4.0 hours",
+        "4.2 hours",
+        "400 hours",
+        "400 units",
+        "4000 - Sales Revenue",
+        "4000 - Sales Revenue: $8,500,000 (Credit)",
+        "4100 - Service Revenue",
+        "4100 - Service Revenue: $450,000 (Credit)",
+        "42 invoices",
+        "420 units from this warehouse",
+        "45 orders",
+        "45 orders affected",
+        "45 units",
+        "450",
+        "500 hours",
+        "5000 - Cost of Goods Sold",
+        "5000 - Cost of Goods Sold: $5,100,000 (Debit)",
+        "53 Invoices (update customer_id from 2847 \u2192 1001)",
+        "53 invoices ($160,000 balance due)",
+        "57 Sales Orders (update customer_id from 2847 \u2192 1001)",
+        "57 orders ($2,800,000 total value)",
+        "600 units",
+        "600 units above 30-day average",
+        "6000 - Operating Expenses",
+        "6000 - Operating Expenses: $2,200,000 (Debit)",
+        "6200 - Rent and Facilities",
+        "6200 - Rent and Facilities: $450,000 (Debit)",
+        "630 hours",
+        "6300 - Utilities",
+        "6300 - Utilities: $180,000 (Debit)",
+        "6400 - Other Expenses",
+        "6400 - Other Expenses: $370,000 (Debit)",
+        "780 hours (65% consumed)",
+        "8 units/day",
+        "80 hours",
+        "800 units",
+        "850 units from this warehouse",
+        "92 hours (+15% over)",
+        "Account",
+        "Account Hierarchy",
+        "Account_Type",
+        "Accounts",
+        "Accounts Payable",
+        "Accounts Receivable",
+        "Accounts_Payable.supplier_id",
+        "Accounts_Receivable.customer_id",
+        "Active Contracts",
+        "Administrative Department",
+        "Administrative Department: $250,000",
+        "Annual Usage: 5,000 units",
+        "Average Days to Pay",
+        "Average Payment Terms",
+        "Base Price",
+        "Bill of Materials",
+        "Bill_of_Materials",
+        "Bill_of_Materials.component_product_id",
+        "Bill_of_Materials.parent_product_id",
+        "Budget.account_id",
+        "Budget.department_id",
+        "Category",
+        "Category Overview",
+        "Contracts",
+        "Customer",
+        "Customer ID 1001 (more complete data, more transaction history)",
+        "Customer Project",
+        "Customer Type: Enterprise",
+        "Customer approval",
+        "Customer satisfaction",
+        "Customer, Order Line, Invoice, Shipment, Sales Representative",
+        "Customer, Product, Supplier, and Employee records",
+        "Customer.customer_type_id",
+        "Customer: Acme Corporation (Customer Type: Enterprise)",
+        "Customer_Address.customer_id",
+        "Customer_Contact.customer_id",
+        "Customer_Type",
+        "Customers",
+        "Department",
+        "Department.manager_id",
+        "Departments",
+        "Each journal entry",
+        "Electronics Division",
+        "Electronics Division: $5,100,000",
+        "Employee",
+        "Employee productivity",
+        "Employee, Project, Payroll Period, Invoice",
+        "Employee.department_id",
+        "Employees",
+        "Engineering",
+        "Engineering Department",
+        "Estimated transfer cost",
+        "General Ledger Account",
+        "General_Ledger_Account",
+        "General_Ledger_Account (self-join for hierarchy)",
+        "General_Ledger_Account.account_type_id",
+        "General_Ledger_Account.parent_account_id",
+        "Global Manufacturing Corp. (Customer Type: Enterprise)",
+        "Industrial Supplies",
+        "Inventory Transaction",
+        "Inventory Turnover",
+        "Inventory turnover",
+        "Inventory_On_Hand.bin_id",
+        "Inventory_On_Hand.product_id",
+        "Inventory_On_Hand.warehouse_id",
+        "Inventory_Transaction.product_id",
+        "Inventory_Transaction.reference_id",
+        "Inventory_Transaction.warehouse_id",
+        "Invoice",
+        "Invoice.customer_id",
+        "Invoice.order_id",
+        "Invoices Issued",
+        "Invoices Paid",
+        "Journal Entry",
+        "Journal Entry Line",
+        "Journal_Entry",
+        "Journal_Entry.period_id",
+        "Journal_Entry_Line.account_id",
+        "Journal_Entry_Line.entry_id",
+        "Machinery Components",
+        "Machinery Division",
+        "Machinery Division: $2,550,000",
+        "Manufacturer",
+        "Operations Department: $600,000",
+        "Orders",
+        "Overdue Invoices",
+        "Paid",
+        "Payment",
+        "Payment Term",
+        "Payment.customer_id",
+        "Payment.invoice_id",
+        "Precision Machined Parts",
+        "PrecisionTech",
+        "PrecisionTech Components",
+        "Product",
+        "Product Categories",
+        "Product Category",
+        "Product Category, Bill of Materials, Inventory, Price List, Order Line",
+        "Product Type",
+        "Product, Bill of Materials, Work Order Operation, Material Requirement, Production Schedule",
+        "Product, Work Order, Production Schedule, Material Requirement",
+        "Product.category_id",
+        "Product.product_id (component)",
+        "Product.product_id (parent)",
+        "Product_Category",
+        "Production Schedule, Work Order, Location, Maintenance Schedule",
+        "Production_Schedule.production_line_id",
+        "Production_Schedule.work_order_id",
+        "Products",
+        "Project",
+        "Project ID",
+        "Project Task",
+        "Project Type",
+        "Project.customer_id",
+        "Project.project_manager_id",
+        "Project_Task (self-join for hierarchy)",
+        "Project_Task.assigned_to",
+        "Project_Task.parent_task_id",
+        "Project_Task.project_id",
+        "Projects",
+        "Purchase Order",
+        "Purchase Order, Supplier Contract, Purchase Receipt, Quality Inspection",
+        "Purchase Orders",
+        "Purchase Receipt",
+        "Purchase orders",
+        "Purchase_Order.supplier_id",
+        "Purchase_Order_Line.po_id",
+        "Purchase_Order_Line.product_id",
+        "Purchase_Receipt.po_id",
+        "Purchase_Receipt_Line.receipt_id",
+        "Purchased",
+        "Quality_Inspection.reference_id",
+        "Salaries",
+        "Sales Department",
+        "Sales Department: $350,000",
+        "Sales Order",
+        "Sales Order, Invoice, Payment, Customer Address, Credit Score",
+        "Sales Shipment",
+        "Sales orders",
+        "Sales_Order",
+        "Sales_Order.customer_id",
+        "Sales_Order.warehouse_id",
+        "Sales_Order_Line.order_id",
+        "Sales_Order_Line.product_id",
+        "Shipment",
+        "Shipments",
+        "Shipping Route",
+        "Stock Transfer",
+        "Stock transfers",
+        "Stock_Transfer.from_warehouse_id",
+        "Stock_Transfer.to_warehouse_id",
+        "Supplier",
+        "Supplier Contract",
+        "Supplier Invoice",
+        "Supplier Type",
+        "Supplier, Purchase Order Line, Purchase Receipt, Supplier Invoice, Approval Workflow",
+        "Supplier, Purchase Order, Contract Amendment, Performance Review",
+        "Supplier_Contract.supplier_id",
+        "Suppliers",
+        "Supplies Division",
+        "Supplies Division: $850,000",
+        "Tasks",
+        "Time Entry",
+        "Time entries",
+        "Time_Entry.employee_id",
+        "Time_Entry.project_id",
+        "Transactional Data",
+        "Transactions",
+        "Unit Price",
+        "User",
+        "Users",
+        "Warehouse",
+        "Warehouse Zone",
+        "Warehouse_Zone.warehouse_id",
+        "Warehouses",
+        "Work Order",
+        "Work Order, Production Line, Product, Capacity Planning",
+        "Work Orders",
+        "Work orders",
+        "Work_Order.product_id",
+        "Work_Order.production_line_id",
+        "Work_Order.warehouse_id",
+        "Work_Order_Material.bin_id",
+        "Work_Order_Material.product_id",
+        "Work_Order_Material.work_order_id",
+        "account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+        "ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+        "ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date",
+        "bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+        "bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+        "budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+        "contract_id, supplier_id, contract_type, start_date, end_date, payment_terms, status, renewal_terms",
+        "customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, status",
+        "department_id, department_name, parent_department_id, manager_id, budget_code, location, status",
+        "employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id",
+        "inter-warehouse transfers",
+        "inventory between warehouses or locations",
+        "line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+        "order_id, customer_id, order_date, delivery_date, total_amount, status, sales_rep_id, warehouse_id",
+        "overdue payments",
+        "payment due dates",
+        "physical location where inventory is stored",
+        "po_id, supplier_id, order_date, required_date, total_amount, status, approved_by, approval_date, warehouse_id",
+        "position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications",
+        "product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_id",
+        "receipts",
+        "schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+        "specific storage location within a warehouse",
+        "supplier rating, product types, and date ranges",
+        "supplier_id, supplier_name, supplier_type, payment_terms, credit_rating, currency, lead_time_days, status",
+        "time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+        "transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+        "transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number",
+        "transfers",
+        "warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status",
+        "work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+        "zones, aisles, shelves, and positions"
+      ],
+      "provenance_text": "**Attributes**: entry_id, entry_date, period_id, source_document_type, source_document_id, created_by, approved_by, status, total_debit, total_credit |     \u251c\u2500\u2500 Budget: $75,000, Actual: $0 (0% consumed) | Credit Score: 85, Credit Limit: $1,000,000 | \u2502   \u251c\u2500\u2500 Level 2: Industrial PLC Controller (Raw Material) - 1 unit @ $1,200 = $1,200 | \u2502   \u2502   \u251c\u2500\u2500 1210 - Raw Materials: $1,200,000 | \u2502   \u251c\u2500\u2500 6100 - Salaries and Wages: $1,200,000 | Orders (Last 90 Days): 15 orders, Total Value: $1,250,000 | \u2502   \u2502   \u2514\u2500\u2500 1002 - Bank Accounts: $1,250,000 (Debit) | \u2514\u2500\u2500 Level 2: Heavy Duty Base (Purchased) - 1 unit @ $1,500 = $1,500 | - Inventory Value: $1,575,000 | Net Income: $1,650,000 (Revenue $8,950,000 - Expenses $7,300,000) | \u2502   \u2502   \u2514\u2500\u2500 1230 - Finished Goods: $1,800,000 | - Paid: $1,800,000 (85.7%) | \u2502   \u251c\u2500\u2500 2000 - Accounts Payable: $1,850,000 (Credit) |    - Unit Cost: $650, Annual Spend: $1,950,000 | 4. Quality Assurance Department\n   - Actual: $12,000 (40.0% of budget, 40.0% consumed) |    - Actual: $",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Annual Spend: $2,800,000 (17.7% of category spend)",
+      "definition": "",
+      "synonyms": [
+        "$12.50/unit/month",
+        "$15.00/kg (Contract: $14.50/kg)",
+        "$20.00/unit (Contract: $19.50/unit)",
+        "Annual Spend: $15,800,000",
+        "Annual Spend: $3,200,000 (20.3% of category spend)",
+        "Unit Cost: $450, Annual Spend: $2,250,000"
+      ],
+      "provenance_text": "2. Supplier: Global Motors Ltd.\n   - Annual Spend: $2,800,000 (17.7% of category spend) |    - Storage Cost: $12.50/unit/month |    - Unit Price: $15.00/kg (Contract: $14.50/kg) |    - Unit Price: $20.00/unit (Contract: $19.50/unit) | Category Overview:\n- Annual Spend: $15,800,000 | 1. Supplier: PrecisionTech Components\n   - Annual Spend: $3,200,000 (20.3% of category spend) | 1. Product: Servo Motor Assembly SMA-2500\n   - Unit Cost: $450, Annual Spend: $2,250,000",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "-$100,000 (-1.9%)",
+      "definition": "",
+      "synonyms": [
+        "-$50,000 (-0.6%)",
+        "-$50,000 (-5.6%)"
+      ],
+      "provenance_text": "   - Variance: -$100,000 (-1.9%) - Slightly below budget | - Variance: -$50,000 (-0.6%) - Favorable variance is small |    - Variance: -$50,000 (-5.6%) - Below budget, needs attention",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "-$165,000 remaining",
+      "definition": "",
+      "synonyms": [
+        "-$18,000 remaining",
+        "-$28,000 remaining",
+        "-$51,500 remaining"
+      ],
+      "provenance_text": "1. Engineering Department\n   - Variance: -$165,000 remaining | 4. Quality Assurance Department\n   - Variance: -$18,000 remaining |    - Variance: -$18,000 remaining | 3. Project Management Department\n   - Variance: -$28,000 remaining | 2. Software Development Department\n   - Variance: -$51,500 remaining",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Stock-Outs (events)",
+      "definition": "",
+      "synonyms": [
+        "1 event",
+        "3 events",
+        "5 events"
+      ],
+      "provenance_text": "   - Fill Rate: 98.1%, Stock-Outs: 1 event |    - Fill Rate: 96.5%, Stock-Outs: 3 events |    - Fill Rate: 94.2%, Stock-Outs: 5 events",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "1 supplier (PrecisionTech Components)",
+      "definition": "",
+      "synonyms": [
+        "Suppliers: 1 supplier (PrecisionTech Components)"
+      ],
+      "provenance_text": "   - Suppliers: 1 supplier (PrecisionTech Components) | 1. Product: Servo Motor Assembly SMA-2500\n   - Suppliers: 1 supplier (PrecisionTech Components)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "processing time (seconds)",
+      "definition": "",
+      "synonyms": [
+        "1-3 seconds",
+        "10-30 seconds",
+        "3-8 seconds",
+        "8-15 seconds",
+        "< 1 second"
+      ],
+      "provenance_text": "- Medium complexity (4-5 tables): 1-3 seconds | - Entity resolution batch (100 records): 10-30 seconds | - High complexity (6-8 tables): 3-8 seconds | - Very high complexity (9+ tables, aggregations): 8-15 seconds | - Simple retrieval (2-3 tables): < 1 second",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "100% inspection",
+      "definition": "",
+      "synonyms": [
+        "100%"
+      ],
+      "provenance_text": "   - 100% inspection implemented, increasing receiving time |    - Quality Pass Rate: 100%, Lead Time: 16 days",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "12 finished goods (40% of production volume)",
+      "definition": "",
+      "synonyms": [
+        "12 finished goods",
+        "1210 - Raw Materials",
+        "1210 - Raw Materials: $1,200,000",
+        "1220 - Work in Progress",
+        "1220 - Work in Progress: $800,000",
+        "1230 - Finished Goods",
+        "1230 - Finished Goods: $1,800,000",
+        "8 finished goods (25% of production volume)"
+      ],
+      "provenance_text": "1. Product: Servo Motor Assembly SMA-2500\n   - Used In: 12 finished goods (40% of production volume) |    - Production halt on 12 finished goods | \u2502   \u2502   \u251c\u2500\u2500 1210 - Raw Materials: $1,200,000 | \u2502   \u2502   \u251c\u2500\u2500 1220 - Work in Progress: $800,000 | \u2502   \u2502   \u2514\u2500\u2500 1230 - Finished Goods: $1,800,000 |    - Used In: 8 finished goods (25% of production volume)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "123 Industrial Boulevard, Detroit, MI 48201",
+      "definition": "",
+      "synonyms": [
+        "123 Industrial Blvd, Detroit, MI 48201 (Billing)",
+        "123 Industrial Blvd, Detroit, MI 48201 (Shipping)",
+        "123 Industrial Boulevard, Detroit, MI 48201 (Billing)"
+      ],
+      "provenance_text": "    - 123 Industrial Blvd, Detroit, MI 48201 (Billing) |     - 123 Industrial Blvd, Detroit, MI 48201 (Shipping) |     - 123 Industrial Boulevard, Detroit, MI 48201 (Billing)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "15 products (17.6% of category)",
+      "definition": "",
+      "synonyms": [
+        "25 products (29.4% of category)",
+        "37 products (43.5% of category)",
+        "8 products (9.4% of category)"
+      ],
+      "provenance_text": "- High Risk Products: 15 products (17.6% of category) | - Medium Risk Products: 25 products (29.4% of category) | - Low Risk Products: 37 products (43.5% of category) | - Critical Risk Products: 8 products (9.4% of category)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "20 records ($332,000 outstanding)",
+      "definition": "",
+      "synonyms": [
+        "15 records, $280,000 outstanding",
+        "5 records, $52,000 outstanding"
+      ],
+      "provenance_text": "- Total AR Records After Merge: 20 records ($332,000 outstanding) |   AR Records: 15 records, $280,000 outstanding |   AR Records: 5 records, $52,000 outstanding",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "5.3% failure rate (Final Inspections: 150 units, 142 passed, 8 failed)",
+      "definition": "",
+      "synonyms": [
+        "150 units, 142 Passed, 8 Failed (5.3% failure rate)",
+        "5.3% failure rate"
+      ],
+      "provenance_text": "- Final Inspections: 150 units, 142 Passed, 8 Failed (5.3% failure rate)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Net 45 days",
+      "definition": "",
+      "synonyms": [
+        "16 days",
+        "20 days",
+        "35 days"
+      ],
+      "provenance_text": "- Average Payment Terms: Net 45 days |    - Quality Pass Rate: 100%, Lead Time: 16 days |    - Quality Pass Rate: 95.8%, Lead Time: 20 days | - Average Days to Pay: 35 days |    - Lead Time: 35 days",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Current Stock: 450 units (9 days of inventory)",
+      "definition": "",
+      "synonyms": [
+        "180 units (18 days of inventory)"
+      ],
+      "provenance_text": "1. Product: Servo Motor Assembly SMA-2500\n   - Current Stock: 450 units (9 days of inventory) |    - Current Stock: 180 units (18 days of inventory)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "2 project managers assigned",
+      "definition": "",
+      "synonyms": [
+        "2 QA engineers assigned",
+        "QA (2 engineers)"
+      ],
+      "provenance_text": "3. Project Management Department\n   - Employees: 2 project managers assigned | 4. Quality Assurance Department\n   - Employees: 2 QA engineers assigned |    - Employees: 2 QA engineers assigned |     \u251c\u2500\u2500 Assigned To: QA (2 engineers)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "240",
+      "definition": "",
+      "synonyms": [
+        "260",
+        "280"
+      ],
+      "provenance_text": "   - Hours: 240 (28% of total development hours) |    - Hours: 260 (32% of total engineering hours) |    - Hours: 280 (32% of total development hours)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "4% scrap (normal: 2%)",
+      "definition": "",
+      "synonyms": [
+        "3.2% (normal: 2.0%)",
+        "5% scrap (normal: 1%)",
+        "8% scrap (normal: 2%)"
+      ],
+      "provenance_text": "3. Servo Motor Controller: 4% scrap (normal: 2%) | - Scrap Rate: 3.2% (normal: 2.0%) | 2. Precision Gearbox: 5% scrap (normal: 1%) | 1. Aluminum Arm Structure: 8% scrap (normal: 2%)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "3.8 turns/year",
+      "definition": "",
+      "synonyms": [
+        "4.2 turns/year"
+      ],
+      "provenance_text": "   - Inventory Turnover: 3.8 turns/year |    - Inventory Turnover: 4.2 turns/year",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Software Development (5 developers)",
+      "definition": "",
+      "synonyms": [
+        "5 developers assigned",
+        "8 engineers assigned",
+        "Engineering (4 engineers)",
+        "Engineering (5 engineers)"
+      ],
+      "provenance_text": "\u2502   \u251c\u2500\u2500 Assigned To: Software Development (5 developers) | 2. Software Development Department\n   - Employees: 5 developers assigned | 1. Engineering Department\n   - Employees: 8 engineers assigned | \u2502   \u251c\u2500\u2500 Assigned To: Engineering (4 engineers) | \u2502   \u251c\u2500\u2500 Assigned To: Engineering (5 engineers)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "6100 - Salaries and Wages",
+      "definition": "",
+      "synonyms": [
+        "6100 - Salaries and Wages: $1,200,000"
+      ],
+      "provenance_text": "\u2502   \u251c\u2500\u2500 6100 - Salaries and Wages: $1,200,000 | \u2502   \u2502   \u251c\u2500\u2500 Sales Department: $350,000 | \u2502   \u2502   \u251c\u2500\u2500 Operations Department: $600,000 | \u2502   \u2502   \u2514\u2500\u2500 Administrative Department: $250,000",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "93.3%",
+      "definition": "",
+      "synonyms": [
+        "70%",
+        "78%",
+        "82%",
+        "92%",
+        "94.2%",
+        "94.7%",
+        "95.2%",
+        "95.8%",
+        "96.5%",
+        "98.1%"
+      ],
+      "provenance_text": "- Payment Collection Rate: 93.3% |    - Utilization: 70% (appropriate for PM role) |    - Utilization: 78% |    - Utilization: 82% |    - Utilization: 92% (very high, consider resource augmentation) |    - Fill Rate: 94.2%, Stock-Outs: 5 events | - First Pass Quality Yield: 94.7% | - Efficiency: 95.2% |    - Quality Pass Rate: 95.8%, Lead Time: 20 days |    - Fill Rate: 96.5%, Stock-Outs: 3 events |    - Fill Rate: 98.1%, Stock-Outs: 1 event",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "75 checks, 71 Passed, 4 Conditional Pass",
+      "definition": "",
+      "synonyms": [
+        "75 checks"
+      ],
+      "provenance_text": "- In-Process Inspections: 75 checks, 71 Passed, 4 Conditional Pass",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Risk Score: 9.2/10 (CRITICAL)",
+      "definition": "",
+      "synonyms": [
+        "8.8/10 (HIGH)",
+        "Risk Score: 7.8/10 (HIGH)",
+        "Risk Score: 9.5/10 (CRITICAL)"
+      ],
+      "provenance_text": "1. Supplier: PrecisionTech Components\n   - Risk Score: 9.2/10 (CRITICAL) |    - Risk Score: 8.8/10 (HIGH) | 2. Supplier: Global Motors Ltd.\n   - Risk Score: 7.8/10 (HIGH) | 1. Product: Servo Motor Assembly SMA-2500\n   - Risk Score: 9.5/10 (CRITICAL)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "91.1% (41 of 45 orders on time)",
+      "definition": "",
+      "synonyms": [
+        "88% (22 of 25 orders on time)"
+      ],
+      "provenance_text": "- On-Time Delivery Rate: 91.1% (41 of 45 orders on time) | - On-Time Delivery: 88% (22 of 25 orders on time)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Joins 8 tables: Product \u2192 Bill of Materials (self-join for multi-level) \u2192 Work Order \u2192 Work Order Material \u2192 Production Schedule \u2192 Production Line \u2192 Quality Inspection \u2192 Inventory Transaction",
+      "definition": "",
+      "synonyms": [
+        "9 tables: Supplier \u2192 Supplier Contract \u2192 Purchase Order \u2192 Purchase Order Line \u2192 Product \u2192 Purchase Receipt \u2192 Purchase Receipt Line \u2192 Quality Inspection \u2192 Accounts Payable",
+        "Joins 10 tables: Product \u2192 Product Category \u2192 Inventory On Hand \u2192 Warehouse \u2192 Warehouse Zone \u2192 Bin Location \u2192 Inventory Transaction \u2192 Stock Transfer \u2192 Sales Order Line \u2192 Shipment",
+        "Joins 7 tables: Project \u2192 Customer \u2192 Employee \u2192 Department \u2192 Project Task \u2192 Time Entry \u2192 Invoice",
+        "Joins 8 tables: Customer \u2192 Customer Type \u2192 Sales Order \u2192 Sales Order Line \u2192 Product \u2192 Product Category \u2192 Invoice \u2192 Payment"
+      ],
+      "provenance_text": "- Joins 8 tables: Product \u2192 Bill of Materials (self-join for multi-level) \u2192 Work Order \u2192 Work Order Material \u2192 Production Schedule \u2192 Production Line \u2192 Quality Inspection \u2192 Inventory Transaction | - Joins 9 tables: Supplier \u2192 Supplier Contract \u2192 Purchase Order \u2192 Purchase Order Line \u2192 Product \u2192 Purchase Receipt \u2192 Purchase Receipt Line \u2192 Quality Inspection \u2192 Accounts Payable | - Joins 10 tables: Product \u2192 Product Category \u2192 Inventory On Hand \u2192 Warehouse \u2192 Warehouse Zone \u2192 Bin Location \u2192 Inventory Transaction \u2192 Stock Transfer \u2192 Sales Order Line \u2192 Shipment | **Complexity Factors**:\n- Joins 7 tables: Project \u2192 Customer \u2192 Employee \u2192 Department \u2192 Project Task \u2192 Time Entry \u2192 Invoice | - Joins 8 tables: Customer \u2192 Customer Type \u2192 Sales Order \u2192 Sales Order Line \u2192 Product \u2192 Product Category \u2192 Invoice \u2192 Payment",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "on-time delivery rates, quality pass rates, and payment terms",
+      "definition": "",
+      "synonyms": [
+        "92.0% (below threshold)",
+        "97.8% (44 of 45 inspections passed)",
+        "First Pass Quality Yield",
+        "On-Time Delivery",
+        "On-Time Delivery Rate",
+        "On-Time Delivery: 87% (below 95% threshold)",
+        "On-Time Delivery: 92% (below 95% threshold)",
+        "Order fulfillment rate",
+        "Quality Pass Rate",
+        "Quality Pass Rate: 94.5%",
+        "Quality Performance: 94.5% pass rate (below 98% threshold)",
+        "Quality Performance: 98.2% pass rate (meets threshold)",
+        "Quality Rating",
+        "Supplier on-time delivery",
+        "delivery performance",
+        "quality, delivery performance, and cost"
+      ],
+      "provenance_text": "- Aggregates on-time delivery rates, quality pass rates, and payment terms |    - Quality Pass Rate: 92.0% (below threshold) | - Quality Pass Rate: 97.8% (44 of 45 inspections passed) | - First Pass Quality Yield: 94.7% | - On-Time Delivery: 88% (22 of 25 orders on time) | - On-Time Delivery Rate: 91.1% (41 of 45 orders on time) | 1. Supplier: PrecisionTech Components\n   - On-Time Delivery: 87% (below 95% threshold) | 2. Supplier: Global Motors Ltd.\n   - On-Time Delivery: 92% (below 95% threshold) | **Common KPIs**: Order fulfillment rate, Inventory turnover, Supplier on-time delivery, Customer satisfaction, Employee productivity, Production yield |    - Quality Pass Rate: 100%, Lead Time: 16 days |    - Quality Pass Rate: 95.8%, Lead Time: 20 days | 1. Product: Servo Motor Assembly SMA-2500\n   - Quality Pass Rate: 94.5% | 1. Supplier: PrecisionTech Components\n   - Quality Performance: 94.5% pass rate (below 98% threshold) | 2. Supplier: Global Motors Ltd.\n   - Quality Performance: 98.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "A commercial document issued by a buyer to a seller indicating types, quantities, and agreed prices for products or services",
+      "definition": "",
+      "synonyms": [
+        "A commercial document issued by a seller to a buyer indicating types, quantities, and agreed prices for products or services",
+        "A document authorizing the production of a specified quantity of product",
+        "A documented specification defining acceptance criteria for products or processes.",
+        "A systematic examination of materials or products to verify conformance to specifications."
+      ],
+      "provenance_text": "**Definition**: A commercial document issued by a buyer to a seller indicating types, quantities, and agreed prices for products or services. | **Definition**: A commercial document issued by a seller to a buyer indicating types, quantities, and agreed prices for products or services. | **Definition**: A document authorizing the production of a specified quantity of product. | **Definition**: A documented specification defining acceptance criteria for products or processes. Standards can be internal (company-specific) or external (ISO, ASTM, FDA). | **Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping).",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "A predefined path for moving goods between locations with specific transit times, costs, and handling requirements.",
+      "definition": "",
+      "synonyms": [
+        "A company that provides transportation services for shipping goods.",
+        "The physical transportation of goods from one location to another."
+      ],
+      "provenance_text": "**Definition**: A predefined path for moving goods between locations with specific transit times, costs, and handling requirements. Routes can include multiple stops and transshipments. | **Definition**: A company that provides transportation services for shipping goods. Carriers are rated on cost, transit time, and delivery performance. | **Definition**: The physical transportation of goods from one location to another. Shipments can be outbound (to customers), inbound (from suppliers), or inter-warehouse transfers.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "financial plan that allocates resources to departments, projects, or accounts for a specific period",
+      "definition": "",
+      "synonyms": [
+        "A plan that allocates production resources (lines, machines, labor) to work orders over time"
+      ],
+      "provenance_text": "**Definition**: A financial plan that allocates resources to departments, projects, or accounts for a specific period. | **Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges",
+      "definition": "",
+      "synonyms": [
+        "An organizational unit within the company responsible for specific business functions"
+      ],
+      "provenance_text": "**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. | **Definition**: An organizational unit within the company responsible for specific business functions.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "An individual or organization that purchases goods or services from the company",
+      "definition": "",
+      "synonyms": [
+        "A tangible item or service that the company sells to customers",
+        "An external entity that provides goods or services to the company",
+        "An individual who works for the company under an employment contract"
+      ],
+      "provenance_text": "**Definition**: An individual or organization that purchases goods or services from the company. | **Definition**: A tangible item or service that the company sells to customers. | **Definition**: An external entity that provides goods or services to the company. | **Definition**: An individual who works for the company under an employment contract.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bearing Assembly (Alternative Available) \u2500\u2192 6 FG products",
+      "definition": "",
+      "synonyms": [
+        "AC Motor A1 (Alternative Available) \u2500\u2192 5 FG products",
+        "Ball Screw Assembly (Single Source) \u2500\u2192 4 FG products",
+        "Coupling Kit (Single Source) \u2500\u2192 3 FG products",
+        "DC Motor M1 (Single Source) \u2500\u2192 6 FG products",
+        "DC Motor M2 (Single Source) \u2500\u2192 4 FG products",
+        "Gear Motor GM1 (Alternative Available) \u2500\u2192 3 FG products",
+        "Linear Actuator (Single Source) \u2500\u2192 5 FG products",
+        "Precision Gearbox (Single Source) \u2500\u2192 8 FG products",
+        "Servo Motor Assembly (Single Source) \u2500\u2192 12 FG products"
+      ],
+      "provenance_text": "\u2514\u2500\u2500 Bearing Assembly (Alternative Available) \u2500\u2192 6 FG products | \u251c\u2500\u2500 AC Motor A1 (Alternative Available) \u2500\u2192 5 FG products | \u251c\u2500\u2500 Ball Screw Assembly (Single Source) \u2500\u2192 4 FG products | \u251c\u2500\u2500 Coupling Kit (Single Source) \u2500\u2192 3 FG products | \u251c\u2500\u2500 DC Motor M1 (Single Source) \u2500\u2192 6 FG products | \u251c\u2500\u2500 DC Motor M2 (Single Source) \u2500\u2192 4 FG products | \u2514\u2500\u2500 Gear Motor GM1 (Alternative Available) \u2500\u2192 3 FG products | \u251c\u2500\u2500 Linear Actuator (Single Source) \u2500\u2192 5 FG products | \u251c\u2500\u2500 Precision Gearbox (Single Source) \u2500\u2192 8 FG products | \u251c\u2500\u2500 Servo Motor Assembly (Single Source) \u2500\u2192 12 FG products",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "ACME Manufacturing Inc.",
+      "definition": "",
+      "synonyms": [
+        "ACME Manufacturing Company",
+        "Acme Corporation"
+      ],
+      "provenance_text": "  Name: ACME Manufacturing Inc. |   Name: ACME Manufacturing Company | Customer: Acme Corporation (Customer Type: Enterprise)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "AP aging",
+      "definition": "",
+      "synonyms": [
+        "AR aging"
+      ],
+      "provenance_text": "AP aging tracks payment due dates and supports payment approval workflows. | AR aging tracks overdue payments and supports collections workflows.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "LIABILITIES (Credit Balance Accounts)",
+      "definition": "",
+      "synonyms": [
+        "ASSETS (Debit Balance Accounts)",
+        "EQUITY (Credit Balance Accounts)",
+        "EXPENSES (Debit Balance Accounts)",
+        "REVENUES (Credit Balance Accounts)"
+      ],
+      "provenance_text": "LIABILITIES (Credit Balance Accounts):\n\u251c\u2500\u2500 Current Liabilities | ASSETS (Debit Balance Accounts):\n\u251c\u2500\u2500 Current Assets | EQUITY (Credit Balance Accounts):\n\u251c\u2500\u2500 3000 - Common Stock: $2,000,000 (Credit) | \u251c\u2500\u2500 3100 - Retained Earnings: $2,850,000 (Credit) | \u2514\u2500\u2500 Total Equity: $4,850,000 | EXPENSES (Debit Balance Accounts):\n\u251c\u2500\u2500 5000 - Cost of Goods Sold: $5,100,000 (Debit) | \u251c\u2500\u2500 6000 - Operating Expenses: $2,200,000 (Debit) | \u2502   \u251c\u2500\u2500 6200 - Rent and Facilities: $450,000 | \u2502   \u251c\u2500\u2500 6300 - Utilities: $180,000 | \u2502   \u2514\u2500\u2500 6400 - Other Expenses: $370,000 | \u2514\u2500\u2500 Total Expenses: $7,300,000 | REVENUES (Credit Balance Accounts):\n\u251c\u2500\u2500 4000 - Sales Revenue: $8,500,000 (Credit) | \u251c\u2500\u2500 4100 - Service Revenue: $450,000 (Credit) | \u2514\u2500\u2500 Total Revenue: $8,950,000",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Accounting Period",
+      "definition": "",
+      "synonyms": [
+        "Accounting_Period"
+      ],
+      "provenance_text": "**Related Concepts**: Journal Entry Line, General Ledger Account, Accounting Period, User | **Related Concepts**: Department, Account, Accounting Period, Budget Version | - Journal_Entry.period_id \u2192 Accounting_Period",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Actual Revenue to Date",
+      "definition": "",
+      "synonyms": [
+        "Actual Cost to Date",
+        "Actual Expenses",
+        "Actual Material Cost",
+        "Actual Revenue",
+        "Budget",
+        "Budget Version",
+        "Budgeted Cost",
+        "Budgeted Expenses",
+        "Budgeted Revenue",
+        "Budgets",
+        "Cost",
+        "Expenses",
+        "Planned Material Cost",
+        "Quality Standard",
+        "Revenue",
+        "Revenue Recognized",
+        "Standard",
+        "Standard Cost",
+        "Standards",
+        "Total Material Cost",
+        "Total Standard Cost",
+        "cost"
+      ],
+      "provenance_text": "- Actual Revenue to Date: $425,000 (50% of budget) | - Actual Cost to Date: $287,500 (52.3% of budget) | - Actual Expenses: $7,300,000 | - Actual Material Cost: $892,500 | - Actual Revenue: $8,950,000 | **Related Concepts**: Journal Entry, Account Hierarchy, Financial Statement, Budget | **Definition**: A financial plan that allocates resources to departments, projects, or accounts for a specific period. | **Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status | **Related Concepts**: Department, Account, Accounting Period, Budget Version | - Budgeted Cost: $550,000 | - Budgeted Expenses: $7,200,000 | - Budgeted Revenue: $9,000,000 | - Budgeted Revenue: $850,000 | Budgets are compared to actual results for variance analysis. | Cost: $450.00, Base Price: $850.00 | - Chicago \u2192 Dallas: 200 units, Cost: $3,500 | - Dallas \u2192 Los Angeles: 150 units, Cost: $2,800 | - Chicago \u2192 Los Angeles: 100 units, Cost: $2,200 | Net Inco",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Scheduled Production Time",
+      "definition": "",
+      "synonyms": [
+        "Actual Production Time",
+        "Production Schedule"
+      ],
+      "provenance_text": "- Scheduled Production Time: 600 hours (150 units \u00d7 4 hours) | - Actual Production Time: 630 hours | **Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. | **Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority | **Related Concepts**: Work Order, Production Line, Product, Capacity Planning",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Grouping and aggregating across multiple dimensions",
+      "definition": "",
+      "synonyms": [
+        "Aggregates debits and credits across multiple dimensions",
+        "Aggregates time, costs, and revenue across multiple dimensions"
+      ],
+      "provenance_text": "4. **Aggregation Complexity**: Grouping and aggregating across multiple dimensions | - Aggregates debits and credits across multiple dimensions | **Complexity Factors**:\n- Aggregates time, costs, and revenue across multiple dimensions",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Aggregates inventory turnover, fill rates, and transfer costs",
+      "definition": "",
+      "synonyms": [
+        "Aggregates material usage, scrap rates, and cycle times"
+      ],
+      "provenance_text": "- Aggregates inventory turnover, fill rates, and transfer costs | - Aggregates material usage, scrap rates, and cycle times",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Dimensional tolerance (40%), Surface finish (30%), Assembly errors (30%)",
+      "definition": "",
+      "synonyms": [
+        "Assembly errors (30%)",
+        "Dimensional tolerance (40%)"
+      ],
+      "provenance_text": "- Common Defects: Dimensional tolerance (40%), Surface finish (30%), Assembly errors (30%)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Audit Log",
+      "definition": "",
+      "synonyms": [
+        "Audit logs"
+      ],
+      "provenance_text": "**Related Concepts**: Employee, Role, Permission, Audit Log | **Definition**: A chronological record of system events including logins, data changes, approvals, and errors. | **Attributes**: log_id, event_type, user_id, entity_type, entity_id, timestamp, ip_address, action, old_value, new_value | **Related Concepts**: User, Entity, Security Incident | Audit logs support security monitoring and compliance requirements.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Automation Electronics",
+      "definition": "",
+      "synonyms": [
+        "Automation Equipment",
+        "Equipment Maintenance"
+      ],
+      "provenance_text": "1. Industrial Control System - Category: Automation Electronics - 45 units, $450,000 | Category: Automation Equipment |   - Equipment Maintenance: 12 hours",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Average Cycle Time",
+      "definition": "",
+      "synonyms": [
+        "Average Lead Time",
+        "Lead Time"
+      ],
+      "provenance_text": "- Average Cycle Time: 4.2 hours (Standard: 4.0 hours) | - Average Lead Time: 18 days (Contract: 15 days) |    - Quality Pass Rate: 100%, Lead Time: 16 days |    - Quality Pass Rate: 95.8%, Lead Time: 20 days",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Backend API (180h), Frontend UI (100h)",
+      "definition": "",
+      "synonyms": [
+        "Backend API (180h)",
+        "Frontend UI (100h)",
+        "Frontend UI (240h)"
+      ],
+      "provenance_text": "   - Tasks: Backend API (180h), Frontend UI (100h) |    - Tasks: Frontend UI (240h)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Balance Sheet, Income Statement, and Cash Flow Statement",
+      "definition": "",
+      "synonyms": [
+        "Balance Sheet",
+        "Cash Flow Statement",
+        "Financial Statement",
+        "Income Statement",
+        "Net Income"
+      ],
+      "provenance_text": "Primary statements include Balance Sheet, Income Statement, and Cash Flow Statement. | **Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities) | **Related Concepts**: Journal Entry, Account Hierarchy, Financial Statement, Budget | **Definition**: Formal reports summarizing financial performance and position. | Net Income: $1,650,000 (Revenue $8,950,000 - Expenses $7,300,000)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Below budget, needs attention",
+      "definition": "",
+      "synonyms": [
+        "Slightly below budget"
+      ],
+      "provenance_text": "   - Variance: -$50,000 (-5.6%) - Below budget, needs attention |    - Variance: -$100,000 (-1.9%) - Slightly below budget",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bin Location",
+      "definition": "",
+      "synonyms": [
+        "Bin locations"
+      ],
+      "provenance_text": "**Related Concepts**: Inventory Transaction, Bin Location, Warehouse Zone, Stock Transfer | **Related Concepts**: Product, Warehouse, Bin Location, Purchase Receipt, Sales Shipment | **Definition**: A specific storage location within a warehouse. | **Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id | **Related Concepts**: Warehouse, Warehouse Zone, Product, Inventory Transaction | - Inventory_On_Hand.bin_id \u2192 Bin Location | - Work_Order_Material.bin_id \u2192 Bin Location | Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bulk Storage (Zone A)",
+      "definition": "",
+      "synonyms": [
+        "Bulk Storage (Zone C)"
+      ],
+      "provenance_text": "   - Zones: Bulk Storage (Zone A) - 1,200 units, Pick Area (Zone B) - 300 units |    - Zones: Bulk Storage (Zone C) - 600 units, Pick Area (Zone D) - 200 units",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "COMPLETED (0.5 weeks late)",
+      "definition": "",
+      "synonyms": [
+        "COMPLETED (1 week late)"
+      ],
+      "provenance_text": "\u2502   \u2514\u2500\u2500 Status: COMPLETED (0.5 weeks late) | \u2502   \u2514\u2500\u2500 Status: COMPLETED (1 week late)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "CRITICAL RISK PRODUCTS",
+      "definition": "",
+      "synonyms": [
+        "Critical Risk Products",
+        "High Risk Products",
+        "Low Risk Products",
+        "Medium Risk Products"
+      ],
+      "provenance_text": "Product-Level Risk Analysis:\n\nCRITICAL RISK PRODUCTS: | - Critical Risk Products: 8 products (9.4% of category) | - High Risk Products: 15 products (17.6% of category) | - Low Risk Products: 37 products (43.5% of category) | - Medium Risk Products: 25 products (29.4% of category)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Carrier",
+      "definition": "",
+      "synonyms": [
+        "Carriers"
+      ],
+      "provenance_text": "**Definition**: A company that provides transportation services for shipping goods. Carriers are rated on cost, transit time, and delivery performance. | Carriers are rated on cost, transit time, and delivery performance.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Supply Chain Risk Assessment - Product Category: Critical Components",
+      "definition": "",
+      "synonyms": [
+        "Category: Automation Components",
+        "Product Type: Component",
+        "Product Type: Raw Material",
+        "Raw Material"
+      ],
+      "provenance_text": "## Scenario 7: Supply Chain Risk Assessment\n\n**Expected Answer Format**:\n```\nSupply Chain Risk Assessment - Product Category: Critical Components | 1. Product: Servo Motor Assembly SMA-2500\n   - Category: Automation Components | 2. Precision Machined Parts - Product Type: Component | 1. Steel Alloy Sheets - Product Type: Raw Material | \u2502   \u251c\u2500\u2500 Level 2: Servo Motor Controller Module (Raw Material) - 2 units @ $450 = $900 | \u2502   \u251c\u2500\u2500 Level 2: Precision Gearbox (Raw Material) - 1 unit @ $650 = $650 | \u2502   \u2514\u2500\u2500 Level 2: Aluminum Arm Structure (Raw Material) - 1 unit @ $350 = $350 | \u2502   \u251c\u2500\u2500 Level 2: Industrial PLC Controller (Raw Material) - 1 unit @ $1,200 = $1,200 | \u2502   \u251c\u2500\u2500 Level 2: Sensor Array Kit (Raw Material) - 1 unit @ $800 = $800 | \u2502   \u2514\u2500\u2500 Level 2: Power Supply Unit (Raw Material) - 1 unit @ $250 = $250",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Chicago \u2192 Los Angeles",
+      "definition": "",
+      "synonyms": [
+        "Chicago \u2192 Dallas",
+        "Dallas \u2192 Los Angeles"
+      ],
+      "provenance_text": "- Chicago \u2192 Los Angeles: 100 units, Cost: $2,200 | - Chicago \u2192 Dallas: 200 units, Cost: $3,500 | - Dallas \u2192 Los Angeles: 150 units, Cost: $2,800",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Key Performance Indicator (KPI)",
+      "definition": "",
+      "synonyms": [
+        "Common KPIs",
+        "KPIs"
+      ],
+      "provenance_text": "**Definition**: A quantifiable metric used to evaluate performance against strategic objectives. | **Common KPIs**: Order fulfillment rate, Inventory turnover, Supplier on-time delivery, Customer satisfaction, Employee productivity, Production yield | KPIs can be financial, operational, customer-facing, or employee-related.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Company-Owned",
+      "definition": "",
+      "synonyms": [
+        "company-owned"
+      ],
+      "provenance_text": "1. Chicago Distribution Center (Company-Owned) | 2. Dallas Regional Hub (Company-Owned) | Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Variance analysis (planned/budget/forecast vs. actual)",
+      "definition": "",
+      "synonyms": [
+        "Compares actual vs. budget with variance analysis",
+        "Compares budgeted vs. actual costs and revenue",
+        "Compares planned vs. actual production metrics",
+        "Comparing planned vs. actual, budget vs. forecast",
+        "actual results for variance analysis"
+      ],
+      "provenance_text": "- Compares actual vs. budget with variance analysis | **Complexity Factors**:\n- Compares budgeted vs. actual costs and revenue | - Compares planned vs. actual production metrics | 8. **Variance Analysis**: Comparing planned vs. actual, budget vs. forecast | Budgets are compared to actual results for variance analysis.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Contract Status: Expires in 3 months, not renewed",
+      "definition": "",
+      "synonyms": [
+        "Contract Status: Active, expires in 18 months"
+      ],
+      "provenance_text": "1. Supplier: PrecisionTech Components\n   - Contract Status: Expires in 3 months, not renewed | 2. Supplier: Global Motors Ltd.\n   - Contract Status: Active, expires in 18 months",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Robotic Arm Assembly (Sub-Assembly)",
+      "definition": "",
+      "synonyms": [
+        "Control System Unit (Sub-Assembly)"
+      ],
+      "provenance_text": "\u251c\u2500\u2500 Level 1: Robotic Arm Assembly (Sub-Assembly) | \u251c\u2500\u2500 Level 1: Control System Unit (Sub-Assembly)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Credit Rating",
+      "definition": "",
+      "synonyms": [
+        "Credit Score"
+      ],
+      "provenance_text": "Credit Rating: A, Quality Rating: 4.8/5.0 | Credit Score: 85, Credit Limit: $1,000,000",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Current Liabilities",
+      "definition": "",
+      "synonyms": [
+        "Current Assets",
+        "Current Profit",
+        "Projected Profit"
+      ],
+      "provenance_text": "LIABILITIES (Credit Balance Accounts):\n\u251c\u2500\u2500 Current Liabilities | \u251c\u2500\u2500 Current Liabilities\n\u2502   \u251c\u2500\u2500 2000 - Accounts Payable: $1,850,000 (Credit) | \u2502   \u251c\u2500\u2500 2100 - Accrued Expenses: $320,000 (Credit) | \u2502   \u2514\u2500\u2500 2200 - Short-Term Debt: $500,000 (Credit) | \u2514\u2500\u2500 Total Current Liabilities: $2,670,000 | ASSETS (Debit Balance Accounts):\n\u251c\u2500\u2500 Current Assets | \u251c\u2500\u2500 Current Assets\n\u2502   \u251c\u2500\u2500 1000 - Cash and Cash Equivalents | \u2502   \u251c\u2500\u2500 1100 - Accounts Receivable: $2,450,000 (Debit) | \u2502   \u251c\u2500\u2500 1200 - Inventory: $3,800,000 (Debit) | \u2502   \u2514\u2500\u2500 1300 - Prepaid Expenses: $150,000 (Debit) | \u2514\u2500\u2500 Total Current Assets: $7,655,000 | - Current Profit: $137,500 (32.4% margin to date) | - Projected Profit: $300,000 (35.3% margin)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Financial Health: Credit Rating B (declining from A last year)",
+      "definition": "",
+      "synonyms": [
+        "Declining financial health (credit rating downgrade)",
+        "Financial Health: Credit Rating A (stable)"
+      ],
+      "provenance_text": "1. Supplier: PrecisionTech Components\n   - Financial Health: Credit Rating B (declining from A last year) |    Risk Factors:\n   - Declining financial health (credit rating downgrade) | 2. Supplier: Global Motors Ltd.\n   - Financial Health: Credit Rating A (stable)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Department, Position, Employee Compensation, Time Entry, Performance Review",
+      "definition": "",
+      "synonyms": [
+        "Employee, Department, Job Family, Employee Compensation"
+      ],
+      "provenance_text": "**Related Concepts**: Department, Position, Employee Compensation, Time Entry, Performance Review | **Related Concepts**: Employee, Department, Job Family, Employee Compensation",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Dependency: 6 products are single-source (no alternative suppliers)",
+      "definition": "",
+      "synonyms": [
+        "Dependency: 3 products are single-source",
+        "IMMEDIATE: Qualify alternate suppliers for 6 single-source products",
+        "Qualify 2 alternative suppliers for critical components",
+        "Single source dependency on 6 critical products"
+      ],
+      "provenance_text": "1. Supplier: PrecisionTech Components\n   - Dependency: 6 products are single-source (no alternative suppliers) | 2. Supplier: Global Motors Ltd.\n   - Dependency: 3 products are single-source |    Recommendations:\n   - IMMEDIATE: Qualify alternate suppliers for 6 single-source products | 3. MEDIUM-TERM (Next 90 Days):\n   - Qualify 2 alternative suppliers for critical components |    Risk Factors:\n   - Single source dependency on 6 critical products",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Lead Developer, Software Development",
+      "definition": "",
+      "synonyms": [
+        "Developer",
+        "Lead Developer"
+      ],
+      "provenance_text": "2. Maria Rodriguez (Lead Developer, Software Development) | 5. Lisa Park (Developer, Software Development)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Duplicate detection and merge recommendations",
+      "definition": "",
+      "synonyms": [
+        "MERGE",
+        "Merge Recommendation"
+      ],
+      "provenance_text": "5. **Entity Resolution**: Duplicate detection and merge recommendations | Merge Recommendation: MERGE",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Enterprise Automation System Implementation",
+      "definition": "",
+      "synonyms": [
+        "PRJ-2024-015: Enterprise Automation System Implementation"
+      ],
+      "provenance_text": "Project: Enterprise Automation System Implementation | PRJ-2024-015: Enterprise Automation System Implementation\n\u251c\u2500\u2500 Task 1: Requirements Analysis (COMPLETED)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Tests entity resolution across Customer, Customer Address, Customer Contact",
+      "definition": "",
+      "synonyms": [
+        "Entity",
+        "Entity Resolution",
+        "testing entity resolution"
+      ],
+      "provenance_text": "- Tests entity resolution across Customer, Customer Address, Customer Contact | **Related Concepts**: User, Entity, Security Incident | 5. **Entity Resolution**: Duplicate detection and merge recommendations | This document describes complex business scenarios that require joining multiple tables across business units, testing entity resolution, and evaluating system performance under realistic enterprise conditions.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Filters on customer credit score, order value, and product categories",
+      "definition": "",
+      "synonyms": [
+        "Filters on product category, warehouse type, and stock status"
+      ],
+      "provenance_text": "- Filters on customer credit score, order value, and product categories | - Filters on product category, warehouse type, and stock status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Quality Assurance Department",
+      "definition": "",
+      "synonyms": [
+        "Final Inspections",
+        "In-Process Inspections",
+        "Inspections",
+        "Quality Inspection"
+      ],
+      "provenance_text": "4. Quality Assurance Department\n   - Budget: $30,000 (5.5% of total budget) | 4. Quality Assurance Department\n   - Actual: $12,000 (40.0% of budget, 40.0% consumed) | 4. Quality Assurance Department\n   - Variance: -$18,000 remaining | 4. Quality Assurance Department\n   - Employees: 2 QA engineers assigned | 4. Quality Assurance Department\n   - Hours Logged: 150 hours @ average $80.00/hour |    - Budget: $30,000 (5.5% of total budget) |    - Actual: $12,000 (40.0% of budget, 40.0% consumed) |    - Variance: -$18,000 remaining |    - Employees: 2 QA engineers assigned |    - Hours Logged: 150 hours @ average $80.00/hour | - Final Inspections: 150 units, 142 Passed, 8 Failed (5.3% failure rate) | - In-Process Inspections: 75 checks, 71 Passed, 4 Conditional Pass | Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping). | **Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections c",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Global Motors Ltd.",
+      "definition": "",
+      "synonyms": [
+        "Global Motors"
+      ],
+      "provenance_text": "2. Supplier: Global Motors Ltd. | 2. Supplier: Global Motors Ltd.\n   - Products Supplied: 5 motor assemblies | 2. Supplier: Global Motors Ltd.\n   - Annual Spend: $2,800,000 (17.7% of category spend) | 2. Supplier: Global Motors Ltd.\n   - Risk Score: 7.8/10 (HIGH) | 2. Supplier: Global Motors Ltd.\n   - Dependency: 3 products are single-source | 2. Supplier: Global Motors Ltd.\n   - Contract Status: Active, expires in 18 months | 2. Supplier: Global Motors Ltd.\n   - Financial Health: Credit Rating A (stable) | 2. Supplier: Global Motors Ltd.\n   - Quality Performance: 98.2% pass rate (meets threshold) | 2. Supplier: Global Motors Ltd.\n   - On-Time Delivery: 92% (below 95% threshold) | 2. Supplier: Global Motors Ltd.\n   - Lead Time: 35 days average (consistent, \u00b13 days) | \u251c\u2500\u2500 DC Motor M1 (Single Source) \u2500\u2192 6 FG products | \u251c\u2500\u2500 DC Motor M2 (Single Source) \u2500\u2192 4 FG products | \u251c\u2500\u2500 AC Motor A1 (Alternative Available) \u2500\u2192 5 FG products | \u2514\u2500\u2500 Gear Motor GM1 (Alternative Available) \u2500\u2192 3 FG products",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Increase/order 8-week safety stock for critical items",
+      "definition": "",
+      "synonyms": [
+        "HIGH: Increase safety stock for critical items (4 weeks \u2192 8 weeks)",
+        "Order 8-week safety stock for critical single-source items"
+      ],
+      "provenance_text": "   Recommendations:\n   - HIGH: Increase safety stock for critical items (4 weeks \u2192 8 weeks) | 1. IMMEDIATE (This Week):\n   - Order 8-week safety stock for critical single-source items",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Task 3: Software Development (IN PROGRESS - 60% complete)",
+      "definition": "",
+      "synonyms": [
+        "Hardware Integration (110h)",
+        "Hardware Integration delays",
+        "Hardware Integration task",
+        "Hardware delivery delayed by supplier",
+        "Requirements Analysis (80h)",
+        "SLIGHTLY BEHIND (blocked by hardware delivery)",
+        "Supplier corrective action",
+        "Supplier corrective action pending",
+        "System Design (150h)",
+        "System Design (200h), Hardware Integration (120h)",
+        "System Design task",
+        "Task 1: Requirements Analysis",
+        "Task 1: Requirements Analysis (COMPLETED)",
+        "Task 2: System Design",
+        "Task 2: System Design (COMPLETED)",
+        "Task 3.2: Frontend UI (IN PROGRESS - 70%)",
+        "Task 3: Software Development",
+        "Task 4: Hardware Integration",
+        "Task 4: Hardware Integration (IN PROGRESS - 40% complete)"
+      ],
+      "provenance_text": "\u251c\u2500\u2500 Task 3: Software Development (IN PROGRESS - 60% complete)\n\u2502   \u251c\u2500\u2500 Budget: $250,000, Actual: $145,000 (58% consumed) |    - Tasks: System Design (150h), Hardware Integration (110h) | 2. Add contingency buffer for Hardware Integration delays | 2. HIGH: Hardware Integration task is behind schedule |    - Cause: Hardware delivery delayed by supplier |    - Tasks: Requirements Analysis (80h), Overall Coordination (100h) | \u2502   \u2514\u2500\u2500 Status: SLIGHTLY BEHIND (blocked by hardware delivery) |    - Supplier corrective action pending |    - Tasks: System Design (200h), Hardware Integration (120h) | 1. CRITICAL: System Design task exceeded budget by $7,000 (+9%) | \u2502   \u251c\u2500\u2500 Budget: $30,000, Actual: $28,500 (95% consumed) | \u2502   \u251c\u2500\u2500 Planned: 80 hours, Actual: 92 hours (+15% over) | \u2502   \u251c\u2500\u2500 Assigned To: Sarah Chen (PM) | \u2502   \u2514\u2500\u2500 Status: COMPLETED (0.5 weeks late) | PRJ-2024-015: Enterprise Automation System Implementation\n\u251c\u2500\u2500 Task 1: Requirements Analysis (COMPLETED) | \u2502   \u251c\u2500\u2500 Budget: $75,000, Actual:",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Very high complexity (9+ tables, aggregations)",
+      "definition": "",
+      "synonyms": [
+        "High complexity (6-8 tables)",
+        "Medium complexity (4-5 tables)"
+      ],
+      "provenance_text": "- Very high complexity (9+ tables, aggregations): 8-15 seconds | - High complexity (6-8 tables): 3-8 seconds | - Medium complexity (4-5 tables): 1-3 seconds",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "IN PROGRESS (on schedule)",
+      "definition": "",
+      "synonyms": [
+        "IN PROGRESS"
+      ],
+      "provenance_text": "\u2502   \u251c\u2500\u2500 Status: IN PROGRESS (on schedule) | Status: IN PROGRESS",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Impact Analysis",
+      "definition": "",
+      "synonyms": [
+        "Impact"
+      ],
+      "provenance_text": "- Total Orders After Merge: 57 orders ($2,800,000 total value) | - Total Invoices After Merge: 53 invoices ($160,000 balance due) | - Total AR Records After Merge: 20 records ($332,000 outstanding) | - No conflicts detected (no overlapping order numbers) | - Duplicate contact: \"John Smith\" and \"J. Smith\" - keep both as separate contacts |    - Impact: Reduces contingency budget for testing phase |    - Impact: May delay Testing & QA start by 1 week |    - Impact: Potential rework if changes requested",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Industrial Control System",
+      "definition": "",
+      "synonyms": [
+        "Industrial PLC Controller"
+      ],
+      "provenance_text": "1. Industrial Control System - Category: Automation Electronics - 45 units, $450,000 | \u2502   \u251c\u2500\u2500 Level 2: Industrial PLC Controller (Raw Material) - 1 unit @ $1,200 = $1,200",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "John Smith (Purchasing Manager)",
+      "definition": "",
+      "synonyms": [
+        "J. Smith (Purchasing), jsmith@acmemfg.com",
+        "John Smith (Purchasing Manager), john.smith@acme-mfg.com"
+      ],
+      "provenance_text": "  Contacts: J. Smith (Purchasing), jsmith@acmemfg.com |   Contacts: John Smith (Purchasing Manager), john.smith@acme-mfg.com",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Jan 15, 2024 - Jun 30, 2024 (current: Mar 23, 2024)",
+      "definition": "",
+      "synonyms": [
+        "Jan 1 - Mar 31, 2024"
+      ],
+      "provenance_text": "Duration: Jan 15, 2024 - Jun 30, 2024 (current: Mar 23, 2024) | Trial Balance - Period: 2024-Q1 (Jan 1 - Mar 31, 2024)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Time-based analysis (orders in last 90 days)",
+      "definition": "",
+      "synonyms": [
+        "Last 90 Days Sales",
+        "Orders (Last 90 Days)"
+      ],
+      "provenance_text": "- Time-based analysis (orders in last 90 days) |    - Last 90 Days Sales: 850 units from this warehouse |    - Last 90 Days Sales: 420 units from this warehouse |    - Last 90 Days Sales: 310 units from this warehouse | Orders (Last 90 Days): 15 orders, Total Value: $1,250,000",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Lead Time: 28 days average (high variability: \u00b110 days)",
+      "definition": "",
+      "synonyms": [
+        "Lead Time: 28 days",
+        "Lead Time: 35 days average (consistent, \u00b13 days)"
+      ],
+      "provenance_text": "1. Supplier: PrecisionTech Components\n   - Lead Time: 28 days average (high variability: \u00b110 days) | 1. Product: Servo Motor Assembly SMA-2500\n   - Lead Time: 28 days | 2. Supplier: Global Motors Ltd.\n   - Lead Time: 35 days average (consistent, \u00b13 days)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Lead time variability impacting production schedules",
+      "definition": "",
+      "synonyms": [
+        "Update production schedules to account for longer lead times"
+      ],
+      "provenance_text": "   Risk Factors:\n   - Lead time variability impacting production schedules | 2. SHORT-TERM (Next 30 Days):\n   - Update production schedules to account for longer lead times",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Level 0",
+      "definition": "",
+      "synonyms": [
+        "Level 1"
+      ],
+      "provenance_text": "Level 0: Industrial Assembly Robot ARM-500 | \u251c\u2500\u2500 Level 1: Robotic Arm Assembly (Sub-Assembly) | \u251c\u2500\u2500 Level 1: Control System Unit (Sub-Assembly) | \u2514\u2500\u2500 Level 1: Base Platform (Purchased Component)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "MEDIUM-TERM (Next 90 Days)",
+      "definition": "",
+      "synonyms": [
+        "SHORT-TERM (Next 30 Days)"
+      ],
+      "provenance_text": "3. MEDIUM-TERM (Next 90 Days):\n   - Qualify 2 alternative suppliers for critical components | 3. MEDIUM-TERM (Next 90 Days):\n   - Negotiate improved quality and delivery terms with PrecisionTech | 3. MEDIUM-TERM (Next 90 Days):\n   - Implement supplier scorecard with monthly performance reviews | 2. SHORT-TERM (Next 30 Days):\n   - Launch RFQ for 6 single-source products from PrecisionTech | 2. SHORT-TERM (Next 30 Days):\n   - Implement 100% incoming inspection for PrecisionTech shipments | 2. SHORT-TERM (Next 30 Days):\n   - Update production schedules to account for longer lead times",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Material Variance",
+      "definition": "",
+      "synonyms": [
+        "Network Analysis",
+        "Temporal Analysis",
+        "Variance",
+        "Variance Analysis"
+      ],
+      "provenance_text": "- Material Variance: +$45,000 (+5.3%) | 7. **Network Analysis**: Supplier dependency, supply chain risk visualization | 6. **Temporal Analysis**: Date range filtering and time-based aggregations | - Variance: -$50,000 (-0.6%) - Favorable variance is small | - Variance: +$100,000 (+1.4%) - Unfavorable, investigate |    - Variance: -$100,000 (-1.9%) - Slightly below budget |    - Variance: +$50,000 (+2.0%) - Above budget, good performance |    - Variance: -$50,000 (-5.6%) - Below budget, needs attention | 8. **Variance Analysis**: Comparing planned vs. actual, budget vs. forecast",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Money owed to the company by customers for goods or services delivered on credit",
+      "definition": "",
+      "synonyms": [
+        "Money owed by the company to suppliers for goods or services received on credit"
+      ],
+      "provenance_text": "**Definition**: Money owed to the company by customers for goods or services delivered on credit. | **Definition**: Money owed by the company to suppliers for goods or services received on credit.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "NCR-001",
+      "definition": "",
+      "synonyms": [
+        "NCR-002",
+        "NCR-003"
+      ],
+      "provenance_text": "     - NCR-001: Dimensional defects on precision gears (Major) |    - NCR-001: 15% scrap rate due to dimensional defects |      - NCR-002: Material certification missing (Major) |      - NCR-003: Packaging damage causing 15% scrap (Minor)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "NOT STARTED (starts after Task 3 & 4 complete)",
+      "definition": "",
+      "synonyms": [
+        "Task 3.3: Database Integration (NOT STARTED)",
+        "Task 5: Testing & QA",
+        "Task 5: Testing & QA (NOT STARTED)"
+      ],
+      "provenance_text": "    \u2514\u2500\u2500 Status: NOT STARTED (starts after Task 3 & 4 complete) | \u2502       \u2514\u2500\u2500 Task 3.3: Database Integration (NOT STARTED) - $60,000 / $0 |     \u251c\u2500\u2500 Budget: $75,000, Actual: $0 (0% consumed) |     \u251c\u2500\u2500 Planned: 400 hours, Actual: 0 hours |     \u251c\u2500\u2500 Assigned To: QA (2 engineers) | \u2514\u2500\u2500 Task 5: Testing & QA (NOT STARTED)\n    \u251c\u2500\u2500 Budget: $75,000, Actual: $0 (0% consumed)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Non-Conformance Report",
+      "definition": "",
+      "synonyms": [
+        "Non_Conformance_Report.product_id"
+      ],
+      "provenance_text": "**Definition**: A document describing a quality deviation or defect that does not meet specifications. NCRs trigger root cause analysis and corrective/preventive actions (CAPA). | - Non_Conformance_Report.product_id \u2192 Product",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Outstanding AR",
+      "definition": "",
+      "synonyms": [
+        "Outstanding"
+      ],
+      "provenance_text": "- Outstanding AR: $83,500 | - Outstanding AR: $225,000 (within payment terms) | - Outstanding: $300,000",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Pick Area (Zone B)",
+      "definition": "",
+      "synonyms": [
+        "Pick Area (Zone D)"
+      ],
+      "provenance_text": "   - Zones: Bulk Storage (Zone A) - 1,200 units, Pick Area (Zone B) - 300 units |    - Zones: Bulk Storage (Zone C) - 600 units, Pick Area (Zone D) - 200 units",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Position",
+      "definition": "",
+      "synonyms": [
+        "Positions"
+      ],
+      "provenance_text": "**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. | **Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications | **Related Concepts**: Employee, Department, Job Family, Employee Compensation | Positions belong to job families with career paths.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Precision Bearings Kit",
+      "definition": "",
+      "synonyms": [
+        "Precision Bearings Kit - Category: Industrial Supplies - 100 units, $75,000"
+      ],
+      "provenance_text": "3. Precision Bearings Kit - Category: Industrial Supplies - 100 units, $75,000",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Precision Gearbox PGB-800",
+      "definition": "",
+      "synonyms": [
+        "Precision Gearbox"
+      ],
+      "provenance_text": "2. Product: Precision Gearbox PGB-800 |    - Category: Power Transmission |    - Used In: 8 finished goods (25% of production volume) |    - Annual Usage: 3,000 units |    - Unit Cost: $650, Annual Spend: $1,950,000 |    - Suppliers: 1 supplier (PrecisionTech Components) |    - Lead Time: 35 days |    - Quality Pass Rate: 92.0% (below threshold) |    - Current Stock: 180 units (18 days of inventory) |    - Risk Score: 8.8/10 (HIGH) | \u2502   \u251c\u2500\u2500 Level 2: Precision Gearbox (Raw Material) - 1 unit @ $650 = $650 | 2. Precision Gearbox: 5% scrap (normal: 1%)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Software Development Department",
+      "definition": "",
+      "synonyms": [
+        "Project Management Department",
+        "Software Development"
+      ],
+      "provenance_text": "2. Software Development Department\n   - Budget: $120,000 (21.8% of total budget) | 2. Software Development Department\n   - Actual: $68,500 (57.1% of budget, 57.1% consumed) | 2. Software Development Department\n   - Variance: -$51,500 remaining | 2. Software Development Department\n   - Employees: 5 developers assigned | 2. Software Development Department\n   - Hours Logged: 1,150 hours @ average $59.60/hour | 2. Software Development Department\n   - Top Resource: Maria Rodriguez (Lead Developer) - 280 hours, $18,200 | 3. Project Management Department\n   - Budget: $50,000 (9.1% of total budget) | 3. Project Management Department\n   - Actual: $22,000 (44.0% of budget, 44.0% consumed) | 3. Project Management Department\n   - Variance: -$28,000 remaining | 3. Project Management Department\n   - Employees: 2 project managers assigned | 3. Project Management Department\n   - Hours Logged: 285 hours @ average $77.20/hour | 3. Project Management Department\n   - Top Resource: Sarah Chen (Project Mana",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Total Allocated",
+      "definition": "",
+      "synonyms": [
+        "Quantity",
+        "Total Available",
+        "Total Quantity",
+        "Total Value"
+      ],
+      "provenance_text": "- Total Allocated: 1,200 units |    - Orders: 15, Quantity: 50,000 kg, Value: $750,000 |    - Orders: 12, Quantity: 25,000 units, Value: $500,000 | - Total Available: 2,300 units | - Work Orders: 25 orders, Total Quantity: 150 units | Active Contracts: 3 contracts, Total Value: $5,000,000 | - Purchase Orders: 45 POs, Total Value: $2,100,000",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Record 1",
+      "definition": "",
+      "synonyms": [
+        "Record 2"
+      ],
+      "provenance_text": "- Record 1: Customer ID 1001 |   Name: ACME Manufacturing Inc. |   Tax ID: 12-3456789 |     - 123 Industrial Blvd, Detroit, MI 48201 (Billing) |     - 123 Industrial Blvd, Detroit, MI 48201 (Shipping) |   Contacts: John Smith (Purchasing Manager), john.smith@acme-mfg.com |   Orders: 45 orders, Total Value: $2,350,000 |   Invoices: 42 invoices, Balance Due: $125,000 |   AR Records: 15 records, $280,000 outstanding | - Record 2: Customer ID 2847 |   Name: ACME Manufacturing Company |     - 123 Industrial Boulevard, Detroit, MI 48201 (Billing) |   Contacts: J. Smith (Purchasing), jsmith@acmemfg.com |   Orders: 12 orders, Total Value: $450,000 |   Invoices: 11 invoices, Balance Due: $35,000 |   AR Records: 5 records, $52,000 outstanding",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Risk Factors",
+      "definition": "",
+      "synonyms": [
+        "Risk"
+      ],
+      "provenance_text": "   Risk Factors:\n   - Single source dependency on 6 critical products |    Risk Factors:\n   - Contract expiring, renewal uncertain |    Risk Factors:\n   - Declining financial health (credit rating downgrade) |    Risk Factors:\n   - Quality and delivery below acceptable thresholds |    Risk Factors:\n   - Lead time variability impacting production schedules |    - Risk: Burnout and quality issues",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Role Hierarchy",
+      "definition": "",
+      "synonyms": [
+        "Role"
+      ],
+      "provenance_text": "**Related Concepts**: User, Permission, Role Hierarchy | **Related Concepts**: Employee, Role, Permission, Audit Log | **Definition**: A collection of permissions that grants access to specific system functions. | **Attributes**: role_id, role_name, role_type, description, status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 415
+  },
+  "tables_parsed": [
+    {
+      "name": "CUSTOMER_TYPE",
+      "columns": 5
+    },
+    {
+      "name": "CUSTOMER",
+      "columns": 16
+    },
+    {
+      "name": "CUSTOMER_ADDRESS",
+      "columns": 11
+    },
+    {
+      "name": "CUSTOMER_CONTACT",
+      "columns": 8
+    },
+    {
+      "name": "PRODUCT_CATEGORY",
+      "columns": 6
+    },
+    {
+      "name": "PRODUCT",
+      "columns": 17
+    },
+    {
+      "name": "PRICE_LIST",
+      "columns": 6
+    },
+    {
+      "name": "PRODUCT_PRICE",
+      "columns": 7
+    },
+    {
+      "name": "SALES_ORDER",
+      "columns": 20
+    },
+    {
+      "name": "SALES_ORDER_LINE",
+      "columns": 14
+    },
+    {
+      "name": "INVOICE",
+      "columns": 15
+    },
+    {
+      "name": "INVOICE_LINE",
+      "columns": 10
+    },
+    {
+      "name": "PAYMENT",
+      "columns": 12
+    },
+    {
+      "name": "SUPPLIER",
+      "columns": 16
+    },
+    {
+      "name": "SUPPLIER_ADDRESS",
+      "columns": 11
+    },
+    {
+      "name": "SUPPLIER_CONTACT",
+      "columns": 8
+    },
+    {
+      "name": "SUPPLIER_CONTRACT",
+      "columns": 12
+    },
+    {
+      "name": "PURCHASE_ORDER",
+      "columns": 21
+    },
+    {
+      "name": "PURCHASE_ORDER_LINE",
+      "columns": 14
+    },
+    {
+      "name": "PURCHASE_RECEIPT",
+      "columns": 11
+    },
+    {
+      "name": "PURCHASE_RECEIPT_LINE",
+      "columns": 12
+    },
+    {
+      "name": "WAREHOUSE",
+      "columns": 12
+    },
+    {
+      "name": "WAREHOUSE_ZONE",
+      "columns": 6
+    },
+    {
+      "name": "BIN_LOCATION",
+      "columns": 11
+    },
+    {
+      "name": "INVENTORY_ON_HAND",
+      "columns": 11
+    },
+    {
+      "name": "INVENTORY_TRANSACTION",
+      "columns": 14
+    },
+    {
+      "name": "STOCK_TRANSFER",
+      "columns": 10
+    },
+    {
+      "name": "STOCK_TRANSFER_LINE",
+      "columns": 9
+    },
+    {
+      "name": "PRODUCTION_LINE",
+      "columns": 9
+    },
+    {
+      "name": "BILL_OF_MATERIALS",
+      "columns": 9
+    },
+    {
+      "name": "WORK_ORDER",
+      "columns": 16
+    },
+    {
+      "name": "WORK_ORDER_MATERIAL",
+      "columns": 8
+    },
+    {
+      "name": "PRODUCTION_SCHEDULE",
+      "columns": 10
+    },
+    {
+      "name": "QUALITY_STANDARD",
+      "columns": 8
+    },
+    {
+      "name": "QUALITY_INSPECTION",
+      "columns": 17
+    },
+    {
+      "name": "NON_CONFORMANCE_REPORT",
+      "columns": 15
+    },
+    {
+      "name": "ACCOUNT_TYPE",
+      "columns": 4
+    },
+    {
+      "name": "GENERAL_LEDGER_ACCOUNT",
+      "columns": 9
+    },
+    {
+      "name": "ACCOUNTING_PERIOD",
+      "columns": 8
+    },
+    {
+      "name": "JOURNAL_ENTRY",
+      "columns": 16
+    },
+    {
+      "name": "JOURNAL_ENTRY_LINE",
+      "columns": 10
+    },
+    {
+      "name": "ACCOUNTS_RECEIVABLE",
+      "columns": 13
+    },
+    {
+      "name": "ACCOUNTS_PAYABLE",
+      "columns": 14
+    },
+    {
+      "name": "BUDGET",
+      "columns": 13
+    },
+    {
+      "name": "DEPARTMENT",
+      "columns": 9
+    },
+    {
+      "name": "POSITION",
+      "columns": 12
+    },
+    {
+      "name": "EMPLOYEE",
+      "columns": 17
+    },
+    {
+      "name": "TIME_ENTRY",
+      "columns": 12
+    },
+    {
+      "name": "CARRIER",
+      "columns": 10
+    },
+    {
+      "name": "SHIPPING_ROUTE",
+      "columns": 12
+    },
+    {
+      "name": "SHIPMENT",
+      "columns": 17
+    },
+    {
+      "name": "SHIPMENT_LINE",
+      "columns": 9
+    },
+    {
+      "name": "PROJECT",
+      "columns": 14
+    },
+    {
+      "name": "PROJECT_TASK",
+      "columns": 15
+    },
+    {
+      "name": "APP_USER",
+      "columns": 15
+    },
+    {
+      "name": "ROLE",
+      "columns": 7
+    },
+    {
+      "name": "USER_ROLE",
+      "columns": 7
+    },
+    {
+      "name": "AUDIT_LOG",
+      "columns": 11
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "CUSTOMER_TYPE",
+      "description": ""
+    },
+    {
+      "name": "CUSTOMER",
+      "description": ""
+    },
+    {
+      "name": "CUSTOMER_ADDRESS",
+      "description": ""
+    },
+    {
+      "name": "CUSTOMER_CONTACT",
+      "description": ""
+    },
+    {
+      "name": "PRODUCT_CATEGORY",
+      "description": ""
+    },
+    {
+      "name": "PRODUCT",
+      "description": ""
+    },
+    {
+      "name": "PRICE_LIST",
+      "description": ""
+    },
+    {
+      "name": "PRODUCT_PRICE",
+      "description": ""
+    },
+    {
+      "name": "SALES_ORDER",
+      "description": ""
+    },
+    {
+      "name": "SALES_ORDER_LINE",
+      "description": ""
+    },
+    {
+      "name": "INVOICE",
+      "description": ""
+    },
+    {
+      "name": "INVOICE_LINE",
+      "description": ""
+    },
+    {
+      "name": "PAYMENT",
+      "description": ""
+    },
+    {
+      "name": "SUPPLIER",
+      "description": ""
+    },
+    {
+      "name": "SUPPLIER_ADDRESS",
+      "description": ""
+    },
+    {
+      "name": "SUPPLIER_CONTACT",
+      "description": ""
+    },
+    {
+      "name": "SUPPLIER_CONTRACT",
+      "description": ""
+    },
+    {
+      "name": "PURCHASE_ORDER",
+      "description": ""
+    },
+    {
+      "name": "PURCHASE_ORDER_LINE",
+      "description": ""
+    },
+    {
+      "name": "PURCHASE_RECEIPT",
+      "description": ""
+    },
+    {
+      "name": "PURCHASE_RECEIPT_LINE",
+      "description": ""
+    },
+    {
+      "name": "WAREHOUSE",
+      "description": ""
+    },
+    {
+      "name": "WAREHOUSE_ZONE",
+      "description": ""
+    },
+    {
+      "name": "BIN_LOCATION",
+      "description": ""
+    },
+    {
+      "name": "INVENTORY_ON_HAND",
+      "description": ""
+    },
+    {
+      "name": "INVENTORY_TRANSACTION",
+      "description": ""
+    },
+    {
+      "name": "STOCK_TRANSFER",
+      "description": ""
+    },
+    {
+      "name": "STOCK_TRANSFER_LINE",
+      "description": ""
+    },
+    {
+      "name": "PRODUCTION_LINE",
+      "description": ""
+    },
+    {
+      "name": "BILL_OF_MATERIALS",
+      "description": ""
+    },
+    {
+      "name": "WORK_ORDER",
+      "description": ""
+    },
+    {
+      "name": "WORK_ORDER_MATERIAL",
+      "description": ""
+    },
+    {
+      "name": "PRODUCTION_SCHEDULE",
+      "description": ""
+    },
+    {
+      "name": "QUALITY_STANDARD",
+      "description": ""
+    },
+    {
+      "name": "QUALITY_INSPECTION",
+      "description": ""
+    },
+    {
+      "name": "NON_CONFORMANCE_REPORT",
+      "description": ""
+    },
+    {
+      "name": "ACCOUNT_TYPE",
+      "description": ""
+    },
+    {
+      "name": "GENERAL_LEDGER_ACCOUNT",
+      "description": ""
+    },
+    {
+      "name": "ACCOUNTING_PERIOD",
+      "description": ""
+    },
+    {
+      "name": "JOURNAL_ENTRY",
+      "description": ""
+    },
+    {
+      "name": "JOURNAL_ENTRY_LINE",
+      "description": ""
+    },
+    {
+      "name": "ACCOUNTS_RECEIVABLE",
+      "description": ""
+    },
+    {
+      "name": "ACCOUNTS_PAYABLE",
+      "description": ""
+    },
+    {
+      "name": "BUDGET",
+      "description": ""
+    },
+    {
+      "name": "DEPARTMENT",
+      "description": ""
+    },
+    {
+      "name": "POSITION",
+      "description": ""
+    },
+    {
+      "name": "EMPLOYEE",
+      "description": ""
+    },
+    {
+      "name": "TIME_ENTRY",
+      "description": ""
+    },
+    {
+      "name": "CARRIER",
+      "description": ""
+    },
+    {
+      "name": "SHIPPING_ROUTE",
+      "description": ""
+    },
+    {
+      "name": "SHIPMENT",
+      "description": ""
+    },
+    {
+      "name": "SHIPMENT_LINE",
+      "description": ""
+    },
+    {
+      "name": "PROJECT",
+      "description": ""
+    },
+    {
+      "name": "PROJECT_TASK",
+      "description": ""
+    },
+    {
+      "name": "APP_USER",
+      "description": ""
+    },
+    {
+      "name": "ROLE",
+      "description": ""
+    },
+    {
+      "name": "USER_ROLE",
+      "description": ""
+    },
+    {
+      "name": "AUDIT_LOG",
+      "description": ""
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 58,
+    "tables_enriched": 58,
+    "total_columns": 671
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 191,
+    "total_relationships": 192,
+    "completed_tables": 58
+  },
+  "stage_timings": {}
+}

@@ -1,7 +1,7 @@
 # AB-00 — 06_edgecases_legacy — Run Analysis
 
-**Timestamp:** 2026-03-27 15:50:15  
-**Run tag:** `post-fix-v2`
+**Timestamp:** 2026-03-27 18:31:54  
+**Run tag:** `post-fix-v3`
 
 ## Configuration
 
@@ -20,10 +20,10 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 479 |
-| Entities resolved | 287 |
-| Tables parsed | 8 |
-| Tables completed | 8 |
+| Triplets extracted | 486 |
+| Entities resolved | 267 |
+| Tables parsed | 10 |
+| Tables completed | 10 |
 
 ## Query Evaluation Summary
 
@@ -32,7 +32,7 @@
 | Questions | 25 |
 | Grounded | **25/25 (100%)** |
 | Avg GT Coverage | 100% |
-| Avg Top Score | 0.6017 |
+| Avg Top Score | 0.6382 |
 | Avg Chunk Count | 12.0 |
 | Abstained | 0 |
 
@@ -51,9 +51,9 @@ RAGAS evaluation not enabled for this run.
 > The tblCustomer table stores customer master data including customer codes, names, email addresses, and region information. It uses Hungarian notation with the str prefix for string fields and contains both legacy fields (strCustID, strFullName) and new migration compatibility fields (cust_id, custo…
 
 **System answer:**
-> The `tblCustomer` table is used to store customer master data from the legacy CRM system. It holds core customer master attributes such as the unique customer identifier (`strCustID`), full name (`strFullName`), email (`strEmail`), geographic fields (e.g., `strRegion` and `strCountry`), an active/inactive flag (`bolActive`), and audit timestamps (e.g., `dtmCreated`, `dtmLastModified`).
+> The `tblCustomer` table’s purpose is to store customer master data from the legacy CRM system (CustomerMaster v3.2.1). It holds customer identifiers inherited from the AS/400 system, along with customer master attributes.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `Customer Master→TBLCUSTOMER`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `VW_SALESORDERHDR→TBLCUSTOMER`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `VW_SALESORDERHDR→TBLCUSTOMER`, `parent_chunk_business_glossary.md_2`, `CustomerMaster v3.2.1 (Legacy)→TBLCUSTOMER`
 
 **Context previews (first 3):**
 
@@ -61,7 +61,7 @@ RAGAS evaluation not enabled for this run.
 
 2. _# CustomerMaster E-Commerce System - Business Glossary  ## Document Overview **System**: CustomerMaster v3.2.1 (Legacy) **Last Updated**: March 2015 **Purpose**: Business terminology definitions for d…_
 
-3. _Business concept 'Customer Master' — The table stores core customer master attributes: unique customer identifier (strCustID and cust_id), full name, primary email (strEmail), geographic fields (strRe…_
+3. _strCategory (VARCHAR 100)     - Product category     - Hierarchical: "Clothing > Shirts > Casual" strBrand (VARCHAR 100) - Brand or manufacturer name - Free text field dtmIntroduced (DATETIME) - Produ…_
 
 ---
 
@@ -74,9 +74,9 @@ RAGAS evaluation not enabled for this run.
 > Customers are identified by strCustID, which is a VARCHAR(50) field containing alphanumeric customer codes inherited from an AS/400 system. These codes follow formats like C-XXXXX or REG-XXXX and can contain letters, numbers, and hyphens.
 
 **System answer:**
-> In the legacy system, customers are identified by a unique alphanumeric customer code stored in `tblCustomer` as the primary key `strCustID`. This `strCustID` is inherited from the AS/400 system and uses the format `C-XXXXX` or `REG-XXXX`.
+> In the legacy CustomerMaster v3.2.1 system, customers are identified by the primary key `tblCustomer.strCustID`, described as a unique alphanumeric customer code inherited from the AS/400 system (format examples: `C-XXXXX` or `REG-XXXX`). This `strCustID` is `NOT NULL` and `UNIQUE` in `tblCustomer`.
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`, `Customer Master→TBLCUSTOMER`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_6`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_2`, `CustomerMaster v3.2.1 (Legacy)→TBLCUSTOMER`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_6`
 
 **Context previews (first 3):**
 
@@ -84,7 +84,7 @@ RAGAS evaluation not enabled for this run.
 
 2. _================================================================================ CUSTOMERMASTER DATABASE - DATA DICTIONARY =============================================================================…_
 
-3. _Business concept 'Customer Master' — The table stores core customer master attributes: unique customer identifier (strCustID and cust_id), full name, primary email (strEmail), geographic fields (strRe…_
+3. _## Legacy System Quirks  ### Hungarian Notation The legacy system uses Hungarian notation prefixes: - `str` = string (VARCHAR) - `int` = integer (INT) - `lng` = long integer (INT) - `flt` = float/mone…_
 
 ---
 
@@ -97,9 +97,9 @@ RAGAS evaluation not enabled for this run.
 > Order header information is stored in the vw_SalesOrderHdr table despite the vw_ prefix suggesting it's a view. The primary key is lngOrderID, which is an INT field using the lng (long integer) Hungarian notation prefix.
 
 **System answer:**
-> Order header information is implemented by the physical table `VW_SALESORDERHDR`, which includes a field named `lngOrderID` (along with customer id, order dates, status, and amounts). The retrieved context does not state that `lngOrderID` is defined as the table’s primary key, so the primary key is not confirmed.
+> Order header information is stored by the physical table `VW_SALESORDERHDR` (business concept “Sales order header records”), which includes columns such as `lngOrderID`, `intCustID`, order and ship dates, order status, and monetary/shipping fields. The retrieved context does not specify a primary key for `VW_SALESORDERHDR`, so the primary key is not stated in the knowledge graph.
 
-**Sources retrieved (12):** `Sales order header records→VW_SALESORDERHDR`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_3`, `Order Status History→TBLORDERSTATUSHISTORY`, `parent_chunk_business_glossary.md_0`, `ORD_LINE_ITEM→VW_SALESORDERHDR`
+**Sources retrieved (12):** `Sales order header records→VW_SALESORDERHDR`, `parent_chunk_data_dictionary.txt_5`, `Order Status History→TBLORDERSTATUSHISTORY`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_3`, `Order line item→ORD_LINE_ITEM`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
@@ -107,7 +107,7 @@ RAGAS evaluation not enabled for this run.
 
 2. _strCategory (VARCHAR 100)     - Product category     - Hierarchical: "Clothing > Shirts > Casual" strBrand (VARCHAR 100) - Brand or manufacturer name - Free text field dtmIntroduced (DATETIME) - Produ…_
 
-3. _Email (VARCHAR 150)     - User email address     - For notifications  LastLogin (DATETIME)     - Last successful login timestamp     - NULL for new users  CreatedDate (DATETIME)     - Account creation…_
+3. _Business concept 'Order Status History' — The table stores OldStatus/NewStatus along with a timestamp (ChangedDate) and user (ChangedByUser) tied to OrderID, which directly represents historical chang…_
 
 ---
 
@@ -120,7 +120,7 @@ RAGAS evaluation not enabled for this run.
 > The schema includes two tables that use SQL reserved words: 'Group' (for product categories) and 'User' (for system users). These require square bracket quoting [Group] and [User] in SQL queries to avoid syntax errors.
 
 **System answer:**
-> The schema uses SQL reserved words as table names: `Group` and `User` (they must be quoted as `[Group]` and `[User]`).
+> The context says the tables named `Group` (product categories) and `User` (system users) use SQL reserved words as their names, and they “must be quoted” as `[Group]` and `[User]` (Legacy System Quirks).
 
 **Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`
 
@@ -143,7 +143,7 @@ RAGAS evaluation not enabled for this run.
 > vw_SalesOrderHdr has a foreign key relationship with tblCustomer through the intCustID field, which references strCustID. Despite the int prefix suggesting an integer, intCustID is actually a VARCHAR(50) field matching the strCustID data type.
 
 **System answer:**
-> `VW_SALESORDERHDR` references `TBLCUSTOMER` via a foreign key: `VW_SALESORDERHDR.INTCUSTID` → `TBLCUSTOMER.STRCUSTID`.
+> `vw_SALESORDERHDR` references `tblCustomer` through a foreign key relationship: `vw_SALESORDERHDR.INTCUSTID` → `tblCustomer.STRCUSTID` (see the FKRelationship described as “VW_SALESORDERHDR references TBLCUSTOMER via foreign key INTCUSTID -> TBLCUSTOMER.STRCUSTID”).
 
 **Sources retrieved (12):** `VW_SALESORDERHDR→TBLCUSTOMER`, `parent_chunk_business_glossary.md_0`, `TBLPAYMENT→VW_SALESORDERHDR`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `TBLORDERSTATUSHISTORY→VW_SALESORDERHDR`, `ORD_LINE_ITEM→VW_SALESORDERHDR`
 
@@ -166,17 +166,17 @@ RAGAS evaluation not enabled for this run.
 > The inventory transaction log table is named 'inv_txn_log' using abbreviated naming with underscore separators. Field names within this table are also heavily abbreviated: txn_id (transaction ID), txn_dt (transaction date), txn_type (transaction type), and prod_id (product ID).
 
 **System answer:**
-> The inventory transaction log table `inv_txn_log` uses the naming convention: “inv_” (it’s listed as the inventory transaction log prefix in the legacy naming conventions).
+> The inventory transaction log table is named `inv_txn_log`, and its naming convention is described as “Heavily abbreviated.”
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_6`, `Inventory Transaction Log→INV_TXN_LOG`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_4`, `INV_TXN_LOG→TBLPRODUCT`, `parent_chunk_data_dictionary.txt_8`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_2`, `Product inventory movement→INV_TXN_LOG`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_4`, `INV_TXN_LOG→TBLPRODUCT`, `parent_chunk_data_dictionary.txt_8`
 
 **Context previews (first 3):**
 
 1. _qty (INT)     - Quantity ordered     - Must be positive integer  amt (DECIMAL 10,2)     - Line item total amount (qty * unit_price)     - At time of order (snapshotted, not current price)  disc_amt (D…_
 
-2. _Business concept 'Inventory Transaction Log' — The table is explicitly an inventory transaction log with keys and attributes for product movement: prod_id, txn_type (IN/OUT/ADJ), qty, and txn_dt, plus…_
+2. _## Legacy System Quirks  ### Hungarian Notation The legacy system uses Hungarian notation prefixes: - `str` = string (VARCHAR) - `int` = integer (INT) - `lng` = long integer (INT) - `flt` = float/mone…_
 
-3. _## Legacy System Quirks  ### Hungarian Notation The legacy system uses Hungarian notation prefixes: - `str` = string (VARCHAR) - `int` = integer (INT) - `lng` = long integer (INT) - `flt` = float/mone…_
+3. _Business concept 'Product inventory movement' — The table records product quantity changes (qty) over time (txn_dt) and distinguishes transaction directions/types via txn_type, which includes receipts…_
 
 ---
 
@@ -189,9 +189,9 @@ RAGAS evaluation not enabled for this run.
 > The tblProduct.unit_cost field has an inappropriate data type - it's defined as VARCHAR(20) instead of DECIMAL. This field contains currency symbols like '$19.99' which require parsing before calculations can be performed, making it unusable for mathematical operations without transformation.
 
 **System answer:**
-> The retrieved context says that `tblProduct` has a data quality/security issue in its `unit_cost` field: it is stored as a string (`VARCHAR 20`) even though it “should be `DECIMAL`,” and it “contains currency symbols” (for example `"$19.99"`), which requires parsing before calculations.
+> The data quality issue is that `tblProduct.unit_cost` is stored as a string (VARCHAR) but it “should be DECIMAL”; additionally, it “contains currency symbols (e.g., `$19.99`)” and “requires parsing before calculations.”
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_5`, `Integer product identifier→TBLPRODUCT`, `parent_chunk_data_dictionary.txt_7`, `ORD_LINE_ITEM→TBLPRODUCT`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_8`, `Product Catalogue→TBLPRODUCT`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `ORD_LINE_ITEM→TBLPRODUCT`
 
 **Context previews (first 3):**
 
@@ -206,25 +206,23 @@ RAGAS evaluation not enabled for this run.
 ### ✅ 8 — How does the ord_line_item table handle product data redundancy?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.6603 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.7155 | **Gate:** `proceed`
 
 **Expected answer:**
 > The ord_line_item table contains redundant copies of product data (product_code and item_name) that are denormalized for reporting performance and to snapshot product information at the time of order. These fields may become out of sync with the tblProduct master and should not be updated from produ…
 
 **System answer:**
-> The `ORD_LINE_ITEM` table handles product data redundancy through denormalized, snapshotted fields alongside the foreign key to the master product record.
+> The `ord_line_item` table handles product data redundancy by denormalizing key product attributes into each order line item. Specifically, it includes `product_code` (a redundant copy of the product’s SKU from `tblProduct`) and `item_name` (a redundant, snapshotted copy of the product name captured at order time). These denormalized fields are used for reporting performance, and `item_name` does n…
 
-Specifically, `ORD_LINE_ITEM` references product data via `prod_id` (a foreign key relationship to `TBLPRODUCT` via `PROD_ID -> TBLPRODUCT.INTPRODID`). In addition, it stores redundant reporting/snapshot fields: `product_code` is a copy of `tbl…
-
-**Sources retrieved (12):** `ORD_LINE_ITEM→TBLPRODUCT`, `parent_chunk_business_glossary.md_3`, `ORD_LINE_ITEM→VW_SALESORDERHDR`, `parent_chunk_business_glossary.md_2`, `Each line item→ORD_LINE_ITEM`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `ORD_LINE_ITEM→TBLPRODUCT`, `Order line item→ORD_LINE_ITEM`, `parent_chunk_business_glossary.md_3`, `ORD_LINE_ITEM→VW_SALESORDERHDR`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`
 
 **Context previews (first 3):**
 
 1. _Relationship: ORD_LINE_ITEM references TBLPRODUCT via foreign key PROD_ID -> TBLPRODUCT.INTPRODID.…_
 
-2. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
+2. _Business concept 'Order line item' — The table stores individual line items for a sales order, linking to the order via ord_id and to the product via prod_id, with quantity (qty) and monetary amounts …_
 
-3. _Relationship: ORD_LINE_ITEM references VW_SALESORDERHDR via foreign key ORD_ID -> VW_SALESORDERHDR.LNGORDERID.…_
+3. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
 
 ---
 
@@ -237,7 +235,7 @@ Specifically, `ORD_LINE_ITEM` references product data via `prod_id` (a foreign k
 > The strOrderStatus field accepts three values enforced by a CHECK constraint: 'PENDING' (order received but not shipped), 'SHIPPED' (order has been shipped to customer), and 'CANCELLED' (order cancelled before shipping).
 
 **System answer:**
-> The retrieved context defines `vw_SalesOrderHdr` as including the field `strOrderStatus` (order status), but it does not provide the allowed/valid status values (e.g., the specific strings that `strOrderStatus` can take). Therefore, the valid values for `vw_SalesOrderHdr.strOrderStatus` are not specified in the knowledge graph content provided here.
+> I cannot find this information in the knowledge graph.
 
 **Sources retrieved (12):** `parent_chunk_data_dictionary.txt_5`, `Sales order header records→VW_SALESORDERHDR`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `TBLORDERSTATUSHISTORY→VW_SALESORDERHDR`, `VW_SALESORDERHDR→TBLCUSTOMER`
 
@@ -254,23 +252,23 @@ Specifically, `ORD_LINE_ITEM` references product data via `prod_id` (a foreign k
 ### ✅ 10 — Which table stores payment information and what security issue does it have?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0845 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 100% | **Top Score:** 0.7727 | **Gate:** `proceed`
 
 **Expected answer:**
 > Payment information is stored in the tblPayment table. The table has a critical security issue: the CardNumberText field stores full unencrypted credit card numbers as VARCHAR(100), which is a PCI compliance violation. The system also lacks proper tokenization and encryption at rest.
 
 **System answer:**
-> Payment information is stored in the physical table `tblPayment` (columns include `PaymentID`, `OrderID`, `PaymentMethod`, `PaymentDate`, `Amount`, `PaymentStatus`, `CardNumberText`, `CardHolderName`, `AuthorizationCode`). The security issue is that `tblPayment.CardNumberText` stores unencrypted card numbers (full card number/PAN stored as text).
+> Payment information is stored in the table `tblPayment` (it includes the column `CardNumberText`). The security issue is that `tblPayment.CardNumberText` stores unencrypted card numbers as plaintext (a DDL comment explicitly flags “Full card number stored as text! - Should be tokenized - Contains unencrypted PAN (Primary Account Number)”).
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_8`, `Payment Status→TBLPAYMENT`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `TBLPAYMENT→VW_SALESORDERHDR`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `Plaintext card numbers→TBLPAYMENT`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `TBLPAYMENT→VW_SALESORDERHDR`, `parent_chunk_business_glossary.md_2`
 
 **Context previews (first 3):**
 
-1. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
+1. _Business concept 'Plaintext card numbers' — The table contains CardNumberText with a DDL comment explicitly flagging a security issue for storing sensitive card data as text, indicating plaintext/unpr…_
 
-2. _Email (VARCHAR 150)     - User email address     - For notifications  LastLogin (DATETIME)     - Last successful login timestamp     - NULL for new users  CreatedDate (DATETIME)     - Account creation…_
+2. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
 
-3. _CardNumberText (VARCHAR 100)     - SECURITY ISSUE: Full card number stored as text! - Should be tokenized - Contains unencrypted PAN (Primary Account Number) CardHolderName (VARCHAR 100) - Cardholder …_
+3. _Email (VARCHAR 150)     - User email address     - For notifications  LastLogin (DATETIME)     - Last successful login timestamp     - NULL for new users  CreatedDate (DATETIME)     - Account creation…_
 
 ---
 
@@ -283,11 +281,11 @@ Specifically, `ORD_LINE_ITEM` references product data via `prod_id` (a foreign k
 > The bolActive field (using Hungarian notation 'bol' for boolean/bit) is a flag indicating whether a record is active. In tblCustomer, it marks whether customers are included in marketing (1=active, 0=inactive). In tblProduct, it indicates product availability (1=available for sale, 0=discontinued).
 
 **System answer:**
-> In `tblCustomer`, `bolActive` is used as an active/inactive indicator: customers can be marked as inactive when `bolActive = 0`, but they are never deleted.
+> In `tblCustomer`, `bolActive` is used to mark whether a customer is active or inactive; customers can be marked as inactive (`bolActive = 0`) but are never deleted.
 
-For `tblProduct`, the retrieved context confirms that `tblProduct` (implemented by `TBLPRODUCT`) includes a `bolActive` column, and it also notes that `tblProduct` contains both active and discontinued products. However, the context does not …
+In `TBLPRODUCT`, `bolActive` is the “active flag” that indicates whether the product entry is currently active (i.e., whether it is a sellable/available product in the catalog context).
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_0`, `Customer Master→TBLCUSTOMER`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `Integer product identifier→TBLPRODUCT`, `parent_chunk_data_dictionary.txt_5`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_7`, `Product Catalogue→TBLPRODUCT`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `CustomerMaster v3.2.1 (Legacy)→TBLCUSTOMER`
 
 **Context previews (first 3):**
 
@@ -295,53 +293,53 @@ For `tblProduct`, the retrieved context confirms that `tblProduct` (implemented 
 
 2. _Email (VARCHAR 150)     - User email address     - For notifications  LastLogin (DATETIME)     - Last successful login timestamp     - NULL for new users  CreatedDate (DATETIME)     - Account creation…_
 
-3. _# CustomerMaster E-Commerce System - Business Glossary  ## Document Overview **System**: CustomerMaster v3.2.1 (Legacy) **Last Updated**: March 2015 **Purpose**: Business terminology definitions for d…_
+3. _Business concept 'Product Catalogue' — The table defines core product master data including SKU, product name, description, unit price, stock quantity, category, brand, and lifecycle dates (introduced…_
 
 ---
 
 ### ✅ 12 — How are inventory transactions tracked in the system?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.6797 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.2666 | **Gate:** `proceed`
 
 **Expected answer:**
 > Inventory transactions are tracked in the inv_txn_log table, which records all stock movements. Each transaction has a type (txn_type): 'IN' for receipts, 'OUT' for shipments, and 'ADJ' for corrections. The table uses heavily abbreviated field names and references products via prod_id.
 
 **System answer:**
-> Inventory transactions are tracked using the business concept “Inventory Transaction Log,” which is implemented by the physical table `inv_txn_log`. This table stores an audit/history of product quantity changes over time, using these key attributes: `prod_id` (product being adjusted), `txn_type` with values `IN/OUT/ADJ` (direction/type of movement), `qty` (transaction quantity), and `txn_dt` (tra…
+> Inventory transactions are tracked in the physical table `inv_txn_log` (referenced in the business concept “Product inventory movement”). Each record logs a product quantity change over time with `txn_dt`, identifies the product via `prod_id`, and records the transaction direction/type via `txn_type` (which includes receipts `IN`, shipments/other outflows `OUT`, and corrections `ADJ`). The table a…
 
-**Sources retrieved (12):** `Inventory Transaction Log→INV_TXN_LOG`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_5`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_3`, `Product inventory movement→INV_TXN_LOG`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_5`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Inventory Transaction Log' — The table is explicitly an inventory transaction log with keys and attributes for product movement: prod_id, txn_type (IN/OUT/ADJ), qty, and txn_dt, plus…_
+1. _qty (INT)     - Quantity ordered     - Must be positive integer  amt (DECIMAL 10,2)     - Line item total amount (qty * unit_price)     - At time of order (snapshotted, not current price)  disc_amt (D…_
 
-2. _qty (INT)     - Quantity ordered     - Must be positive integer  amt (DECIMAL 10,2)     - Line item total amount (qty * unit_price)     - At time of order (snapshotted, not current price)  disc_amt (D…_
+2. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
 
-3. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
+3. _Business concept 'Product inventory movement' — The table records product quantity changes (qty) over time (txn_dt) and distinguishes transaction directions/types via txn_type, which includes receipts…_
 
 ---
 
 ### ✅ 13 — What is the self-referencing relationship in the Group table?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0291 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 100% | **Top Score:** 0.5608 | **Gate:** `proceed`
 
 **Expected answer:**
 > The Group table has a self-referencing foreign key where ParentGroupID references GroupID, creating a hierarchical structure for product categories. A NULL ParentGroupID indicates a top-level group, while non-NULL values create nested category levels.
 
 **System answer:**
-> The retrieved context only states that the `Group` table exists as product categories and that `Group` is a reserved word that “must be quoted as `[Group]`.” It does not describe any self-referencing relationship for `[Group]`, so I cannot determine what the self-referencing relationship is (e.g., which column references which other row/parent).
+> In the `GROUP` table (the “Category Group” concept), the self-referencing relationship is implemented via `ParentGroupID`, which is a foreign key that references `GROUP.GROUPID` (i.e., `PARENTGROUPID -> GROUP.GROUPID`). This allows groups to be arranged hierarchically (a group can have a parent group).
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`
+**Sources retrieved (12):** `Category Group→GROUP`, `GROUP→GROUP`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_8`, `Category Group`, `parent_chunk_data_dictionary.txt_7`
 
 **Context previews (first 3):**
 
-1. _qty (INT)     - Quantity ordered     - Must be positive integer  amt (DECIMAL 10,2)     - Line item total amount (qty * unit_price)     - At time of order (snapshotted, not current price)  disc_amt (D…_
+1. _Business concept 'Category Group' — The table defines an ID, display name, description, and an optional self-referencing parent group (ParentGroupID), which matches a hierarchical category/group conce…_
 
-2. _## Legacy System Quirks  ### Hungarian Notation The legacy system uses Hungarian notation prefixes: - `str` = string (VARCHAR) - `int` = integer (INT) - `lng` = long integer (INT) - `flt` = float/mone…_
+2. _Relationship: GROUP references GROUP via foreign key PARENTGROUPID -> GROUP.GROUPID.…_
 
-3. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
+3. _qty (INT)     - Quantity ordered     - Must be positive integer  amt (DECIMAL 10,2)     - Line item total amount (qty * unit_price)     - At time of order (snapshotted, not current price)  disc_amt (D…_
 
 ---
 
@@ -354,40 +352,38 @@ For `tblProduct`, the retrieved context confirms that `tblProduct` (implemented 
 > The tblCustomer table includes cust_id (INT) and customer_name (VARCHAR 255) as migration compatibility columns alongside the legacy strCustID and strFullName fields. These are intended for the new ERP system that will use integer IDs and standardized naming conventions.
 
 **System answer:**
-> The retrieved context does not define a concept called “migration compatibility columns” for `tblCustomer`, so it’s not possible to label specific fields as “migration compatibility” based on the knowledge graph.
+> In the retrieved context, the business concept “CustomerMaster v3.2.1 (Legacy)” is implemented by physical table `TBLCUSTOMER` (migration-related column mapping). The columns listed for `TBLCUSTOMER` are: `strCustID`, `strFullName`, `strEmail`, `strRegion`, `strCountry`, `dtmCreated`, `dtmLastModified`, `bolActive`, `cust_id`, `customer_name`, and `txtNotes`.
 
-What the context does provide is the list of columns implemented by the physical table `TBLCUSTOMER` / `tblCustomer`. These include `strCustID`, `strFullName`, `strEmail`, `strRegion`, `…
-
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `Customer Master→TBLCUSTOMER`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `VW_SALESORDERHDR→TBLCUSTOMER`, `parent_chunk_data_dictionary.txt_8`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `CustomerMaster v3.2.1 (Legacy)→TBLCUSTOMER`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `VW_SALESORDERHDR→TBLCUSTOMER`, `parent_chunk_data_dictionary.txt_8`
 
 **Context previews (first 3):**
 
 1. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
 
-2. _================================================================================ CUSTOMERMASTER DATABASE - DATA DICTIONARY =============================================================================…_
+2. _Business concept 'CustomerMaster v3.2.1 (Legacy)' is implemented by physical table TBLCUSTOMER (columns: strCustID, strFullName, strEmail, strRegion, strCountry, dtmCreated, dtmLastModified, bolActive…_
 
-3. _# CustomerMaster E-Commerce System - Business Glossary  ## Document Overview **System**: CustomerMaster v3.2.1 (Legacy) **Last Updated**: March 2015 **Purpose**: Business terminology definitions for d…_
+3. _================================================================================ CUSTOMERMASTER DATABASE - DATA DICTIONARY =============================================================================…_
 
 ---
 
 ### ✅ 15 — How does the system handle order status history tracking?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.6404 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.6706 | **Gate:** `proceed`
 
 **Expected answer:**
 > Order status changes are tracked in the tblOrderStatusHistory table, which creates an audit record for each status transition. Each history record includes OrderID, OldStatus, NewStatus, ChangedByUser, ChangedDate, and ChangeReason fields, providing a complete audit trail of order workflow.
 
 **System answer:**
-> Order status history tracking is implemented as an audit log of order workflow changes. The business concept “Order Status History” states that it stores, per order, each status transition using an OldStatus and NewStatus, along with the timestamp of the change and the user who made it; it is tied to the order identifier (OrderID).
+> The system handles order status history tracking as an audit log of workflow status changes. This is represented by the business concept “Order Status History,” implemented by the physical table `tblOrderStatusHistory`.
 
-In the physical schema, this is implemented by table `tblOrderSta…
+`tblOrderStatusHistory` records each status change with `OldStatus` (the previous status, NULL for the initial status) and `NewStatus` (the resulting current status after the chan…
 
 **Sources retrieved (12):** `Order Status History→TBLORDERSTATUSHISTORY`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `TBLORDERSTATUSHISTORY→VW_SALESORDERHDR`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`, `Sales order header records→VW_SALESORDERHDR`, `parent_chunk_data_dictionary.txt_6`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Order Status History' — The table explicitly stores per-order status transitions with OldStatus and NewStatus, along with a change timestamp and user, indicating a historical record …_
+1. _Business concept 'Order Status History' — The table stores OldStatus/NewStatus along with a timestamp (ChangedDate) and user (ChangedByUser) tied to OrderID, which directly represents historical chang…_
 
 2. _Email (VARCHAR 150)     - User email address     - For notifications  LastLogin (DATETIME)     - Last successful login timestamp     - NULL for new users  CreatedDate (DATETIME)     - Account creation…_
 
@@ -404,9 +400,11 @@ In the physical schema, this is implemented by table `tblOrderSta…
 > The schema shows inconsistent naming: order headers use 'vw_SalesOrderHdr' with Hungarian notation, while line items use 'ord_line_item' with abbreviated underscore notation. Additionally, the line item table references lngOrderID but names its foreign key 'ord_id' instead of 'order_id' or 'lngOrder…
 
 **System answer:**
-> The inconsistent naming pattern is between the sales order header and the order line items. The order header table is named `vw_SalesOrderHdr`, using the `vw_` prefix “(but actually tables),” meaning it’s a physical table despite the `vw_` naming. In contrast, the order line items use the `ord_` prefix, with the table named `ord_line_item`.
+> The retrieved context says the system uses inconsistent table naming conventions across the order-related tables:
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`
+`vw_` is used in `vw_SalesOrderHdr` (but it is “actually tables”), while order line items use the `ord_` naming pattern in `ord_line_item`, and order status audit uses the verbose `tbl` prefix in `tblOrderStatusHistory`.
+
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `Order Status History→TBLORDERSTATUSHISTORY`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
@@ -421,27 +419,27 @@ In the physical schema, this is implemented by table `tblOrderSta…
 ### ✅ 17 — What deprecated fields exist in tblProduct and why should they be avoided?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.6637 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.6844 | **Gate:** `proceed`
 
 **Expected answer:**
 > The tblProduct table contains three deprecated fields: prod_num (superseded by strSKU), item_desc (superseded by strDescription), and unit_cost (wrong data type with VARCHAR instead of DECIMAL). These fields should not be used in new code as they represent outdated design decisions.
 
 **System answer:**
-> In `tblProduct`, the legacy deprecated fields are `prod_num` and `item_desc`, both of which should be avoided in new code.
+> In the context for the Product Catalogue implemented by `TBLPRODUCT`, the deprecated legacy fields are `prod_num` and `item_desc`, and `unit_cost`.
 
-`prod_num` (VARCHAR 20) is the OLD legacy product number that is superseded by `strSKU`, and it is retained only for historical reporting.
+`prod_num` is described as an “OLD: Legacy product number” that has been superseded by `strSKU`, but it is retained for historical reporting, so it should not be used for new code.
 
-`item_desc` (VARCHAR 500) is the OLD, truncated description that is superseded by `strDescription`. The context also notes that these le…
+`item_desc` is described as an “OLD: Truncated description” supersede…
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_5`, `Integer product identifier→TBLPRODUCT`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_7`, `ORD_LINE_ITEM→TBLPRODUCT`
+**Sources retrieved (12):** `Product Catalogue→TBLPRODUCT`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_8`, `Order line item→ORD_LINE_ITEM`, `parent_chunk_data_dictionary.txt_7`
 
 **Context previews (first 3):**
 
-1. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
+1. _Business concept 'Product Catalogue' — The table defines core product master data including SKU, product name, description, unit price, stock quantity, category, brand, and lifecycle dates (introduced…_
 
-2. _strCategory (VARCHAR 100)     - Product category     - Hierarchical: "Clothing > Shirts > Casual" strBrand (VARCHAR 100) - Brand or manufacturer name - Free text field dtmIntroduced (DATETIME) - Produ…_
+2. _## Migration Priority Guidelines  ### Critical Path (Must Migrate First) 1. **tblCustomer** - Required for all orders 2. **tblProduct** - Required for line items and inventory 3. **vw_SalesOrderHdr** …_
 
-3. _Business concept 'Integer product identifier' is implemented by physical table TBLPRODUCT (columns: intProdID, strSKU, strName, strDescription, fltPrice, intStockQty, bolActive, strCategory, strBrand,…_
+3. _strCategory (VARCHAR 100)     - Product category     - Hierarchical: "Clothing > Shirts > Casual" strBrand (VARCHAR 100) - Brand or manufacturer name - Free text field dtmIntroduced (DATETIME) - Produ…_
 
 ---
 
@@ -454,7 +452,7 @@ In the physical schema, this is implemented by table `tblOrderSta…
 > Shipping carriers are stored in the tblShippingCarrier table with CarrierID, CarrierName, CarrierCode (for API integration), TrackingURL (with {TRACKING_NUM} placeholder), and bolActive flag. Only carriers with bolActive=1 should be offered during checkout.
 
 **System answer:**
-> Shipping carriers are configured as reference/master data through the business concept “Shipping carrier master data”, which is implemented by the physical table `TBLSHIPPINGCARRIER`. This table stores carrier attributes including `CarrierID`, `CarrierName`, `CarrierCode`, `TrackingURL`, and an active flag `bolActive` (so only active carriers are intended to be used). The context also lists “Activ…
+> Shipping carriers are configured as reference/master data in the business concept “Shipping carrier master data,” implemented by the physical table `TBLSHIPPINGCARRIER`. Each carrier record includes `CarrierID`, `CarrierName`, `CarrierCode`, `TrackingURL`, and `bolActive`. Carriers are considered usable/selected based on `bolActive` (only active carriers are used); the context specifically lists “…
 
 **Sources retrieved (12):** `Shipping carrier master data→TBLSHIPPINGCARRIER`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_5`
 
@@ -477,9 +475,9 @@ In the physical schema, this is implemented by table `tblOrderSta…
 > The User table stores password hashes in the PasswordHash field, but uses SHA-256 without salt, making it vulnerable to rainbow table attacks. This is identified as a security issue in the data dictionary. Additionally, the table name 'User' is a SQL reserved word requiring square bracket quoting.
 
 **System answer:**
-> The retrieved context indicates a security issue related to the `User` table’s `PasswordHash`: it uses SHA-256 without a salt (“vulnerable to rainbow tables”). This means the password storage approach in the `User` table is considered insecure from a security/compliance standpoint. The context does not provide any additional details about how `User` table passwords are used beyond that.
+> In the context, system users are stored in the physical table `User` (also described as `USER`), which includes the column `PasswordHash`. The security documentation states that `User.PasswordHash` uses SHA-256 without salt, which is considered vulnerable to rainbow-table attacks. Additionally, the context notes other security issues involving payment data (`tblPayment.CardNumberText` storing unen…
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `System users→USER`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_4`, `Plaintext card numbers→TBLPAYMENT`
 
 **Context previews (first 3):**
 
@@ -487,7 +485,7 @@ In the physical schema, this is implemented by table `tblOrderSta…
 
 2. _Email (VARCHAR 150)     - User email address     - For notifications  LastLogin (DATETIME)     - Last successful login timestamp     - NULL for new users  CreatedDate (DATETIME)     - Account creation…_
 
-3. _CardNumberText (VARCHAR 100)     - SECURITY ISSUE: Full card number stored as text! - Should be tokenized - Contains unencrypted PAN (Primary Account Number) CardHolderName (VARCHAR 100) - Cardholder …_
+3. _Business concept 'System users' is implemented by physical table USER (columns: UserID, UserName, PasswordHash, UserRole, Email, LastLogin, CreatedDate).…_
 
 ---
 
@@ -500,9 +498,9 @@ In the physical schema, this is implemented by table `tblOrderSta…
 > The vw_SalesOrderHdr table uses the 'flt' (float) prefix for three monetary fields: fltSubTotal (line item subtotal before tax), fltTaxAmount (calculated tax), and fltTotalAmount (final total including tax and shipping). Despite the 'flt' prefix suggesting floating-point, these are defined as DECIMA…
 
 **System answer:**
-> In `vw_SalesOrderHdr` (implemented by the physical table `VW_SALESORDERHDR`), the fields that use the `flt` Hungarian notation prefix are `fltSubTotal`, `fltTaxAmount`, and `fltTotalAmount` (the concept mapping also lists these columns explicitly). 
+> In the `vw_SalesOrderHdr` / physical table `VW_SALESORDERHDR`, the fields that use the Hungarian notation prefix `flt` are `fltSubTotal`, `fltTaxAmount`, and `fltTotalAmount` (listed as columns in `VW_SALESORDERHDR`).  
 
-From the retrieved context, `flt` denotes “float/money (DECIMAL)” in the legacy system’s Hungarian notation. However, the context does not explicitly…
+Per the Hungarian notation guidance in the context, the `flt` prefix corresponds to “float/money (DECIMAL)”, so these fields are the ones intended to store float/money values. The…
 
 **Sources retrieved (12):** `Sales order header records→VW_SALESORDERHDR`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_4`
 
@@ -525,9 +523,10 @@ From the retrieved context, `flt` denotes “float/money (DECIMAL)” in the leg
 > The schema uses 'dtm' (datetime) Hungarian notation prefix consistently: dtmCreated and dtmLastModified in tblCustomer, dtmOrderDate/dtmShipDate/dtmRequiredDate in vw_SalesOrderHdr, dtmIntroduced/dtmDiscontinued in tblProduct, and txn_dt in inv_txn_log (abbreviated exception). The User table breaks …
 
 **System answer:**
-> The schema generally uses Hungarian-notation prefixes to indicate data types, including `dtm` for date/time fields (shown in the legacy product fields `dtmIntroduced` and `dtmDiscontinued`, and in the `vw_SalesOrderHdr` mapping which uses `dtmOrderDate`, `dtmShipDate`, and `dtmRequiredDate`, and in the `tblCustomer` mapping which uses `dtmCreated` and `dtmLastModified`).  
+> The schema contains multiple date/time naming conventions, not a single consistent standard.
 
-However, it does not us…
+In the product-related portion, the legacy schema uses Hungarian notation for datetime fields: `dtmIntroduced` (DATETIME) and `dtmDiscontinued` (DATETIME) in the product catalogue concept. In the general “Hungarian Notation” guidance, `dtm` is explicitly defined as the prefix meaning datetime (DATETIME).
+…
 
 **Sources retrieved (12):** `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_0`
 
@@ -550,11 +549,11 @@ However, it does not us…
 > The schema uses multiple inconsistent table prefixes: 'tbl' for standard tables (tblCustomer, tblProduct, tblPayment, tblShippingCarrier, tblOrderStatusHistory), 'vw_' for a misnamed table (vw_SalesOrderHdr), and domain-specific prefixes 'ord_' (ord_line_item) and 'inv_' (inv_txn_log). Two tables (G…
 
 **System answer:**
-> The retrieved context notes multiple table/prefix naming patterns in the legacy CustomerMaster schema:
+> The retrieved schema documentation describes these table/prefix patterns:
 
-“tbl” prefix (e.g., `tblCustomer`, `tblProduct`, `tblPayment`) indicates objects using the `tbl` naming convention in different parts of the system. The context explicitly contrasts this with “vw_” prefix objects that are actually tables, such as `vw_SalesOrderHdr`.
+The `tbl` prefix is used by tables such as `tblCustomer`, `tblProduct`, and `tblPayment`. For at least `tblOrderStatusHistory`, it is explicitly associated with the naming convention “Verbose (tbl prefix)”.  
 
-An “ord_” prefix (e.g., `ord…
+The `vw_` prefix appears on `vw_SalesOrderHdr`, but the context notes that it is “vw_ prefix (but actually tables)”…
 
 **Sources retrieved (12):** `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_6`
 
@@ -577,13 +576,15 @@ An “ord_” prefix (e.g., `ord…
 > The vw_SalesOrderHdr table has one explicit foreign key constraint: intCustID references tblCustomer.strCustID. Implicit relationships (not enforced by FK constraints) include tblPayment.OrderID, tblOrderStatusHistory.OrderID, and ord_line_item.ord_id all referencing vw_SalesOrderHdr.lngOrderID.
 
 **System answer:**
-> For the table `vw_SalesOrderHdr`, the retrieved context shows these foreign key relationships where other tables reference `vw_SalesOrderHdr` via its `lngOrderID`:
+> For the table/view `vw_SalesOrderHdr`, the retrieved context shows the following foreign key relationships:
 
-`ord_line_item` references `vw_SalesOrderHdr` through `ORD_ID -> vw_SalesOrderHdr.LNGORDERID`.
+`VW_SALESORDERHDR` references `TBLCUSTOMER` via `INTCUSTID -> TBLCUSTOMER.STRCUSTID`.
 
-`tblPayment` references `vw_SalesOrderHdr` through `ORDERID -> vw_SalesOrderHdr.LNGORDERID`.
+`ORD_LINE_ITEM` references `VW_SALESORDERHDR` via `ORD_ID -> VW_SALESORDERHDR.LNGORDERID`.
 
-`tblOrderStatusHistory` references `vw_SalesO…
+`TBLPAYMENT` references `VW_SALESORDERHDR` via `ORDERID -> VW_SALESORDERHDR.LNGORDERID`.
+
+`TBLORDERSTATUSHISTORY…
 
 **Sources retrieved (12):** `VW_SALESORDERHDR→TBLCUSTOMER`, `ORD_LINE_ITEM→VW_SALESORDERHDR`, `TBLPAYMENT→VW_SALESORDERHDR`, `TBLORDERSTATUSHISTORY→VW_SALESORDERHDR`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`
 
@@ -606,11 +607,11 @@ An “ord_” prefix (e.g., `ord…
 > Product SKUs are stored in the strSKU field with a UNIQUE constraint. The format follows Category-Color-Size pattern (e.g., 'SHIRT-BLU-L'). The deprecated prod_num field also exists but should not be used. SKUs are used in foreign key references from ord_line_item through the denormalized product_co…
 
 **System answer:**
-> In the legacy schema, the product SKU is stored in `tblProduct` as `strSKU`, and order line items denormalize it by copying `tblProduct.strSKU` into `ord_line_item.product_code` (documented as “REDUNDANT: Copy of tblProduct.strSKU … may be out of sync … snapshotted for historical accuracy”).  
+> The retrieved context states that the legacy system’s product catalog uses `TBLPRODUCT` to store SKU values in the `strSKU` column, and that the older `prod_num` field is deprecated and “superseded by `strSKU`” (see the `tblProduct`/legacy deprecated fields notes in the context).  
 
-However, the retrieved context does not specify any strict SKU format rules for `tblProduct.strSKU` (it …
+However, the knowledge graph does not specify any intended `strSKU` format rules (e.g., required prefixes, length, o…
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_5`, `Customer Master→TBLCUSTOMER`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_6`, `Integer product identifier→TBLPRODUCT`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `CustomerMaster v3.2.1 (Legacy)→TBLCUSTOMER`, `Product Catalogue→TBLPRODUCT`, `parent_chunk_data_dictionary.txt_6`
 
 **Context previews (first 3):**
 
@@ -631,13 +632,13 @@ However, the retrieved context does not specify any strict SKU format rules for 
 > Critical issues include: (1) PCI compliance violation - unencrypted card numbers in tblPayment.CardNumberText, (2) inappropriate data types - unit_cost as VARCHAR instead of DECIMAL, (3) missing foreign key constraints - inv_txn_log.user_id has no FK to User table, (4) security vulnerability - User.…
 
 **System answer:**
-> The retrieved context identifies these critical data quality issues for the migration project:
+> The retrieved context identifies these critical data quality issues for migration:
 
-First, referential integrity gaps: some `ord_line_item.prod_id` values reference non-existent products (deleted products), some orders reference customers marked as inactive, and there is no foreign key constraint on `inv_txn_log.user_id`.
+There are referential integrity gaps, including `ord_line_item.prod_id` values that reference non-existent products (deleted products), some orders referencing customers marked as inactive, and a missing foreign key constraint on `inv_txn_log.user_id`.
 
-Second, data inconsistencies: `tblProduct` has both active and …
+There are data inconsistencies, including `tblProduct` contain…
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_7`, `Shipping carrier master data→TBLSHIPPINGCARRIER`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_7`, `Plaintext card numbers→TBLPAYMENT`
 
 **Context previews (first 3):**
 

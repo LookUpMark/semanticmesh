@@ -40,9 +40,9 @@ _TRIGGER_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
-# Matches CREATE TYPE ... AS ENUM (...);
+# Matches CREATE TYPE ... AS ENUM (...); — captures type name for later replacement
 _TYPE_RE = re.compile(
-    r"CREATE\s+TYPE\b[^;]*;",
+    r"CREATE\s+TYPE\s+(\w+)\b[^;]*;",
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -54,48 +54,86 @@ _INDEX_RE = re.compile(
 
 # Matches ALTER TABLE statements
 _ALTER_RE = re.compile(
-    r"ALTER\s+TABLE\b[^;]*;",
+    r"\bALTER\s+TABLE\b[^;]*;",
     re.IGNORECASE | re.DOTALL,
 )
 
 # Matches standalone COMMENT ON statements
 _COMMENT_ON_RE = re.compile(
-    r"COMMENT\s+ON\b[^;]*;",
+    r"\bCOMMENT\s+ON\b[^;]*;",
     re.IGNORECASE | re.DOTALL,
 )
 
-# Matches GRANT / REVOKE statements
+# Matches GRANT / REVOKE statements (two-sided boundaries to avoid false matches)
 _GRANT_RE = re.compile(
-    r"(?:GRANT|REVOKE)\b[^;]*;",
+    r"(?:\bGRANT\b|\bREVOKE\b)[^;]*;",
     re.IGNORECASE | re.DOTALL,
 )
 
-# Matches SET / BEGIN / COMMIT / ROLLBACK utility statements
+# Matches SET / BEGIN / COMMIT / ROLLBACK utility statements (two-sided boundaries)
 _UTILITY_RE = re.compile(
-    r"(?:SET\b|BEGIN\b|COMMIT\b|ROLLBACK\b)[^;]*;",
+    r"(?:\bSET\b|\bBEGIN\b|\bCOMMIT\b|\bROLLBACK\b)[^;]*;",
     re.IGNORECASE | re.DOTALL,
 )
+
+# Matches INSERT INTO statements (may span multiple lines for VALUES)
+_INSERT_RE = re.compile(
+    r"\bINSERT\s+INTO\b[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches DROP TABLE / VIEW / INDEX / TYPE etc.
+_DROP_RE = re.compile(
+    r"\bDROP\s+(?:TABLE|VIEW|INDEX|TYPE|SEQUENCE|FUNCTION|PROCEDURE|TRIGGER)"
+    r"\b[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches CREATE VIEW / SEQUENCE statements
+_CREATE_OTHER_RE = re.compile(
+    r"CREATE\s+(?:OR\s+REPLACE\s+)?(?:VIEW|SEQUENCE)\b[^;]*;",
+    re.IGNORECASE | re.DOTALL,
+)
+
+# Matches SQL Server bracket-quoted identifiers: [Group] → "Group"
+_BRACKET_IDENT_RE = re.compile(r"\[(\w+)\]")
 
 
 def _strip_non_table_ddl(ddl_text: str) -> str:
-    """Remove non-CREATE-TABLE statements from DDL to reduce sqlglot noise.
+    """Remove non-CREATE-TABLE statements and normalise dialect quirks.
 
-    Strips: CREATE FUNCTION/PROCEDURE (with $$ bodies), CREATE TRIGGER,
-    CREATE TYPE, CREATE [UNIQUE] INDEX, ALTER TABLE, COMMENT ON,
-    GRANT/REVOKE, SET/BEGIN/COMMIT/ROLLBACK.
-
-    Keeps: CREATE TABLE and anything not matched by the patterns above.
+    Processing order:
+    1. Normalise SQL Server ``[identifier]`` → ``"identifier"`` (P4).
+    2. Collect and strip ``CREATE TYPE`` definitions; replace custom type
+       names with ``VARCHAR`` in the remaining DDL (P3).
+    3. Strip all other non-CREATE-TABLE statements (P1/P2).
     """
-    result = ddl_text
+    # ── P4: Bracket notation → standard double-quote identifiers ───────────
+    result = _BRACKET_IDENT_RE.sub(r'"\1"', ddl_text)
+
+    # ── P3: Strip CREATE TYPE and replace custom type names with VARCHAR ───
+    custom_types: list[str] = []
+    for m in _TYPE_RE.finditer(result):
+        custom_types.append(m.group(1))
+    result = _TYPE_RE.sub("", result)
+
+    for type_name in custom_types:
+        # Replace the custom type name used as a column type with VARCHAR.
+        # Only match when the name appears as a standalone token (word boundary).
+        result = re.sub(rf"\b{re.escape(type_name)}\b", "VARCHAR", result)
+
+    # ── P1/P2: Strip remaining non-CREATE-TABLE statements ────────────────
     for pattern in (
         _DOLLAR_BODY_RE,
         _TRIGGER_RE,
-        _TYPE_RE,
         _INDEX_RE,
         _ALTER_RE,
         _COMMENT_ON_RE,
         _GRANT_RE,
         _UTILITY_RE,
+        _INSERT_RE,
+        _DROP_RE,
+        _CREATE_OTHER_RE,
     ):
         result = pattern.sub("", result)
     return result

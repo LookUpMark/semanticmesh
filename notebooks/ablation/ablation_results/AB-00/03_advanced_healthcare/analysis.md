@@ -1,7 +1,7 @@
 # AB-00 — 03_advanced_healthcare — Run Analysis
 
-**Timestamp:** 2026-03-27 15:22:57  
-**Run tag:** `post-fix-v2`
+**Timestamp:** 2026-03-27 17:57:15  
+**Run tag:** `post-fix-v3`
 
 ## Configuration
 
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 461 |
-| Entities resolved | 264 |
+| Triplets extracted | 462 |
+| Entities resolved | 252 |
 | Tables parsed | 10 |
 | Tables completed | 10 |
 
@@ -32,7 +32,7 @@
 | Questions | 30 |
 | Grounded | **30/30 (100%)** |
 | Avg GT Coverage | 100% |
-| Avg Top Score | 0.2919 |
+| Avg Top Score | 0.3013 |
 | Avg Chunk Count | 12.0 |
 | Abstained | 0 |
 
@@ -45,23 +45,27 @@ RAGAS evaluation not enabled for this run.
 ### ✅ Q001 — What tables store information about patients?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.9830 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.9453 | **Gate:** `proceed`
 
 **Expected answer:**
 > The patients table stores demographic and administrative information including MRN, name, date of birth, gender, contact details, and emergency contacts. Additionally, patient-related data is stored in diagnoses, treatments, medications, lab_results, appointments, and claims tables through foreign k…
 
 **System answer:**
-> In the retrieved context, patient information is stored in the physical table `PATIENTS` (implemented for the business concept “Patient Demographic Information”). The `PATIENTS` table contains patient demographic and administrative attributes such as MRN, legal name, date of birth, gender, contact details, and a linked insurance reference.
+> Based on the retrieved context, patient-related information is stored in these tables:
 
-**Sources retrieved (12):** `Patient Demographic Information→PATIENTS`, `Patient Appointment→APPOINTMENTS`, `Laboratory test result→LAB_RESULTS`, `parent_chunk_data_dictionary.md_10`, `Patient Demographic Information`, `Patient Appointment`, `parent_chunk_data_dictionary.md_3`, `Laboratory test result`
+The `PATIENTS` table stores patient demographic and administrative information, keyed by `patient_id`.  
+
+Other tables store information that is specifically tied to patients via a `patient_id` foreign key or patient identifier, including `DIAGNOSES` (diagnosis records), `TREATMENTS` (medical treatments/procedu…
+
+**Sources retrieved (12):** `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `Medical Treatment→TREATMENTS`, `Patient Appointment→APPOINTMENTS`, `diagnostic laboratory test results for patients→LAB_RESULTS`, `parent_chunk_data_dictionary.md_10`, `Patient Appointment`, `parent_chunk_data_dictionary.md_3`, `Medical Treatment`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Patient Demographic Information' — The table stores core patient demographic and administrative attributes (MRN, legal name, date of birth, gender, contact details, and linked insura…_
+1. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
-2. _Business concept 'Patient Appointment' — The table stores core scheduling and encounter details for patients, including patient_id, provider_id, department_id, appointment_date/time, appointment_type,…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+3. _Business concept 'Patient Appointment' — The table stores patient appointment scheduling/encounter details including patient_id, provider_id, department_id, appointment_date/time, appointment_type, an…_
 
 ---
 
@@ -74,63 +78,65 @@ RAGAS evaluation not enabled for this run.
 > Diagnoses are stored in the diagnoses table with ICD-10-CM codes (icd_10_code field). They are classified into four types: 'principal' (primary condition), 'comorbidity' (additional conditions), 'admitting' (condition causing admission), and 'secondary'. Each diagnosis includes the diagnosis name, t…
 
 **System answer:**
-> Medical diagnoses are coded using ICD-10-CM. In the physical table **DIAGNOSES**, the column **icd_10_code** stores the ICD-10-CM diagnosis code (with **diagnosis_name** as the full description). Diagnoses are classified via **diagnosis_type**, which is constrained to one of: **principal**, **comorbidity**, **admitting**, or **secondary**. The business concept definition also states that a **princ…
+> Medical diagnoses are coded and classified in the physical table `DIAGNOSES`, which stores the ICD-10-CM diagnosis code in `icd_10_code` and the diagnosis classification in `diagnosis_type`. The `diagnosis_type` field is constrained to one of: `principal`, `comorbidity`, `admitting`, or `secondary`. The diagnosis also records clinical and operational metadata such as `diagnosis_name`, the diagnosi…
 
-**Sources retrieved (12):** `ICD-10-CM diagnosis code→DIAGNOSES`, `parent_chunk_data_dictionary.md_10`, `Laboratory test result→LAB_RESULTS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`, `Laboratory test result`
+**Sources retrieved (12):** `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `Medical Treatment→TREATMENTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_1`, `Store patient diagnosis records with ICD-10 coding and temporal tracking`, `Medical Treatment`
 
 **Context previews (first 3):**
 
-1. _Business concept 'ICD-10-CM diagnosis code' is implemented by physical table DIAGNOSES (columns: diagnosis_id, patient_id, icd_10_code, diagnosis_name, diagnosis_type, provider_id, diagnosis_date, res…_
+1. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
-2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+3. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
 ---
 
 ### ✅ Q003 — What information is tracked for medications prescribed to patients?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.3690 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.5026 | **Gate:** `proceed`
 
 **Expected answer:**
 > The medications table tracks medication name, National Drug Code (NDC), dosage, route of administration (oral, IV, IM, topical, inhaled, subcutaneous), frequency, prescribing provider, start date, and end date. Active medications have a NULL end_date. The table uses temporal historization with valid…
 
 **System answer:**
-> In the physical table `MEDICATIONS` (which implements the business concept “Each medication record” / “Store patient medication prescriptions and administrations”), the system tracks medications prescribed to patients using the following information: `medication_id`, `patient_id`, `medication_name`, `ndc_code`, `dosage`, `route`, `frequency`, `prescribing_provider_id`, `start_date`, `end_date`, `i…
+> For medications prescribed to patients (business concept “Each medication record”, implemented by the physical table `MEDICATIONS`), the system tracks: `medication_id`, the `patient_id` receiving the medication, `medication_name`, `ndc_code`, `dosage`, `route`, `frequency`, `prescribing_provider_id`, the medication’s `start_date` and `end_date`, lifecycle controls `is_deleted`, and historization/a…
 
-**Sources retrieved (12):** `Each medication record→MEDICATIONS`, `Patient Demographic Information→PATIENTS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_6`, `Patient Demographic Information`, `parent_chunk_data_dictionary.md_5`, `Patient Appointment`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `Each medication record→MEDICATIONS`, `Medical Treatment→TREATMENTS`, `Medical Treatment`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `Patient Appointment`, `parent_chunk_business_glossary.md_1`
 
 **Context previews (first 3):**
 
 1. _Business concept 'Each medication record' is implemented by physical table MEDICATIONS (columns: medication_id, patient_id, medication_name, ndc_code, dosage, route, frequency, prescribing_provider_id…_
 
-2. _Business concept 'Patient Demographic Information' — The table stores core patient demographic and administrative attributes (MRN, legal name, date of birth, gender, contact details, and linked insura…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patien…_
+3. _Medical Treatment: The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, provider_id, department…_
 
 ---
 
 ### ✅ Q004 — How are healthcare providers organized and tracked?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.1816 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 100% | **Top Score:** 0.1566 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Providers are stored in the providers table with a unique National Provider Identifier (NPI), name, provider type (MD, DO, NP, PA, RN, PT, Other), specialty, and department affiliation. Providers have is_active and is_deleted flags for status tracking. The table uses temporal historization to track …
 
 **System answer:**
-> Healthcare providers are organized and tracked through the physical table `PROVIDERS`, which stores core provider master data and activity/deletion indicators. The table includes identifying and credential attributes such as `provider_id` (primary key), `npi` (unique), `first_name`, `last_name`, `provider_type` (with allowed values like `MD`, `DO`, `NP`, `PA`, `RN`, `PT`, `Other`), and `specialty`…
+> Healthcare providers are organized primarily through the `PROVIDERS` table and their association to a facility `department`.
 
-**Sources retrieved (12):** `Healthcare Providers→PROVIDERS`, `parent_chunk_data_dictionary.md_10`, `Healthcare Providers`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`
+The `PROVIDERS` table stores provider identity and credential information using `provider_id` as the primary key and a unique `npi` (National Provider Identifier). It also tracks provider classification via `provider_type` (with allowed values including `MD`, `DO`, `NP`, `P…
+
+**Sources retrieved (12):** `Medical Treatment→TREATMENTS`, `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `PROVIDERS Table→PROVIDERS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `Medical Treatment`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Healthcare Providers' — The table stores core provider master data (provider_id, first/last name, provider_type, specialty) and activity/deletion indicators, which matches the busine…_
+1. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
+2. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
-3. _Healthcare Providers: The table stores core provider master data (provider_id, first/last name, provider_type, specialty) and activity/deletion indicators, which matches the business concept covering …_
+3. _Business concept 'PROVIDERS Table' is implemented by physical table PROVIDERS (columns: provider_id, npi, first_name, last_name, provider_type, specialty, department_id, is_active, is_deleted, valid_f…_
 
 ---
 
@@ -143,36 +149,38 @@ RAGAS evaluation not enabled for this run.
 > Departments are stored in the departments table with department_name, department_code, parent_department_id (self-referential foreign key for hierarchy), service_line (strategic grouping), and location. Departments can have parent departments creating a hierarchical structure (e.g., Cardiology as a …
 
 **System answer:**
-> The structure of departments is implemented by the physical table **DEPARTMENTS**. It includes identifiers and descriptive fields: **department_id**, **department_name**, **department_code**, and organizational hierarchy and service-line fields: **parent_department_id** and **service_line** (along with **location**, **is_active**, **is_deleted**, and the historization/audit fields **valid_from**, …
+> In the business concept “Store organizational department and service line structure,” the organization uses the physical table **DEPARTMENTS** to represent departments and their service-line placement. The **DEPARTMENTS** table includes fields such as **department_id** (identifier), **department_name**, **department_code**, **service_line**, **location**, and lifecycle flags like **is_active** and…
 
-**Sources retrieved (12):** `Store organizational department and service line structure→DEPARTMENTS`, `Healthcare Providers→PROVIDERS`, `Patient Appointment→APPOINTMENTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_5`
+**Sources retrieved (12):** `Store organizational department and service line structure→DEPARTMENTS`, `Medical Treatment→TREATMENTS`, `Patient Appointment→APPOINTMENTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_5`
 
 **Context previews (first 3):**
 
 1. _Business concept 'Store organizational department and service line structure' is implemented by physical table DEPARTMENTS (columns: department_id, department_name, department_code, parent_department_…_
 
-2. _Business concept 'Healthcare Providers' — The table stores core provider master data (provider_id, first/last name, provider_type, specialty) and activity/deletion indicators, which matches the busine…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _Business concept 'Patient Appointment' — The table stores core scheduling and encounter details for patients, including patient_id, provider_id, department_id, appointment_date/time, appointment_type,…_
+3. _Business concept 'Patient Appointment' — The table stores patient appointment scheduling/encounter details including patient_id, provider_id, department_id, appointment_date/time, appointment_type, an…_
 
 ---
 
 ### ✅ Q006 — How are insurance plans and payers represented in the system?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.1865 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 100% | **Top Score:** 0.1441 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > The insurance_plans table stores plan_name, payer_name (insurance company), plan_type (commercial, medicare, medicaid, tricare, self_pay), and prior_auth_required flag. Plans have is_active status and use temporal historization. The patients table references insurance_plans via primary_insurance_id …
 
 **System answer:**
-> Insurance plans are represented by the physical table `INSURANCE_PLANS`, which implements the business concept “Each insurance plan.” The table includes attributes such as `plan_id`, `plan_name`, `payer_name`, `plan_type`, `prior_auth_required`, and effective/validity fields (`valid_from`, `valid_to`), along with soft-delete and lifecycle fields (`is_active`, `is_deleted`, `created_at`, `updated_a…
+> Insurance plans are represented by the physical table `INSURANCE_PLANS`, which is described as implementing the business process “The process of determining which insurance plan pays first.” In `INSURANCE_PLANS`, the plan is characterized by fields such as `plan_id`, `plan_name`, `plan_type`, and eligibility/activation fields like `is_active`, `is_deleted`, `valid_from`, and `valid_to`.
 
-**Sources retrieved (12):** `Each insurance plan→INSURANCE_PLANS`, `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `Patient Demographic Information→PATIENTS`, `parent_chunk_business_glossary.md_1`, `Each insurance plan`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`
+Payers ar…
+
+**Sources retrieved (12):** `The process of determining which insurance plan pays first→INSURANCE_PLANS`, `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `parent_chunk_business_glossary.md_1`, `The process of determining which insurance plan pays first`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Each insurance plan' is implemented by physical table INSURANCE_PLANS (columns: plan_id, plan_name, payer_name, plan_type, prior_auth_required, is_active, is_deleted, valid_from, val…_
+1. _Business concept 'The process of determining which insurance plan pays first' is implemented by physical table INSURANCE_PLANS (columns: plan_id, plan_name, payer_name, plan_type, prior_auth_required,…_
 
 2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
@@ -189,9 +197,9 @@ RAGAS evaluation not enabled for this run.
 > Claims are stored in the claims table with claim_number (unique identifier), patient_id, insurance_plan_id, service_date, submission_date, CPT code (procedure), ICD-10 code (diagnosis), amounts (charged, allowed, paid), and claim_status. Status workflow includes: submitted → pending → approved/denie…
 
 **System answer:**
-> An insurance claim is a formal request for payment submitted to an insurance payer for services rendered to an insured patient. In the business concept definition, it includes procedure codes (CPT/HCPCS), diagnosis codes (ICD-10), modifiers, and charges, and it may be submitted on a fee-for-service or bundled payment basis. In the database schema, this is implemented by the physical table `CLAIMS`…
+> An insurance claim is a formal request for payment submitted to an insurance payer for services rendered to an insured patient. In the system, this concept is implemented by the `CLAIMS` table, which stores insurance claims and billing information for services rendered. A claim includes procedure codes (CPT/HCPCS via `cpt_code`) and diagnosis codes (ICD-10 via `icd_10_code`) supporting the billed …
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `parent_chunk_business_glossary.md_1`, `insurance claims and billing information for services rendered`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `Medical Treatment→TREATMENTS`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_1`, `Medical Treatment`, `insurance claims and billing information for services rendered`, `parent_chunk_business_glossary.md_2`
 
 **Context previews (first 3):**
 
@@ -199,76 +207,76 @@ RAGAS evaluation not enabled for this run.
 
 2. _Business concept 'insurance claims and billing information for services rendered' is implemented by physical table CLAIMS (columns: claim_id, patient_id, insurance_plan_id, claim_number, service_date,…_
 
-3. _## Financial & Administrative **Insurance** A third-party payer contract that provides coverage for medical services. Insurance types include private commercial plans, Medicare (federal), Medicaid (st…_
+3. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
 ---
 
 ### ✅ Q008 — How are patient appointments scheduled and tracked?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.8794 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.9254 | **Gate:** `proceed`
 
 **Expected answer:**
 > The appointments table stores patient_id, provider_id, department_id, appointment_date, appointment_time, appointment_type (new_patient, established, consultation, follow_up, procedure, telehealth), duration_minutes, and appointment_status. Status workflow: scheduled → confirmed → checked_in → in_pr…
 
 **System answer:**
-> Patient appointments are scheduled and tracked using the business concept “Patient Appointment,” implemented by the physical table `APPOINTMENTS`. This table stores core scheduling and encounter details, including `patient_id`, `provider_id`, `department_id`, `appointment_date` and `appointment_time`, `appointment_type`, and `appointment_status` with a `cancellation_reason`. It also supports track…
+> Patient appointments are scheduled and tracked in the physical table **APPOINTMENTS**, which implements the business concept **“Patient Appointment.”** The table stores encounter scheduling details including **patient_id**, **provider_id**, **department_id**, **appointment_date** and **appointment_time**, plus **appointment_type** and **appointment_status**. It also captures **cancellation_reason*…
 
-**Sources retrieved (12):** `Patient Appointment→APPOINTMENTS`, `Description of treatment or procedure→TREATMENTS`, `Patient Demographic Information→PATIENTS`, `Patient Appointment`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `Patient Appointment→APPOINTMENTS`, `Medical Treatment→TREATMENTS`, `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `Patient Appointment`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Patient Appointment' — The table stores core scheduling and encounter details for patients, including patient_id, provider_id, department_id, appointment_date/time, appointment_type,…_
+1. _Business concept 'Patient Appointment' — The table stores patient appointment scheduling/encounter details including patient_id, provider_id, department_id, appointment_date/time, appointment_type, an…_
 
-2. _Business concept 'Description of treatment or procedure' is implemented by physical table TREATMENTS (columns: treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _Business concept 'Patient Demographic Information' — The table stores core patient demographic and administrative attributes (MRN, legal name, date of birth, gender, contact details, and linked insura…_
+3. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
 ---
 
 ### ✅ Q009 — What information is captured in laboratory test results?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.8540 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.5837 | **Gate:** `proceed`
 
 **Expected answer:**
 > Lab results are stored in the lab_results table with test_name, LOINC code (Logical Observation Identifiers Names and Codes), test_value, unit of measurement, reference_range, is_abnormal flag, ordering_provider_id, result_date, and notes. The is_abnormal flag is automatically set when results fall …
 
 **System answer:**
-> Laboratory test results capture diagnostic lab outcomes stored in the `LAB_RESULTS` table. Each record stores the associated patient (`patient_id`), the specific test performed (`test_name` and `loinc_code`), and when the result was obtained (`result_date`). The result itself is captured in `test_value` (stored as `VARCHAR`, so it can be qualitative or quantitative), along with `unit` and `referen…
+> The business concept “diagnostic laboratory test results for patients” is implemented by the `LAB_RESULTS` table, which captures diagnostic laboratory test results including the patient (`patient_id`), the test performed (`test_name`, `loinc_code`), the result itself (`test_value`), measurement details (`unit`, `reference_range`), whether the result is abnormal (`is_abnormal`), the ordering provid…
 
-**Sources retrieved (12):** `Laboratory test result→LAB_RESULTS`, `parent_chunk_data_dictionary.md_11`, `Laboratory test result`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_3`
+**Sources retrieved (12):** `diagnostic laboratory test results for patients→LAB_RESULTS`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_0`, `diagnostic laboratory test results for patients`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_8`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+1. _Business concept 'diagnostic laboratory test results for patients' is implemented by physical table LAB_RESULTS (columns: lab_result_id, patient_id, test_name, loinc_code, test_value, unit, reference_…_
 
 2. _## General Conventions  ### Temporal Validity Pattern All major tables use `valid_from` and `valid_to` timestamps for historization: - Current records have `valid_to = NULL` - Historical records have …_
 
-3. _Laboratory test result: The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_date). Although result…_
+3. _# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patien…_
 
 ---
 
 ### ✅ Q010 — How are medical treatments and procedures documented?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.4349 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.8964 | **Gate:** `proceed`
 
 **Expected answer:**
 > The treatments table stores patient_id, diagnosis_id (for clinical justification), treatment_name, CPT code (for billing), provider_id, department_id, treatment_date, treatment_status (scheduled, completed, canceled, in_progress), and clinical notes. Treatments link to both providers and departments…
 
 **System answer:**
-> Medical treatments and procedures are documented in the physical table **TREATMENTS** (implemented for the business concept **“Description of treatment or procedure”**). Each record captures the treatment’s identity and clinical context, including **treatment_id**, **patient_id** (who received it), **diagnosis_id** (the primary diagnosis indication), **treatment_name**, and billing code **cpt_code…
+> Medical treatments and procedures are documented in the system via the business concept “Medical Treatment,” which is implemented by the physical table `TREATMENTS`. This table stores treatments/procedures performed on patients, including `treatment_id`, `patient_id`, `treatment_name`, an optional diagnosis linkage via `diagnosis_id`, `provider_id`, `department_id`, and `treatment_date`. It also i…
 
-**Sources retrieved (12):** `Description of treatment or procedure→TREATMENTS`, `parent_chunk_data_dictionary.md_10`, `Healthcare Providers→PROVIDERS`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`
+**Sources retrieved (12):** `Medical Treatment→TREATMENTS`, `parent_chunk_data_dictionary.md_10`, `Medical Treatment`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Description of treatment or procedure' is implemented by physical table TREATMENTS (columns: treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department…_
+1. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
 2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
-3. _Business concept 'Healthcare Providers' — The table stores core provider master data (provider_id, first/last name, provider_type, specialty) and activity/deletion indicators, which matches the busine…_
+3. _Medical Treatment: The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, provider_id, department…_
 
 ---
 
@@ -281,19 +289,17 @@ RAGAS evaluation not enabled for this run.
 > To get all diagnoses for a patient with provider information, join the patients table to diagnoses on patient_id, then left join to providers on provider_id. The query returns icd_10_code, diagnosis_name, diagnosis_type, diagnosis_date, resolution_date, and the provider's name (first_name, last_name…
 
 **System answer:**
-> In this schema, diagnoses for a patient are stored in the `DIAGNOSES` table. To get “all the diagnoses for a specific patient, including the providers who diagnosed them,” you would filter `DIAGNOSES` by `DIAGNOSES.patient_id`, then join to `PROVIDERS` using `DIAGNOSES.provider_id = PROVIDERS.provider_id`.
+> In this knowledge graph, patient diagnoses are stored in the physical table `DIAGNOSES`, which includes `patient_id` (the patient to whom the diagnosis belongs) and `provider_id` (the provider who made the diagnosis), along with diagnosis attributes such as `icd_10_code`, `diagnosis_name`, `diagnosis_type`, and dates (`diagnosis_date`, `resolution_date`). Provider details (including `first_name` a…
 
-From `DIAGNOSES`, you can select the diagnosis details such as `icd_10_code`, `diagnosis_na…
-
-**Sources retrieved (12):** `ICD-10-CM diagnosis code→DIAGNOSES`, `Description of treatment or procedure→TREATMENTS`, `Laboratory test result→LAB_RESULTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`
+**Sources retrieved (12):** `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `Medical Treatment→TREATMENTS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `Medical Treatment`, `parent_chunk_data_dictionary.md_7`, `diagnostic laboratory test results for patients`
 
 **Context previews (first 3):**
 
-1. _Business concept 'ICD-10-CM diagnosis code' is implemented by physical table DIAGNOSES (columns: diagnosis_id, patient_id, icd_10_code, diagnosis_name, diagnosis_type, provider_id, diagnosis_date, res…_
+1. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
-2. _Business concept 'Description of treatment or procedure' is implemented by physical table TREATMENTS (columns: treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+3. _# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patien…_
 
 ---
 
@@ -306,17 +312,19 @@ From `DIAGNOSES`, you can select the diagnosis details such as `icd_10_code`, `d
 > Join patients to treatments on patient_id, treatments to providers on provider_id, and providers to departments on department_id. Filter where department_name = 'Cardiology' (or department_code). Return patient MRN, name, treatment_name, treatment_date, and provider name. Exclude soft-deleted record…
 
 **System answer:**
-> I cannot find this information in the knowledge graph.
+> I cannot determine which specific patients received treatments from cardiology department providers from the retrieved context, because it contains only schema-level metadata (e.g., the `TREATMENTS` table) and does not include any actual treatment records or a way to identify which `department_id` corresponds to “cardiology.”
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_11`, `Healthcare Providers→PROVIDERS`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`
+What the context does say is that each treatment in `TREATMENTS` is lin…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `Medical Treatment→TREATMENTS`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_6`
 
 **Context previews (first 3):**
 
 1. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
-2. _## General Conventions  ### Temporal Validity Pattern All major tables use `valid_from` and `valid_to` timestamps for historization: - Current records have `valid_to = NULL` - Historical records have …_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _Business concept 'Healthcare Providers' — The table stores core provider master data (provider_id, first/last name, provider_type, specialty) and activity/deletion indicators, which matches the busine…_
+3. _## PROVIDERS Table **Purpose**: Store healthcare provider information and credentials. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | p…_
 
 ---
 
@@ -329,19 +337,19 @@ From `DIAGNOSES`, you can select the diagnosis details such as `icd_10_code`, `d
 > Join diagnoses to treatments on diagnosis_id, then treatments to patients on patient_id and providers on provider_id. Filter by patient_id and specific icd_10_code. Return treatment_name, CPT code, treatment_date, treatment_status, department_name, and provider name. This links clinical conditions t…
 
 **System answer:**
-> In this knowledge graph, treatments performed for a patient’s specific diagnosis are represented by rows in the physical table `TREATMENTS`, which is implemented for the business concept “Description of treatment or procedure”.
+> In the schema, treatments performed for a patient’s specific diagnosis are recorded in the `TREATMENTS` table (business concept `Medical Treatment`). Each treatment record has a `patient_id` (FK to `patients.patient_id`) and a `diagnosis_id` (FK to `diagnoses.diagnosis_id`) that provides the diagnosis linkage.  
 
-A treatment is linked to a patient and that patient’s diagnosis through these keys in `TREATMENTS`: `patient_id` (FK → `patients.patient_id`) and `diagnosis_id` (FK → `dia…
+Practically, you would identify the patient’s diagnosis record in `DIAGNOSES` (where …
 
-**Sources retrieved (12):** `Description of treatment or procedure→TREATMENTS`, `Laboratory test result→LAB_RESULTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`
+**Sources retrieved (12):** `Medical Treatment→TREATMENTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_0`, `Medical Treatment`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_1`, `diagnostic laboratory test results for patients`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Description of treatment or procedure' is implemented by physical table TREATMENTS (columns: treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department…_
+1. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-2. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
-3. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
+3. _# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patien…_
 
 ---
 
@@ -354,17 +362,17 @@ A treatment is linked to a patient and that patient’s diagnosis through these 
 > Join diagnoses to patients on patient_id, patients to medications on patient_id, and medications to providers on prescribing_provider_id. Filter by specific icd_10_code. Return provider name, NPI, specialty, patient name, medication_name, dosage, and prescription dates. This supports medication patt…
 
 **System answer:**
-> Based on the schema in the retrieved context, you can identify this by using the shared `patient_id` between `DIAGNOSES` and `MEDICATIONS`, then returning the provider from `MEDICATIONS.prescribing_provider_id`.
+> The retrieved context does not provide enough schema information to determine which providers prescribed medications to patients with a specific diagnosis.
 
-Concretely: for a given “specific diagnosis” (for example, filtering `DIAGNOSES.icd_10_code` or `DIAGNOSES.diagnosis_name`), find the patients in `DIAGNOSES` that match that diagnosis, jo…
+In particular, the **MEDICATIONS** table includes **prescribing_provider_id** and **patient_id**, but it does not include any **diagnosis_id** (or equivalent diagnosis link). The **DIAGNOSES** table includes **diagnosis_id** and **patient_id**…
 
-**Sources retrieved (12):** `Healthcare Providers→PROVIDERS`, `Laboratory test result→LAB_RESULTS`, `Each medication record→MEDICATIONS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_8`
+**Sources retrieved (12):** `Medical Treatment→TREATMENTS`, `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `Each medication record→MEDICATIONS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_8`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Healthcare Providers' — The table stores core provider master data (provider_id, first/last name, provider_type, specialty) and activity/deletion indicators, which matches the busine…_
+1. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-2. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+2. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
 3. _Business concept 'Each medication record' is implemented by physical table MEDICATIONS (columns: medication_id, patient_id, medication_name, ndc_code, dosage, route, frequency, prescribing_provider_id…_
 
@@ -379,17 +387,17 @@ Concretely: for a given “specific diagnosis” (for example, filtering `DIAGNO
 > Join patients to medications on patient_id, then medications to providers on prescribing_provider_id. Filter by patient_id. Return medication_name, NDC code, dosage, route, frequency, start_date, end_date, and provider name. Include historical records (valid_to IS NOT NULL) to show medication change…
 
 **System answer:**
-> Medication history is stored in the physical table **MEDICATIONS** (business concept “Each medication record”) with a **patient_id** identifying the patient and temporal/history fields including **start_date**, **end_date**, **is_deleted**, **valid_from**, and **valid_to** (plus **created_at** and **updated_at**). Each record also includes a **prescribing_provider_id** that captures the prescribin…
+> Within the available schema, a patient’s medication history (including prescribing providers) is represented by the physical table **MEDICATIONS**, which implements the business concept **“Each medication record”**. For a given **patient_id**, the table stores medication details such as **medication_name**, **ndc_code**, **dosage**, **route**, **frequency**, and the prescribing clinician via **pre…
 
-**Sources retrieved (12):** `Each medication record→MEDICATIONS`, `Description of treatment or procedure→TREATMENTS`, `parent_chunk_business_glossary.md_0`, `Each medication record`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`
+**Sources retrieved (12):** `Each medication record→MEDICATIONS`, `Medical Treatment→TREATMENTS`, `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `parent_chunk_business_glossary.md_0`, `Each medication record`, `parent_chunk_data_dictionary.md_6`, `Medical Treatment`, `parent_chunk_data_dictionary.md_5`
 
 **Context previews (first 3):**
 
 1. _Business concept 'Each medication record' is implemented by physical table MEDICATIONS (columns: medication_id, patient_id, medication_name, ndc_code, dosage, route, frequency, prescribing_provider_id…_
 
-2. _Business concept 'Description of treatment or procedure' is implemented by physical table TREATMENTS (columns: treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patien…_
+3. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
 ---
 
@@ -402,17 +410,17 @@ Concretely: for a given “specific diagnosis” (for example, filtering `DIAGNO
 > Join appointments to departments on department_id and patients on patient_id. Group by department_id, department_name, and service_line. Count appointments and optionally filter by appointment_date range. Order by count DESC to identify high-volume departments. Exclude canceled and no-show appointme…
 
 **System answer:**
-> The retrieved context defines the `APPOINTMENTS` table (including `department_id`, `appointment_date`, `appointment_time`, and `appointment_status`), but it does not include any appointment volume data or any aggregated counts by department. Therefore, it’s not possible to determine which departments have the highest volume of patient appointments from the information provided here.
+> The retrieved context defines the `APPOINTMENTS` table (including `department_id` and appointment scheduling/status fields), but it does not include any appointment count results, department names, or data needed to calculate which departments have the highest volume of patient appointments.
 
-**Sources retrieved (12):** `Patient Appointment→APPOINTMENTS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_8`, `Patient Appointment`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`
+**Sources retrieved (12):** `Patient Appointment→APPOINTMENTS`, `Medical Treatment→TREATMENTS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `Patient Appointment`, `parent_chunk_data_dictionary.md_5`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Patient Appointment' — The table stores core scheduling and encounter details for patients, including patient_id, provider_id, department_id, appointment_date/time, appointment_type,…_
+1. _Business concept 'Patient Appointment' — The table stores patient appointment scheduling/encounter details including patient_id, provider_id, department_id, appointment_date/time, appointment_type, an…_
 
-2. _## Financial & Administrative **Insurance** A third-party payer contract that provides coverage for medical services. Insurance types include private commercial plans, Medicare (federal), Medicaid (st…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _## APPOINTMENTS Table **Purpose**: Store patient appointment scheduling and encounter information. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
+3. _## Financial & Administrative **Insurance** A third-party payer contract that provides coverage for medical services. Insurance types include private commercial plans, Medicare (federal), Medicaid (st…_
 
 ---
 
@@ -425,9 +433,11 @@ Concretely: for a given “specific diagnosis” (for example, filtering `DIAGNO
 > Join patients to treatments on patient_id, treatments to claims on patient_id and service_date ≈ treatment_date, and claims to insurance_plans on insurance_plan_id. Filter by patient_id. Return claim_number, service_date, CPT code, ICD-10 code, amount_charged, amount_paid, claim_status, payer_name, …
 
 **System answer:**
-> The knowledge graph provides schema-level information for insurance claims in the `CLAIMS` table, including `patient_id` (FK to `patients.patient_id`) and `submission_date` (“Date claim submitted to payer”). Therefore, the claims “submitted for a specific patient’s treatments” can be identified at least by selecting rows from `CLAIMS` where `patient_id` matches that patient, and (if needed) using …
+> In the schema, both insurance claims and medical treatments are tied to the same patient via `CLAIMS.patient_id` (in `CLAIMS`) and `TREATMENTS.patient_id` (in `TREATMENTS`). However, the retrieved context does not define any explicit rule for matching a claim to a treatment beyond that shared patient identifier.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `insurance claims and billing information for services rendered`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_5`
+So, for a specific patient’s treatments, the only data you can directly conclude from…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `Medical Treatment→TREATMENTS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `insurance claims and billing information for services rendered`, `parent_chunk_data_dictionary.md_3`
 
 **Context previews (first 3):**
 
@@ -435,30 +445,30 @@ Concretely: for a given “specific diagnosis” (for example, filtering `DIAGNO
 
 2. _Business concept 'insurance claims and billing information for services rendered' is implemented by physical table CLAIMS (columns: claim_id, patient_id, insurance_plan_id, claim_number, service_date,…_
 
-3. _## Financial & Administrative **Insurance** A third-party payer contract that provides coverage for medical services. Insurance types include private commercial plans, Medicare (federal), Medicaid (st…_
+3. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
 ---
 
 ### ✅ Q018 — Which providers in a specific department have ordered abnormal lab results?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0508 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 100% | **Top Score:** 0.0675 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Join lab_results to providers on ordering_provider_id, providers to departments on department_id. Filter by department_id and is_abnormal = TRUE. Return provider name, NPI, specialty, patient name, test_name, test_value, reference_range, and result_date. Order by result_date DESC. This identifies pr…
 
 **System answer:**
-> The retrieved context does not include any operational data records (so I can’t name specific providers), but it does contain the schema elements needed to identify them.
+> I cannot find this information in the knowledge graph.
 
-Abnormal lab results are stored in `LAB_RESULTS`, where `LAB_RESULTS.is_abnormal` is a BOOLEAN flag and results are associated with an ordering provider via `LAB_RESULTS.ordering_provider_id`. Provider department membership is s…
+The knowledge graph provides schema-level links needed to answer it, but it does not include the actual lab result records needed to list specific providers. In the schema, abnormal lab results are in `LAB_RESULTS` (column `is_abnormal`, and the ordering provider in `ordering_provider_id`). Provider-to-department membership is in `PROVIDERS` …
 
-**Sources retrieved (12):** `Laboratory test result→LAB_RESULTS`, `Healthcare Providers→PROVIDERS`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_9`, `Healthcare Providers`
+**Sources retrieved (12):** `diagnostic laboratory test results for patients→LAB_RESULTS`, `Medical Treatment→TREATMENTS`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `diagnostic laboratory test results for patients`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_9`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+1. _Business concept 'diagnostic laboratory test results for patients' is implemented by physical table LAB_RESULTS (columns: lab_result_id, patient_id, test_name, loinc_code, test_value, unit, reference_…_
 
-2. _Business concept 'Healthcare Providers' — The table stores core provider master data (provider_id, first/last name, provider_type, specialty) and activity/deletion indicators, which matches the busine…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
 3. _## LAB_RESULTS Table **Purpose**: Store diagnostic laboratory test results for patients. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| |…_
 
@@ -473,15 +483,15 @@ Abnormal lab results are stored in `LAB_RESULTS`, where `LAB_RESULTS.is_abnormal
 > Perform multiple joins from patients: to diagnoses (patient_id), to treatments (patient_id), to medications (patient_id), to lab_results (patient_id), and to appointments (patient_id). Include provider joins for clinical context. Group by clinical event date (diagnosis_date, treatment_date, start_da…
 
 **System answer:**
-> In this knowledge graph, a patient’s care journey is represented by three record types that are linked by patient identifiers and, for treatments, by diagnosis identifiers.
+> Based on the provided schema-level context, a patient’s care journey is represented through three patient-linked record types:
 
-Diagnoses are captured in the `DIAGNOSES` table. Each diagnosis record includes `patient_id` (FK to `patients.patient_id`) and `diagnosis_date` (a `DATE`), along with diagnosis coding such as `icd_10_code`, `diagnosis_name`, a…
+Diagnoses are stored in the `DIAGNOSES` table, keyed by `diagnosis_id` and associated to a patient via `patient_id`. Each diagnosis record includes `icd_10_code`, `diagnosis_name`, a `diagnosis_type` (with allowed values such as `principal`, `comorbidity`, `admitting`, `s…
 
-**Sources retrieved (12):** `Description of treatment or procedure→TREATMENTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_6`
+**Sources retrieved (12):** `Medical Treatment→TREATMENTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `Medical Treatment`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Description of treatment or procedure' is implemented by physical table TREATMENTS (columns: treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department…_
+1. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
 2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
@@ -498,11 +508,9 @@ Diagnoses are captured in the `DIAGNOSES` table. Each diagnosis record includes 
 > Join claims to insurance_plans on insurance_plan_id. Group by plan_id, payer_name, and plan_type. Count total claims and count claims where claim_status = 'denied'. Calculate denial rate as (denied_claims / total_claims) * 100. Order by denial rate DESC. Filter by service_date range for current peri…
 
 **System answer:**
-> I cannot determine which insurance plans have the highest claim denial rates from the retrieved context alone.
+> I cannot find this information in the knowledge graph. The retrieved context defines the `CLAIMS` table fields related to denials (for example `claim_status` and `denial_reason`) and the `INSURANCE_PLANS` table fields, but it does not provide any claim counts or denial-rate metrics by insurance plan needed to determine which plans have the highest denial rates.
 
-What I can say based on the schema is that claim denials would need to be derived from the `CLAIMS` table (via `insurance_plan_id` along with denial indicators such as `claim_status` and `denial_reason`). However, the retrieved context does not include any claim records or denial-rate me…
-
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `parent_chunk_data_dictionary.md_11`, `Patient Demographic Information→PATIENTS`, `Each insurance plan→INSURANCE_PLANS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `Each insurance plan`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `The process of determining which insurance plan pays first→INSURANCE_PLANS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_8`
 
 **Context previews (first 3):**
 
@@ -510,7 +518,7 @@ What I can say based on the schema is that claim denials would need to be derive
 
 2. _Business concept 'insurance claims and billing information for services rendered' is implemented by physical table CLAIMS (columns: claim_id, patient_id, insurance_plan_id, claim_number, service_date,…_
 
-3. _## General Conventions  ### Temporal Validity Pattern All major tables use `valid_from` and `valid_to` timestamps for historization: - Current records have `valid_to = NULL` - Historical records have …_
+3. _Business concept 'The process of determining which insurance plan pays first' is implemented by physical table INSURANCE_PLANS (columns: plan_id, plan_name, payer_name, plan_type, prior_auth_required,…_
 
 ---
 
@@ -523,19 +531,19 @@ What I can say based on the schema is that claim denials would need to be derive
 > Query the diagnoses table filtered by patient_id and date range (diagnosis_date >= start_date AND diagnosis_date <= end_date). Additionally check temporal validity: valid_from <= query_date AND (valid_to IS NULL OR valid_to > query_date). Return icd_10_code, diagnosis_name, diagnosis_type, provider …
 
 **System answer:**
-> A patient’s diagnoses in a specific past time period are stored in the **DIAGNOSES** table.
+> The knowledge graph defines where diagnosis timing information is stored, but it does not specify the retrieval rule to determine which diagnoses apply to a given past time period.
 
-To get diagnoses for that period, you would identify the patient via **DIAGNOSES.patient_id** (FK → `patients.patient_id`) and filter the records by **DIAGNOSES.diagnosis_date** (which is defined as a required `DATE`). The **DIAGNOSES** table also records the diagnosis classification in **DIAGNOSES.diagnos…
+Diagnoses are stored in the physical table `DIAGNOSES` (“Store patient diagnosis records with ICD-10 coding and temporal tracking”). That table includes these temporal/status columns: `diagnosis_date`, `resolution_date…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `Laboratory test result→LAB_RESULTS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`
+**Sources retrieved (12):** `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `parent_chunk_data_dictionary.md_10`, `Medical Treatment→TREATMENTS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `diagnostic laboratory test results for patients`, `Store patient diagnosis records with ICD-10 coding and temporal tracking`, `parent_chunk_data_dictionary.md_3`
 
 **Context previews (first 3):**
 
-1. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
+1. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
-2. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
-3. _# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patien…_
+3. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
 ---
 
@@ -548,19 +556,19 @@ To get diagnoses for that period, you would identify the patient via **DIAGNOSES
 > Query medications table for patient_id including historical records (ignore is_deleted and valid_to filters). Return medication_name, dosage, start_date, end_date, valid_from, valid_to. Order by start_date DESC, valid_from DESC. Changes appear as new records with end_date on the old record and start…
 
 **System answer:**
-> A patient’s medication history is captured in the physical table **MEDICATIONS** by storing time-bounded versions of each medication record and marking records as inactive when needed.
+> A patient’s medication history over time is represented in the physical table **MEDICATIONS** (mapped from the business concept **“Each medication record”**). To see how medications change, you would rely on the time-bounding and lifecycle fields in that table:
 
-For each medication record (**MEDICATIONS.medication_id**), the timeframe is represented by the effective-dating columns **valid_from** and **valid_to** (supporting “Historization,” i.e., reconstructing historical …
+Medication “versions” can be reconstructed using the effective/temporal columns **valid_from** and **valid_to** (temporal tracking / hist…
 
-**Sources retrieved (12):** `Each medication record→MEDICATIONS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`
+**Sources retrieved (12):** `Each medication record→MEDICATIONS`, `Medical Treatment→TREATMENTS`, `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`
 
 **Context previews (first 3):**
 
 1. _Business concept 'Each medication record' is implemented by physical table MEDICATIONS (columns: medication_id, patient_id, medication_name, ndc_code, dosage, route, frequency, prescribing_provider_id…_
 
-2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patien…_
+3. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
 ---
 
@@ -573,17 +581,19 @@ For each medication record (**MEDICATIONS.medication_id**), the timeframe is rep
 > Query providers table joined to departments on department_id. Filter by provider_id and check temporal validity: valid_from <= historical_date AND (valid_to IS NULL OR valid_to > historical_date). Return provider name, department_name, department_code, and service_line. This reconstructs organizatio…
 
 **System answer:**
-> The knowledge graph indicates that a provider’s department affiliation is captured in the physical table **PROVIDERS** via the **department_id** column, and that the affiliation can be time-bounded using the **valid_from** and **valid_to** columns. To determine a provider’s department affiliation at a specific past date, you would use the **PROVIDERS** record whose **valid_from/valid_to** range in…
+> In the schema, a provider’s department affiliation is represented in the physical table `PROVIDERS` via the column `department_id` (described as the “Primary department affiliation”), along with temporal columns `valid_from` and `valid_to` and lifecycle flags `is_active` and `is_deleted`.  
 
-**Sources retrieved (12):** `Healthcare Providers→PROVIDERS`, `Patient Appointment→APPOINTMENTS`, `Description of treatment or procedure→TREATMENTS`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_9`, `Patient Appointment`, `parent_chunk_data_dictionary.md_4`
+However, the retrieved context does not define the semantics of `valid_from`/`valid_to` for historical (“as…
+
+**Sources retrieved (12):** `PROVIDERS Table→PROVIDERS`, `Medical Treatment→TREATMENTS`, `Patient Appointment→APPOINTMENTS`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_9`, `Medical Treatment`, `parent_chunk_data_dictionary.md_4`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Healthcare Providers' — The table stores core provider master data (provider_id, first/last name, provider_type, specialty) and activity/deletion indicators, which matches the busine…_
+1. _Business concept 'PROVIDERS Table' is implemented by physical table PROVIDERS (columns: provider_id, npi, first_name, last_name, provider_type, specialty, department_id, is_active, is_deleted, valid_f…_
 
-2. _Business concept 'Patient Appointment' — The table stores core scheduling and encounter details for patients, including patient_id, provider_id, department_id, appointment_date/time, appointment_type,…_
+2. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
-3. _Business concept 'Description of treatment or procedure' is implemented by physical table TREATMENTS (columns: treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department…_
+3. _Business concept 'Patient Appointment' — The table stores patient appointment scheduling/encounter details including patient_id, provider_id, department_id, appointment_date/time, appointment_type, an…_
 
 ---
 
@@ -596,9 +606,9 @@ For each medication record (**MEDICATIONS.medication_id**), the timeframe is rep
 > Query patients table joined to insurance_plans on primary_insurance_id. Include historical records by not filtering on valid_to. Return mrn, patient name, plan_name, payer_name, plan_type, valid_from, valid_to. Order by valid_from DESC. Insurance changes appear as new patient records with updated pr…
 
 **System answer:**
-> To show how a patient’s primary insurance coverage changes over time, use the historized versions of the patient record in the `PATIENTS` table. In `PATIENTS`, the fields `primary_insurance_id`, `valid_from`, and `valid_to` track the patient’s administrative state over time; “current” records have `valid_to = NULL`, and “historical” changes exist in rows where `valid_to` is non-NULL. Because `PATI…
+> I cannot find this information in the knowledge graph. The retrieved context includes schema-level details for tables like `CLAIMS` (e.g., `insurance_plan_id` on a claim) and general historization/soft-delete conventions (`valid_from`, `valid_to`, `is_deleted`), but it does not include any table or field that records a patient’s “primary insurance coverage” over time.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `Patient Demographic Information→PATIENTS`, `parent_chunk_data_dictionary.md_3`, `insurance claims and billing information for services rendered`, `parent_chunk_business_glossary.md_0`, `Each insurance plan`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `parent_chunk_data_dictionary.md_3`, `insurance claims and billing information for services rendered`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_4`
 
 **Context previews (first 3):**
 
@@ -619,19 +629,19 @@ For each medication record (**MEDICATIONS.medication_id**), the timeframe is rep
 > Query diagnoses table where resolution_date IS NOT NULL and resolution_date falls within the date range. Include patient_id, icd_10_code, diagnosis_name, diagnosis_date, resolution_date, and provider. Join to patients for names. Filter for current records (is_deleted = FALSE, valid_to IS NULL). This…
 
 **System answer:**
-> The retrieved context does not include any operational diagnosis records, only the schema-level definition of the `DIAGNOSES` table. However, diagnoses that were “resolved within a specific time period” can be identified from the `DIAGNOSES` table by using its `resolution_date` column.
+> The knowledge graph provides the schema-level information needed to identify “resolved” diagnoses, but it does not include any actual diagnosis records to determine which diagnoses were resolved during a specific time period.
 
-In `DIAGNOSES` (Purpose: “Store patient diagnosis records with ICD-10 coding and temporal tracking”), `resolutio…
+In the `DIAGNOSES` table (“Store patient diagnosis records with ICD-10 coding and temporal tracking”), resolved diagnoses would be identified using the `resolution_date` col…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `ICD-10-CM diagnosis code→DIAGNOSES`, `Laboratory test result→LAB_RESULTS`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`
+**Sources retrieved (12):** `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_3`
 
 **Context previews (first 3):**
 
-1. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
+1. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
-2. _Business concept 'ICD-10-CM diagnosis code' is implemented by physical table DIAGNOSES (columns: diagnosis_id, patient_id, icd_10_code, diagnosis_name, diagnosis_type, provider_id, diagnosis_date, res…_
+2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
-3. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+3. _## DIAGNOSES Table **Purpose**: Store patient diagnosis records with ICD-10 coding and temporal tracking. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------…_
 
 ---
 
@@ -644,9 +654,13 @@ In `DIAGNOSES` (Purpose: “Store patient diagnosis records with ICD-10 coding a
 > Query medications for patient_id where: (1) start_date <= historical_date AND (end_date IS NULL OR end_date > historical_date) for medication active period, AND (2) valid_from <= historical_date AND (valid_to IS NULL OR valid_to > historical_date) for record validity. Return medication_name, dosage,…
 
 **System answer:**
-> To reconstruct a patient’s active medications as of a specific historical date using the information in the schema, you would use the historization and soft-delete conventions defined for the database (see “Temporal Validity Pattern” and “Soft Delete Pattern” in the General Conventions context), applied to the `MEDICATIONS` table (the physical implementation of the Business concept “Each medicatio…
+> To reconstruct a patient’s active medications as of a historical date using the information available in the context, use the `MEDICATIONS` table (business concept “Each medication record”). The table includes historization fields `valid_from` and `valid_to`, plus a soft-delete flag `is_deleted`.
 
-**Sources retrieved (12):** `Each medication record→MEDICATIONS`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`
+The context states the following rules you should apply:
+
+1) Exclude logically deleted medication rec…
+
+**Sources retrieved (12):** `Each medication record→MEDICATIONS`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`
 
 **Context previews (first 3):**
 
@@ -654,7 +668,7 @@ In `DIAGNOSES` (Purpose: “Store patient diagnosis records with ICD-10 coding a
 
 2. _## General Conventions  ### Temporal Validity Pattern All major tables use `valid_from` and `valid_to` timestamps for historization: - Current records have `valid_to = NULL` - Historical records have …_
 
-3. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
+3. _## MEDICATIONS Table **Purpose**: Store patient medication prescriptions and administrations. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-----------…_
 
 ---
 
@@ -667,19 +681,19 @@ In `DIAGNOSES` (Purpose: “Store patient diagnosis records with ICD-10 coding a
 > Join appointments to departments on department_id. Group by department_id, department_name, service_line. Count DISTINCT patient_id for privacy (prevents counting multiple appointments per patient). Filter by appointment_date range and exclude canceled/no-show status. Return aggregated counts only—n…
 
 **System answer:**
-> You can count patients per department using aggregation over the department identifier, without including patient identifiers in the output, by using either `APPOINTMENTS` or `TREATMENTS` (both contain `department_id` and `patient_id`).
+> The `PATIENTS` table does not include a `department_id`, so patients are not directly linked to departments in the schema. Instead, the department association for a patient is represented via `APPOINTMENTS.department_id` (patient-to-department link through `APPOINTMENTS.patient_id`) and `TREATMENTS.department_id` (patient-to-department link through `TREATMENTS.patient_id`).  
 
-If the goal is “patients who had appointments” per department, use `APPOINTMENTS.department_id` and count distinct `APPOINTMENTS.patient_id`. If the goal is “pati…
+To count the number …
 
-**Sources retrieved (12):** `Description of treatment or procedure→TREATMENTS`, `Patient Appointment→APPOINTMENTS`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_4`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`, `Medical Treatment`, `parent_chunk_data_dictionary.md_4`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Description of treatment or procedure' is implemented by physical table TREATMENTS (columns: treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department…_
+1. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
-2. _Business concept 'Patient Appointment' — The table stores core scheduling and encounter details for patients, including patient_id, provider_id, department_id, appointment_date/time, appointment_type,…_
+2. _# Data Dictionary - Advanced Healthcare Management System  ## Database Overview **Database Name**: `advanced_healthcare_db` **Schema Version**: `3.2.1` **Environment**: Production **Last Updated**: 20…_
 
-3. _# Data Dictionary - Advanced Healthcare Management System  ## Database Overview **Database Name**: `advanced_healthcare_db` **Schema Version**: `3.2.1` **Environment**: Production **Last Updated**: 20…_
+3. _# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patien…_
 
 ---
 
@@ -692,17 +706,17 @@ If the goal is “patients who had appointments” per department, use `APPOINTM
 > Query diagnoses table grouped by icd_10_code and diagnosis_name. COUNT(*) each diagnosis. Order by count DESC. Return only icd_10_code, diagnosis_name, and count—no patient identifiers, MRNs, or names. Optionally filter by diagnosis_date range. This epidemiological analysis follows HIPAA de-identifi…
 
 **System answer:**
-> The retrieved context defines the diagnosis data structure via the business concept/table **`DIAGNOSES`** (including `icd_10_code` and `diagnosis_type`), but it does not provide any precomputed diagnosis frequency counts or any query results. Therefore, the “most common diagnoses (by count)” cannot be determined from this context alone without running an aggregate/count query over **`DIAGNOSES`** …
+> The retrieved context defines the `DIAGNOSES` table schema (e.g., `icd_10_code`, `diagnosis_name`, `diagnosis_type`, and `diagnosis_id`), but it does not provide any diagnosis count results or precomputed “most common diagnoses (by count)” output. Therefore, the most common diagnoses by count cannot be determined from the provided schema-level information alone.
 
-**Sources retrieved (12):** `Laboratory test result→LAB_RESULTS`, `parent_chunk_data_dictionary.md_10`, `ICD-10-CM diagnosis code→DIAGNOSES`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_3`
+**Sources retrieved (12):** `Medical Treatment→TREATMENTS`, `parent_chunk_data_dictionary.md_10`, `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `Medical Treatment`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_7`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Laboratory test result' — The table is explicitly purposed to store diagnostic laboratory test outcomes and is keyed to a patient and a specific test (test_name/loinc_code, result_da…_
+1. _Business concept 'Medical Treatment' — The table explicitly stores medical treatments/procedures performed on patients with treatment_id, patient_id, treatment_name, optional diagnosis_id linkage, pro…_
 
 2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
-3. _Business concept 'ICD-10-CM diagnosis code' is implemented by physical table DIAGNOSES (columns: diagnosis_id, patient_id, icd_10_code, diagnosis_name, diagnosis_type, provider_id, diagnosis_date, res…_
+3. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' — Store patient diagnosis records with ICD-10 coding and temporal tracking is implemented by physical table …_
 
 ---
 
@@ -715,17 +729,15 @@ If the goal is “patients who had appointments” per department, use `APPOINTM
 > Join appointments to providers on provider_id. Group by provider_id, provider name, NPI, specialty, department. COUNT DISTINCT patient_id for unique patient count (not appointment count). Filter by appointment_date range and completed status. Return only provider information and aggregated counts—no…
 
 **System answer:**
-> From the tables provided, you can compute “patient volume per provider” using patient identifiers that already live in the clinical/scheduling tables, while avoiding any patient demographic fields.
+> Provider “patient volume” can be derived from the `APPOINTMENTS` table, which contains `provider_id` (the provider conducting the appointment) and `patient_id` (the patient scheduled for the appointment). In practice, you would calculate, for each `provider_id`, how many appointment records exist in `APPOINTMENTS`, and then (if needed) join to the `PROVIDERS` table to return provider details such …
 
-The most direct option is to base volume on appointments: `APPOINTMENTS` includes `patient_id` (FK → `patients.patient_id`) and `provider_id` (FK → `providers.provider_id`). You would group by `APPOINT…
-
-**Sources retrieved (12):** `Patient Demographic Information→PATIENTS`, `Healthcare Providers→PROVIDERS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `Patient Appointment→APPOINTMENTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_business_glossary.md_1`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Patient Demographic Information' — The table stores core patient demographic and administrative attributes (MRN, legal name, date of birth, gender, contact details, and linked insura…_
+1. _Business concept 'Patient Appointment' — The table stores patient appointment scheduling/encounter details including patient_id, provider_id, department_id, appointment_date/time, appointment_type, an…_
 
-2. _Business concept 'Healthcare Providers' — The table stores core provider master data (provider_id, first/last name, provider_type, specialty) and activity/deletion indicators, which matches the busine…_
+2. _## CLAIMS Table **Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|------…_
 
 3. _# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patien…_
 
@@ -740,11 +752,11 @@ The most direct option is to base volume on appointments: `APPOINTMENTS` include
 > Join claims to insurance_plans on insurance_plan_id. Group by plan_type (commercial, medicare, medicaid, tricare, self_pay). Calculate AVG(amount_paid) and AVG(amount_charged). Filter by service_date range and claim_status = 'approved' or 'partially_paid'. Return only plan_type and aggregated averag…
 
 **System answer:**
-> To compute the average claim payment amount by insurance plan type using the provided schema, you would average `CLAIMS.amount_paid` and group by `INSURANCE_PLANS.plan_type`.
+> You can calculate “average claim payment amount by insurance plan type” by averaging `CLAIMS.amount_paid` and grouping by `INSURANCE_PLANS.plan_type`.
 
-In the `CLAIMS` table (business concept “insurance claims and billing information for services rendered” mapped to physical table `CLAIMS`), payment is represented by the column `amount_paid`. In the `INSURANCE_PLANS` table …
+In this schema, `CLAIMS` (claim records) includes `insurance_plan_id` and `amount_paid` (plus `is_deleted`, `valid_from`, `valid_to`), and `INSURANCE_PLANS` (payer/plan reference) includes `plan_type` (plus `is_deleted`, `valid_from`, `valid_to`). …
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `parent_chunk_data_dictionary.md_11`, `Each insurance plan→INSURANCE_PLANS`, `parent_chunk_business_glossary.md_1`, `Each insurance plan`, `parent_chunk_data_dictionary.md_3`, `insurance claims and billing information for services rendered`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `insurance claims and billing information for services rendered→CLAIMS`, `parent_chunk_data_dictionary.md_11`, `The process of determining which insurance plan pays first→INSURANCE_PLANS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `insurance claims and billing information for services rendered`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
