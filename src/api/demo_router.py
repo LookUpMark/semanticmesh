@@ -44,7 +44,12 @@ def _query_result_to_response(result: dict[str, Any]) -> QueryResponse:
     )
 
 
-def _build_state_to_response(job_id: str, status: str, error: str | None, builder: dict[str, Any] | None) -> BuildResultResponse:
+def _build_state_to_response(
+    job_id: str,
+    status: str,
+    error: str | None,
+    builder: dict[str, Any] | None,
+) -> BuildResultResponse:
     if builder is None:
         return BuildResultResponse(job_id=job_id, status=status, error=error)  # type: ignore[arg-type]
     return BuildResultResponse(
@@ -96,8 +101,8 @@ def _run_build_task(job_id: str, req: BuildRequest) -> None:
 def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
     set_running(job_id)
     try:
-        from src.graph.builder_graph import run_builder
         from src.generation.query_graph import run_query
+        from src.graph.builder_graph import run_builder
 
         doc_paths = [_to_abs(p) for p in req.doc_paths]
         ddl_paths = [_to_abs(p) for p in req.ddl_paths]
@@ -134,7 +139,6 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
         # 3. Optionally run RAGAS (only if expected answers are resolvable)
         if req.run_ragas:
             from src.evaluation.ragas_runner import run_ragas_evaluation
-            from pathlib import Path
 
             fixture_dir = Path(doc_paths[0]).parent if doc_paths else None
             ragas_path = (fixture_dir / "gold_standard.json") if fixture_dir else None
@@ -169,7 +173,10 @@ def post_build(req: BuildRequest, background_tasks: BackgroundTasks) -> BuildRes
     "/build/{job_id}",
     response_model=BuildResultResponse,
     summary="Get Knowledge Graph build status",
-    description="Poll the result of a build job. `status` transitions: queued → running → done | failed.",
+    description=(
+        "Poll the result of a build job. "
+        "`status` transitions: queued → running → done | failed."
+    ),
 )
 def get_build_status(job_id: str) -> BuildResultResponse:
     job = get_job(job_id)
@@ -204,11 +211,14 @@ def post_query(req: QueryRequest) -> QueryResponse:
     summary="Run complete E2E pipeline (build + query)",
     description=(
         "Starts a full end-to-end pipeline: builds the Knowledge Graph, "
-        "then answers all provided questions. Returns a `job_id` — poll GET /demo/pipeline/{job_id}."
+        "then answers all provided questions. "
+        "Returns a `job_id` — poll GET /demo/pipeline/{job_id}."
     ),
 )
 def post_pipeline(req: PipelineRequest, background_tasks: BackgroundTasks) -> PipelineJobResponse:
-    job_id = create_job(meta={"type": "pipeline", "study_id": req.study_id, "num_questions": len(req.questions)})
+    job_id = create_job(
+        meta={"type": "pipeline", "study_id": req.study_id, "num_questions": len(req.questions)},
+    )
     background_tasks.add_task(_run_pipeline_task, job_id, req)
     return PipelineJobResponse(job_id=job_id, status="queued", num_questions=len(req.questions))
 
@@ -217,7 +227,10 @@ def post_pipeline(req: PipelineRequest, background_tasks: BackgroundTasks) -> Pi
     "/pipeline/{job_id}",
     response_model=PipelineResultResponse,
     summary="Get E2E pipeline status and results",
-    description="Poll a pipeline job. When `status='done'`, includes builder metrics and per-question answers.",
+    description=(
+        "Poll a pipeline job. When `status='done'`, "
+        "includes builder metrics and per-question answers."
+    ),
 )
 def get_pipeline_status(job_id: str) -> PipelineResultResponse:
     job = get_job(job_id)

@@ -646,12 +646,66 @@ def main() -> None:
     analysis_file = out_dir / "analysis.md"
     analysis_file.write_text(analysis_md, encoding="utf-8")
 
+    # Generate evaluation_bundle.json for AI-as-Judge analysis
+    from src.evaluation.bundle_writer import write_evaluation_bundle  # noqa: E402
+
+    # Re-load raw dataset for bundle metadata
+    with open(args.dataset) as f_ds:
+        dataset_raw = json.load(f_ds)
+
+    builder_bundle_info = {
+        "triplets_extracted": len(builder_state.get("triplets", [])) if builder_state else 0,
+        "entities_resolved": len(builder_state.get("entities", [])) if builder_state else 0,
+        "tables_parsed": len(builder_state.get("tables", [])) if builder_state else 0,
+        "tables_completed": len(builder_state.get("completed_tables", [])) if builder_state else 0,
+        "cypher_failed": bool(builder_state.get("cypher_failed", False)) if builder_state else False,
+        "failed_mappings": list(builder_state.get("failed_mappings", [])) if builder_state else [],
+        "ingestion_errors": list(builder_state.get("ingestion_errors", [])) if builder_state else [],
+    }
+
+    # Normalize per_question results for the bundle
+    pq_for_bundle = []
+    for r in results:
+        pq_for_bundle.append({
+            "query_id": r.get("query_id", ""),
+            "question": r.get("question", ""),
+            "query_type": r.get("query_type", ""),
+            "difficulty": r.get("difficulty", ""),
+            "expected_answer": r.get("expected_answer", ""),
+            "expected_sources": r.get("expected_sources", []),
+            "generated_answer": r.get("answer", ""),
+            "sources_retrieved": r.get("sources", []),
+            "contexts_retrieved": [c[:500] for c in r.get("contexts", [])],
+            "covered_sources": r.get("covered_sources", []),
+            "gt_coverage": r.get("gt_coverage", 0.0),
+            "grounded": r.get("grounded", False),
+            "gate_decision": r.get("gate_decision", "proceed"),
+            "retrieval_quality_score": r.get("top_score", 0.0),
+            "chunk_count": r.get("chunk_count", 0),
+            "semantic_verification_passed": r.get("grounded", False),
+            "semantic_verification_overlap": r.get("overlap", 0.0),
+            "grader_rejection_count": 0,
+            "grader_consistency_valid": True,
+            "context_sufficiency": "",
+        })
+
+    bundle_path = write_evaluation_bundle(
+        output_dir=out_dir,
+        study_id=args.study_id,
+        dataset_id=dataset_id,
+        dataset_info=dataset_raw,
+        config=summary.get("config", {}),
+        builder_info=builder_bundle_info,
+        query_summary=summary.get("query", {}),
+        per_question=pq_for_bundle,
+        ragas_metrics=ragas_metrics,
+    )
+
     run_logger.info("")
     run_logger.info("Results saved to:  %s", results_file)
     run_logger.info("Analysis saved to: %s", analysis_file)
+    run_logger.info("Bundle saved to:   %s", bundle_path)
     run_logger.info("Log saved to:      %s", log_file)
-    run_logger.info("Log saved to:     %s", log_file)
-    run_logger.info("Trace dir:        %s", settings.trace_output_dir)
 
 
 if __name__ == "__main__":

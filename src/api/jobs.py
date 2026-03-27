@@ -29,7 +29,8 @@ def set_running(job_id: str) -> None:
 def set_done(job_id: str, result: dict[str, Any]) -> None:
     with _lock:
         if job_id in _store:
-            _store[job_id].update({"status": "done", **result})
+            _store[job_id]["status"] = "done"
+            _store[job_id]["result"] = result
 
 
 def set_failed(job_id: str, error: str) -> None:

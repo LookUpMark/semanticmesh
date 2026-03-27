@@ -5,7 +5,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-
 # ── Ablation API ──────────────────────────────────────────────────────────────
 
 class AblationRunRequest(BaseModel):
@@ -114,13 +113,27 @@ class AblationResultResponse(BaseModel):
     error: str | None = None
     summary: dict[str, Any] | None = Field(
         default=None,
-        description="High-level metrics: questions, grounded, abstained, avg_score.",
+        description=(
+            "Builder + query summary: triplets_extracted, entities_resolved, "
+            "tables_parsed, tables_completed, cypher_failed, total_questions, "
+            "grounded_count, grounded_rate, abstained_count, avg_gt_coverage, avg_top_score."
+        ),
     )
     ragas: dict[str, float] | None = Field(
         default=None,
-        description="RAGAS metrics: faithfulness, answer_relevancy, context_precision, context_recall.",
+        description=(
+            "RAGAS metrics: faithfulness, answer_relevancy, "
+            "context_precision, context_recall."
+        ),
     )
-    per_question: list[dict[str, Any]] | None = None
+    per_question: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Per-question detailed results including answer, grounding, retrieval scores.",
+    )
+    bundle_path: str | None = Field(
+        default=None,
+        description="Path to the evaluation_bundle.json file for AI-as-Judge analysis.",
+    )
 
 
 class AblationMatrixEntry(BaseModel):

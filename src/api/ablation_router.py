@@ -1,11 +1,13 @@
 """Ablation Studies REST API — /api/v1/ablation/..."""
 from __future__ import annotations
 
-import os
+import json
+import time
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi.responses import JSONResponse
 
 from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running
 from src.api.models import (
@@ -62,19 +64,33 @@ def _build_env_overrides(req: AblationRunRequest) -> dict[str, str]:
 # ── Background task ───────────────────────────────────────────────────────────
 
 def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
-    """Execute the full ablation pipeline in a background thread."""
+    """Execute the full ablation pipeline in a background thread.
+
+    Stages: (1) Builder Graph → (2) Query Evaluation → (3) optional RAGAS → (4) Bundle
+    """
     set_running(job_id)
     try:
         from src.config.settings import get_settings
-        from src.evaluation.ragas_runner import run_ragas_evaluation
+        from src.generation.query_graph import run_query
         from src.graph.builder_graph import run_builder
-        from src.ingestion.pdf_loader import load_pdf
 
         dataset_path = Path(req.dataset)
         if not dataset_path.is_absolute():
             dataset_path = _ROOT / dataset_path
         if not dataset_path.exists():
             raise FileNotFoundError(f"Dataset not found: {dataset_path}")
+
+        # Load QA pairs from gold_standard.json
+        dataset_raw = json.loads(dataset_path.read_text(encoding="utf-8"))
+        all_pairs = (
+            dataset_raw.get("pairs")
+            or dataset_raw.get("qa_pairs")
+            or dataset_raw.get("questions")
+            or []
+        )
+        dataset_id = dataset_raw.get("dataset_id", dataset_path.parent.name)
+        if req.max_samples is not None and req.max_samples > 0:
+            all_pairs = all_pairs[: req.max_samples]
 
         # Derive doc/ddl paths from the fixture dir alongside gold_standard.json
         fixture_dir = dataset_path.parent
@@ -85,32 +101,182 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
         env_overrides = _build_env_overrides(req)
 
         with _settings_override(env_overrides):
-            result: dict[str, Any] = {}
+            settings = get_settings()
+            result: dict[str, Any] = {
+                "config": {
+                    "extraction_model": settings.llm_model_extraction,
+                    "reasoning_model": settings.llm_model_reasoning,
+                    "retrieval_mode": settings.retrieval_mode,
+                    "enable_reranker": settings.enable_reranker,
+                    "chunk_size": settings.chunk_size,
+                    "chunk_overlap": settings.chunk_overlap,
+                    "er_similarity_threshold": settings.er_similarity_threshold,
+                },
+            }
 
+            # ── Stage 1: Builder Graph ────────────────────────────────────
+            builder_info: dict[str, Any] = {}
             if not req.skip_builder:
+                t0 = time.time()
                 builder_state = run_builder(
                     raw_documents=doc_paths,
                     ddl_paths=ddl_paths,
                     production=False,
                     clear_graph=True,
                     use_lazy_extraction=req.lazy_extraction if req.lazy_extraction else None,
+                    trace_enabled=True,
                     study_id=req.study_id,
                 )
-                result["builder"] = {
-                    "triplets_extracted": len(builder_state.get("triplets", [])),
-                    "entities_resolved": len(builder_state.get("entities", [])),
-                    "tables_parsed": len(builder_state.get("tables", [])),
-                    "tables_completed": len(builder_state.get("completed_tables", [])),
-                    "parent_chunks": len(builder_state.get("parent_chunks", [])),
-                    "child_chunks": len(builder_state.get("chunks", [])),
-                }
+                builder_elapsed = time.time() - t0
 
-            ragas_metrics = run_ragas_evaluation(
-                dataset_path=dataset_path,
-                run_ragas=req.run_ragas,
-                ragas_model=req.ragas_model,
+                triplets = builder_state.get("triplets", [])
+                entities = builder_state.get("entities", [])
+                tables = builder_state.get("tables", [])
+                completed = builder_state.get("completed_tables", [])
+
+                parent_chunks_raw = builder_state.get("parent_chunks") or []
+                chunks_raw = builder_state.get("chunks") or []
+
+                n_parent = len(parent_chunks_raw) if isinstance(parent_chunks_raw, list) else 0
+
+                builder_info = {
+                    "triplets_extracted": len(triplets),
+                    "entities_resolved": len(entities),
+                    "tables_parsed": len(tables),
+                    "tables_completed": len(completed),
+                    "cypher_failed": bool(builder_state.get("cypher_failed", False)),
+                    "failed_mappings": list(builder_state.get("failed_mappings", [])),
+                    "ingestion_errors": list(builder_state.get("ingestion_errors", [])),
+                    "parent_chunks": n_parent,
+                    "child_chunks": len(chunks_raw),
+                    "elapsed_s": round(builder_elapsed, 1),
+                }
+                result["builder"] = builder_info
+
+            # ── Stage 2: Query Evaluation ─────────────────────────────────
+            per_question: list[dict[str, Any]] = []
+            grounded_count = 0
+            abstained_count = 0
+            t1 = time.time()
+
+            for i, pair in enumerate(all_pairs):
+                question = pair.get("question", "")
+                expected_answer = pair.get("expected_answer", pair.get("answer", ""))
+                expected_sources = pair.get("expected_sources", [])
+
+                qr = run_query(
+                    user_query=question,
+                    trace_enabled=True,
+                    query_index=i,
+                    study_id=req.study_id,
+                )
+
+                answer = qr.get("final_answer", "")
+                sources = list(qr.get("sources", []))
+                gate = qr.get("retrieval_gate_decision", "proceed")
+                top_score = qr.get("retrieval_quality_score", 0.0)
+                chunk_count = qr.get("retrieval_chunk_count", 0)
+                sem_passed = qr.get("semantic_verification_passed", True)
+                overlap = qr.get("semantic_verification_overlap", 0.0)
+                grounded = bool(sem_passed and gate != "abstain_early")
+
+                if grounded:
+                    grounded_count += 1
+                if gate == "abstain_early":
+                    abstained_count += 1
+
+                # GT source coverage
+                covered = [
+                    s for s in expected_sources
+                    if any(s.lower() in src.lower() for src in sources)
+                ]
+                gt_coverage = len(covered) / len(expected_sources) if expected_sources else 1.0
+
+                per_question.append({
+                    "query_id": pair.get("query_id", f"Q{i + 1:03d}"),
+                    "question": question,
+                    "query_type": pair.get("query_type", ""),
+                    "difficulty": pair.get("difficulty", ""),
+                    "expected_answer": expected_answer,
+                    "expected_sources": expected_sources,
+                    "generated_answer": answer,
+                    "sources_retrieved": sources,
+                    "contexts_retrieved": [
+                        c[:500] for c in qr.get("retrieved_contexts", [])
+                    ],
+                    "covered_sources": covered,
+                    "gt_coverage": gt_coverage,
+                    "grounded": grounded,
+                    "gate_decision": gate,
+                    "retrieval_quality_score": top_score,
+                    "chunk_count": chunk_count,
+                    "semantic_verification_passed": sem_passed,
+                    "semantic_verification_overlap": overlap,
+                    "grader_rejection_count": qr.get("grader_rejection_count", 0),
+                    "grader_consistency_valid": qr.get("grader_consistency_valid", True),
+                    "context_sufficiency": qr.get("context_sufficiency", ""),
+                })
+
+            query_elapsed = time.time() - t1
+            total_q = len(per_question)
+            avg_gt = (
+                sum(pq["gt_coverage"] for pq in per_question) / total_q
+                if total_q else 0.0
             )
+            avg_score = (
+                sum(pq["retrieval_quality_score"] for pq in per_question) / total_q
+                if total_q else 0.0
+            )
+            avg_chunks = (
+                sum(pq["chunk_count"] for pq in per_question) / total_q
+                if total_q else 0.0
+            )
+
+            result["query"] = {
+                "total_questions": total_q,
+                "grounded_count": grounded_count,
+                "grounded_rate": grounded_count / total_q if total_q else 0.0,
+                "abstained_count": abstained_count,
+                "avg_gt_coverage": avg_gt,
+                "avg_top_score": avg_score,
+                "avg_chunk_count": avg_chunks,
+                "elapsed_s": round(query_elapsed, 1),
+            }
+            result["per_question"] = per_question
+
+            # ── Stage 3: RAGAS Evaluation (optional) ──────────────────────
+            ragas_metrics: dict[str, Any] = {}
+            if req.run_ragas:
+                from src.evaluation.ragas_runner import run_ragas_evaluation
+
+                ragas_metrics = run_ragas_evaluation(
+                    dataset_path=dataset_path,
+                    run_ragas=True,
+                    evaluator_model=req.ragas_model,
+                    max_samples=req.max_samples,
+                )
             result["ragas_metrics"] = ragas_metrics
+
+            # ── Stage 4: Evaluation Bundle ────────────────────────────────
+            from src.evaluation.bundle_writer import write_evaluation_bundle
+
+            bundle_dir = (
+                _ROOT / "notebooks" / "ablation" / "ablation_results"
+                / req.study_id / dataset_id
+            )
+            bundle_dir.mkdir(parents=True, exist_ok=True)
+            bundle_path = write_evaluation_bundle(
+                output_dir=bundle_dir,
+                study_id=req.study_id,
+                dataset_id=dataset_id,
+                dataset_info=dataset_raw,
+                config=result.get("config", {}),
+                builder_info=builder_info,
+                query_summary=result.get("query", {}),
+                per_question=per_question,
+                ragas_metrics=ragas_metrics,
+            )
+            result["bundle_path"] = str(bundle_path)
 
         set_done(job_id, result)
     except Exception as exc:  # noqa: BLE001
@@ -146,7 +312,10 @@ def post_ablation_run(
     "/status/{job_id}",
     response_model=AblationResultResponse,
     summary="Poll ablation job status and results",
-    description="Returns the current state of an ablation job. When `status='done'`, includes `summary` and optional `ragas` metrics.",
+    description=(
+        "Returns the current state of an ablation job. "
+        "When `status='done'`, includes `summary` and optional `ragas` metrics."
+    ),
 )
 def get_ablation_status(job_id: str) -> AblationResultResponse:
     job = get_job(job_id)
@@ -154,25 +323,39 @@ def get_ablation_status(job_id: str) -> AblationResultResponse:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
 
     result = job.get("result") or {}
-    ragas_metrics = result.get("ragas_metrics", {})
     builder_info = result.get("builder", {})
+    query_info = result.get("query", {})
+    ragas_raw = result.get("ragas_metrics", {})
 
-    # Compute a simple summary from ragas_metrics if available
+    # Builder + Query summary — always present when done
     summary: dict[str, Any] | None = None
-    if ragas_metrics:
+    if builder_info or query_info:
         summary = {
             "triplets_extracted": builder_info.get("triplets_extracted"),
             "entities_resolved": builder_info.get("entities_resolved"),
             "tables_parsed": builder_info.get("tables_parsed"),
             "tables_completed": builder_info.get("tables_completed"),
+            "cypher_failed": builder_info.get("cypher_failed"),
+            "total_questions": query_info.get("total_questions"),
+            "grounded_count": query_info.get("grounded_count"),
+            "grounded_rate": query_info.get("grounded_rate"),
+            "abstained_count": query_info.get("abstained_count"),
+            "avg_gt_coverage": query_info.get("avg_gt_coverage"),
+            "avg_top_score": query_info.get("avg_top_score"),
         }
 
-    # Separate RAGAS float metrics from the rest
+    # Separate RAGAS float metrics
     ragas: dict[str, float] | None = None
     ragas_keys = {"faithfulness", "answer_relevancy", "context_precision", "context_recall"}
-    ragas_values = {k: v for k, v in ragas_metrics.items() if k in ragas_keys and isinstance(v, (int, float))}
+    ragas_values = {
+        k: v for k, v in ragas_raw.items()
+        if k in ragas_keys and isinstance(v, (int, float))
+    }
     if ragas_values:
         ragas = ragas_values
+
+    per_question = result.get("per_question")
+    bundle_path = result.get("bundle_path")
 
     return AblationResultResponse(
         job_id=job_id,
@@ -181,6 +364,8 @@ def get_ablation_status(job_id: str) -> AblationResultResponse:
         error=job.get("error"),
         summary=summary,
         ragas=ragas,
+        per_question=per_question,
+        bundle_path=bundle_path,
     )
 
 
@@ -236,3 +421,68 @@ def get_ablation_datasets() -> list[str]:
         return []
     paths = sorted(fixture_dir.rglob("gold_standard.json"))
     return [str(p.relative_to(_ROOT)) for p in paths]
+
+
+# ── Evaluation Bundle Endpoints ───────────────────────────────────────────────
+
+def _bundle_path(study_id: str, dataset_id: str) -> Path:
+    return (
+        _ROOT / "notebooks" / "ablation" / "ablation_results"
+        / study_id / dataset_id / "evaluation_bundle.json"
+    )
+
+
+@router.get(
+    "/bundle/{study_id}/{dataset_id}",
+    summary="Retrieve evaluation bundle for AI analysis",
+    description=(
+        "Returns the evaluation_bundle.json for a completed ablation run. "
+        "This structured file contains all data an AI judge needs to evaluate the run."
+    ),
+)
+def get_evaluation_bundle(study_id: str, dataset_id: str) -> JSONResponse:
+    path = _bundle_path(study_id, dataset_id)
+    if not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Bundle not found: {study_id}/{dataset_id}. Run an ablation first.",
+        )
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return JSONResponse(content=data)
+
+
+@router.get(
+    "/evaluate/{study_id}/{dataset_id}",
+    summary="Get AI-as-Judge evaluation payload",
+    description=(
+        "Returns the AI Judge system prompt combined with the evaluation bundle, "
+        "ready to be fed to an AI agent for qualitative analysis. "
+        "Copy-paste the returned `prompt` + `bundle` into any AI chat to get an expert evaluation."
+    ),
+)
+def get_ai_judge_payload(study_id: str, dataset_id: str) -> JSONResponse:
+    bundle_file = _bundle_path(study_id, dataset_id)
+    if not bundle_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Bundle not found: {study_id}/{dataset_id}. Run an ablation first.",
+        )
+
+    prompt_file = _ROOT / "docs" / "AI_JUDGE_PROMPT.md"
+    if not prompt_file.exists():
+        raise HTTPException(
+            status_code=500,
+            detail="AI_JUDGE_PROMPT.md not found in docs/.",
+        )
+
+    prompt_text = prompt_file.read_text(encoding="utf-8")
+    bundle_data = json.loads(bundle_file.read_text(encoding="utf-8"))
+
+    return JSONResponse(content={
+        "system_prompt": prompt_text,
+        "evaluation_bundle": bundle_data,
+        "instructions": (
+            "Feed system_prompt as the system message and evaluation_bundle as the user message "
+            "to any AI (Claude, GPT, etc.) to obtain a structured qualitative evaluation."
+        ),
+    })
