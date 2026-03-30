@@ -111,9 +111,9 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
     if sufficiency == "adequate" and top_score >= 0.2:
         return {"retrieval_gate_decision": "proceed"}
 
-    if top_score < 0.05 and not has_structural_evidence:
+    if top_score < 0.02 and not has_structural_evidence and chunk_count <= 2:
         logger.info(
-            "Retrieval gate: very low-score context (%.4f) without structural evidence (chunks=%d); abstaining early.",
+            "Retrieval gate: near-zero score (%.4f) without structural evidence (chunks=%d); abstaining early.",
             top_score,
             chunk_count,
         )

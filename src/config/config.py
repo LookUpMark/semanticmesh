@@ -27,8 +27,9 @@ class AppConfig:
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # ── LLM Models ─────────────────────────────────────────────────────────────
-    llm_model_reasoning: str = "gpt-5.4-nano-2026-03-17"
+    llm_model_reasoning: str = "gpt-5.4-2026-03-05"
     llm_model_extraction: str = "gpt-5.4-nano-2026-03-17"
+    llm_model_midtier: str = "gpt-5.4-mini-2026-03-17"
 
     # Temperature: extraction/reasoning at 0.0 for deterministic JSON, generation at 0.3 for fluency
     llm_temperature_extraction: float = 0.0

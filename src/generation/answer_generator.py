@@ -138,7 +138,7 @@ def generate_answer(
 
     if _is_abstention(answer) and chunks:
         top_score = max(float(c.score) for c in chunks)
-        if top_score >= 0.2:
+        if top_score >= 0.10:
             logger.warning(
                 "Abstention with non-empty context (chunks=%d, top_score=%.3f) — forcing best-effort rewrite.",
                 len(chunks),
@@ -164,7 +164,7 @@ def generate_answer(
 
     elif _is_partial_abstention(answer) and chunks:
         top_score = max(float(c.score) for c in chunks)
-        if top_score >= 0.3:
+        if top_score >= 0.15:
             logger.info(
                 "Partial abstention detected (chunks=%d, top_score=%.3f) — requesting synthesis from available evidence.",
                 len(chunks),

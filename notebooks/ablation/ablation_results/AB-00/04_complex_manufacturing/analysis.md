@@ -1,14 +1,14 @@
 # AB-00 — 04_complex_manufacturing — Run Analysis
 
-**Timestamp:** 2026-03-27 18:13:59  
-**Run tag:** `post-fix-v3`
+**Timestamp:** 2026-03-30 19:13:32  
+**Run tag:** `post-fix-v5`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
 | Extraction model | `LLM (gpt-5.4-nano-2026-03-17)` |
-| Reasoning model | `gpt-5.4-nano-2026-03-17` |
+| Reasoning model | `gpt-5.4-2026-03-05` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 389 |
-| Entities resolved | 125 |
+| Triplets extracted | 371 |
+| Entities resolved | 124 |
 | Tables parsed | 13 |
 | Tables completed | 13 |
 
@@ -32,7 +32,7 @@
 | Questions | 40 |
 | Grounded | **40/40 (100%)** |
 | Avg GT Coverage | 100% |
-| Avg Top Score | 0.4461 |
+| Avg Top Score | 0.4150 |
 | Avg Chunk Count | 12.0 |
 | Abstained | 0 |
 
@@ -51,19 +51,19 @@ RAGAS evaluation not enabled for this run.
 > Products are tracked with a unique identifier (product_id), descriptive name (product_name), classification as finished good, assembly, or component (product_type), optional parent product reference for hierarchical structures (parent_product_id), standard unit cost (base_cost), typical procurement …
 
 **System answer:**
-> The manufacturing system stores information about products in the `product` table (and also describes it in the `Product` business concept).
+> In the manufacturing system, the `product` table stores core master data for manufactured items, including finished goods, assemblies, and components. The physical schema shown stores `product_id` as the unique product identifier, `product_name`, `product_type`, `parent_product_id`, `base_cost`, `lead_time_days`, and `is_active`.
 
-In `product`, each manufactured item has a unique `product_id`, a `product_name`, and a `product_type` that classifies it as `FINISHED_GOOD`, `ASSEMBLY`, or `COMPONENT`. It also stores hierarchical structure via `parent_product_id` (a self-referencing foreig…
+The product classification in `product_type` is `FINISHED_GOOD`, `A…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `Route Steps→ROUTE`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_0`, `Route Steps`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_6`, `Route Steps→ROUTE`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`
 
 **Context previews (first 3):**
 
 1. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-2. _Business concept 'Route Steps' — The table stores ordered manufacturing operations for a product using product_id, sequence_number, operation_name, work_center, and per-unit processing time (cycle_tim…_
+2. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
 
-3. _Business concept 'Actual stock levels of components and products stored in specific warehouses' is implemented by physical table INVENTORY (columns: inventory_id, warehouse_id, component_id, product_i…_
+3. _Business concept 'Route Steps' — The table is clearly step-granular: `sequence_number`, `operation_name`, `work_center`, `cycle_time_minutes`, and `setup_time_minutes` describe individual routing step…_
 
 ---
 
@@ -76,17 +76,21 @@ In `product`, each manufactured item has a unique `product_id`, a `product_name`
 > Components are defined with a unique identifier (component_id), descriptive name (component_name), category grouping (component_category), unit of measure (unit_of_measure), standard unit cost (standard_cost), and optional reference to technical specifications (specification_id). Components represen…
 
 **System answer:**
-> In the manufacturing database, components are defined as atomic raw materials or purchased parts that cannot be further broken down into simpler manufactured items. At the schema level, this is reflected by the business concept “Component Cost and Spec” and its implementation in the physical table `COMPONENT`, which includes the fields `component_id` and `component_name`, plus `component_category`…
+> In the retrieved context, components are defined both as a business concept and through specific schema structures.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `Component Cost and Spec→COMPONENT`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`
+A Component is described in the business glossary as an atomic raw material or purchased part that cannot be further broken down into simpler manufactured items. Components are the building blocks used in manufacturing and are procured from external suppliers.
+
+At the physical schem…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `BOM entry→BOM`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
 1. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-2. _Business concept 'Component Cost and Spec' — The table defines atomic material parts with component_id and component_name, plus component_category for type classification, and financial fields unit_of…_
+2. _Business concept 'a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure' is i…_
 
-3. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+3. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
 
 ---
 
@@ -99,40 +103,42 @@ In `product`, each manufactured item has a unique `product_id`, a `product_name`
 > The BOM table defines the hierarchical structure of products by specifying which components or sub-assemblies are required to manufacture each parent product. It records the unique BOM entry identifier (bom_id), parent product being built (parent_product_id), component or sub-assembly product (compo…
 
 **System answer:**
-> The purpose of the `bom` table is to define a product’s composition and its hierarchical structure by listing, for each parent product, the required component (or sub-assembly) products and the quantity needed to build the parent. It supports multi-level assemblies through a hierarchy depth (`bom_level`) and recursive relationships (both `parent_product_id` and `component_product_id` reference `pr…
+> The Bill of Materials table, `bom`, defines product composition and hierarchical structure. Its purpose is to record which component products go into a parent product, including the required `quantity`, `unit_of_measure`, whether the component `is_optional`, and the `bom_level` depth in the hierarchy.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `BOM→PRODUCT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)`, `External Supplier`, `Production Lots`
+From the schema, `bom` supports recursive, multi-level assemblies because both `parent_product_i…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `BOM→PRODUCT`, `BOM entry→BOM`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `Material Transfers`
 
 **Context previews (first 3):**
 
 1. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
 
-2. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+2. _Relationship: BOM references PRODUCT via foreign key COMPONENT_PRODUCT_ID -> PRODUCT.PRODUCT_ID.…_
 
-3. _Relationship: BOM references PRODUCT via foreign key COMPONENT_PRODUCT_ID -> PRODUCT.PRODUCT_ID.…_
+3. _Business concept 'BOM entry' is implemented by physical table BOM (columns: bom_id, parent_product_id, component_product_id, quantity, unit_of_measure, bom_level, is_optional).…_
 
 ---
 
 ### ✅ QA-004 — What supplier information does the system maintain?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.4194 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0325 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Suppliers are tracked with a unique identifier (supplier_id), legal business name (supplier_name), primary contact email (contact_email), primary contact phone number (contact_phone), performance rating from 1.0 to 5.0 (rating), and preferred supplier status flag (is_preferred).
 
 **System answer:**
-> The system maintains external supplier master data in the table **SUPPLIER**. It includes a unique **supplier_id** and **supplier_name**, procurement contact details **contact_email** and **contact_phone**, and supplier evaluation attributes **rating** and **is_preferred**.
+> The system maintains supplier master data in the `SUPPLIER` table, which stores external vendor information for component procurement. From the retrieved context, the supplier attributes are `supplier_id`, `supplier_name`, `contact_email`, `contact_phone`, `rating`, and `is_preferred`. The business concept “Preferred supplier for this component” is mapped to `SUPPLIER`, so preferred status is expl…
 
-**Sources retrieved (12):** `External Supplier→SUPPLIER`, `parent_chunk_data_dictionary.md_4`, `SHIPMENT→SUPPLIER`, `parent_chunk_data_dictionary.md_8`, `COMPONENT_SUPPLIER→SUPPLIER`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_3`, `External Supplier`
+**Sources retrieved (12):** `Preferred supplier for this component→SUPPLIER`, `parent_chunk_data_dictionary.md_4`, `Material Transfers`, `SHIPMENT→SUPPLIER`, `Material Transfers→SHIPMENT`, `parent_chunk_data_dictionary.md_8`, `COMPONENT_SUPPLIER→SUPPLIER`, `Approved Supplier Link→COMPONENT_SUPPLIER`
 
 **Context previews (first 3):**
 
-1. _Business concept 'External Supplier' — The table stores core supplier master data (supplier_id, supplier_name) along with procurement contact details (contact_email, contact_phone) and supplier evalua…_
+1. _Business concept 'Preferred supplier for this component' is implemented by physical table SUPPLIER (columns: supplier_id, supplier_name, contact_email, contact_phone, rating, is_preferred).…_
 
 2. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
 
-3. _Relationship: SHIPMENT references SUPPLIER via foreign key SUPPLIER_ID -> SUPPLIER.SUPPLIER_ID.…_
+3. _Material Transfers: The DDL explicitly labels the table as material transfers and its columns model directional movements with shipment_type plus source/destination references to warehouse, supplier, …_
 
 ---
 
@@ -145,11 +151,11 @@ In `product`, each manufactured item has a unique `product_id`, a `product_name`
 > Warehouses are defined with a unique identifier (warehouse_id), descriptive name (warehouse_name), full street address (address), city location (city), state or province (state), total storage capacity in cubic meters (capacity), and optional manager identifier (manager_id).
 
 **System answer:**
-> Warehouses are represented by the physical table `warehouse` (see the table definition `## warehouse`), which stores physical storage location information for inventory management. It includes columns `warehouse_id` (primary key), `warehouse_name`, `address`, `city`, `state`, `capacity`, and `manager_id`.
+> Warehouses are represented by the physical table `WAREHOUSE`, which stores physical storage location information for inventory management and implements the business concept of geographic location information.
 
-In the schema, `warehouse` is referenced by other entities via foreign keys: `inventory` ref…
+The `WAREHOUSE` table has these columns: `warehouse_id` as the primary key and unique warehouse identifier, `warehouse_name` as the required warehouse name, `address`, `city`, `state`, `cap…
 
-**Sources retrieved (12):** `INVENTORY→WAREHOUSE`, `BATCH→WAREHOUSE`, `WORK_ORDER→WAREHOUSE`, `SHIPMENT→WAREHOUSE`, `parent_chunk_data_dictionary.md_6`, `state→WAREHOUSE`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`
+**Sources retrieved (12):** `INVENTORY→WAREHOUSE`, `BATCH→WAREHOUSE`, `WORK_ORDER→WAREHOUSE`, `SHIPMENT→WAREHOUSE`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `geographic location information→WAREHOUSE`, `Material Transfers`
 
 **Context previews (first 3):**
 
@@ -164,23 +170,25 @@ In the schema, `warehouse` is referenced by other entities via foreign keys: `in
 ### ✅ QA-006 — What does the inventory table track?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.7080 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.5349 | **Gate:** `proceed`
 
 **Expected answer:**
 > The inventory table tracks real-time stock levels including a unique record identifier (inventory_id), warehouse location (warehouse_id), component identifier for materials (component_id) or product identifier for finished goods (product_id), current physical stock quantity (quantity_on_hand), quant…
 
 **System answer:**
-> The physical table **INVENTORY** tracks the actual stock levels of **components and products** stored in **specific warehouses**. Each **inventory** record includes **quantity_on_hand** (quantity available), **quantity_reserved** (quantity reserved for pending orders), **reorder_threshold** (to trigger procurement), and **last_restock_date** (timestamp of the last restock). It supports either **co…
+> The `INVENTORY` table tracks stock levels of components and products at specific warehouse locations. It represents the actual inventory held in each warehouse and records `quantity_on_hand`, `quantity_reserved`, `reorder_threshold`, and `last_restock_date`.
 
-**Sources retrieved (12):** `INVENTORY→PRODUCT`, `INVENTORY→WAREHOUSE`, `INVENTORY→COMPONENT`, `Production Lots→BATCH`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`
+Each inventory record is tied to a `warehouse_id` and references either a `component_id` or a `product_id`—the two are exclusive, so a singl…
+
+**Sources retrieved (12):** `INVENTORY→PRODUCT`, `Batches for traceability and inventory management→INVENTORY`, `INVENTORY→WAREHOUSE`, `INVENTORY→COMPONENT`, `parent_chunk_data_dictionary.md_5`, `Batches for traceability and inventory management→BATCH`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`
 
 **Context previews (first 3):**
 
 1. _Relationship: INVENTORY references PRODUCT via foreign key PRODUCT_ID -> PRODUCT.PRODUCT_ID.…_
 
-2. _Relationship: INVENTORY references WAREHOUSE via foreign key WAREHOUSE_ID -> WAREHOUSE.WAREHOUSE_ID.…_
+2. _Business concept 'Batches for traceability and inventory management' is implemented by physical table INVENTORY (columns: inventory_id, warehouse_id, component_id, product_id, quantity_on_hand, quanti…_
 
-3. _Relationship: INVENTORY references COMPONENT via foreign key COMPONENT_ID -> COMPONENT.COMPONENT_ID.…_
+3. _Relationship: INVENTORY references WAREHOUSE via foreign key WAREHOUSE_ID -> WAREHOUSE.WAREHOUSE_ID.…_
 
 ---
 
@@ -193,15 +201,17 @@ In the schema, `warehouse` is referenced by other entities via foreign keys: `in
 > Work orders represent production jobs with a unique identifier (work_order_id), product to be manufactured (product_id), optional parent work order for nested hierarchies (parent_work_order), quantity to produce (quantity_ordered), quantity completed so far (quantity_completed), current status (PEND…
 
 **System answer:**
-> Work orders are stored in the `work_order` table, which represents production jobs and supports hierarchical work order decomposition. Structurally, each work order has a unique `work_order_id`, is tied to a `product_id` (the product to manufacture), and can optionally reference a `parent_work_order` (a self-referential foreign key to `work_order.work_order_id`) to form parent/child work order rel…
+> Work orders are represented by the `WORK_ORDER` table and model production jobs for manufacturing products with hierarchical support. Each work order has a unique identifier in `work_order_id` and is tied to the product being manufactured through `product_id`, which is a foreign key to `PRODUCT.PRODUCT_ID`.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `Hierarchical production planning and tracking→WORK_ORDER`, `WORK_ORDER→PRODUCT`, `Route Steps→ROUTE`, `WORK_ORDER→WORK_ORDER`, `parent_chunk_data_dictionary.md_3`, `WORK_ORDER→WAREHOUSE`, `parent_chunk_data_dictionary.md_8`
+The structure supports decomposition of large production jobs into smaller child work orde…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `Work Order→WORK_ORDER`, `WORK_ORDER→PRODUCT`, `WORK_ORDER→WORK_ORDER`, `parent_chunk_data_dictionary.md_3`, `WORK_ORDER→WAREHOUSE`, `Route Steps→ROUTE`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
 1. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
 
-2. _Business concept 'Hierarchical production planning and tracking' is implemented by physical table WORK_ORDER (columns: work_order_id, product_id, parent_work_order, quantity_ordered, quantity_complete…_
+2. _Business concept 'Work Order' — The table is explicitly labeled as WORK_ORDER and contains core work order attributes such as product_id, quantity ordered/completed, status, priority, planned dates, a…_
 
 3. _Relationship: WORK_ORDER references PRODUCT via foreign key PRODUCT_ID -> PRODUCT.PRODUCT_ID.…_
 
@@ -210,23 +220,23 @@ In the schema, `warehouse` is referenced by other entities via foreign keys: `in
 ### ✅ QA-008 — What information is captured in the shipment table?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.9266 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.6545 | **Gate:** `proceed`
 
 **Expected answer:**
 > Shipments track material transfers with a unique identifier (shipment_id), shipment type (INBOUND from suppliers, OUTBOUND to customers, INTERNAL between warehouses), destination warehouse (warehouse_id), source supplier for inbound (supplier_id), destination customer for outbound (customer_id), shi…
 
 **System answer:**
-> The physical table **SHIPMENT** captures material transfer information, including:
+> The `shipment` table captures material transfer information between warehouses, suppliers, and customers. It is described as the physical implementation of the business concept “Material Transfers,” and it models directional movements using `shipment_type` plus source/destination references.
 
-Shipment identifiers and parties/locations: **shipment_id** (primary key), **shipment_type** (NOT NULL; INBOUND, OUTBOUND, INTERNAL), **warehouse_id** (FK to WAREHOUSE), **supplier_id** (FK to supplier; intended for INBOUND only via **chk_supplier_inbound**), and **customer_id** (customer reference for outbound).
+It stores:
+`shipment_id`, the unique shipment identifier;
+`shipment_type`, which must be `INBOUND`, `OUTBO…
 
-…
-
-**Sources retrieved (12):** `Shipment Dates→SHIPMENT`, `SHIPMENT→WAREHOUSE`, `SHIPMENT→SUPPLIER`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `Shipment Dates`, `parent_chunk_business_glossary.md_0`, `External Supplier→SUPPLIER`
+**Sources retrieved (12):** `Material Transfers→SHIPMENT`, `SHIPMENT→WAREHOUSE`, `SHIPMENT→SUPPLIER`, `Material Transfers`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Shipment Dates' — The table is explicitly a SHIPMENT entity for material transfers and contains the core date fields ship_date, estimated_arrival, and actual_arrival (with constraint…_
+1. _Business concept 'Material Transfers' — The DDL explicitly labels the table as material transfers and its columns model directional movements with shipment_type plus source/destination references to w…_
 
 2. _Relationship: SHIPMENT references WAREHOUSE via foreign key WAREHOUSE_ID -> WAREHOUSE.WAREHOUSE_ID.…_
 
@@ -237,25 +247,26 @@ Shipment identifiers and parties/locations: **shipment_id** (primary key), **shi
 ### ✅ QA-009 — How does the quality control system record inspections?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.9833 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.9540 | **Gate:** `proceed`
 
 **Expected answer:**
 > Quality control records are stored with a unique identifier (qc_id), associated production batch (batch_id), applicable specification requirements (specification_id), inspection date (qc_date), inspection type (INCOMING for supplier materials, IN_PROCESS during manufacturing, FINAL for finished good…
 
 **System answer:**
-> The quality control system records inspections using the physical table `QUALITY_CONTROL` under the business concept `Quality Control Records` / `QualityControl`.
+> The quality control system records inspections in the physical table QUALITY_CONTROL, which implements the business concept “Quality Control inspections.”
 
-Each QC inspection record stores inspection/testing attributes such as `qc_date` (inspection date), `qc_type` (inspection type), `inspector_id` (inspector), `result` (test result), `defect_count` (defect counts), and `notes`. It also li…
+An inspection record includes:
+qc_id as the unique inspection identifier, batch_id to link the inspection to a production batch, specification_id to link it to the specification being tested, qc_date, qc_type, inspector_id, result, defect_count…
 
-**Sources retrieved (12):** `Quality Control Records→QUALITY_CONTROL`, `BOM→PRODUCT`, `Production Lots→BATCH`, `Technical requirements and acceptance criteria→SPECIFICATION`, `parent_chunk_data_dictionary.md_3`, `Quality Control Records`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `Quality Control inspections→QUALITY_CONTROL`, `BOM→PRODUCT`, `Material Transfers`, `parent_chunk_data_dictionary.md_3`, `BATCH→PRODUCT`, `Material Transfers→SHIPMENT`, `parent_chunk_business_glossary.md_2`, `Quality Control inspections`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Quality Control Records' — The table stores inspection/testing attributes for quality assurance, including inspection date (qc_date), inspection type (qc_type), inspector (inspector_…_
+1. _Business concept 'Quality Control inspections' is implemented by physical table QUALITY_CONTROL (columns: qc_id, batch_id, specification_id, qc_date, qc_type, inspector_id, result, defect_count, notes…_
 
 2. _Relationship: BOM references PRODUCT via foreign key COMPONENT_PRODUCT_ID -> PRODUCT.PRODUCT_ID.…_
 
-3. _Business concept 'Production Lots' — The table stores lot-level production details such as batch_id, product_id, production_date, quantity_produced, warehouse_id, expiry_date, and qc_status, which dir…_
+3. _Material Transfers: The DDL explicitly labels the table as material transfers and its columns model directional movements with shipment_type plus source/destination references to warehouse, supplier, …_
 
 ---
 
@@ -268,42 +279,48 @@ Each QC inspection record stores inspection/testing attributes such as `qc_date`
 > Specifications define technical requirements with a unique identifier (specification_id), descriptive name (specification_name), version number, effective date, specification type (DIMENSIONAL, MATERIAL, PERFORMANCE), critical parameter being measured (critical_parameter), acceptable minimum value (…
 
 **System answer:**
-> Specification records define technical requirements and acceptance criteria for materials and products.
+> Specification records define the technical requirements, standards, and acceptance criteria for materials and products. They include version numbers, effective dates, specification types (DIMENSIONAL, MATERIAL, PERFORMANCE), the critical parameter being tested, acceptable minimum and maximum values, and the unit of measure. These records are used to ensure manufactured products meet requirements a…
 
-Specifically, the physical table `SPECIFICATION` stores versioned, effective-dated specifications with a `spec_type` (DIMENSIONAL, MATERIAL, PERFORMANCE), a tested `critical_parameter`, and measurable acceptable limits via `min_value` and `max_value` with a `unit_of_measure` (with the constrain…
-
-**Sources retrieved (12):** `Quality Control Records→QUALITY_CONTROL`, `Technical requirements and acceptance criteria→SPECIFICATION`, `parent_chunk_data_dictionary.md_7`, `Component Cost and Spec→COMPONENT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_2`, `Quality Control Records`, `Technical requirements and acceptance criteria`
+**Sources retrieved (12):** `version numbers, effective dates, specification types (dimensional, material, performance)→SPECIFICATION`, `parent_chunk_data_dictionary.md_7`, `Quality Control inspections→QUALITY_CONTROL`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Quality Control Records' — The table stores inspection/testing attributes for quality assurance, including inspection date (qc_date), inspection type (qc_type), inspector (inspector_…_
+1. _Business concept 'version numbers, effective dates, specification types (dimensional, material, performance)' is implemented by physical table SPECIFICATION (columns: specification_id, specification_n…_
 
-2. _Business concept 'Technical requirements and acceptance criteria' — The table stores a versioned, effective-dated specification with a specification type (spec_type) and measurable acceptance limits (…_
+2. _## specification  Defines technical requirements and acceptance criteria for materials and products.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----------…_
 
-3. _## specification  Defines technical requirements and acceptance criteria for materials and products.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----------…_
+3. _Business concept 'Quality Control inspections' is implemented by physical table QUALITY_CONTROL (columns: qc_id, batch_id, specification_id, qc_date, qc_type, inspector_id, result, defect_count, notes…_
 
 ---
 
 ### ✅ QA-011 — How can I find which suppliers provide specific components?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.2417 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.1935 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Query the component_supplier table which links components to their approved suppliers. This table contains the component identifier (component_id), supplier identifier (supplier_id), preferred supplier flag (is_preferred), lead time in days (lead_time_days), and unit price (unit_price). Join with th…
 
 **System answer:**
-> To find which suppliers provide a specific component, use the component–supplier many-to-many junction table `COMPONENT_SUPPLIER`, which links `component_id` to `supplier_id` (and includes relationship attributes like `is_preferred`, `unit_price`, and `lead_time_days`). Filter `COMPONENT_SUPPLIER` by the `component_id` you care about, then join to `SUPPLIER` on `COMPONENT_SUPPLIER.supplier_id = SU…
+> Use the `COMPONENT_SUPPLIER` table. In the context, this is explicitly the many-to-many junction that represents approved supplier relationships for components.
 
-**Sources retrieved (12):** `Component approved supplier junction→COMPONENT_SUPPLIER`, `External Supplier→SUPPLIER`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_3`, `Component approved supplier junction`, `External Supplier`
+To find which suppliers provide a specific component, follow this schema path:
+`COMPONENT` → `COMPONENT_SUPPLIER` → `SUPPLIER`
+
+The joins are:
+`COMPONENT_SUPPLIER.component_id = COMPONENT.component_id`
+and
+`COMPONENT_SUPPLIER.supplier_id …
+
+**Sources retrieved (12):** `Approved Supplier Link→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `Approved Supplier Link`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Component approved supplier junction' — The table is explicitly a many-to-many junction between components and suppliers, with the DDL comment stating it links components to their ap…_
+1. _Business concept 'Approved Supplier Link' — The table is explicitly a many-to-many junction between components and suppliers, with a unique component-supplier pair and attributes for preferred status,…_
 
-2. _Business concept 'External Supplier' — The table stores core supplier master data (supplier_id, supplier_name) along with procurement contact details (contact_email, contact_phone) and supplier evalua…_
+2. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
 
-3. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
+3. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
 
 ---
 
@@ -316,17 +333,17 @@ Specifically, the physical table `SPECIFICATION` stores versioned, effective-dat
 > Start with the work_order table to get the product_id being manufactured. Join to the bom table using product_id as parent_product_id to find all direct components and sub-assemblies. For each component_product_id, if it is an ASSEMBLY type product, recursively query the bom table again to explode m…
 
 **System answer:**
-> In this schema, a `work_order` identifies the manufactured item via `work_order.product_id` (the product to be manufactured) and can be decomposed via `work_order.parent_work_order`.  
+> To trace the components needed for a work order, start with `WORK_ORDER`. The key row is identified by `work_order_id`, and the product being manufactured is in `WORK_ORDER.product_id`. Join `WORK_ORDER.product_id` to `PRODUCT.product_id` to identify the finished good or assembly the work order is producing.
 
-Separately, the `BOM` table defines how products break down into required components: each `BOM` row ties a `parent_product_id` to a `component_product_id`, along with the `quantity`, `unit_of_measure`, `bom_level`…
+From there, the retrieved context shows two relevant structure mechanisms. First, `PRODUC…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `Hierarchical production planning and tracking→WORK_ORDER`, `parent_chunk_data_dictionary.md_6`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `Work Order→WORK_ORDER`, `parent_chunk_data_dictionary.md_6`, `Batches for traceability and inventory management→INVENTORY`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_7`
 
 **Context previews (first 3):**
 
 1. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
 
-2. _Business concept 'Hierarchical production planning and tracking' is implemented by physical table WORK_ORDER (columns: work_order_id, product_id, parent_work_order, quantity_ordered, quantity_complete…_
+2. _Business concept 'Work Order' — The table is explicitly labeled as WORK_ORDER and contains core work order attributes such as product_id, quantity ordered/completed, status, priority, planned dates, a…_
 
 3. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
 
@@ -335,25 +352,28 @@ Separately, the `BOM` table defines how products break down into required compon
 ### ✅ QA-013 — How can I identify which warehouses have available inventory for specific components?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.8876 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.8215 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the inventory table filtered by component_id, joining with the warehouse table to get warehouse names and locations. Calculate available quantity as quantity_on_hand minus quantity_reserved. Filter for records where available quantity is greater than zero. Results show warehouse names, locatio…
 
 **System answer:**
-> Use the `INVENTORY` table to find stock by `component_id` and then group by `warehouse_id` (and optionally join to `warehouse` for names). Each `INVENTORY` row represents the stock level in a specific warehouse for either a component or a product (with `component_id` and `product_id` being mutually exclusive).
+> Use the `inventory` table as the starting point and join it to `warehouse` through `inventory.warehouse_id = warehouse.warehouse_id`.
 
-To determine whether a warehouse has “available” inventory for a specific component, us…
+The relevant path is:
+`inventory.component_id` → target component, and `inventory.warehouse_id` → `warehouse.warehouse_id` for the warehouse details.
 
-**Sources retrieved (12):** `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_5`, `INVENTORY→WAREHOUSE`, `INVENTORY→COMPONENT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`, `Actual stock levels of components and products stored in specific warehouses`
+From the context, `inventory` tracks stock levels of components and products at specific warehouse locations, and …
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `INVENTORY→WAREHOUSE`, `Batches for traceability and inventory management→INVENTORY`, `INVENTORY→COMPONENT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`, `Batches for traceability and inventory management→BATCH`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Actual stock levels of components and products stored in specific warehouses' is implemented by physical table INVENTORY (columns: inventory_id, warehouse_id, component_id, product_i…_
+1. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
 
-2. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
+2. _Relationship: INVENTORY references WAREHOUSE via foreign key WAREHOUSE_ID -> WAREHOUSE.WAREHOUSE_ID.…_
 
-3. _Relationship: INVENTORY references WAREHOUSE via foreign key WAREHOUSE_ID -> WAREHOUSE.WAREHOUSE_ID.…_
+3. _Business concept 'Batches for traceability and inventory management' is implemented by physical table INVENTORY (columns: inventory_id, warehouse_id, component_id, product_id, quantity_on_hand, quanti…_
 
 ---
 
@@ -366,21 +386,21 @@ To determine whether a warehouse has “available” inventory for a specific co
 > Query the shipment table filtering by supplier_id and shipment_type = 'INBOUND'. Join with the warehouse table to show destination warehouses. Filter for status = 'DELIVERED' and include actual_arrival date. Results can be ordered by ship_date descending to show most recent deliveries first.
 
 **System answer:**
-> Use the `shipment` table and filter on the supplier and the delivery status.
+> Use the `SHIPMENT` table and filter it by supplier and delivery status.
 
-In the `shipment` entity (`shipment_id`, `shipment_type`, `supplier_id`, `status`, etc.), `supplier_id` is only set for inbound shipments (`chk_supplier_inbound`), and the delivery completion is represented by `status = 'DELIVERED'`.
+From the schema, `shipment.supplier_id` is a foreign key to `supplier.supplier_id`, and the `chk_supplier_inbound` constraint ensures `supplier_id` is only populated for `INBOUND` shipments. So, to find shipments that delivered materials from a specific supplier, the schema supports this logic:
 
-So, to find delivered materials from a specific supplier, look for rows in `shipment` w…
+- `shipment.supplier_id = <spe…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `SHIPMENT→SUPPLIER`, `Shipment Dates→SHIPMENT`, `parent_chunk_data_dictionary.md_5`, `External Supplier→SUPPLIER`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `Shipment Dates`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `Material Transfers`, `SHIPMENT→SUPPLIER`, `Material Transfers→SHIPMENT`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`
 
 **Context previews (first 3):**
 
 1. _## shipment  Tracks material transfers between warehouses, suppliers, and customers.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | shipment_i…_
 
-2. _Relationship: SHIPMENT references SUPPLIER via foreign key SUPPLIER_ID -> SUPPLIER.SUPPLIER_ID.…_
+2. _Material Transfers: The DDL explicitly labels the table as material transfers and its columns model directional movements with shipment_type plus source/destination references to warehouse, supplier, …_
 
-3. _Business concept 'Shipment Dates' — The table is explicitly a SHIPMENT entity for material transfers and contains the core date fields ship_date, estimated_arrival, and actual_arrival (with constraint…_
+3. _Relationship: SHIPMENT references SUPPLIER via foreign key SUPPLIER_ID -> SUPPLIER.SUPPLIER_ID.…_
 
 ---
 
@@ -393,19 +413,19 @@ So, to find delivered materials from a specific supplier, look for rows in `ship
 > Query the quality_control table filtered by batch_id. Join with the specification table to get requirement details (specification_name, spec_type, acceptable ranges). Include qc_date, qc_type (INCOMING, IN_PROCESS, FINAL), result (PASS, FAIL, CONDITIONAL), and defect_count. This shows the complete i…
 
 **System answer:**
-> To determine which quality control inspections were performed on a specific production batch, use the `QUALITY_CONTROL` table (mapped from the business concept “Quality Control Records”). Each QC inspection record in `QUALITY_CONTROL` includes a `batch_id` that links it to a production lot in `BATCH`.
+> Use the `QUALITY_CONTROL` table, which implements the business concept “Quality Control inspections.” QC inspections are linked directly to production batches through `QUALITY_CONTROL.batch_id`.
 
-So, retrieve all rows from `QUALITY_CONTROL` where `QUALITY_CONTROL.batch_id` equals the `batch_…
+To determine which inspections were performed on a specific batch, filter `QUALITY_CONTROL` for the target `batch_id`. The relevant inspection details available in that table are `qc_id`, `batch_id`, `spe…
 
-**Sources retrieved (12):** `Quality Control Records→QUALITY_CONTROL`, `Production Lots→BATCH`, `parent_chunk_data_dictionary.md_7`, `BATCH→PRODUCT`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `Quality Control inspections→QUALITY_CONTROL`, `parent_chunk_data_dictionary.md_7`, `Batches for traceability and inventory management→BATCH`, `BATCH→PRODUCT`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_3`, `BATCH→WAREHOUSE`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Quality Control Records' — The table stores inspection/testing attributes for quality assurance, including inspection date (qc_date), inspection type (qc_type), inspector (inspector_…_
+1. _Business concept 'Quality Control inspections' is implemented by physical table QUALITY_CONTROL (columns: qc_id, batch_id, specification_id, qc_date, qc_type, inspector_id, result, defect_count, notes…_
 
-2. _Business concept 'Production Lots' — The table stores lot-level production details such as batch_id, product_id, production_date, quantity_produced, warehouse_id, expiry_date, and qc_status, which dir…_
+2. _## specification  Defines technical requirements and acceptance criteria for materials and products.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----------…_
 
-3. _## specification  Defines technical requirements and acceptance criteria for materials and products.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----------…_
+3. _Business concept 'Batches for traceability and inventory management' is implemented by physical table BATCH (columns: batch_id, product_id, production_date, quantity_produced, warehouse_id, expiry_dat…_
 
 ---
 
@@ -418,11 +438,11 @@ So, retrieve all rows from `QUALITY_CONTROL` where `QUALITY_CONTROL.batch_id` eq
 > Query the work_order table filtering by warehouse_id and status = 'IN_PROGRESS'. Join with the product table to get product names and types. Include quantity_ordered, quantity_completed, priority, planned_end_date, and calculate progress percentage as (quantity_completed / quantity_ordered * 100). O…
 
 **System answer:**
-> To track work orders that are currently in progress at a specific warehouse, use the `work_order` table and filter by the `warehouse_id` for that warehouse, and by `status`.
+> Use the WORK_ORDER table, because it contains both the work order status and the warehouse reference. To find work orders in progress at a specific warehouse, filter WORK_ORDER where status = 'IN_PROGRESS' and warehouse_id equals the target warehouse.
 
-In `work_order`, the `status` column (type `status_t`) supports values including `IN_PROGRESS` (along with `PENDING`, `COMPLETED`, and `CLOSED`). The `warehouse_id` column is a foreign key to `warehouse(warehouse_id)`, repres…
+If you need warehouse details such as name or location, join WORK_ORDER to WAREHOUSE on WORK_ORDER.warehouse_id = WAREHOUSE.warehouse_id. That rela…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `Hierarchical production planning and tracking→WORK_ORDER`, `WORK_ORDER→WAREHOUSE`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `WORK_ORDER→WAREHOUSE`, `Work Order→WORK_ORDER`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`, `Batches for traceability and inventory management→INVENTORY`, `Batches for traceability and inventory management→BATCH`
 
 **Context previews (first 3):**
 
@@ -430,30 +450,30 @@ In `work_order`, the `status` column (type `status_t`) supports values including
 
 2. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
 
-3. _Business concept 'Hierarchical production planning and tracking' is implemented by physical table WORK_ORDER (columns: work_order_id, product_id, parent_work_order, quantity_ordered, quantity_complete…_
+3. _Relationship: WORK_ORDER references WAREHOUSE via foreign key WAREHOUSE_ID -> WAREHOUSE.WAREHOUSE_ID.…_
 
 ---
 
 ### ✅ QA-017 — How can I find which components need reordering based on current inventory levels?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.5691 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.3023 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the inventory table and filter where quantity_on_hand minus quantity_reserved is less than reorder_threshold. Join with the component table to get component names, categories, and standard costs. Join with the warehouse table for location information. Results identify which components are belo…
 
 **System answer:**
-> To find which components need reordering, use the `INVENTORY` table, which is the implementation of the business concept “Actual stock levels of components and products stored in specific warehouses” and includes `quantity_on_hand`, `quantity_reserved`, and `reorder_threshold` (with `reorder_threshold` described as being used to “trigger procurement”).
+> Use the `INVENTORY` table as the starting point. The retrieved context defines `Inventory` as tracking stock levels for components and products in specific warehouses, including `quantity_on_hand`, `quantity_reserved`, `reorder_threshold`, and `last_restock_date`. It also states that reorder thresholds are used “to trigger procurement.”
 
-In practice, you should query `INVENTORY` fo…
+To find components that may need reordering at the schema le…
 
-**Sources retrieved (12):** `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_5`, `INVENTORY→COMPONENT`, `parent_chunk_data_dictionary.md_3`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_4`, `Component approved supplier junction→COMPONENT_SUPPLIER`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `Batches for traceability and inventory management→INVENTORY`, `INVENTORY→COMPONENT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_4`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_6`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Actual stock levels of components and products stored in specific warehouses' is implemented by physical table INVENTORY (columns: inventory_id, warehouse_id, component_id, product_i…_
+1. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
 
-2. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
+2. _Business concept 'Batches for traceability and inventory management' is implemented by physical table INVENTORY (columns: inventory_id, warehouse_id, component_id, product_id, quantity_on_hand, quanti…_
 
 3. _Relationship: INVENTORY references COMPONENT via foreign key COMPONENT_ID -> COMPONENT.COMPONENT_ID.…_
 
@@ -462,21 +482,19 @@ In practice, you should query `INVENTORY` fo…
 ### ✅ QA-018 — How do I determine the manufacturing route for a specific product?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.7341 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.7691 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the route table filtering by product_id, ordered by sequence_number ascending. For each operation, retrieve operation_name, work_center, cycle_time_minutes, and setup_time_minutes. Join with the product table to get product details. The sequence of operations shows the complete manufacturing w…
 
 **System answer:**
-> To determine the manufacturing route for a specific product, use the table **ROUTE** (from the business concept **“Route Steps”**). The route is defined by the ordered set of operations in ROUTE for that product.
+> To determine the manufacturing route for a specific product, use the `ROUTE` table at the step level. The context describes `ROUTE` as implementing the business concept “Route Steps,” where each row is an individual routing step for a product, identified by `product_id` and ordered by `sequence_number`. For the target product, filter `ROUTE.product_id` to that product’s ID and read the resulting r…
 
-Concretely, select rows from **ROUTE** where **ROUTE.product_id** matches the product you’re interested in, and order the results by **ROUTE.sequence_number**. Each row describes one ste…
-
-**Sources retrieved (12):** `Route Steps→ROUTE`, `parent_chunk_data_dictionary.md_6`, `ROUTE→PRODUCT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `Production Lots→BATCH`, `Route Steps`
+**Sources retrieved (12):** `Route Steps→ROUTE`, `parent_chunk_data_dictionary.md_6`, `ROUTE→PRODUCT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_4`, `Work Order→WORK_ORDER`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Route Steps' — The table stores ordered manufacturing operations for a product using product_id, sequence_number, operation_name, work_center, and per-unit processing time (cycle_tim…_
+1. _Business concept 'Route Steps' — The table is clearly step-granular: `sequence_number`, `operation_name`, `work_center`, `cycle_time_minutes`, and `setup_time_minutes` describe individual routing step…_
 
 2. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
 
@@ -493,40 +511,40 @@ Concretely, select rows from **ROUTE** where **ROUTE.product_id** matches the pr
 > Query the batch table filtering by warehouse_id. Join with the product table to get product names and types. Include production_date, quantity_produced, expiry_date, and qc_status (PENDING, PASSED, FAILED, QUARANTINED). Filter by qc_status to isolate batches requiring quality attention or ready for …
 
 **System answer:**
-> You can use the physical table **BATCH** to find batches by warehouse, because **BATCH** stores lot-level details including **warehouse_id** and **qc_status** (along with **batch_id**, **product_id**, **production_date**, etc.). Filter **BATCH** where **warehouse_id = <the warehouse you care about>**, and return **batch_id** and **qc_status** (and any other batch fields you need).
+> Use the `BATCH` table, because the business concept “Batches for traceability and inventory management” is implemented by `BATCH`, and it contains both the storage location and QC status fields you need: `batch_id`, `product_id`, `production_date`, `quantity_produced`, `warehouse_id`, `expiry_date`, and `qc_status`.
 
-Optionally, you…
+To find batches stored at a specific warehouse, filter `BATCH.warehouse_id` for t…
 
-**Sources retrieved (12):** `Production Lots→BATCH`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_5`, `Quality Control Records→QUALITY_CONTROL`, `BATCH→WAREHOUSE`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `Batches for traceability and inventory management→BATCH`, `parent_chunk_data_dictionary.md_5`, `BATCH→WAREHOUSE`, `Quality Control inspections→QUALITY_CONTROL`, `parent_chunk_data_dictionary.md_6`, `Batches for traceability and inventory management→INVENTORY`, `parent_chunk_data_dictionary.md_8`, `Work Order→WORK_ORDER`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Production Lots' — The table stores lot-level production details such as batch_id, product_id, production_date, quantity_produced, warehouse_id, expiry_date, and qc_status, which dir…_
+1. _Business concept 'Batches for traceability and inventory management' is implemented by physical table BATCH (columns: batch_id, product_id, production_date, quantity_produced, warehouse_id, expiry_dat…_
 
-2. _Business concept 'Actual stock levels of components and products stored in specific warehouses' is implemented by physical table INVENTORY (columns: inventory_id, warehouse_id, component_id, product_i…_
+2. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
 
-3. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
+3. _Relationship: BATCH references WAREHOUSE via foreign key WAREHOUSE_ID -> WAREHOUSE.WAREHOUSE_ID.…_
 
 ---
 
 ### ✅ QA-020 — How do I identify which specifications apply to specific components?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.2613 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.2550 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the component table and join with the specification table via specification_id. Include component_name, component_category, and specification details (specification_name, spec_type, critical_parameter, min_value, max_value, unit_of_measure). This shows the technical requirements that each comp…
 
 **System answer:**
-> You can identify the specifications that apply to specific components by using the optional link from the component record to the specification record.
+> To identify which specifications apply to specific components, use the `COMPONENT` table’s `specification_id` and link it to `SPECIFICATION.specification_id`.
 
-In the schema, the business concept “Component Cost and Spec” is implemented by the physical table `COMPONENT`, which includes an optional `specification_id` column. This aligns with the concept that components can optionally be linked to technica…
+From the context, the physical table `COMPONENT` includes these columns: `component_id`, `component_name`, `component_category`, `unit_of_measure`, `standard_cost`, and `specification_id`. The `SPECIFICATION` table defines the specification…
 
-**Sources retrieved (12):** `Component Cost and Spec→COMPONENT`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_3`, `Technical requirements and acceptance criteria→SPECIFICATION`, `parent_chunk_data_dictionary.md_4`, `Component approved supplier junction→COMPONENT_SUPPLIER`
+**Sources retrieved (12):** `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_3`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_4`, `version numbers, effective dates, specification types (dimensional, material, performance)→SPECIFICATION`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Component Cost and Spec' — The table defines atomic material parts with component_id and component_name, plus component_category for type classification, and financial fields unit_of…_
+1. _Business concept 'a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure' is i…_
 
 2. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
 
@@ -543,11 +561,11 @@ In the schema, the business concept “Component Cost and Spec” is implemented
 > Use a recursive query starting from the product_id of the finished good. At each level, join the bom table to find component_product_id entries. For each component, check if product_type is 'ASSEMBLY' or 'FINISHED_GOOD'. If so, recursively query bom again using that component_product_id as the new p…
 
 **System answer:**
-> To perform a complete BOM explosion (i.e., find all components/sub-assemblies at all hierarchy levels) for a finished product, use the recursive product structure defined by the `bom` table.
+> To perform a complete BOM explosion for a finished product, use the `product` and `bom` tables together and traverse the hierarchy recursively.
 
-The `bom` table models each BOM entry with `parent_product_id` (the item being built) and `component_product_id` (the required component/sub-assembly), and it supports multi-level assemblies through repeated …
+Start with the target row in `product`, using `product.product_id`. If you want specifically a finished product, the `product_type` classification includes `FINISHED_GOOD`, `ASSEMBLY`, and `COMPONENT`, so the starting product can be identified as a finish…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `BOM→PRODUCT`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_6`, `Route Steps→ROUTE`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `BOM entry→BOM`, `BOM→PRODUCT`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_6`
 
 **Context previews (first 3):**
 
@@ -555,7 +573,7 @@ The `bom` table models each BOM entry with `parent_product_id` (the item being b
 
 2. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-3. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+3. _Business concept 'BOM entry' is implemented by physical table BOM (columns: bom_id, parent_product_id, component_product_id, quantity, unit_of_measure, bom_level, is_optional).…_
 
 ---
 
@@ -568,17 +586,17 @@ The `bom` table models each BOM entry with `parent_product_id` (the item being b
 > Perform a recursive BOM explosion to find all leaf-level components. For each leaf component, join with the component table to get standard_cost. Multiply standard_cost by the accumulated quantity from the BOM traversal. Sum all component costs to get total material cost. This calculation must trave…
 
 **System answer:**
-> The retrieved knowledge graph does not define an explicit “total material cost” costing rule (for example, how to identify which BOM rows count as materials versus sub-assemblies, how to treat `bom_level`, or how to incorporate `is_optional`)—so the exact end-to-end formula is not determinable from the context.
+> The retrieved context supports tracing a product’s full multi-level structure, but it does not define an exact cost rollup formula for “total material cost.”
 
-What the context does provide is the structure and the available cost inputs needed to…
+What is known from the context is this: the `product` table stores each manufactured item, including finished goods, assemblies, and components, with `product.product_id`, `product.product_type`, `product.base_cost`, and the self-referential…
 
-**Sources retrieved (12):** `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `Component Cost and Spec→COMPONENT`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `(product_id, sequence_number)→PRODUCT`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+1. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-2. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
+2. _Business concept 'a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure' is i…_
 
 3. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
 
@@ -593,21 +611,22 @@ What the context does provide is the structure and the available cost inputs nee
 > Use a recursive reverse traversal of the BOM. Start with the component_id as the initial parent_product_id. Find all records where this product appears as component_product_id in the bom table. For each parent_product_id found, check if it appears as a component_product_id in other bom records (is a…
 
 **System answer:**
-> Use the recursive structure of the `bom` table to walk the hierarchy.
+> Use the `bom` table as the traversal table, because `BOM` is the business concept for a BOM entry and it stores both `parent_product_id` and `component_product_id`. Both columns reference `product(product_id)`, and the schema explicitly says this supports recursive, multi-level assemblies.
 
-Start with the `bom` rows where `bom.component_product_id` equals the specific product/component you care about. In those rows, the `bom.parent_product_id` values are the immediate parent products that contain it.
+The lookup path is:
 
-To find parent products “anywhere” in the BOM (including indirect containment), repeatedly move upward from those …
+Start with `bom.component_product_id = <the specific component's product_id>`.  
+That g…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_3`, `BOM→PRODUCT`, `PRODUCT→PRODUCT`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `BOM entry→BOM`, `BOM→PRODUCT`, `PRODUCT→PRODUCT`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_8`
 
 **Context previews (first 3):**
 
 1. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
 
-2. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+2. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-3. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
+3. _Business concept 'a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure' is i…_
 
 ---
 
@@ -620,19 +639,19 @@ To find parent products “anywhere” in the BOM (including indirect containmen
 > First, perform reverse BOM traversal to find all parent products that contain the target component at any level. Then query the work_order table where product_id is in the set of parent products found. This includes work orders for finished goods that contain the component indirectly through sub-ass…
 
 **System answer:**
-> From the retrieved context, we can say the following pieces exist, but the exact procedure to identify which `work_order` records require a given component through nested sub-assemblies is not explicitly defined.
+> From the retrieved context, the schema-level relationships are:
 
-`Bill of Materials (BOM)` is implemented by the `bom` table, where `parent_product_id` represents the product being built and `component_product_id` represents a component/product that g…
+WORK_ORDER.product_id identifies the product being manufactured, and it is a foreign key to PRODUCT.product_id. BOM defines product composition, where BOM.parent_product_id is the product being built and BOM.component_product_id is the product that goes into it; both columns reference PRODUCT.product_id. BOM also includes quantity, u…
 
-**Sources retrieved (12):** `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `Hierarchical production planning and tracking→WORK_ORDER`, `WORK_ORDER→WORK_ORDER`, `WORK_ORDER→PRODUCT`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `Work Order→WORK_ORDER`, `WORK_ORDER→WORK_ORDER`, `parent_chunk_business_glossary.md_1`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+1. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
 
-2. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
+2. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
 
-3. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
+3. _Business concept 'a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure' is i…_
 
 ---
 
@@ -645,11 +664,11 @@ To find parent products “anywhere” in the BOM (including indirect containmen
 > Use a recursive query on the bom table, incrementing a level counter at each traversal. Start with bom_level = 0 and add 1 for each recursive step. Track the maximum level reached across all product hierarchies. This identifies the most complex product structures with the deepest nesting.
 
 **System answer:**
-> You can use the `bom` table’s `bom_level` column, which “tracks depth in product hierarchy.” To determine the maximum BOM depth level for each product, compute `MAX(bom.bom_level)` grouped by the product being built, i.e., `bom.parent_product_id` (since `parent_product_id` is the “Parent product (what is being built)” in `bom`).
+> Use the `bom` table, because it explicitly stores the hierarchy depth in `bom.bom_level`, which is described as the “depth in product hierarchy” and is included for “performance optimization.”
 
-This gives, for each `product_id` appearing as a `parent_product_id`…
+For a specific product, identify the product in `product.product_id`, then look at all `bom` rows where `bom.parent_product_id = product.product_id`. The maximum BOM depth for that product is the highest va…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `BOM→PRODUCT`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `BOM entry→BOM`, `BOM→PRODUCT`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`
 
 **Context previews (first 3):**
 
@@ -657,28 +676,30 @@ This gives, for each `product_id` appearing as a `parent_product_id`…
 
 2. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-3. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+3. _Business concept 'BOM entry' is implemented by physical table BOM (columns: bom_id, parent_product_id, component_product_id, quantity, unit_of_measure, bom_level, is_optional).…_
 
 ---
 
 ### ✅ QA-026 — How do I find all products that have a specific product as a sub-assembly at any level?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.3223 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.2948 | **Gate:** `proceed`
 
 **Expected answer:**
 > Perform a recursive search starting with the target product_id as the initial component_product_id in the bom table. For each parent_product_id found, check if that parent appears as a component in other bom entries. Continue recursively until reaching products that are not used as components elsewh…
 
 **System answer:**
-> Use the `bom` table (schema: `bom_id, parent_product_id, component_product_id, quantity, unit_of_measure, bom_level, is_optional`) to find products that include a given product anywhere in their multi-level bill of materials.
+> Use the `bom` table as the primary hierarchy, because it is the Bill of Materials table that stores `parent_product_id` and `component_product_id`, and it explicitly “supports recursive relationships for multi-level assemblies.”
 
-Because `bom` represents the hierarchical composition and has recursive relationships (both `parent_product_id` and `component_product_id` reference `product(product_id)`), …
+At the schema level, the trace is:
 
-**Sources retrieved (12):** `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_8`
+Start with the target product in `bom.component_product_id`. Any row where `component_product_id = <specific product_id>` gives you an…
+
+**Sources retrieved (12):** `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `Route Steps→ROUTE`, `parent_chunk_data_dictionary.md_6`, `BOM entry→BOM`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+1. _Business concept 'a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure' is i…_
 
 2. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
@@ -695,21 +716,19 @@ Because `bom` represents the hierarchical composition and has recursive relation
 > Perform a recursive BOM explosion to find all components and sub-assemblies. For each product_id in the hierarchy, retrieve lead_time_days from the product table. The total lead time is the maximum of all lead times in the hierarchy (representing the longest dependency chain), or optionally sum lead…
 
 **System answer:**
-> From the schema, you can retrieve the lead time values you need, but the knowledge graph does not define a specific “total lead time” calculation rule (for example, whether to sum, take the maximum, or use any critical-path logic) across a BOM hierarchy.
+> From the retrieved context, I can only answer this partially.
 
-To get the data required for a product’s sub-assemblies, you can use these definitions:
+What is known is that `product.lead_time_days` stores the procurement or production lead time for each product, and the product structure can be traversed recursively through the `bom` table. The relevant schema path is: start with the target row in `product`, join `bom.parent_product_id` to that product’s `product_id`, then join `bom.…
 
-1) The per-product lead time is stored on `product.lead…
-
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `product_id, sequence_number→PRODUCT`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_4`, `Route Steps→ROUTE`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `(product_id, sequence_number)→PRODUCT`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_4`, `Route Steps→ROUTE`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_6`
 
 **Context previews (first 3):**
 
 1. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-2. _Business concept 'product_id, sequence_number' is implemented by physical table PRODUCT (columns: product_id, product_name, product_type, parent_product_id, base_cost, lead_time_days, is_active).…_
+2. _Business concept '(product_id, sequence_number)' is implemented by physical table PRODUCT (columns: product_id, product_name, product_type, parent_product_id, base_cost, lead_time_days, is_active).…_
 
-3. _Business concept 'Component approved supplier junction' — The table is explicitly a many-to-many junction between components and suppliers, with the DDL comment stating it links components to their ap…_
+3. _Business concept 'Approved Supplier Link' — The table is explicitly a many-to-many junction between components and suppliers, with a unique component-supplier pair and attributes for preferred status,…_
 
 ---
 
@@ -722,11 +741,11 @@ To get the data required for a product’s sub-assemblies, you can use these def
 > Use a recursive query on the bom table that tracks the current depth level. Start with the top-level product (parent_product_id where product has no parent_product_id). At each level, output component details indented by depth level. Include product_name, quantity, and unit_of_measure. Recursively p…
 
 **System answer:**
-> To generate a complete indented BOM report from this schema, you use the recursive structure captured in the `bom` table (business concept “Bill of Materials (BOM) entry … with quantity … unit of measure, and hierarchy level” implemented by `bom`).
+> To generate a complete indented BOM report, use the `bom` table as the hierarchy driver and the `product` table to resolve readable product details.
 
-Start by choosing a top-level product (the schema supports “Level 0” finished goods as the root of the hierarchy). Then recursively expand the hierarc…
+The core join pattern is: `bom.parent_product_id -> product.product_id` to identify the assembly being built, and `bom.component_product_id -> product.product_id` to identify the component or sub-assembly used in it. Because both BOM columns referenc…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_8`, `Hierarchical production planning and tracking→WORK_ORDER`, `BOM→PRODUCT`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_8`, `BOM entry→BOM`, `Work Order→WORK_ORDER`, `BOM→PRODUCT`
 
 **Context previews (first 3):**
 
@@ -734,7 +753,7 @@ Start by choosing a top-level product (the schema supports “Level 0” finishe
 
 2. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-3. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+3. _Business concept 'a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure' is i…_
 
 ---
 
@@ -747,19 +766,19 @@ Start by choosing a top-level product (the schema supports “Level 0” finishe
 > Perform BOM explosion for all products and aggregate occurrences of each leaf-level component. Count how many distinct product hierarchies contain each component. Join with component table for component names. Order by frequency descending to identify common components that should be prioritized for…
 
 **System answer:**
-> You can use the BOM table `bom` to aggregate by `component_product_id` and rank by frequency.
+> Use the `bom` table as the source, because a BOM entry is the parent-product / component-product relationship and is implemented by `BOM(bom_id, parent_product_id, component_product_id, quantity, unit_of_measure, bom_level, is_optional)`.
 
-In `bom` (columns include `component_product_id` and `parent_product_id`), each row represents a required component in a parent product’s Bill of Materials. So to find the most frequently used components across all product BOMs, count how many `bom` rows exist per `component_product_id` and sort descendi…
+To find which items appear most frequently across product BOMs, count how many `bom` rows use the same `component_product_id`. The key path is `bom.component_pr…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_3`, `BOM→PRODUCT`, `parent_chunk_data_dictionary.md_5`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `parent_chunk_data_dictionary.md_7`, `Component approved supplier junction→COMPONENT_SUPPLIER`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `BOM entry→BOM`, `BOM→PRODUCT`, `parent_chunk_data_dictionary.md_5`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_7`, `Batches for traceability and inventory management→INVENTORY`
 
 **Context previews (first 3):**
 
 1. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
 
-2. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+2. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-3. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
+3. _Business concept 'BOM entry' is implemented by physical table BOM (columns: bom_id, parent_product_id, component_product_id, quantity, unit_of_measure, bom_level, is_optional).…_
 
 ---
 
@@ -772,9 +791,9 @@ In `bom` (columns include `component_product_id` and `parent_product_id`), each 
 > Use a recursive query with a cycle detection check. Track the path of visited product_ids at each recursion level. If a product_id appears twice in the same path, a circular reference exists. Alternatively, check if any bom record has parent_product_id = component_product_id (direct self-reference),…
 
 **System answer:**
-> I cannot find this information in the knowledge graph.
+> Use the `bom` table as the traversal source. The recursive path is `bom.parent_product_id -> bom.component_product_id`, then from that component into the next BOM row by joining `current.component_product_id = next.parent_product_id`. A circular reference exists if that recursive walk reaches a `product_id` that has already appeared earlier in the same path, especially if a descendant `component_p…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `BOM→PRODUCT`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`, `Technical requirements and acceptance criteria→SPECIFICATION`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `BOM→PRODUCT`, `BOM entry→BOM`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
@@ -795,17 +814,17 @@ In `bom` (columns include `component_product_id` and `parent_product_id`), each 
 > First, perform recursive BOM explosion to find all leaf-level components in the product hierarchy. Then query the component_supplier table for each component_id to find approved suppliers. Join with the supplier table to get supplier names, ratings, and contact information. Include supplier-specific…
 
 **System answer:**
-> To determine the complete supplier chain for a finished product (including suppliers for all sub-assemblies), you can combine the BOM recursion with the component-to-supplier junction defined in the schema.
+> From the available schema metadata, you can determine most of the supplier chain at the structure level by combining the product hierarchy in `PRODUCT` and `BOM` with supplier relationships in `COMPONENT_SUPPLIER` and `SUPPLIER`.
 
-First, start from the finished product in the `product` table (where `product_type` identifies it as `FINISHED_GOOD`, and the hierarchy is supported by `parent_product_id`). Then use the `bom`…
+The trace starts with the finished product in `PRODUCT`, where `product_type` can be `FINISHED_GOOD`, `ASSEMBLY`, or `COMPONENT`. To expand everything that makes up that…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_8`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_6`, `External Supplier→SUPPLIER`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_7`, `Route Steps→ROUTE`
 
 **Context previews (first 3):**
 
 1. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-2. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+2. _Business concept 'a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure' is i…_
 
 3. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
 
@@ -820,14 +839,13 @@ First, start from the finished product in the `product` table (where `product_ty
 > For the work_order's product_id, perform recursive BOM explosion to get all required components with quantities. For each component, sum the available quantity (quantity_on_hand - quantity_reserved) across all warehouses from the inventory table. Compare aggregated available inventory against requir…
 
 **System answer:**
-> From the retrieved context, you can identify what data would be needed, but the knowledge graph does not define the rule for how inventory sufficiency for a `work_order` should be computed.
+> From the retrieved context, the schema-level way to check this is to compare the work order’s required product quantity from `work_order` to the total available inventory for that same product in `inventory` across all warehouses.
 
-What the context does provide:
+Use `work_order.work_order_id` to find the row in `work_order`, then take:
+`work_order.product_id` — the product being manufactured, and
+`work_order.quantity_ordered` a…
 
-`work_order` includes `product_id` (the product to manufacture) and `quantity_ordered`, plus a `warehouse_id` indicating the production location and a `status`.  
-`inventory` st…
-
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `INVENTORY→WAREHOUSE`, `WORK_ORDER→WAREHOUSE`, `Hierarchical production planning and tracking→WORK_ORDER`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `INVENTORY→WAREHOUSE`, `Work Order→WORK_ORDER`, `WORK_ORDER→WAREHOUSE`, `Batches for traceability and inventory management→INVENTORY`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`
 
 **Context previews (first 3):**
 
@@ -835,7 +853,7 @@ What the context does provide:
 
 2. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
 
-3. _Business concept 'Actual stock levels of components and products stored in specific warehouses' is implemented by physical table INVENTORY (columns: inventory_id, warehouse_id, component_id, product_i…_
+3. _Relationship: INVENTORY references WAREHOUSE via foreign key WAREHOUSE_ID -> WAREHOUSE.WAREHOUSE_ID.…_
 
 ---
 
@@ -848,19 +866,19 @@ What the context does provide:
 > Query the quality_control table filtering by result = 'FAIL'. Join with the batch table to get product_id and production_date. Join with the bom table recursively to trace which products contain failed components. Join with component_supplier and supplier tables to identify the source supplier. Filt…
 
 **System answer:**
-> From the context, you can identify failed quality control inspections using the quality control tables/concepts alone, but you cannot determine which failures are specifically “for components from specific suppliers” because the knowledge graph does not show any join/relationship connecting QC records (or their batches/specifications) to suppliers.
+> From the retrieved context, you can answer this only partially at the schema level.
 
-For failed inspections, the business concept **“…
+Failed quality control inspections are stored in the physical table `QUALITY_CONTROL`, which implements the business concept “Quality Control inspections.” The relevant columns are `qc_id`, `batch_id`, `specification_id`, `qc_date`, `qc_type`, `inspector_id`, `result`, `defect_count`, and `notes`. To find failures…
 
-**Sources retrieved (12):** `Quality Control Records→QUALITY_CONTROL`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `External Supplier→SUPPLIER`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `Quality Control inspections→QUALITY_CONTROL`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_4`, `COMPONENT_SUPPLIER→SUPPLIER`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_2`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Quality Control Records' — The table stores inspection/testing attributes for quality assurance, including inspection date (qc_date), inspection type (qc_type), inspector (inspector_…_
+1. _Business concept 'Quality Control inspections' is implemented by physical table QUALITY_CONTROL (columns: qc_id, batch_id, specification_id, qc_date, qc_type, inspector_id, result, defect_count, notes…_
 
-2. _Business concept 'Component approved supplier junction' — The table is explicitly a many-to-many junction between components and suppliers, with the DDL comment stating it links components to their ap…_
+2. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
 
-3. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
+3. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
 ---
 
@@ -873,19 +891,19 @@ For failed inspections, the business concept **“…
 > Query the work_order table starting with the parent work_order. Find all child work_orders where parent_work_order matches the current work_order_id. For each work order (parent and children), join with the route table on product_id to get all operations. Sum (cycle_time_minutes * quantity) plus set…
 
 **System answer:**
-> I cannot find this information in the knowledge graph.  
+> From the retrieved context, you can identify the relevant work orders and their route-step time fields, but the context does not define an official formula for “total manufacturing time.”
 
-The context defines `WORK_ORDER` (including hierarchical decomposition via `parent_work_order`) and separately defines `ROUTE` “Route Steps” time fields (`cycle_time_minutes`, `setup_time_minutes`), but it does not describe how a `work_order` is tied to a `ROUTE`, nor does it provide any method or formula for computing a work order’s per-un…
+Schema-level tracing works like this: start with `WORK_ORDER.work_order_id`, then follow the self-referencing `WORK_ORDER.parent_work_order` relationship to collect all child work orders in the hierarchy, becaus…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `Route Steps→ROUTE`, `parent_chunk_data_dictionary.md_3`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `Hierarchical production planning and tracking→WORK_ORDER`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_3`, `Work Order→WORK_ORDER`, `Route Steps→ROUTE`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
 1. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
 
-2. _Business concept 'Route Steps' — The table stores ordered manufacturing operations for a product using product_id, sequence_number, operation_name, work_center, and per-unit processing time (cycle_tim…_
+2. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-3. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
+3. _Business concept 'Work Order' — The table is explicitly labeled as WORK_ORDER and contains core work order attributes such as product_id, quantity ordered/completed, status, priority, planned dates, a…_
 
 ---
 
@@ -898,11 +916,11 @@ The context defines `WORK_ORDER` (including hierarchical decomposition via `pare
 > Query the shipment table filtering for status = 'SHIPPED' where actual_arrival is NULL and estimated_arrival is in the past (overdue). Join with the component_supplier table via supplier_id and component_id to identify which components are delayed. Perform reverse BOM lookup to find which parent pro…
 
 **System answer:**
-> I cannot find an explicit business rule in the retrieved context for what “overdue” means for shipments, so overdue shipments cannot be identified purely from the schema without an additional definition (for example, what cutoff date to use and which shipment states count as “not overdue”).
+> From the retrieved schema, you can only determine this at a schema level; the knowledge graph describes tables, columns, and relationships, not actual shipment or work order records.
 
-What the context does provide to support an overdue definition is the shipment date and status data in tabl…
+For shipments, the relevant table is `SHIPMENT`. It provides `shipment_id`, `shipment_type`, `warehouse_id`, `supplier_id`, `customer_id`, `ship_date`, `estimated_arrival`, `actual_arrival`, and `status`. The documen…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`, `Shipment Dates→SHIPMENT`, `WORK_ORDER→PRODUCT`, `WORK_ORDER→WAREHOUSE`, `Hierarchical production planning and tracking→WORK_ORDER`, `SHIPMENT→WAREHOUSE`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`, `Work Order→WORK_ORDER`, `WORK_ORDER→PRODUCT`, `WORK_ORDER→WAREHOUSE`, `SHIPMENT→WAREHOUSE`, `parent_chunk_data_dictionary.md_3`
 
 **Context previews (first 3):**
 
@@ -923,19 +941,19 @@ What the context does provide to support an overdue definition is the shipment d
 > Query the batch table filtering for expiry_date within a warning window (e.g., next 30 days) or past expiry. Join with the bom table recursively on product_id to trace all components used in those batches. Join with component_supplier and supplier tables to filter by specific suppliers. Results iden…
 
 **System answer:**
-> From the retrieved context, you can identify expiry at the batch level using the `BATCH` table’s `expiry_date` column (there is no other expiry-specific field shown). However, the context does not define any “approaching” expiry window or threshold logic (e.g., a specific number of days before expiry), so you’d need an explicit rule that is not present in the provided schema metadata.
+> Use the `BATCH` table for the expiry check and the `BOM` table for the “contains components” part.
 
-For “compon…
+The documented expiry path is straightforward: `BATCH` has `batch_id`, `product_id`, `production_date`, `quantity_produced`, `warehouse_id`, and `expiry_date`. To find expired batches, compare `BATCH.expiry_date` to the date you are evaluating against. To find batches “approaching expiry,” the schem…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `Actual stock levels of components and products stored in specific warehouses→INVENTORY`, `Production Lots→BATCH`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_3`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `Batches for traceability and inventory management→BATCH`, `parent_chunk_data_dictionary.md_7`, `Batches for traceability and inventory management→INVENTORY`, `parent_chunk_data_dictionary.md_3`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_4`
 
 **Context previews (first 3):**
 
 1. _## warehouse  Stores physical storage location information for inventory management.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | warehouse_…_
 
-2. _Business concept 'Actual stock levels of components and products stored in specific warehouses' is implemented by physical table INVENTORY (columns: inventory_id, warehouse_id, component_id, product_i…_
+2. _Business concept 'Batches for traceability and inventory management' is implemented by physical table BATCH (columns: batch_id, product_id, production_date, quantity_produced, warehouse_id, expiry_dat…_
 
-3. _Business concept 'Production Lots' — The table stores lot-level production details such as batch_id, product_id, production_date, quantity_produced, warehouse_id, expiry_date, and qc_status, which dir…_
+3. _## specification  Defines technical requirements and acceptance criteria for materials and products.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----------…_
 
 ---
 
@@ -948,19 +966,19 @@ For “compon…
 > Query all work_orders with status 'PENDING' ordered by planned_start_date. For each work_order, perform BOM explosion to get required components and quantities. For each component, query inventory for current available stock across warehouses. Calculate net requirements = (required quantity * work_o…
 
 **System answer:**
-> To generate a material requirements plan (MRP) from the available schema, you can drive the calculation from work schedules, expand required components through the BOM, and then incorporate lead time from the component’s product record.
+> From the retrieved metadata, the schema-level way to build this is to start from `WORK_ORDER`, then explode the required structure through `BOM`, and then use `PRODUCT.lead_time_days` to back-calculate when the needed component should be available.
 
-First, use `work_order` as the production schedule source. The table provides `planned_start_date` and `planned_end_date` along with `quantity_ordered`, `quantity…
+`WORK_ORDER` gives you the production schedule inputs: `work_order_id`, `product_id`, `quantity_ordered`, `quantity_completed`, `status`, `priority`, …
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)→BOM`, `parent_chunk_data_dictionary.md_7`, `Component Cost and Spec→COMPONENT`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`, `Hierarchical production planning and tracking→WORK_ORDER`, `parent_chunk_data_dictionary.md_3`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_7`, `Work Order→WORK_ORDER`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `WORK_ORDER→WORK_ORDER`
 
 **Context previews (first 3):**
 
 1. _## work_order  Represents production jobs for manufacturing products with hierarchical work order support.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----…_
 
-2. _Business concept 'Bill of Materials (BOM) entry (parent product and required components/sub-assemblies with quantity, unit of measure, and hierarchy level)' is implemented by physical table BOM (colum…_
+2. _## specification  Defines technical requirements and acceptance criteria for materials and products.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----------…_
 
-3. _## specification  Defines technical requirements and acceptance criteria for materials and products.  | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-----------…_
+3. _Business concept 'Work Order' — The table is explicitly labeled as WORK_ORDER and contains core work order attributes such as product_id, quantity ordered/completed, status, priority, planned dates, a…_
 
 ---
 
@@ -973,14 +991,13 @@ First, use `work_order` as the production schedule source. The table provides `p
 > Start with a shipment from the supplier (shipment table with supplier_id and shipment_type = 'INBOUND'). Track to inventory updates via component_id and warehouse_id. Identify batches that consumed the component via reverse BOM lookup (batch.product_id → bom hierarchy → component_id). Query quality_…
 
 **System answer:**
-> From the retrieved schema and concepts, you can trace parts of the genealogy, but the context does not provide enough explicit relationships to trace a *complete* supplier → component → batch (consumed) → finished-goods genealogy end to end.
+> The retrieved context does not contain enough information to trace a complete end-to-end genealogy from a specific supplier-sourced component through production batches into specific finished goods. What it does provide is the schema-level structure for part of that path, and the gaps are important.
 
-What you can determine from the context:
+From the context, the part that is known is:
 
-1) Supplier → Component (approved sourcing)
-The table concept/component “Component approved supplier junction” is i…
+A supplier can be linked to a component through `COM…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`, `Production Lots→BATCH`, `parent_chunk_data_dictionary.md_4`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`, `Batches for traceability and inventory management→INVENTORY`, `parent_chunk_data_dictionary.md_4`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `Batches for traceability and inventory management→BATCH`
 
 **Context previews (first 3):**
 
@@ -1001,17 +1018,19 @@ The table concept/component “Component approved supplier junction” is i…
 > Perform BOM explosion for all active products and count component usage frequency. Identify high-frequency components. Query component_supplier table to find all suppliers for these components. Filter to suppliers with rating >= 4.0 (high quality) and is_preferred = 'Y'. For each component, list alt…
 
 **System answer:**
-> The knowledge graph does not define what the business phrase “critical for multiple products” means. However, you can derive a reasonable proxy from the schema by treating a component as “critical for multiple products” when it appears in the `bom` table as the same `component_product_id` under multiple distinct `parent_product_id` values.
+> The retrieved context does not define what makes a component “critical,” so I cannot give a schema-supported rule for criticality.
 
-Once you identify those components from `bom`, you can fi…
+What the context does support is this schema-level approach:
 
-**Sources retrieved (12):** `Component approved supplier junction→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `External Supplier→SUPPLIER`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_0`
+First, use `bom` to find components that are used in more than one product. In `bom`, `parent_product_id` is the product being built and `component_product_id` is the product used as a component. Because `b…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `parent_chunk_data_dictionary.md_3`, `Preferred supplier for this component→SUPPLIER`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Component approved supplier junction' — The table is explicitly a many-to-many junction between components and suppliers, with the DDL comment stating it links components to their ap…_
+1. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
 
-2. _## bom  Bill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.  | Column | Data Type | Constraints | Description | |---…_
+2. _Business concept 'Approved Supplier Link' — The table is explicitly a many-to-many junction between components and suppliers, with a unique component-supplier pair and attributes for preferred status,…_
 
 3. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
@@ -1026,22 +1045,19 @@ Once you identify those components from `bom`, you can fi…
 > Perform recursive BOM explosion to get all leaf components. For each component, query component_supplier to get unit_price from primary supplier. Multiply by accumulated BOM quantity for material cost. Add shipping costs (estimated from shipment history). Query route table for the product to get all…
 
 **System answer:**
-> The knowledge graph provides the data elements you would need to *start* such a calculation, but it does not define any “landed cost” concept or an explicit formula/algorithm to compute it.
+> From the retrieved context alone, I cannot give a complete landed-cost formula for a product. The context provides some relevant schema elements, but it does not provide all of the relationships and cost attributes needed to calculate “total landed cost,” especially for component quantity rollups and manufacturing operations.
 
-From the available schema/business concepts:
+What is supported by the context is this: the `product` table contains …
 
-1) Component cost inputs  
-Components have financial fields like `standard_cost` and `unit_of_measure` in the physical table `COMPONENT` (mapped from the business …
-
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `Component approved supplier junction→COMPONENT_SUPPLIER`, `product_id, sequence_number→PRODUCT`, `Route Steps→ROUTE`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_7`, `Component Cost and Spec→COMPONENT`, `parent_chunk_data_dictionary.md_5`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `Approved Supplier Link→COMPONENT_SUPPLIER`, `(product_id, sequence_number)→PRODUCT`, `a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure→COMPONENT`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`
 
 **Context previews (first 3):**
 
 1. _# Manufacturing Data Dictionary  This data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationshi…_
 
-2. _Business concept 'Component approved supplier junction' — The table is explicitly a many-to-many junction between components and suppliers, with the DDL comment stating it links components to their ap…_
+2. _Business concept 'Approved Supplier Link' — The table is explicitly a many-to-many junction between components and suppliers, with a unique component-supplier pair and attributes for preferred status,…_
 
-3. _Business concept 'product_id, sequence_number' is implemented by physical table PRODUCT (columns: product_id, product_name, product_type, parent_product_id, base_cost, lead_time_days, is_active).…_
+3. _Business concept '(product_id, sequence_number)' is implemented by physical table PRODUCT (columns: product_id, product_name, product_type, parent_product_id, base_cost, lead_time_days, is_active).…_
 
 ---
 

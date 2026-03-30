@@ -1,14 +1,14 @@
 # AB-00 — 05_edgecases_incomplete — Run Analysis
 
-**Timestamp:** 2026-03-27 18:21:52  
-**Run tag:** `post-fix-v3`
+**Timestamp:** 2026-03-30 19:24:26  
+**Run tag:** `post-fix-v5`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
 | Extraction model | `LLM (gpt-5.4-nano-2026-03-17)` |
-| Reasoning model | `gpt-5.4-nano-2026-03-17` |
+| Reasoning model | `gpt-5.4-2026-03-05` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 168 |
-| Entities resolved | 82 |
+| Triplets extracted | 210 |
+| Entities resolved | 93 |
 | Tables parsed | 5 |
 | Tables completed | 5 |
 
@@ -32,8 +32,8 @@
 | Questions | 20 |
 | Grounded | **20/20 (100%)** |
 | Avg GT Coverage | 100% |
-| Avg Top Score | 0.4803 |
-| Avg Chunk Count | 12.0 |
+| Avg Top Score | 0.4747 |
+| Avg Chunk Count | 11.0 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -51,42 +51,44 @@ RAGAS evaluation not enabled for this run.
 > The business glossary defines Customer as "an individual or organization that... [definition incomplete]". Related terms include Client (a person or company that purchases goods or services, sometimes used interchangeably with Customer), Account Holder (the primary owner of an account), and End User…
 
 **System answer:**
-> In the business glossary (“BUSINESS GLOSSARY - Enterprise System”), a Customer is defined as “An individual or organization that...”, but the definition is incomplete in the retrieved context. The glossary also defines a “Client” as “a person or company that purchases goods or services” and notes that Client may be used interchangeably with Customer in some contexts.
+> From the retrieved context, a Customer is a business concept in the “CUSTOMER MANAGEMENT” glossary, but its formal definition is incomplete: “An individual or organization that...” The context also says “Client” may be used interchangeably with Customer in some contexts and defines Client as “a person or company that purchases goods or services.”
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_3`, `Receipt→PAYMENTS`, `parent_chunk_business_glossary.txt_0`, `Inventory Items→PRODUCTS`, `BusinessConcept→PhysicalTable`
+At the schema level, the business concept CUSTOMER…
+
+**Sources retrieved (11):** `CUSTOMERS→CUSTOMERS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `payment_method→PAYMENTS`, `parent_chunk_business_glossary.txt_0`, `Order Item→ORDER_ITEMS`
 
 **Context previews (first 3):**
 
-1. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
+1. _Business concept 'CUSTOMERS' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, last_name, email, emailAddress, phone, phoneNumber, created_…_
 
-2. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
+2. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
 
-3. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+3. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
 ---
 
 ### ✅ ec_002 — What's the difference between firstName and first_name in the CUSTOMERS table?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.3978 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.5988 | **Gate:** `proceed`
 
 **Expected answer:**
 > Both columns exist in the CUSTOMERS table with identical VARCHAR(50) data types. The data dictionary notes they appear to be duplicates resulting from inconsistent naming conventions (snake_case vs camelCase), but the actual usage by the application is not documented.
 
 **System answer:**
-> In the `CUSTOMERS` table, `firstName` and `first_name` both exist and are both defined as `VARCHAR(50)`. 
+> From the retrieved context, there is no documented business difference between `firstName` and `first_name` in `CUSTOMERS`.
 
-`firstName` is described as “Customer’s first name.” For `first_name`, the documentation is missing/unclear and it is marked as “appears to be duplicate” (i.e., possibly an alternate or redundant representation of the same value). The retrieved context does not specify any authoritative rule …
+The data dictionary shows both columns as `VARCHAR(50)`. `firstName` is described as “Customer's first name,” while `first_name` is explicitly marked as “[appears to be duplicate].” The constraints for both are undocumented (`?`), and the overall `CUSTOMERS` documentation is…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_3`, `Inventory Items→PRODUCTS`, `Order Line Items→ORDER_ITEMS`, `parent_chunk_business_glossary.txt_0`, `Sales Order`
+**Sources retrieved (11):** `CUSTOMERS→CUSTOMERS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Order Item→ORDER_ITEMS`, `parent_chunk_business_glossary.txt_0`, `Order Item`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`
 
 **Context previews (first 3):**
 
-1. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
+1. _Business concept 'CUSTOMERS' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, last_name, email, emailAddress, phone, phoneNumber, created_…_
 
-2. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
+2. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
 
-3. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+3. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
 ---
 
@@ -99,9 +101,11 @@ RAGAS evaluation not enabled for this run.
 > The CUSTOMERS table has both customer_id (defined as PRIMARY KEY) and CustomerID (defined as INTEGER with no constraints). The ORDERS table also has both customer_id and CustomerID columns with ambiguous FK references. The data dictionary indicates this inconsistency is documented but not yet resolv…
 
 **System answer:**
-> The retrieved context is ambiguous about which `CUSTOMERS` key column is referenced. In the “Foreign Keys” section, it only states `customer_id → CUSTOMERS(customer_id or CustomerID?)`, and in the “CUSTOMERS” table it says the primary key is `customer_id (or is it CustomerID? check with DBA)`. Therefore, based on the knowledge graph alone, you cannot confirm whether the FK should reference `CUSTOM…
+> The retrieved context does not definitively resolve this. It shows that the CUSTOMERS table’s primary key is documented as “customer_id (or is it CustomerID? check with DBA),” and it also lists CustomerID as a possible duplicate of customer_id. The foreign key note likewise says “customer_id → CUSTOMERS(customer_id or CustomerID?).”
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `Sales Order→ORDERS`, `Receipt→PAYMENTS`, `Inventory Items→PRODUCTS`, `Order Line Items→ORDER_ITEMS`, `parent_chunk_business_glossary.txt_0`
+So, based strictly on the context, customer_id is the more expli…
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `CUSTOMERS→CUSTOMERS`, `parent_chunk_data_dictionary.txt_3`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `payment_method→PAYMENTS`, `Order Item→ORDER_ITEMS`, `Inventory Item→PRODUCTS`
 
 **Context previews (first 3):**
 
@@ -109,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 
 2. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
 
-3. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
+3. _Business concept 'CUSTOMERS' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, last_name, email, emailAddress, phone, phoneNumber, created_…_
 
 ---
 
@@ -122,15 +126,17 @@ RAGAS evaluation not enabled for this run.
 > The business glossary documents several order statuses: Pending, Processing, Completed, Cancelled, On Hold, and Failed (which is marked as [definition missing]). However, these are not enforced by a CHECK constraint in the schema, and the data dictionary notes that valid values reference '[missing d…
 
 **System answer:**
-> I cannot find this information in the knowledge graph.
+> The retrieved context shows that `order_status` is a column in `ORDERS`, but it does not provide any valid values for that field.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `Inventory Items→PRODUCTS`, `parent_chunk_business_glossary.txt_0`, `Inventory Items`, `Receipt→PAYMENTS`
+From the context, `ORDERS` includes `order_status`, and the glossary says an Order “can be in various states,” but those states are not enumerated anywhere in the retrieved context.
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_3`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `Order Item→ORDER_ITEMS`, `parent_chunk_business_glossary.txt_0`, `Order Item`, `payment_method→PAYMENTS`
 
 **Context previews (first 3):**
 
 1. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
 
-2. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+2. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
 3. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
 
@@ -145,21 +151,21 @@ RAGAS evaluation not enabled for this run.
 > The glossary indicates these terms are related but distinct: Product is defined as "A thing that is... [definition needs clarification]"; Item is a synonym for Product used in inventory context; SKU (Stock Keeping Unit) is a unique identifier for a product variant; Inventory Item refers to physical …
 
 **System answer:**
-> The retrieved context does not define separate business meanings for “Product” versus “Item” versus “SKU” in a way that lets me state a clear, formal difference between all three.
+> The retrieved context does not provide explicit glossary definitions that distinguish “Product,” “Item,” and “SKU” as separate business terms, so a definitive business-meaning difference is not available.
 
-What it does show is:
+What the context does show is this:
 
-“Inventory Items” is described as product/master data used for sale and inventory control, and it is implemented by the physical table PRODUCTS. That mapping includes multiple product identifiers …
+“Inventory Item” is implemented by the physical table PRODUCTS. That table includes product identity and descriptive fields such as product_id/ProductID, pro…
 
-**Sources retrieved (12):** `Inventory Items→PRODUCTS`, `parent_chunk_data_dictionary.txt_2`, `Order Line Items→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `Sales Order→ORDERS`, `parent_chunk_business_glossary.txt_0`, `Inventory Items`
+**Sources retrieved (11):** `Inventory Item→PRODUCTS`, `parent_chunk_data_dictionary.txt_2`, `Order Item→ORDER_ITEMS`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `Order Item`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Inventory Items' — The table stores product/master data used for sale and inventory control, including product identifiers (product_id), SKU, pricing (unit_price/current_price/cost_p…_
+1. _Business concept 'Inventory Item' is implemented by physical table PRODUCTS (columns: product_id, ProductID, product_name, ProductName, product_sku, sku, product_category, category, unit_price, curren…_
 
 2. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
-3. _Business concept 'Order Line Items' — The table name and structure (order_item_id, order_id, product_id, quantity, unit_price, discount, line_total) align directly with storing individual items/lines …_
+3. _Business concept 'Order Item' — The table is clearly line-level, with order_item_id, order_id, product_id, quantity, unit_price, discount fields, and line_total indicating individual order items rathe…_
 
 ---
 
@@ -172,19 +178,19 @@ What it does show is:
 > The data dictionary states the FK reference is to 'PRODUCTS (or INVENTORY?)' and notes it is 'not verified'. The schema provides two potential targets: PRODUCTS table (which has product_id) and an INVENTORY table that is referenced in documentation but not defined in the DDL. The actual relationship…
 
 **System answer:**
-> In the retrieved context for `ORDER_ITEMS`, the foreign key note on `product_id` is not definitive: it states `product_id → References PRODUCTS (or INVENTORY?)`. So from the schema metadata provided, the referenced table for `ORDER_ITEMS.product_id` is ambiguous between `PRODUCTS` and `INVENTORY`.
+> Based on the retrieved context, ORDER_ITEMS.product_id should reference PRODUCTS.
 
-What we can say from the business-concept mapping is that the business concept “Inventory Items” is …
+The strongest support is that the business concept “Inventory Item” is implemented by the physical table PRODUCTS, and PRODUCTS contains the product identifier columns product_id and ProductID. The ORDER_ITEMS table is described as the line-level “Order Item” table with product_id/ProductID representing the item bei…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `Inventory Items→PRODUCTS`, `Order Line Items→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `Inventory Items`, `Order Line Items`, `parent_chunk_business_glossary.txt_0`
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_2`, `Inventory Item→PRODUCTS`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `Order Item→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `Order Item`, `parent_chunk_business_glossary.txt_0`
 
 **Context previews (first 3):**
 
 1. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
-2. _Business concept 'Inventory Items' — The table stores product/master data used for sale and inventory control, including product identifiers (product_id), SKU, pricing (unit_price/current_price/cost_p…_
+2. _Business concept 'Inventory Item' is implemented by physical table PRODUCTS (columns: product_id, ProductID, product_name, ProductName, product_sku, sku, product_category, category, unit_price, curren…_
 
-3. _Business concept 'Order Line Items' — The table name and structure (order_item_id, order_id, product_id, quantity, unit_price, discount, line_total) align directly with storing individual items/lines …_
+3. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
 ---
 
@@ -197,17 +203,19 @@ What we can say from the business-concept mapping is that the business concept �
 > Both terms show circular definitions: Revenue is defined as 'Income from sales. The same as... [definition circular, see Sales]', while Sales is defined as 'Revenue from selling products. See Revenue.' The glossary provides no clear distinction between these concepts.
 
 **System answer:**
-> The retrieved context does not include any definitions, attributes, or business glossary entries for “Revenue” versus “Sales,” nor does it describe how they differ. What is available are schema/concept mappings for “Sales Order” (table `ORDERS`) and “Order Line Items” (table `ORDER_ITEMS`), but there is no information in the provided context that explicitly defines or compares Revenue to Sales.
+> The retrieved context does not define either Revenue or Sales, so I cannot state their difference from the knowledge graph.
 
-**Sources retrieved (12):** `Inventory Items→PRODUCTS`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_2`, `Order Line Items→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `Sales Order`, `Inventory Items`
+What the context does provide is only related order and payment metadata. In the business glossary, Order is defined as “A request to purchase products or services. Can be in various states,” and Transaction is described as similar to Order but more general. In the schema, m…
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_2`, `Order Item→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `Order Item`, `parent_chunk_data_dictionary.txt_1`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `payment_method→PAYMENTS`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Inventory Items' — The table stores product/master data used for sale and inventory control, including product identifiers (product_id), SKU, pricing (unit_price/current_price/cost_p…_
+1. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
-2. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+2. _Business concept 'Order Item' — The table is clearly line-level, with order_item_id, order_id, product_id, quantity, unit_price, discount fields, and line_total indicating individual order items rathe…_
 
-3. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
+3. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
 
 ---
 
@@ -220,19 +228,21 @@ What we can say from the business-concept mapping is that the business concept �
 > The PAYMENTS table has an order_id column, suggesting a many-to-one relationship (multiple payments can reference a single order). However, the relationship section in the glossary asks 'Or is it one-to-one?' indicating uncertainty. The ORDERS table has both payment_status and payment_method columns…
 
 **System answer:**
-> The retrieved context shows that the `PAYMENTS` table includes `order_id` as a foreign key referencing `ORDERS`, but it does not specify the relationship cardinality between `ORDERS` and `PAYMENTS` (for example, whether `order_id` is unique in `PAYMENTS` or whether multiple `PAYMENTS` rows can share the same `order_id`).
+> Yes, based on the schema, one order can have multiple payments.
 
-So, based strictly on the knowledge graph provided, it is uncertain whether …
+The retrieved context shows that PAYMENTS has payment_id as its primary key and order_id as a foreign key referencing ORDERS. Because payment_id is the unique row identifier, and there is no stated unique constraint on order_id in PAYMENTS, the table structure allows multiple PAYMENTS rows to reference the same ORDERS row.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `Sales Order→ORDERS`, `Receipt→PAYMENTS`, `parent_chunk_data_dictionary.txt_2`, `Order Line Items→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_1`, `Inventory Items→PRODUCTS`, `parent_chunk_business_glossary.txt_0`
+This mean…
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_3`, `payment_method→PAYMENTS`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_2`, `Order Item→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_1`, `Inventory Item→PRODUCTS`, `CUSTOMERS→CUSTOMERS`
 
 **Context previews (first 3):**
 
 1. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
 
-2. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+2. _Business concept 'payment_method' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transa…_
 
-3. _Business concept 'Receipt' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_i…_
+3. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
 ---
 
@@ -245,65 +255,69 @@ So, based strictly on the knowledge graph provided, it is uncertain whether …
 > The PAYMENTS table has a payment_method column (VARCHAR(30)), but the data dictionary notes '[missing valid values]' and no CHECK constraint exists to enumerate acceptable methods. The schema does not document what values are valid (e.g., credit_card, debit, paypal, etc.).
 
 **System answer:**
-> I cannot find this information in the knowledge graph.
+> The retrieved context does not list the accepted payment methods. It only shows that payment method is captured in the PAYMENTS table as PAYMENTS.payment_method (VARCHAR(30)), and there is also a payment_method column on ORDERS, but both are documented with “[missing valid values]” or without enumerated allowed values. So the schema indicates where payment method is stored, but not which methods a…
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `Sales Order→ORDERS`, `Receipt→PAYMENTS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `Sales Order`, `parent_chunk_business_glossary.txt_0`, `Order Line Items→ORDER_ITEMS`
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_3`, `payment_method→PAYMENTS`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_business_glossary.txt_0`, `Order Item→ORDER_ITEMS`, `CUSTOMERS→CUSTOMERS`
 
 **Context previews (first 3):**
 
 1. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
 
-2. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+2. _Business concept 'payment_method' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transa…_
 
-3. _Business concept 'Receipt' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_i…_
+3. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
 ---
 
 ### ✅ ec_010 — What's the correct table name: ORDER_ITEMS or ORDER_DETAILS?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.9627 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.9778 | **Gate:** `proceed`
 
 **Expected answer:**
 > The DDL creates a table named ORDER_ITEMS, but the data dictionary header shows 'ORDER_ITEMS (or ORDER_DETAILS?)' and notes 'Table name ambiguity: ORDER_ITEMS vs ORDER_DETAILS'. The actual table name in the schema is ORDER_ITEMS, but documentation suggests the application may reference it differentl…
 
 **System answer:**
-> The retrieved data dictionary indicates the physical table for the “Order Line Items” concept is primarily implemented as `ORDER_ITEMS` (see Business concept mapping in context [2], which states “is implemented by physical table ORDER_ITEMS”). 
+> Based on the retrieved context, the physical table name is ORDER_ITEMS.
 
-However, one schema section also labels it as “`ORDER_ITEMS` (or `ORDER_DETAILS`?)” (context [1]), which means `ORDER_DETAILS` is mentioned only as a poss…
+The context explicitly says the business concept “Order Item” is implemented by physical table ORDER_ITEMS, and also notes that ORDER_DETAILS is a documented alias for the same line-level table. So ORDER_DETAILS appears to be an alternate or legacy name, not the primary physical table name in the metadata provided.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `Order Line Items→ORDER_ITEMS`, `Inventory Items→PRODUCTS`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `Order Line Items`, `Sales Order→ORDERS`, `Receipt→PAYMENTS`
+There is …
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_2`, `Order Item→ORDER_ITEMS`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `Inventory Item→PRODUCTS`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `CUSTOMERS→CUSTOMERS`, `Order Item`
 
 **Context previews (first 3):**
 
 1. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
-2. _Business concept 'Order Line Items' — The table name and structure (order_item_id, order_id, product_id, quantity, unit_price, discount, line_total) align directly with storing individual items/lines …_
+2. _Business concept 'Order Item' — The table is clearly line-level, with order_item_id, order_id, product_id, quantity, unit_price, discount fields, and line_total indicating individual order items rathe…_
 
-3. _Business concept 'Inventory Items' — The table stores product/master data used for sale and inventory control, including product identifiers (product_id), SKU, pricing (unit_price/current_price/cost_p…_
+3. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
 ---
 
 ### ✅ ec_011 — Which date column should be used to track when an order was created: order_date, OrderDate, or created_at?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.7889 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.8920 | **Gate:** `proceed`
 
 **Expected answer:**
 > The ORDERS table has three date-related columns: order_date (DATE type), OrderDate (DATETIME type with different precision), and created_at (TIMESTAMP type). The data dictionary provides no guidance on which is actually used by the application or why three columns exist for potentially the same purp…
 
 **System answer:**
-> For the business concept “Sales Order” in table **ORDERS**, the context explicitly documents **order_date / OrderDate** as the order’s “order date” attribute. The context also shows a **created_at** column in **ORDERS**, but it does not define what **created_at** represents (e.g., whether it means the moment the order record was created in the system).  
+> From the retrieved context, this cannot be determined definitively.
 
-Because the meaning of **created_at** is n…
+The only information provided for `ORDERS` is that it contains `order_date`, `OrderDate`, and `created_at` (along with other columns). There is no column-level description in the retrieved context explaining which one is the authoritative “order created” timestamp.
 
-**Sources retrieved (12):** `Sales Order→ORDERS`, `Receipt→PAYMENTS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `Inventory Items→PRODUCTS`, `Order Line Items→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_2`, `Sales Order`
+Given the broader schema pattern shown elsewhere, fields like `o…
+
+**Sources retrieved (11):** `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `payment_method→PAYMENTS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `CUSTOMERS→CUSTOMERS`, `Inventory Item→PRODUCTS`, `parent_chunk_data_dictionary.txt_2`, `Order Item→ORDER_ITEMS`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+1. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
-2. _Business concept 'Receipt' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_i…_
+2. _Business concept 'payment_method' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transa…_
 
 3. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
 
@@ -318,17 +332,19 @@ Because the meaning of **created_at** is n…
 > The business glossary lists Failed as an order status but marks it as '[definition missing]'. Other statuses have definitions (Pending, Processing, Completed, Cancelled, On Hold), but Failed is undefined despite being a valid status value.
 
 **System answer:**
-> The context provided states that the **Sales Order** concept is implemented by the physical table **ORDERS**, which includes an **order_status** column. However, it does not list any possible **order_status** values or define what a value like **“Failed”** would mean. Therefore, the meaning of a **Failed** order status is not specified in the available information.
+> The retrieved context does not define a meaning for a “Failed” order status.
 
-**Sources retrieved (12):** `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `Inventory Items→PRODUCTS`, `Order Line Items→ORDER_ITEMS`, `Receipt→PAYMENTS`, `parent_chunk_business_glossary.txt_0`
+What the context does show is that the ORDERS table includes an order_status column, and both ORDERS and PAYMENTS include payment_status-related fields. However, the documentation explicitly says valid values are missing for PAYMENTS.payment_status, and it provides no documented value list or business definition for ORDE…
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_2`, `Order Item→ORDER_ITEMS`, `payment_method→PAYMENTS`, `Inventory Item→PRODUCTS`, `CUSTOMERS→CUSTOMERS`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+1. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
 
-2. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
+2. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
 
-3. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
+3. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
 ---
 
@@ -341,9 +357,11 @@ Because the meaning of **created_at** is n…
 > No NOT NULL constraints are defined in the DDL. The data dictionary explicitly states 'NOT NULL constraints not defined' under 'Missing Documentation' and notes 'assumed, not verified'. All columns are nullable by default.
 
 **System answer:**
-> The retrieved context does not define any explicit `NOT NULL` constraints for any schema elements. For the tables shown (notably `PAYMENTS`, `ORDER_ITEMS` / `ORDER_DETAILS?`, `CUSTOMERS`, and `ORDERS` via concept mapping), the “Constraints” information is marked as “[missing documentation]” or uses “?” placeholders (and for some fields it notes things like “PK”, “FK”, or “UNIQUE?”), but there is n…
+> No explicit NOT NULL constraints are documented in the retrieved context.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `Sales Order→ORDERS`, `parent_chunk_business_glossary.txt_0`, `Inventory Items→PRODUCTS`, `Order Line Items→ORDER_ITEMS`, `Receipt→PAYMENTS`
+The schema excerpts shown for PAYMENTS, CUSTOMERS, and ORDER_ITEMS list constraints like PK, FK, and UNIQUE?, but none of the columns are explicitly marked NOT NULL. The documentation is also labeled incomplete, so the context does not confirm whether NOT NULL exists elsewhere; it only shows that no NOT NULL constraints are…
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `Order Item→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_1`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `Order Item`, `parent_chunk_business_glossary.txt_0`, `Inventory Item→PRODUCTS`
 
 **Context previews (first 3):**
 
@@ -351,32 +369,32 @@ Because the meaning of **created_at** is n…
 
 2. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
-3. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
+3. _Business concept 'Order Item' — The table is clearly line-level, with order_item_id, order_id, product_id, quantity, unit_price, discount fields, and line_total indicating individual order items rathe…_
 
 ---
 
 ### ✅ ec_014 — What's the difference between unit_price and current_price in PRODUCTS?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.8065 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.4761 | **Gate:** `proceed`
 
 **Expected answer:**
 > The PRODUCTS table has both unit_price and current_price columns (both DECIMAL(10,2)). The data dictionary asks 'Different from unit_price?' but provides no explanation of the distinction or when each would be used.
 
 **System answer:**
-> In the retrieved context for the business concept “Inventory Items” (implemented by physical table `PRODUCTS`), both `unit_price` and `current_price` are present as separate pricing columns alongside `cost_price`, but the context does not explain what distinguishes `unit_price` from `current_price` (e.g., whether one is historical/base price and the other is the latest price).
+> The retrieved context shows that PRODUCTS, which implements the business concept Inventory Item, contains both unit_price and current_price. However, it does not provide column definitions or descriptions for those two PRODUCTS columns, so the difference between them is not documented in the available context.
 
-So, the only facts …
+The only related pricing description in the context is for ORDER_ITEMS.unit_price, whic…
 
-**Sources retrieved (12):** `Inventory Items→PRODUCTS`, `parent_chunk_data_dictionary.txt_2`, `Order Line Items→ORDER_ITEMS`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_3`, `Inventory Items`, `Order Line Items`, `parent_chunk_business_glossary.txt_0`
+**Sources retrieved (11):** `Inventory Item→PRODUCTS`, `parent_chunk_data_dictionary.txt_2`, `Order Item→ORDER_ITEMS`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_3`, `Order Item`, `parent_chunk_business_glossary.txt_0`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Inventory Items' — The table stores product/master data used for sale and inventory control, including product identifiers (product_id), SKU, pricing (unit_price/current_price/cost_p…_
+1. _Business concept 'Inventory Item' is implemented by physical table PRODUCTS (columns: product_id, ProductID, product_name, ProductName, product_sku, sku, product_category, category, unit_price, curren…_
 
 2. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
-3. _Business concept 'Order Line Items' — The table name and structure (order_item_id, order_id, product_id, quantity, unit_price, discount, line_total) align directly with storing individual items/lines …_
+3. _Business concept 'Order Item' — The table is clearly line-level, with order_item_id, order_id, product_id, quantity, unit_price, discount fields, and line_total indicating individual order items rathe…_
 
 ---
 
@@ -389,36 +407,38 @@ So, the only facts …
 > The relationship section in the glossary asks 'An invoice is generated for an order. But when? And can one order have multiple invoices?' indicating the timing and cardinality are not defined. The glossary defines Invoice as 'A document requesting payment. Related to Bill' and Payment as 'The transf…
 
 **System answer:**
-> In the retrieved context, there is no business concept or rule that describes “invoice generation,” nor any table labeled for invoices. The retrieved context does define payment/receipt-related concepts instead: “Business concept ‘Receipt’ is implemented by physical table PAYMENTS,” and PAYMENTS includes fields such as payment_date, payment_status, payment_method, and transaction_id (plus response…
+> The retrieved context does not document any invoice entity, invoice table, invoice column, or business rule for invoice generation, so I cannot determine when an invoice is generated.
 
-**Sources retrieved (12):** `Order Line Items→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_3`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `Receipt→PAYMENTS`, `parent_chunk_business_glossary.txt_0`, `Order Line Items`
+The payment side is partially documented. Payment processing is represented by the PAYMENTS table, which includes payment_date as a DATETIME field, so the context supports that the time a payment is processed is cap…
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_3`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `payment_method→PAYMENTS`, `parent_chunk_business_glossary.txt_0`, `Order Item→ORDER_ITEMS`, `Inventory Item→PRODUCTS`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Order Line Items' — The table name and structure (order_item_id, order_id, product_id, quantity, unit_price, discount, line_total) align directly with storing individual items/lines …_
+1. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
 
-2. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
+2. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
-3. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+3. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
 
 ---
 
 ### ✅ ec_016 — Is the sku column in PRODUCTS unique?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.4820 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.3824 | **Gate:** `proceed`
 
 **Expected answer:**
 > The PRODUCTS table has both product_sku and sku columns. The data dictionary notes sku 'should be UNIQUE?' but the DDL does not define a UNIQUE constraint on either column. No index is documented for these columns.
 
 **System answer:**
-> The retrieved context about `PRODUCTS` (via “Inventory Items” / physical table `PRODUCTS`) lists the `sku` (and also `product_sku` / `sku` as column variants), but it does not state any uniqueness constraint or index/constraint details for `sku`. Therefore, it is not documented here whether `PRODUCTS.sku` is unique.
+> The retrieved context does not state that `sku` in `PRODUCTS` is unique. It only shows that `PRODUCTS` includes `product_sku` and `sku` as columns in the business concept "Inventory Item," but no uniqueness constraint is documented for either column.
 
-**Sources retrieved (12):** `Inventory Items→PRODUCTS`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `Order Line Items→ORDER_ITEMS`, `Receipt→PAYMENTS`, `parent_chunk_business_glossary.txt_0`
+**Sources retrieved (11):** `Inventory Item→PRODUCTS`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Order Item→ORDER_ITEMS`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `CUSTOMERS→CUSTOMERS`, `payment_method→PAYMENTS`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Inventory Items' — The table stores product/master data used for sale and inventory control, including product identifiers (product_id), SKU, pricing (unit_price/current_price/cost_p…_
+1. _Business concept 'Inventory Item' is implemented by physical table PRODUCTS (columns: product_id, ProductID, product_name, ProductName, product_sku, sku, product_category, category, unit_price, curren…_
 
 2. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
@@ -435,11 +455,11 @@ So, the only facts …
 > The glossary states 'A customer can place multiple orders. Or is it accounts that place orders?' indicating uncertainty about the relationship. The ORDERS table has both customer_id and CustomerID columns with ambiguous FK references, and the data dictionary notes they reference 'customer (which tab…
 
 **System answer:**
-> In the schema, the business concept “Sales Order” is implemented by the table `ORDERS`, which includes a `customer_id` / `CustomerID` column. The `CUSTOMERS` table has `customer_id` / `CustomerID` as its primary key. 
+> The retrieved context indicates that customers and orders are related through the ORDERS table. The physical table implementing the order concept is ORDERS, and it includes customer_id and CustomerID columns ([3]). The customer concept is implemented by the CUSTOMERS table, whose key is documented inconsistently as customer_id or CustomerID ([4], [6]).
 
-The retrieved context does not explicitly state a foreign key constraint from `ORDERS.customer_id` to `CUSTOMERS`, so I can only confirm that `ORDERS` contains a `customer_id` field…
+So at the schema level, the relationship is …
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `Inventory Items→PRODUCTS`, `Order Line Items→ORDER_ITEMS`, `parent_chunk_business_glossary.txt_0`, `Sales Order`
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `Order Item→ORDER_ITEMS`, `CUSTOMERS→CUSTOMERS`, `parent_chunk_business_glossary.txt_0`, `Order Item`
 
 **Context previews (first 3):**
 
@@ -447,30 +467,31 @@ The retrieved context does not explicitly state a foreign key constraint from `O
 
 2. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
-3. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+3. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
 ---
 
 ### ✅ ec_018 — Which price column represents what the customer actually pays?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0688 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 100% | **Top Score:** 0.0682 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
 > Multiple price columns exist across tables: ORDERS has orderAmount and total_amount; ORDER_ITEMS has unit_price and UnitPrice; PRODUCTS has unit_price, current_price, and cost_price. The data dictionary does not explain which represents the final customer price, whether discounts are applied, or how…
 
 **System answer:**
-> In the schema, the amount the customer actually pays is represented by `PAYMENTS.payment_amount` in the physical table `PAYMENTS` (used to implement the business concept `Receipt`). This is the only explicit “paid” amount column described in the retrieved context.  
+> From the retrieved context, the column that most directly represents what the customer actually pays is ORDER_ITEMS.line_total for each order line, because the same table also contains quantity, unit_price, discount_percent, and discount_amount, which implies line_total is the final line-level amount after pricing and discounts.
 
-What’s uncertain: the context does not explicitly define how `ORDERS.orderAmount` / `ORDERS.total_amount` relate to the final amount…
+Related price columns in the context mean different things:
+ORDER_IT…
 
-**Sources retrieved (12):** `Receipt→PAYMENTS`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Order Line Items→ORDER_ITEMS`, `Inventory Items→PRODUCTS`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_business_glossary.txt_0`
+**Sources retrieved (11):** `payment_method→PAYMENTS`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Order Item→ORDER_ITEMS`, `CUSTOMERS→CUSTOMERS`, `parent_chunk_data_dictionary.txt_1`, `Inventory Item→PRODUCTS`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Receipt' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_i…_
+1. _Business concept 'payment_method' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transa…_
 
-2. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+2. _Business concept 'ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS' is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, ord…_
 
 3. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
@@ -485,17 +506,19 @@ What’s uncertain: the context does not explicitly define how `ORDERS.orderAmou
 > The glossary provides definitions but unclear boundaries: Shipment is 'The process of delivering goods to a customer'; Delivery is 'The completion of a Shipment when goods reach the customer'; Fulfillment is 'The process of preparing and delivering orders. Encompasses Shipment and Delivery.' The exa…
 
 **System answer:**
-> I cannot find this information in the knowledge graph. The retrieved context only defines order-related and payment/inventory concepts and mappings (for example, “Sales Order” in table `ORDERS`, “Order Line Items” in table `ORDER_ITEMS`, “Inventory Items” in table `PRODUCTS`, and “Receipt” in table `PAYMENTS`). It does not mention or define “Shipment,” “Delivery,” or “Fulfillment,” so I can’t dete…
+> The retrieved context does not define or distinguish “Shipment,” “Delivery,” or “Fulfillment,” so their differences cannot be determined from the knowledge graph.
 
-**Sources retrieved (12):** `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Order Line Items→ORDER_ITEMS`, `Inventory Items→PRODUCTS`, `parent_chunk_business_glossary.txt_0`, `Sales Order`, `Order Line Items`
+What is known from the context is that the business glossary is marked “Partial (pending review)” and includes some order-related terms such as “Order” (“A request to purchase products or services. Can be in various states.”) and “Trans…
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Order Item→ORDER_ITEMS`, `parent_chunk_business_glossary.txt_0`, `Order Item`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `parent_chunk_data_dictionary.txt_1`, `payment_method→PAYMENTS`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Sales Order' — The table models the core header of an order with a unique order identifier, order date, order status, pricing totals (orderAmount/total_amount, shippingAmount, tax_am…_
+1. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
-2. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
+2. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
 
-3. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
+3. _Business concept 'Order Item' — The table is clearly line-level, with order_item_id, order_id, product_id, quantity, unit_price, discount fields, and line_total indicating individual order items rathe…_
 
 ---
 
@@ -508,9 +531,11 @@ What’s uncertain: the context does not explicitly define how `ORDERS.orderAmou
 > No foreign key constraints are enforced in the DDL. While the data dictionary documents FK relationships (e.g., customer_id → CUSTOMERS, order_id → ORDERS), the actual CREATE TABLE statements omit the REFERENCES clauses. The schema explicitly notes 'FK constraints defined in data dictionary but not …
 
 **System answer:**
-> The retrieved context shows that foreign key relationships are defined at the schema metadata level (e.g., in `ORDER_ITEMS`: `order_id → ORDERS(...)` and `product_id → PRODUCTS(...)`; in `PAYMENTS`: `order_id → ORDERS`, `customer_id → CUSTOMERS`), but it does not state whether those foreign key constraints are actually enforced in the database (for example, no information is provided about constra…
+> The retrieved context does not confirm that foreign key constraints are consistently enforced in the schema.
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_business_glossary.txt_0`, `Inventory Items→PRODUCTS`, `Receipt→PAYMENTS`, `Order Line Items→ORDER_ITEMS`, `Sales Order→ORDERS`
+What it does show is that several columns are documented as foreign keys at the metadata level: ORDER_ITEMS.order_id references ORDERS, ORDER_ITEMS.product_id references PRODUCTS, PAYMENTS.order_id references ORDERS, PAYMENTS.customer_id references CUSTOMERS, and there is also a separate n…
+
+**Sources retrieved (11):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Order Item→ORDER_ITEMS`, `parent_chunk_data_dictionary.txt_1`, `Order Item`, `parent_chunk_business_glossary.txt_0`, `ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `Inventory Item→PRODUCTS`
 
 **Context previews (first 3):**
 
@@ -518,7 +543,7 @@ What’s uncertain: the context does not explicitly define how `ORDERS.orderAmou
 
 2. _========================================== PAYMENTS ==========================================  Primary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |----------…_
 
-3. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
+3. _Business concept 'Order Item' — The table is clearly line-level, with order_item_id, order_id, product_id, quantity, unit_price, discount fields, and line_total indicating individual order items rathe…_
 
 ---
 

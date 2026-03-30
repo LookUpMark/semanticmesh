@@ -278,10 +278,12 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         }
 
     top_score = float(valid[0].score)
-    if len(valid) == 1:
+    if len(valid) == 1 and top_score < 0.15:
         sufficiency = "sparse"
-    else:
+    elif len(valid) >= 2 or top_score >= 0.15:
         sufficiency = "adequate"
+    else:
+        sufficiency = "sparse"
 
     return {
         "reranked_chunks": valid,

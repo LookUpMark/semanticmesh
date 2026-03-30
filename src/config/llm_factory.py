@@ -59,6 +59,8 @@ __all__ = [
     "get_reasoning_llm",
     "get_extraction_llm",
     "get_generation_llm",
+    "get_lightweight_llm",
+    "get_midtier_llm",
     "reconfigure_from_env",
     "detect_provider",
     "LLMProtocol",
@@ -264,6 +266,8 @@ def reconfigure_from_env() -> None:
     get_reasoning_llm.cache_clear()
     get_extraction_llm.cache_clear()
     get_generation_llm.cache_clear()
+    get_lightweight_llm.cache_clear()
+    get_midtier_llm.cache_clear()
 
 
 @lru_cache(maxsize=1)
@@ -350,4 +354,50 @@ def get_generation_llm() -> LLMProtocol:
         temperature=get_settings().llm_temperature_generation,
         max_tokens=get_settings().llm_max_tokens_reasoning,
         role="generation",
+    )
+
+
+@lru_cache(maxsize=1)
+def get_lightweight_llm() -> LLMProtocol:
+    """Lightweight LLM — nano model with reasoning disabled, T=0.0.
+
+    Used for simple classification tasks: entity resolution judge,
+    schema enrichment. Uses the extraction model (nano) with
+    ``reasoning_effort=none`` to suppress chain-of-thought.
+    """
+    s = get_settings()
+    no_reasoning: dict | None = None
+    if is_openai_reasoning_model(s.llm_model_extraction):
+        no_reasoning = {"reasoning_effort": "none"}
+    return make_llm(
+        model=s.llm_model_extraction,
+        temperature=s.llm_temperature_extraction,
+        max_tokens=s.llm_max_tokens_extraction,
+        role="lightweight",
+        extra_model_kwargs=no_reasoning,
+    )
+
+
+@lru_cache(maxsize=1)
+def get_midtier_llm() -> LLMProtocol:
+    """Mid-tier LLM — mini model with low reasoning, T=0.0.
+
+    Used for tasks requiring moderate intelligence: RAG semantic mapping,
+    Actor-Critic validation, hallucination grading. Faster and cheaper
+    than the full reasoning model while still providing good accuracy.
+    """
+    s = get_settings()
+    provider = detect_provider(s.llm_model_midtier)
+    if provider == "openrouter":
+        low_reasoning: dict | None = {"reasoning": {"effort": "low"}}
+    elif provider == "openai":
+        low_reasoning = {"reasoning_effort": "low"}
+    else:
+        low_reasoning = None
+    return make_llm(
+        model=s.llm_model_midtier,
+        temperature=s.llm_temperature_reasoning,
+        max_tokens=s.llm_max_tokens_reasoning,
+        role="midtier",
+        extra_model_kwargs=low_reasoning,
     )

@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
-from src.config.llm_factory import get_reasoning_llm
+from src.config.llm_factory import get_midtier_llm, get_reasoning_llm
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.generation.answer_generator import generate_answer
@@ -179,7 +179,7 @@ def _node_grade_hallucination(state: QueryState) -> dict[str, Any]:
     settings = get_settings()
     if not settings.enable_hallucination_grader:
         return {"grader_decision": GraderDecision(grounded=True, critique=None, action="pass")}
-    llm = get_reasoning_llm()
+    llm = get_midtier_llm()
     query: str = state["user_query"]
     answer: str = state.get("current_answer") or ""
     chunks: list[RetrievedChunk] = (
