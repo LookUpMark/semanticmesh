@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = SecretStr("")
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
+    llm_model_midtier: str = DEFAULT_CONFIG.llm_model_midtier
     llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
     llm_temperature_reasoning: float = DEFAULT_CONFIG.llm_temperature_reasoning
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation

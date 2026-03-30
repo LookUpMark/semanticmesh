@@ -14,7 +14,7 @@ from typing import Any
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
-from src.config.llm_factory import get_extraction_llm, get_reasoning_llm
+from src.config.llm_factory import get_extraction_llm, get_lightweight_llm, get_midtier_llm, get_reasoning_llm
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.config.tracing import BuilderTrace
@@ -66,7 +66,7 @@ def _node_extract_triplets(state: BuilderState) -> dict[str, Any]:
 def _node_entity_resolution(state: BuilderState) -> dict[str, Any]:
     """Resolve extracted triplets into canonical entities."""
     embeddings = get_embeddings()
-    llm = get_reasoning_llm()
+    llm = get_lightweight_llm()
     triplets = state.get("triplets") or []
     source_doc = state.get("source_doc", "unknown")
     entities = resolve_entities(triplets, embeddings, llm, source_doc)
@@ -90,7 +90,7 @@ def _node_enrich_schema(state: BuilderState) -> dict[str, Any]:
         logger.info("Schema enrichment disabled — promoting raw parsed tables.")
         promoted = [EnrichedTableSchema.from_table_schema(t) for t in tables]
         return {"enriched_tables": promoted}
-    llm = get_reasoning_llm()
+    llm = get_lightweight_llm()
     tables = state.get("tables") or []
     enriched = enrich_all(tables, llm)
     return {"enriched_tables": enriched}
@@ -100,7 +100,7 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
     """Generate RAG-augmented mapping proposal for current table."""
     settings = get_settings()
     use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
-    llm = get_reasoning_llm()
+    llm = get_midtier_llm()
     embeddings = get_embeddings()
     enriched_tables = state.get("enriched_tables") or []
     entities: list[Entity] = state.get("entities") or []
