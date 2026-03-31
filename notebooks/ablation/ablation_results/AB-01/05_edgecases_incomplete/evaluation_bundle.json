@@ -1,0 +1,590 @@
+{
+  "meta": {
+    "study_id": "AB-01",
+    "dataset_id": "05_edgecases_incomplete",
+    "timestamp": "2026-03-31T01:49:34.227892+00:00",
+    "bundle_version": "1.0"
+  },
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-2026-03-05",
+    "extraction_model": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "vector",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 12,
+    "er_similarity_threshold": 0.75
+  },
+  "dataset_info": {
+    "dataset_id": "05_edgecases_incomplete",
+    "dataset_name": "",
+    "domain": "",
+    "complexity": "",
+    "total_pairs": 20,
+    "query_type_distribution": {
+      "unknown": 20
+    },
+    "difficulty_distribution": {
+      "unknown": 20
+    }
+  },
+  "builder_report": {
+    "triplets_extracted": 0,
+    "entities_resolved": 0,
+    "tables_parsed": 0,
+    "tables_completed": 0,
+    "cypher_failed": false,
+    "failed_mappings": [],
+    "ingestion_errors": [],
+    "parent_chunks": 0,
+    "child_chunks": 0,
+    "elapsed_s": 0,
+    "all_tables_completed": false,
+    "builder_skipped": false
+  },
+  "query_report": {
+    "total_questions": 20,
+    "grounded_count": 6,
+    "grounded_rate": 0.3,
+    "abstained_count": 14,
+    "avg_gt_coverage": 1.0,
+    "avg_top_score": 0.11933281503035806,
+    "avg_chunk_count": 2.0,
+    "elapsed_s": 0
+  },
+  "per_question": [
+    {
+      "query_id": "ec_001",
+      "question": "What is a customer?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The business glossary defines Customer as \"an individual or organization that... [definition incomplete]\". Related terms include Client (a person or company that purchases goods or services, sometimes used interchangeably with Customer), Account Holder (the primary owner of an account), and End User (the actual user, who may differ from the purchaser).",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, a customer is only implied, not explicitly defined. What is known is that the Sales Order concept includes a customer_id, and the order is described as “an order placed by a customer.” This indicates that a customer is the party associated with a sales order through customer_id.\n\nThe context does not provide a separate customer business concept, customer table, customer attributes, or a fuller business definition of what a customer is, so that cannot be determined from the available information.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.02527489813024264,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_002",
+      "question": "What's the difference between firstName and first_name in the CUSTOMERS table?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "Both columns exist in the CUSTOMERS table with identical VARCHAR(50) data types. The data dictionary notes they appear to be duplicates resulting from inconsistent naming conventions (snake_case vs camelCase), but the actual usage by the application is not documented.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.005220125693558397,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_003",
+      "question": "Which customer column should be used as a foreign key reference: customer_id or CustomerID?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The CUSTOMERS table has both customer_id (defined as PRIMARY KEY) and CustomerID (defined as INTEGER with no constraints). The ORDERS table also has both customer_id and CustomerID columns with ambiguous FK references. The data dictionary indicates this inconsistency is documented but not yet resolved, pending verification with the DBA team.",
+      "expected_sources": [],
+      "generated_answer": "Based on the retrieved context, the customer foreign key reference is customer_id. The Sales Order business concept explicitly identifies customer_id as the canonical order-header customer column. CustomerID is not mentioned anywhere in the provided context, so it cannot be validated from the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.24562746380378328,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_004",
+      "question": "What are the valid values for order_status?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The business glossary documents several order statuses: Pending, Processing, Completed, Cancelled, On Hold, and Failed (which is marked as [definition missing]). However, these are not enforced by a CHECK constraint in the schema, and the data dictionary notes that valid values reference '[missing documentation]'.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context shows that order_status is a canonical order-header attribute in the Sales Order business concept, alongside order_id, customer_id, order_date, and financial totals. However, the context does not provide the valid values for order_status. There is no enumeration, code list, status lifecycle, constraint, or reference table in the provided material, so the specific allowed values cannot be determined from this context alone.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.15662018336345096,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_005",
+      "question": "Is there a difference between Product, Item, and SKU?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The glossary indicates these terms are related but distinct: Product is defined as \"A thing that is... [definition needs clarification]\"; Item is a synonym for Product used in inventory context; SKU (Stock Keeping Unit) is a unique identifier for a product variant; Inventory Item refers to physical products in stock; and Merchandise is described as goods available for sale, similar to Product. The exact distinctions are not clearly defined.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Order Items",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.007066400963249157,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_006",
+      "question": "Which table should ORDER_ITEMS.product_id reference: PRODUCTS or INVENTORY?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The data dictionary states the FK reference is to 'PRODUCTS (or INVENTORY?)' and notes it is 'not verified'. The schema provides two potential targets: PRODUCTS table (which has product_id) and an INVENTORY table that is referenced in documentation but not defined in the DDL. The actual relationship cannot be determined from the available documentation.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, I cannot determine whether ORDER_ITEMS.product_id should reference PRODUCTS or INVENTORY.\n\nWhat the context does support is this: ORDER_ITEMS is described as a line-item order details table, with columns including order_id, product_id, quantity, unit price, discounts, and line total. The context also distinguishes Sales Order as the order-header entity, with attributes such as order_id, customer_id, order_date, order_status, and financial totals. So ORDER_ITEMS clearly represents detail rows under a sales order, not product master data or order header data.\n\nHowever, the retrieved context does not include any definition for a PRODUCTS table, an INVENTORY table, or any foreign key relationship involving ORDER_ITEMS.product_id. Because those specific table definitions and relationships are absent, the correct reference target cannot be established from this context alone.",
+      "sources_retrieved": [
+        "Order Items",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.7335472948353806,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_007",
+      "question": "What's the difference between Revenue and Sales?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "Both terms show circular definitions: Revenue is defined as 'Income from sales. The same as... [definition circular, see Sales]', while Sales is defined as 'Revenue from selling products. See Revenue.' The glossary provides no clear distinction between these concepts.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.0016941031558503916,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_008",
+      "question": "Can one order have multiple payments?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The PAYMENTS table has an order_id column, suggesting a many-to-one relationship (multiple payments can reference a single order). However, the relationship section in the glossary asks 'Or is it one-to-one?' indicating uncertainty. The ORDERS table has both payment_status and payment_method columns (singular), which might suggest a single payment per order, but this conflicts with the PAYMENTS table structure.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.0005549409507143756,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_009",
+      "question": "What payment methods are accepted?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The PAYMENTS table has a payment_method column (VARCHAR(30)), but the data dictionary notes '[missing valid values]' and no CHECK constraint exists to enumerate acceptable methods. The schema does not document what values are valid (e.g., credit_card, debit, paypal, etc.).",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 9.993031795570663e-05,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_010",
+      "question": "What's the correct table name: ORDER_ITEMS or ORDER_DETAILS?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The DDL creates a table named ORDER_ITEMS, but the data dictionary header shows 'ORDER_ITEMS (or ORDER_DETAILS?)' and notes 'Table name ambiguity: ORDER_ITEMS vs ORDER_DETAILS'. The actual table name in the schema is ORDER_ITEMS, but documentation suggests the application may reference it differently.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context explicitly names the table as ORDER_ITEMS. There is no mention of a table named ORDER_DETAILS in the provided context.",
+      "sources_retrieved": [
+        "Order Items",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.9938070098421449,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_011",
+      "question": "Which date column should be used to track when an order was created: order_date, OrderDate, or created_at?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The ORDERS table has three date-related columns: order_date (DATE type), OrderDate (DATETIME type with different precision), and created_at (TIMESTAMP type). The data dictionary provides no guidance on which is actually used by the application or why three columns exist for potentially the same purpose.",
+      "expected_sources": [],
+      "generated_answer": "Use order_date. In the retrieved context, Sales Order explicitly identifies order_date as a canonical order-header attribute for the order entity. There is no information in the context about OrderDate or created_at, so I cannot confirm those.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.14463143714297527,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_012",
+      "question": "What does the Failed order status mean?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The business glossary lists Failed as an order status but marks it as '[definition missing]'. Other statuses have definitions (Pending, Processing, Completed, Cancelled, On Hold), but Failed is undefined despite being a valid status value.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.0008830458477845481,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_013",
+      "question": "Are there any NOT NULL constraints defined in the schema?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "No NOT NULL constraints are defined in the DDL. The data dictionary explicitly states 'NOT NULL constraints not defined' under 'Missing Documentation' and notes 'assumed, not verified'. All columns are nullable by default.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Order Items",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.015424552081841137,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_014",
+      "question": "What's the difference between unit_price and current_price in PRODUCTS?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The PRODUCTS table has both unit_price and current_price columns (both DECIMAL(10,2)). The data dictionary asks 'Different from unit_price?' but provides no explanation of the distinction or when each would be used.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Order Items",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.017242777557652904,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_015",
+      "question": "When is an invoice generated vs payment processed?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The relationship section in the glossary asks 'An invoice is generated for an order. But when? And can one order have multiple invoices?' indicating the timing and cardinality are not defined. The glossary defines Invoice as 'A document requesting payment. Related to Bill' and Payment as 'The transfer of money to settle an order', but doesn't specify the workflow or sequence.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 4.757645425657628e-05,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_016",
+      "question": "Is the sku column in PRODUCTS unique?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The PRODUCTS table has both product_sku and sku columns. The data dictionary notes sku 'should be UNIQUE?' but the DDL does not define a UNIQUE constraint on either column. No index is documented for these columns.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Order Items",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.005001672249929073,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_017",
+      "question": "What is the relationship between customers and orders?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The glossary states 'A customer can place multiple orders. Or is it accounts that place orders?' indicating uncertainty about the relationship. The ORDERS table has both customer_id and CustomerID columns with ambiguous FK references, and the data dictionary notes they reference 'customer (which table?)' and '[FK reference unclear]' respectively.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.018905447141346704,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_018",
+      "question": "Which price column represents what the customer actually pays?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "Multiple price columns exist across tables: ORDERS has orderAmount and total_amount; ORDER_ITEMS has unit_price and UnitPrice; PRODUCTS has unit_price, current_price, and cost_price. The data dictionary does not explain which represents the final customer price, whether discounts are applied, or how these columns relate to each other.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.011375600238837661,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_019",
+      "question": "What's the difference between Shipment, Delivery, and Fulfillment?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The glossary provides definitions but unclear boundaries: Shipment is 'The process of delivering goods to a customer'; Delivery is 'The completion of a Shipment when goods reach the customer'; Fulfillment is 'The process of preparing and delivering orders. Encompasses Shipment and Delivery.' The exact distinction and sequence of these processes is not clearly defined, and Fulfillment appears to be a superset of the other two.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Sales Order",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.0025114635138098534,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_020",
+      "question": "Are foreign key constraints enforced in the schema?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "No foreign key constraints are enforced in the DDL. While the data dictionary documents FK relationships (e.g., customer_id → CUSTOMERS, order_id → ORDERS), the actual CREATE TABLE statements omit the REFERENCES clauses. The schema explicitly notes 'FK constraints defined in data dictionary but not enforced in DDL' under known inconsistencies.",
+      "expected_sources": [],
+      "generated_answer": "I cannot find this information in the knowledge graph.",
+      "sources_retrieved": [
+        "Order Items",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "abstain_early",
+      "retrieval_quality_score": 0.0011203773223969365,
+      "chunk_count": 2,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    }
+  ],
+  "pipeline_health": {
+    "total_grader_rejections": 0,
+    "grader_inconsistencies": 0,
+    "gate_abstentions": 14,
+    "questions_with_low_retrieval_score": 17,
+    "cypher_failed": false,
+    "failed_mappings_count": 0,
+    "ingestion_errors_count": 0
+  },
+  "ragas": null
+}

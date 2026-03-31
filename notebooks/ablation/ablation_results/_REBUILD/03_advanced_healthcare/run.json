@@ -1,0 +1,80 @@
+{
+  "study_id": "_REBUILD",
+  "dataset_id": "03_advanced_healthcare",
+  "run_tag": "v5-rebuild",
+  "timestamp": "2026-03-30T23:02:40.692902+00:00",
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-2026-03-05",
+    "extraction_model": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 12,
+    "er_similarity_threshold": 0.75
+  },
+  "builder": {
+    "triplets": 429,
+    "entities": 239,
+    "tables_parsed": 10,
+    "tables_completed": 10
+  },
+  "query": {
+    "total_questions": 1,
+    "grounded_count": 1,
+    "grounded_rate": 1.0,
+    "avg_gt_coverage": 1.0,
+    "avg_top_score": 0.957675408618915,
+    "avg_chunk_count": 12.0,
+    "abstained_count": 0
+  },
+  "per_question": [
+    {
+      "query_id": "Q001",
+      "question": "What tables store information about patients?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "answer": "The primary table for patient information is PATIENTS, which implements the Patient Master Record concept and stores core identity, demographic, contact, emergency contact, and insurance linkage data. Its columns include patient_id, mrn, first_name, last_name, date_of_birth, gender, phone, email, emergency_contact_name, emergency_contact_phone, primary_insurance_id, is_deleted, valid_from, valid_to, created_at, and updated_at.\n\nThe context also shows several patient-related tables that store information about patients through patient_id:\n\nDIAGNOSES stores patient diagnosis records with ICD-10 coding and temporal tracking. Columns include diagnosis_id, patient_id, icd_10_code, diagnosis_name, diagnosis_type, provider_id, diagnosis_date, resolution_date, is_deleted, valid_from, valid_to, created_at, and updated_at.\n\nCLAIMS stores insurance claims and billing information for services rendered. It includes patient_id as an FK to patients.patient_id, along with claim_id, insurance_plan_id, claim_number, service_date, submission_date, cpt_code, icd_10_code, amount_charged, amount_allowed, amount_paid, claim_status, denial_reason, is_deleted, valid_from, valid_to, created_at, and updated_at.\n\nLAB_RESULTS stores patient-linked diagnostic laboratory test results. Columns include lab_result_id, patient_id, test_name, loinc_code, test_value, unit, reference_range, is_abnormal, ordering_provider_id, result_date, notes, is_deleted, valid_from, valid_to, created_at, and updated_at.\n\nAPPOINTMENTS stores patient appointment scheduling and encounter information, with patient_id as an FK to patients.patient_id.\n\nMEDICATIONS stores patient medication prescriptions and administrations. Columns include medication_id, patient_id, medication_name, ndc_code, dosage, route, frequency, prescribing_provider_id, start_date, end_date, is_deleted, valid_from, valid_to, created_at, and updated_at.\n\nTREATMENTS stores electronic health record entries reflecting patient care, clinical decision-making, and treatment plans. Columns include treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department_id, treatment_date, treatment_status, notes, is_deleted, valid_from, valid_to, created_at, and updated_at.\n\nSo, PATIENTS is the main patient master table, and DIAGNOSES, CLAIMS, LAB_RESULTS, APPOINTMENTS, MEDICATIONS, and TREATMENTS store additional patient-specific information linked by patient_id.",
+      "sources": [
+        "Store patient diagnosis records with ICD-10 coding and temporal tracking\u2192DIAGNOSES",
+        "Patient Master Record\u2192PATIENTS",
+        "insurance claims and billing information for services rendered\u2192CLAIMS",
+        "Laboratory Test Result\u2192LAB_RESULTS",
+        "parent_chunk_data_dictionary.md_10",
+        "Patient Master Record",
+        "parent_chunk_data_dictionary.md_3",
+        "Laboratory Test Result",
+        "parent_chunk_data_dictionary.md_9",
+        "parent_chunk_data_dictionary.md_6",
+        "electronic health record entries reflecting patient care, clinical decision-making, and treatment plans\u2192TREATMENTS",
+        "Each medication record\u2192MEDICATIONS"
+      ],
+      "contexts": [
+        "Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' is implemented by physical table DIAGNOSES (columns: diagnosis_id, patient_id, icd_10_code, diagnosis_name, diagnosis_type, provider_id, diagnosis_date, resolution_date, is_deleted, valid_from, valid_to, created_at, updated_at).",
+        "Business concept 'Patient Master Record' \u2014 The table stores core patient identity, demographic, contact, emergency contact, and insurance linkage data with temporal historization, which is characteristic of a master patient record rather than a workflow. Its columns align more closely with patient master data and PHI than with a registration event or transaction. is implemented by physical table PATIENTS (columns: patient_id, mrn, first_name, last_name, date_of_birth, gender, phone, email, emergency_contact_name, emergency_contact_phone, primary_insurance_id, is_deleted, valid_from, valid_to, created_at, updated_at).",
+        "Business concept 'insurance claims and billing information for services rendered' \u2014 Store insurance claims and billing information for services rendered. is implemented by physical table CLAIMS (columns: claim_id, patient_id, insurance_plan_id, claim_number, service_date, submission_date, cpt_code, icd_10_code, amount_charged, amount_allowed, amount_paid, claim_status, denial_reason, is_deleted, valid_from, valid_to, created_at, updated_at).",
+        "Business concept 'Laboratory Test Result' \u2014 The table stores patient-linked diagnostic test outcomes with result values, units, reference ranges, abnormal flags, and result dates, which directly matches the concept of laboratory test results. The DDL purpose text also explicitly says it stores diagnostic laboratory test results for patients. is implemented by physical table LAB_RESULTS (columns: lab_result_id, patient_id, test_name, loinc_code, test_value, unit, reference_range, is_abnormal, ordering_provider_id, result_date, notes, is_deleted, valid_from, valid_to, created_at, updated_at).",
+        "## CLAIMS Table\n**Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | claim_id | INTEGER | PRIMARY KEY | Surrogate key for claim records | | patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient associated with claim | | insurance_plan_id | INTEGER | FK \u2192 insurance_plans.plan_id, NOT NULL | Insurance plan billed | | claim_number | VARCHAR(50) | UNIQUE NOT NULL | Unique claim identifier for tracking | | service_date | DATE | NOT NULL | Date of service | | submission_date | DATE | NOT NULL | Date claim submitted to payer | | cpt_code | VARCHAR(10) | NOT NULL | Procedure code billed | | icd_10_code | VARCHAR(10) | NOT NULL | Diagnosis code supporting medical necessity",
+        "Patient Master Record: The table stores core patient identity, demographic, contact, emergency contact, and insurance linkage data with temporal historization, which is characteristic of a master patient record rather than a workflow. Its columns align more closely with patient master data and PHI than with a registration event or transaction.",
+        "# Data Dictionary - Advanced Healthcare Management System\n\n## Database Overview\n**Database Name**: `advanced_healthcare_db` **Schema Version**: `3.2.1` **Environment**: Production **Last Updated**: 2025-03-15 --- ## PATIENTS Table **Purpose**: Store current and historical patient demographic and administrative information. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | patient_id | INTEGER | PRIMARY KEY | Surrogate key for patient records | | mrn | VARCHAR(20) | UNIQUE NOT NULL | Medical Record Number - unique patient identifier | | first_name | VARCHAR(50) | NOT NULL | Patient's legal first name | | last_name | VARCHAR(50) | NOT NULL | Patient's legal last name | | date_of_birth | DATE | NOT NULL | Patient's date of birth for age calculation | | gender | VARCHAR(10) | NOT NULL, CHECK IN ('M', 'F', 'O', 'U') | Gender: Male",
+        "Laboratory Test Result: The table stores patient-linked diagnostic test outcomes with result values, units, reference ranges, abnormal flags, and result dates, which directly matches the concept of laboratory test results. The DDL purpose text also explicitly says it stores diagnostic laboratory test results for patients.",
+        "## APPOINTMENTS Table\n**Purpose**: Store patient appointment scheduling and encounter information. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | appointment_id | INTEGER | PRIMARY KEY | Surrogate key for appointment records | | patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient scheduled for appointment | | provider_id | INTEGER | FK \u2192 providers.provider_id, NOT NULL | Provider conducting appointment | | department_id | INTEGER | FK \u2192 departments.department_id | Department for appointment | | appointment_date | DATE | NOT NULL | Scheduled date of appointment | | appointment_time | TIME | NOT NULL | Scheduled time of appointment | | appointment_type | VARCHAR(50) | CHECK IN ('new_patient', 'established', 'consultation', 'follow_up', 'procedure",
+        "## MEDICATIONS Table\n**Purpose**: Store patient medication prescriptions and administrations. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | medication_id | INTEGER | PRIMARY KEY | Surrogate key for medication records | | patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving medication | | medication_name | VARCHAR(255) | NOT NULL | Generic or brand medication name | | ndc_code | VARCHAR(11) | National Drug Code for identification | | dosage | VARCHAR(50) | NOT NULL | Dosage amount (e.g., '10mg', '500mg') | | route | VARCHAR(20) | CHECK IN ('oral', 'IV', 'IM', 'topical', 'inhaled', 'subcutaneous') | Route of administration | | frequency | VARCHAR(50) | NOT NULL | Administration frequency (e.g., 'BID', 'TID', 'PRN') | | prescribing_prov",
+        "Business concept 'electronic health record entries reflecting patient care, clinical decision-making, and treatment plans' is implemented by physical table TREATMENTS (columns: treatment_id, patient_id, diagnosis_id, treatment_name, cpt_code, provider_id, department_id, treatment_date, treatment_status, notes, is_deleted, valid_from, valid_to, created_at, updated_at).",
+        "Business concept 'Each medication record' is implemented by physical table MEDICATIONS (columns: medication_id, patient_id, medication_name, ndc_code, dosage, route, frequency, prescribing_provider_id, start_date, end_date, is_deleted, valid_from, valid_to, created_at, updated_at)."
+      ],
+      "expected_answer": "The patients table stores demographic and administrative information including MRN, name, date of birth, gender, contact details, and emergency contacts. Additionally, patient-related data is stored in diagnoses, treatments, medications, lab_results, appointments, and claims tables through foreign key relationships.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.957675408618915,
+      "chunk_count": 12,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    }
+  ]
+}

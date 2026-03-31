@@ -1,0 +1,116 @@
+{
+  "meta": {
+    "study_id": "_REBUILD",
+    "dataset_id": "06_edgecases_legacy",
+    "timestamp": "2026-03-31T02:17:00.887584+00:00",
+    "bundle_version": "1.0"
+  },
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-2026-03-05",
+    "extraction_model": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 12,
+    "er_similarity_threshold": 0.75
+  },
+  "dataset_info": {
+    "dataset_id": "06_edgecases_legacy",
+    "dataset_name": "Edge Cases: Legacy System Migration",
+    "domain": "E-commerce Legacy System",
+    "complexity": "",
+    "total_pairs": 25,
+    "query_type_distribution": {
+      "unknown": 25
+    },
+    "difficulty_distribution": {
+      "unknown": 25
+    }
+  },
+  "builder_report": {
+    "triplets_extracted": 470,
+    "entities_resolved": 272,
+    "tables_parsed": 10,
+    "tables_completed": 10,
+    "cypher_failed": false,
+    "failed_mappings": [],
+    "ingestion_errors": [],
+    "parent_chunks": 0,
+    "child_chunks": 0,
+    "elapsed_s": 0,
+    "all_tables_completed": true,
+    "builder_skipped": false
+  },
+  "query_report": {
+    "total_questions": 1,
+    "grounded_count": 1,
+    "grounded_rate": 1.0,
+    "abstained_count": 0,
+    "avg_gt_coverage": 1.0,
+    "avg_top_score": 0.9921232932834126,
+    "avg_chunk_count": 12.0,
+    "elapsed_s": 0
+  },
+  "per_question": [
+    {
+      "query_id": "1",
+      "question": "What is the purpose of the tblCustomer table?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The tblCustomer table stores customer master data including customer codes, names, email addresses, and region information. It uses Hungarian notation with the str prefix for string fields and contains both legacy fields (strCustID, strFullName) and new migration compatibility fields (cust_id, customer_name).",
+      "expected_sources": [],
+      "generated_answer": "The `tblCustomer` table stores customer master data from the legacy CRM system. In the business glossary, it represents the Customer entity—individuals or organizations that have purchased products or services from the company—and it uses legacy customer identifiers inherited from the AS/400 system.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_4",
+        "parent_chunk_business_glossary.md_0",
+        "parent_chunk_data_dictionary.txt_5",
+        "parent_chunk_business_glossary.md_3",
+        "parent_chunk_data_dictionary.txt_7",
+        "VW_SALESORDERHDR→TBLCUSTOMER",
+        "parent_chunk_business_glossary.md_2",
+        "CustomerMaster v3.2.1→TBLCUSTOMER",
+        "parent_chunk_data_dictionary.txt_6",
+        "payment records",
+        "payment records→TBLPAYMENT",
+        "parent_chunk_business_glossary.md_1"
+      ],
+      "contexts_retrieved": [
+        "================================================================================\nCUSTOMERMASTER DATABASE - DATA DICTIONARY\n================================================================================\nLegacy System: CustomerMaster v3.2.1 Last Updated: 2015-08-14 Migration Status: PENDING to new ERP system ================================================================================ TABLE: tblCustomer -------------------------------------------------------------------------------- Purpose: ",
+        "# CustomerMaster E-Commerce System - Business Glossary\n\n## Document Overview\n**System**: CustomerMaster v3.2.1 (Legacy) **Last Updated**: March 2015 **Purpose**: Business terminology definitions for data migration project **Target System**: New ERP Platform (Migration Q4 2015) --- ## Core Business Entities ### Customer **Definition**: An individual or organization that has purchased products or services from the company. Customers are stored in the `tblCustomer` table with legacy identifiers inh",
+        "strCategory (VARCHAR 100)\n    - Product category\n    - Hierarchical: \"Clothing > Shirts > Casual\" strBrand (VARCHAR 100) - Brand or manufacturer name - Free text field dtmIntroduced (DATETIME) - Product launch date - When product was added to catalog dtmDiscontinued (DATETIME) - Discontinuation date - NULL if currently active Legacy Deprecated Fields: ------------------------ prod_num (VARCHAR 20) - OLD: Legacy product number - Superseded by strSKU - Retained for historical reporting item_desc (",
+        "## Migration Priority Guidelines\n\n### Critical Path (Must Migrate First)\n1. **tblCustomer** - Required for all orders\n2. **tblProduct** - Required for line items and inventory\n3. **vw_SalesOrderHdr** - Core transactional data\n4. **ord_line_item** - Order details\n\n### Secondary (Can Migrate in Parallel)\n5. **inv_txn_log** - Inventory audit trail\n6. **tblPayment** - Payment records\n7. **tblOrderStatusHistory** - Order status audit\n\n### Low Priority (Migrate Last)\n8. **tblShippingCarrier** - Refere",
+        "Email (VARCHAR 150)\n    - User email address\n    - For notifications\n\nLastLogin (DATETIME)\n    - Last successful login timestamp\n    - NULL for new users\n\nCreatedDate (DATETIME)\n    - Account creation date\n    - DEFAULT GETDATE()\n\n================================================================================\nTABLE: tblOrderStatusHistory -------------------------------------------------------------------------------- Purpose: Audit log of order status changes Naming Convention: Verbose (tbl pre",
+        "Relationship: VW_SALESORDERHDR references TBLCUSTOMER via foreign key INTCUSTID -> TBLCUSTOMER.STRCUSTID.",
+        "## Legacy System Quirks\n\n### Hungarian Notation\nThe legacy system uses Hungarian notation prefixes: - `str` = string (VARCHAR) - `int` = integer (INT) - `lng` = long integer (INT) - `flt` = float/money (DECIMAL) - `bol` = boolean (BIT) - `dtm` = datetime (DATETIME) **Migration Note**: These prefixes are inconsistent. For example, `intCustID` is actually a VARCHAR, and `lngOrderID` is a regular INT. ### Table Naming Inconsistency Different parts of the system use different naming conventions: - `",
+        "Business concept 'CustomerMaster v3.2.1' is implemented by physical table TBLCUSTOMER (columns: strCustID, strFullName, strEmail, strRegion, strCountry, dtmCreated, dtmLastModified, bolActive, cust_id, customer_name, txtNotes).",
+        "qty (INT)\n    - Quantity ordered\n    - Must be positive integer\n\namt (DECIMAL 10,2)\n    - Line item total amount (qty * unit_price)\n    - At time of order (snapshotted, not current price)\n\ndisc_amt (DECIMAL 10,2)\n    - Discount amount applied to this line\n    - Can be zero\n\nline_status (VARCHAR 20)\n    - Line item status\n    - Values: \"PENDING\", \"PICKED\", \"SHIPPED\", \"BACKORDERED\" product_code (VARCHAR 50) - REDUNDANT: Copy of tblProduct.strSKU - Denormalized for reporting performance - May be ou",
+        "payment records: The table contains core payment transaction fields such as PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, and authorization details, which strongly indicate a payment record entity. It also references an order header and includes sensitive card data, reinforcing that this table physically stores individual payment transactions rather than a master or reference concept.",
+        "Business concept 'payment records' — The table contains core payment transaction fields such as PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, and authorization details, which strongly indicate a payment record entity. It also references an order header and includes sensitive card data, reinforcing that this table physically stores individual payment transactions rather than a master or reference concept. is implemented by physical table TBLPAYMENT (columns: PaymentID, Or",
+        "## Domain-Specific Terminology\n\n### Backorder\n**Definition**: A situation where a customer orders a product that is out of stock. The order is accepted, but the line item is marked as BACKORDERED until inventory arrives. **Business Impact**: Backorders are allowed even with negative stock quantities. This is intentional to support pre-orders and special orders. --- ### Fulfillment **Definition**: The process of picking, packing, and shipping orders to customers. Managed by the warehouse team. **"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.9921232932834126,
+      "chunk_count": 12,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    }
+  ],
+  "pipeline_health": {
+    "total_grader_rejections": 0,
+    "grader_inconsistencies": 0,
+    "gate_abstentions": 0,
+    "questions_with_low_retrieval_score": 0,
+    "cypher_failed": false,
+    "failed_mappings_count": 0,
+    "ingestion_errors_count": 0
+  },
+  "ragas": null
+}

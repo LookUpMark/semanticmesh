@@ -1,0 +1,80 @@
+{
+  "study_id": "_REBUILD",
+  "dataset_id": "05_edgecases_incomplete",
+  "run_tag": "v5-rebuild",
+  "timestamp": "2026-03-31T01:48:24.128020+00:00",
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-2026-03-05",
+    "extraction_model": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 12,
+    "er_similarity_threshold": 0.75
+  },
+  "builder": {
+    "triplets": 209,
+    "entities": 81,
+    "tables_parsed": 5,
+    "tables_completed": 5
+  },
+  "query": {
+    "total_questions": 1,
+    "grounded_count": 1,
+    "grounded_rate": 1.0,
+    "avg_gt_coverage": 1.0,
+    "avg_top_score": 0.8713654401007822,
+    "avg_chunk_count": 12.0,
+    "abstained_count": 0
+  },
+  "per_question": [
+    {
+      "query_id": "ec_001",
+      "question": "What is a customer?",
+      "query_type": "",
+      "difficulty": "",
+      "answer": "In the BUSINESS GLOSSARY under CUSTOMER MANAGEMENT, Customer is defined only partially as \u201cAn individual or organization that...\u201d because the definition is incomplete in the retrieved context.\n\nRelated glossary terms help clarify the intended meaning: Client is \u201ca person or company that purchases goods or services\u201d and may be used interchangeably with Customer in some contexts; Account Holder is the primary owner of an account and is similar to Customer but with account-specific context; End User is the actual user of a product or service and may differ from the purchaser.\n\nAt the schema level, the business concept CUSTOMERS is implemented by the physical table CUSTOMERS.",
+      "sources": [
+        "CUSTOMERS\u2192CUSTOMERS",
+        "parent_chunk_data_dictionary.txt_1",
+        "Sales Order\u2192ORDERS",
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_data_dictionary.txt_3",
+        "Payment gateway response\u2192PAYMENTS",
+        "parent_chunk_business_glossary.txt_0",
+        "Sales Order",
+        "Order Items\u2192ORDER_ITEMS",
+        "Merchandise\u2192PRODUCTS",
+        "Order Items",
+        "Payment gateway response"
+      ],
+      "contexts": [
+        "Business concept 'CUSTOMERS' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, last_name, email, emailAddress, phone, phoneNumber, created_at, CreatedDate, account_status, status, customer_type, customer_region).",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | firstName | VARCHAR(50) | ? | Customer's first name | | first_name | VARCHAR(50) | ? | [appears to be duplicate] | | lastName | VARCHAR(50) | ? | Customer's last name | | last_name | VARCHAR(100) | ? | [appears to be duplicate] | | email | VARCHAR(255) | ? | Email address | | emailAddress | VARCHAR(255) | ? | [possible duplicate] | | phone | VARCH",
+        "Business concept 'Sales Order' \u2014 The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_status, orderAmount, total_amount, shippingAmount, tax_amount, TaxAmount, payment_status, payment_method, created_at, updated_at, notes, Notes).",
+        "Foreign Keys: - customer_id \u2192 CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | References PRODUCTS (or INVENTORY?) | | ProductID | INTEGER | FK | [inconsistent naming] | | quantity | INTEGER | ? | [missing validation rules] | | unit_price | DECIMAL(10,2) | ? | Price per unit | | UnitPrice | DECIMAL(10,2) | ? | [duplicate?] | | discount_percent | DECIMAL(5,2) | ? | Discount percentage | | discou",
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing documentation] | | payment_amount | DECIMAL(10,2) | ? | [missing documentation] | | payment_method | VARCHAR(30) | ? | [missing valid values] | | payment_status | VARCHAR(20) | ? | [missing valid values] | | transaction_id | VARCHAR(100) | UNIQUE? | External transaction reference | | TransactionID | VARCHAR(100) | ? | [duplicate?] | | response_code | VARCHAR(50) | ? | Payment gateway response | | response_messa",
+        "Business concept 'Payment gateway response' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_id, TransactionID, response_code, response_message, created_at).",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but with account-specific context. End User The actual user of a product or service, may differ from the purchaser. ========================================== ORDER & TRANSACTION ========================================== Order A request to purchase products or services. Can be in various states. Transaction Similar to Order but more general. May refer to",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Business concept 'Order Items' \u2014 The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data. is implemented by physical table ORDER_ITEMS (columns: order_item_id, order_id, product_id, ProductID, quantity, unit_price, UnitPrice, discount_percent, discount_amount, line_total, LineTotal).",
+        "Business concept 'Merchandise' is implemented by physical table PRODUCTS (columns: product_id, ProductID, product_name, ProductName, product_sku, sku, product_category, category, unit_price, current_price, cost_price, stock_quantity, quantity_in_stock, reorder_level, is_active, active_flag, created_at, updated_at, product_description).",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Payment gateway response"
+      ],
+      "expected_answer": "The business glossary defines Customer as \"an individual or organization that... [definition incomplete]\". Related terms include Client (a person or company that purchases goods or services, sometimes used interchangeably with Customer), Account Holder (the primary owner of an account), and End User (the actual user, who may differ from the purchaser).",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.8713654401007822,
+      "chunk_count": 12,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    }
+  ]
+}
