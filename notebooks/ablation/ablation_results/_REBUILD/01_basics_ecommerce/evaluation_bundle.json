@@ -2,7 +2,7 @@
   "meta": {
     "study_id": "_REBUILD",
     "dataset_id": "01_basics_ecommerce",
-    "timestamp": "2026-03-30T22:48:09.658771+00:00",
+    "timestamp": "2026-03-31T16:30:08.735512+00:00",
     "bundle_version": "1.0"
   },
   "config": {
@@ -36,8 +36,8 @@
     }
   },
   "builder_report": {
-    "triplets_extracted": 231,
-    "entities_resolved": 76,
+    "triplets_extracted": 252,
+    "entities_resolved": 84,
     "tables_parsed": 7,
     "tables_completed": 7,
     "cypher_failed": false,
@@ -70,34 +70,34 @@
         "Customer",
         "CUSTOMER_MASTER"
       ],
-      "generated_answer": "For each customer, the physical customer master record is stored in CUSTOMER_MASTER. It contains CUST_ID (unique customer identifier), FULL_NAME, EMAIL (unique email address used for login), REGION_CODE (geographic region for tax), CREATED_AT (account creation timestamp), and IS_ACTIVE (whether the customer can place orders).\n\nFrom the business glossary, the customer concept also includes a valid email address, geographic region, active/inactive status, and one or more delivery/billing addresses with only one primary per type. However, in the retrieved schema context, the only customer table shown is CUSTOMER_MASTER, so the explicitly visible stored fields are the six columns above; no separate address table is included in the provided context.\n\nCustomers are also linked to orders through SALES_ORDER_HDR.CUST_ID -> CUSTOMER_MASTER.CUST_ID, so each sales order header stores the customer reference back to the customer master record.",
+      "generated_answer": "The retrieved context shows two different customer implementations, so the answer depends on which schema you mean.\n\nIn the simplified e-commerce schema, each customer is stored in CUSTOMER_MASTER with these fields: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, and IS_ACTIVE. The related business glossary also describes customer information at the concept level as including a unique customer ID, a valid email address, one or more delivery or billing addresses, a geographic region used for tax calculation, and active/inactive status. It also states that only one primary address per type is allowed.\n\nIn the banking-oriented schema, each customer is stored in CUSTOMERS with these fields: customer_id, first_name, last_name, tax_id, email, phone, address, city, state, zip_code, kyc_status, risk_profile, customer_since, is_preferred, created_at, and updated_at. The business concept says this represents an individual or corporate entity that maintains a banking relationship with the institution and has completed KYC verification.\n\nSo, from the context, customer data can include identity details, contact details, address information, region, lifecycle timestamps, activity/preference flags, and—in the banking model—KYC and risk-related attributes.",
       "sources_retrieved": [
+        "the customer, items, payment status, and delivery information→CUSTOMER_MASTER",
+        "An individual or corporate entity that maintains a banking relationship with the institution, having completed Know Your Customer (KYC) verification→CUSTOMERS",
         "Sales Order Header→SALES_ORDER_HDR",
-        "Customer Master→CUSTOMER_MASTER",
         "the customer, items, payment status, and delivery information→PAYMENT",
+        "CUSTOMER_ACCOUNT→CUSTOMERS",
         "parent_chunk_data_dictionary.txt_3",
         "parent_chunk_business_glossary.txt_0",
-        "Shipment",
-        "parent_chunk_business_glossary.txt_1",
-        "Shipment→SHIPMENT",
-        "SALES_ORDER_HDR→CUSTOMER_MASTER",
+        "LOANS→CUSTOMERS",
+        "CUSTOMER_ACCOUNT→ACCOUNTS",
         "the customer, items, payment status, and delivery information",
-        "Customer Master",
-        "Sales Order Header"
+        "Sales Order Header",
+        "Deposit Account"
       ],
       "contexts_retrieved": [
-        "Business concept 'Sales Order Header' — The table name and columns match a sales order header record: it has order ID, customer reference, order date, total amount, status, and fulfillment/payment timestamps. This aligns directly with the business entity described as the header record for each customer sales order. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
-        "Business concept 'Customer Master' — The table is a customer master record: it contains a unique customer ID, full name, unique email, region, creation timestamp, and active flag. This aligns most directly with the business entity describing the master record for all registered platform customers. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "Business concept 'the customer, items, payment status, and delivery information' is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "Business concept 'An individual or corporate entity that maintains a banking relationship with the institution, having completed Know Your Customer (KYC) verification' is implemented by physical table CUSTOMERS (columns: customer_id, first_name, last_name, tax_id, email, phone, address, city, state, zip_code, kyc_status, risk_profile, customer_since, is_preferred, created_at, updated_at).",
+        "Business concept 'Sales Order Header' — The table name and structure strongly indicate a header-level sales order record: it has a unique order ID, customer reference, order date, total amount, and lifecycle status fields. This aligns directly with the concept described as the header record for each customer sales order. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
         "Business concept 'the customer, items, payment status, and delivery information' is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Relationship: CUSTOMER_ACCOUNT references CUSTOMERS via foreign key CUSTOMER_ID -> CUSTOMERS.CUSTOMER_ID.",
         "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
-        "Shipment: The table name, primary key, foreign key to SALES_ORDER_HDR, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the shipment business entity. The business glossary explicitly describes shipments as the logistics side of order fulfillment and physical delivery of products to customers.",
-        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
-        "Business concept 'Shipment' — The table name, primary key, foreign key to SALES_ORDER_HDR, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the shipment business entity. The business glossary explicitly describes shipments as the logistics side of order fulfillment and physical delivery of products to customers. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
-        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Relationship: LOANS references CUSTOMERS via foreign key CUSTOMER_ID -> CUSTOMERS.CUSTOMER_ID.",
+        "Relationship: CUSTOMER_ACCOUNT references ACCOUNTS via foreign key ACCOUNT_ID -> ACCOUNTS.ACCOUNT_ID.",
         "the customer, items, payment status, and delivery information",
-        "Customer Master: The table is a customer master record: it contains a unique customer ID, full name, unique email, region, creation timestamp, and active flag. This aligns most directly with the business entity describing the master record for all registered platform customers.",
-        "Sales Order Header: The table name and columns match a sales order header record: it has order ID, customer reference, order date, total amount, status, and fulfillment/payment timestamps. This aligns directly with the business entity described as the header record for each customer sales order."
+        "Sales Order Header: The table name and structure strongly indicate a header-level sales order record: it has a unique order ID, customer reference, order date, total amount, and lifecycle status fields. This aligns directly with the concept described as the header record for each customer sales order.",
+        "Deposit Account: The table stores core deposit-account attributes such as account number, type, balances, interest, fees, status, open/close dates, and branch linkage, which together indicate the physical implementation of a bank deposit account master. The hierarchy support via parent_account_id is consistent with account structure but does not change the primary concept."
       ],
       "covered_sources": [
         "Customer",

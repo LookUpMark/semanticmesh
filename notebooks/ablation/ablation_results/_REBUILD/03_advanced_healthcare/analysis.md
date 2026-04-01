@@ -1,6 +1,6 @@
 # _REBUILD — 03_advanced_healthcare — Run Analysis
 
-**Timestamp:** 2026-03-30 23:02:40  
+**Timestamp:** 2026-03-31 16:40:49  
 **Run tag:** `v5-rebuild`
 
 ## Configuration
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 429 |
-| Entities resolved | 239 |
+| Triplets extracted | 464 |
+| Entities resolved | 264 |
 | Tables parsed | 10 |
 | Tables completed | 10 |
 
@@ -32,7 +32,7 @@
 | Questions | 1 |
 | Grounded | **1/1 (100%)** |
 | Avg GT Coverage | 100% |
-| Avg Top Score | 0.9577 |
+| Avg Top Score | 0.9546 |
 | Avg Chunk Count | 12.0 |
 | Abstained | 0 |
 
@@ -45,23 +45,23 @@ RAGAS evaluation not enabled for this run.
 ### ✅ Q001 — What tables store information about patients?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.9577 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.9546 | **Gate:** `proceed`
 
 **Expected answer:**
 > The patients table stores demographic and administrative information including MRN, name, date of birth, gender, contact details, and emergency contacts. Additionally, patient-related data is stored in diagnoses, treatments, medications, lab_results, appointments, and claims tables through foreign k…
 
 **System answer:**
-> The primary table for patient information is PATIENTS, which implements the Patient Master Record concept and stores core identity, demographic, contact, emergency contact, and insurance linkage data. Its columns include patient_id, mrn, first_name, last_name, date_of_birth, gender, phone, email, emergency_contact_name, emergency_contact_phone, primary_insurance_id, is_deleted, valid_from, valid_t…
+> From the retrieved context, the main table that stores patient information is PATIENTS. It stores current and historical patient demographic and administrative information, including patient_id, mrn, first_name, last_name, date_of_birth, gender, phone, email, emergency contact fields, primary_insurance_id, and temporal/history fields such as is_deleted, valid_from, valid_to, created_at, and update…
 
-**Sources retrieved (12):** `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `Patient Master Record→PATIENTS`, `insurance claims and billing information for services rendered→CLAIMS`, `Laboratory Test Result→LAB_RESULTS`, `parent_chunk_data_dictionary.md_10`, `Patient Master Record`, `parent_chunk_data_dictionary.md_3`, `Laboratory Test Result`
+**Sources retrieved (12):** `Store patient diagnosis records with ICD-10 coding and temporal tracking→DIAGNOSES`, `Patient Demographics→PATIENTS`, `Appointments→APPOINTMENTS`, `Diagnostic laboratory test results for patients→LAB_RESULTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_3`, `Appointments`, `parent_chunk_data_dictionary.md_9`
 
 **Context previews (first 3):**
 
 1. _Business concept 'Store patient diagnosis records with ICD-10 coding and temporal tracking' is implemented by physical table DIAGNOSES (columns: diagnosis_id, patient_id, icd_10_code, diagnosis_name, …_
 
-2. _Business concept 'Patient Master Record' — The table stores core patient identity, demographic, contact, emergency contact, and insurance linkage data with temporal historization, which is characteris…_
+2. _Business concept 'Patient Demographics' — The table is explicitly described as storing current and historical patient demographic and administrative information, with fields for identity, contact deta…_
 
-3. _Business concept 'insurance claims and billing information for services rendered' — Store insurance claims and billing information for services rendered. is implemented by physical table CLAIMS (colum…_
+3. _Business concept 'Appointments' — The table is explicitly titled APPOINTMENTS and stores appointment_id, patient_id, provider_id, appointment_date/time, status, and cancellation details, which directl…_
 
 ---
 

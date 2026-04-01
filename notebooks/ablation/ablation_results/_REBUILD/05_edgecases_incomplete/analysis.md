@@ -1,6 +1,6 @@
 # _REBUILD — 05_edgecases_incomplete — Run Analysis
 
-**Timestamp:** 2026-03-31 01:48:24  
+**Timestamp:** 2026-03-31 16:55:49  
 **Run tag:** `v5-rebuild`
 
 ## Configuration
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 209 |
-| Entities resolved | 81 |
+| Triplets extracted | 226 |
+| Entities resolved | 82 |
 | Tables parsed | 5 |
 | Tables completed | 5 |
 
@@ -51,19 +51,19 @@ RAGAS evaluation not enabled for this run.
 > The business glossary defines Customer as "an individual or organization that... [definition incomplete]". Related terms include Client (a person or company that purchases goods or services, sometimes used interchangeably with Customer), Account Holder (the primary owner of an account), and End User…
 
 **System answer:**
-> In the BUSINESS GLOSSARY under CUSTOMER MANAGEMENT, Customer is defined only partially as “An individual or organization that...” because the definition is incomplete in the retrieved context.
+> In the business glossary, Customer is defined only partially as “An individual or organization that...” and the definition is marked incomplete. The same glossary says Client is “A person or company that purchases goods or services,” and notes that Client may be used interchangeably with Customer in some contexts.
 
-Related glossary terms help clarify the intended meaning: Client is “a person or company that purchases goods or services” and may be used interchangeably with Customer in some contexts; Account Holder is t…
+The glossary also distinguishes related terms: Account Holder is the primary owner …
 
-**Sources retrieved (12):** `CUSTOMERS→CUSTOMERS`, `parent_chunk_data_dictionary.txt_1`, `Sales Order→ORDERS`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Payment gateway response→PAYMENTS`, `parent_chunk_business_glossary.txt_0`, `Sales Order`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `Multiple FK references (order_id, customer_id) - unclear relationship→CUSTOMERS`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Table naming: ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS→ORDERS`, `payment_method→PAYMENTS`, `Multiple FK references (order_id, customer_id) - unclear relationship`, `parent_chunk_business_glossary.txt_0`
 
 **Context previews (first 3):**
 
-1. _Business concept 'CUSTOMERS' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, last_name, email, emailAddress, phone, phoneNumber, created_…_
+1. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
 
-2. _DATA DICTIONARY - Enterprise Database Version: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== P…_
+2. _Business concept 'Multiple FK references (order_id, customer_id) - unclear relationship' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, …_
 
-3. _Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align…_
+3. _Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================…_
 
 ---
 

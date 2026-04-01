@@ -1,6 +1,6 @@
 # _REBUILD — 06_edgecases_legacy — Run Analysis
 
-**Timestamp:** 2026-03-31 02:17:00  
+**Timestamp:** 2026-03-31 17:04:25  
 **Run tag:** `v5-rebuild`
 
 ## Configuration
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 470 |
-| Entities resolved | 272 |
+| Triplets extracted | 490 |
+| Entities resolved | 279 |
 | Tables parsed | 10 |
 | Tables completed | 10 |
 
@@ -51,7 +51,7 @@ RAGAS evaluation not enabled for this run.
 > The tblCustomer table stores customer master data including customer codes, names, email addresses, and region information. It uses Hungarian notation with the str prefix for string fields and contains both legacy fields (strCustID, strFullName) and new migration compatibility fields (cust_id, custo…
 
 **System answer:**
-> The `tblCustomer` table stores customer master data from the legacy CRM system. In the business glossary, it represents the Customer entity—individuals or organizations that have purchased products or services from the company—and it uses legacy customer identifiers inherited from the AS/400 system.
+> The `tblCustomer` table stores customer master data from the legacy CRM system. In the business glossary, it represents the Customer entity: an individual or organization that has purchased products or services from the company. Customers in this table use legacy identifiers inherited from the AS/400 system.
 
 **Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `VW_SALESORDERHDR→TBLCUSTOMER`, `parent_chunk_business_glossary.md_2`, `CustomerMaster v3.2.1→TBLCUSTOMER`
 
