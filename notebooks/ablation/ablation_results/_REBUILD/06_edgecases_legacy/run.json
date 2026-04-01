@@ -2,7 +2,7 @@
   "study_id": "_REBUILD",
   "dataset_id": "06_edgecases_legacy",
   "run_tag": "v5-rebuild",
-  "timestamp": "2026-03-31T02:17:00.885656+00:00",
+  "timestamp": "2026-03-31T17:04:25.554311+00:00",
   "config": {
     "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
     "embedding_model": "BAAI/bge-m3",
@@ -17,8 +17,8 @@
     "er_similarity_threshold": 0.75
   },
   "builder": {
-    "triplets": 470,
-    "entities": 272,
+    "triplets": 490,
+    "entities": 279,
     "tables_parsed": 10,
     "tables_completed": 10
   },
@@ -37,7 +37,7 @@
       "question": "What is the purpose of the tblCustomer table?",
       "query_type": "",
       "difficulty": "",
-      "answer": "The `tblCustomer` table stores customer master data from the legacy CRM system. In the business glossary, it represents the Customer entity\u2014individuals or organizations that have purchased products or services from the company\u2014and it uses legacy customer identifiers inherited from the AS/400 system.",
+      "answer": "The `tblCustomer` table stores customer master data from the legacy CRM system. In the business glossary, it represents the Customer entity: an individual or organization that has purchased products or services from the company. Customers in this table use legacy identifiers inherited from the AS/400 system.",
       "sources": [
         "parent_chunk_data_dictionary.txt_4",
         "parent_chunk_business_glossary.md_0",
@@ -48,8 +48,8 @@
         "parent_chunk_business_glossary.md_2",
         "CustomerMaster v3.2.1\u2192TBLCUSTOMER",
         "parent_chunk_data_dictionary.txt_6",
-        "payment records",
-        "payment records\u2192TBLPAYMENT",
+        "Unknown\u2192TBLPAYMENT",
+        "Unknown",
         "parent_chunk_business_glossary.md_1"
       ],
       "contexts": [
@@ -62,8 +62,8 @@
         "## Legacy System Quirks\n\n### Hungarian Notation\nThe legacy system uses Hungarian notation prefixes: - `str` = string (VARCHAR) - `int` = integer (INT) - `lng` = long integer (INT) - `flt` = float/money (DECIMAL) - `bol` = boolean (BIT) - `dtm` = datetime (DATETIME) **Migration Note**: These prefixes are inconsistent. For example, `intCustID` is actually a VARCHAR, and `lngOrderID` is a regular INT. ### Table Naming Inconsistency Different parts of the system use different naming conventions: - `tbl` prefix: tblCustomer, tblProduct, tblPayment - `vw_` prefix (but actually tables): vw_SalesOrderHdr - `ord_` prefix: ord_line_item - `inv_` prefix: inv_txn_log - No prefix: Group, User (reserved words!) ### Reserved Words as Names Several tables use SQL reserved words as names: - `Group` (product categories) - must be quoted as `[Group]` - `User` (system users) - must be quoted as `[User]` ###",
         "Business concept 'CustomerMaster v3.2.1' is implemented by physical table TBLCUSTOMER (columns: strCustID, strFullName, strEmail, strRegion, strCountry, dtmCreated, dtmLastModified, bolActive, cust_id, customer_name, txtNotes).",
         "qty (INT)\n    - Quantity ordered\n    - Must be positive integer\n\namt (DECIMAL 10,2)\n    - Line item total amount (qty * unit_price)\n    - At time of order (snapshotted, not current price)\n\ndisc_amt (DECIMAL 10,2)\n    - Discount amount applied to this line\n    - Can be zero\n\nline_status (VARCHAR 20)\n    - Line item status\n    - Values: \"PENDING\", \"PICKED\", \"SHIPPED\", \"BACKORDERED\" product_code (VARCHAR 50) - REDUNDANT: Copy of tblProduct.strSKU - Denormalized for reporting performance - May be out of sync with master item_name (VARCHAR 255) - REDUNDANT: Copy of product name at order time - Snapshotted for historical accuracy - Does NOT update if product name changes ================================================================================ TABLE: inv_txn_log -------------------------------------------------------------------------------- Purpose: Inventory transaction log Naming Convention: Heavily abbreviated Field Specifications: -------------------- txn_id (INT, PK) - Transaction identifier - Auto-increment prod_id (INT, FK) - Foreign key to tblProduct.intProdID - Product being adjusted txn_type (VARCHAR 10) - T",
-        "payment records: The table contains core payment transaction fields such as PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, and authorization details, which strongly indicate a payment record entity. It also references an order header and includes sensitive card data, reinforcing that this table physically stores individual payment transactions rather than a master or reference concept.",
-        "Business concept 'payment records' \u2014 The table contains core payment transaction fields such as PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, and authorization details, which strongly indicate a payment record entity. It also references an order header and includes sensitive card data, reinforcing that this table physically stores individual payment transactions rather than a master or reference concept. is implemented by physical table TBLPAYMENT (columns: PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, CardNumberText, CardHolderName, AuthorizationCode).",
+        "Business concept 'Unknown' \u2014 This table clearly stores payment transaction data, but the provided business concepts only cover payment-method values, authorization codes, and security issues rather than a full Payment entity. The closest concepts are too narrow to represent the whole table, so no mapping is confident enough. is implemented by physical table TBLPAYMENT (columns: PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, CardNumberText, CardHolderName, AuthorizationCode).",
+        "Unknown: This table clearly stores payment transaction data, but the provided business concepts only cover payment-method values, authorization codes, and security issues rather than a full Payment entity. The closest concepts are too narrow to represent the whole table, so no mapping is confident enough.",
         "## Domain-Specific Terminology\n\n### Backorder\n**Definition**: A situation where a customer orders a product that is out of stock. The order is accepted, but the line item is marked as BACKORDERED until inventory arrives. **Business Impact**: Backorders are allowed even with negative stock quantities. This is intentional to support pre-orders and special orders. --- ### Fulfillment **Definition**: The process of picking, packing, and shipping orders to customers. Managed by the warehouse team. **Metrics**: Orders are typically fulfilled within 1-2 business days. Priority given to orders with earlier `dtmRequiredDate`. --- ### Shipping Carrier **Definition**: Third-party logistics provider responsible for delivering packages to customers. Stored in `tblShippingCarrier`. **Active Carriers**: UPS, FedEx, USPS **Business Rules**: Only active carriers (bol"
       ],
       "expected_answer": "The tblCustomer table stores customer master data including customer codes, names, email addresses, and region information. It uses Hungarian notation with the str prefix for string fields and contains both legacy fields (strCustID, strFullName) and new migration compatibility fields (cust_id, customer_name).",

@@ -2,7 +2,7 @@
   "meta": {
     "study_id": "_REBUILD",
     "dataset_id": "06_edgecases_legacy",
-    "timestamp": "2026-03-31T02:17:00.887584+00:00",
+    "timestamp": "2026-03-31T17:04:25.557819+00:00",
     "bundle_version": "1.0"
   },
   "config": {
@@ -32,8 +32,8 @@
     }
   },
   "builder_report": {
-    "triplets_extracted": 470,
-    "entities_resolved": 272,
+    "triplets_extracted": 490,
+    "entities_resolved": 279,
     "tables_parsed": 10,
     "tables_completed": 10,
     "cypher_failed": false,
@@ -63,7 +63,7 @@
       "difficulty": "",
       "expected_answer": "The tblCustomer table stores customer master data including customer codes, names, email addresses, and region information. It uses Hungarian notation with the str prefix for string fields and contains both legacy fields (strCustID, strFullName) and new migration compatibility fields (cust_id, customer_name).",
       "expected_sources": [],
-      "generated_answer": "The `tblCustomer` table stores customer master data from the legacy CRM system. In the business glossary, it represents the Customer entity—individuals or organizations that have purchased products or services from the company—and it uses legacy customer identifiers inherited from the AS/400 system.",
+      "generated_answer": "The `tblCustomer` table stores customer master data from the legacy CRM system. In the business glossary, it represents the Customer entity: an individual or organization that has purchased products or services from the company. Customers in this table use legacy identifiers inherited from the AS/400 system.",
       "sources_retrieved": [
         "parent_chunk_data_dictionary.txt_4",
         "parent_chunk_business_glossary.md_0",
@@ -74,8 +74,8 @@
         "parent_chunk_business_glossary.md_2",
         "CustomerMaster v3.2.1→TBLCUSTOMER",
         "parent_chunk_data_dictionary.txt_6",
-        "payment records",
-        "payment records→TBLPAYMENT",
+        "Unknown→TBLPAYMENT",
+        "Unknown",
         "parent_chunk_business_glossary.md_1"
       ],
       "contexts_retrieved": [
@@ -88,8 +88,8 @@
         "## Legacy System Quirks\n\n### Hungarian Notation\nThe legacy system uses Hungarian notation prefixes: - `str` = string (VARCHAR) - `int` = integer (INT) - `lng` = long integer (INT) - `flt` = float/money (DECIMAL) - `bol` = boolean (BIT) - `dtm` = datetime (DATETIME) **Migration Note**: These prefixes are inconsistent. For example, `intCustID` is actually a VARCHAR, and `lngOrderID` is a regular INT. ### Table Naming Inconsistency Different parts of the system use different naming conventions: - `",
         "Business concept 'CustomerMaster v3.2.1' is implemented by physical table TBLCUSTOMER (columns: strCustID, strFullName, strEmail, strRegion, strCountry, dtmCreated, dtmLastModified, bolActive, cust_id, customer_name, txtNotes).",
         "qty (INT)\n    - Quantity ordered\n    - Must be positive integer\n\namt (DECIMAL 10,2)\n    - Line item total amount (qty * unit_price)\n    - At time of order (snapshotted, not current price)\n\ndisc_amt (DECIMAL 10,2)\n    - Discount amount applied to this line\n    - Can be zero\n\nline_status (VARCHAR 20)\n    - Line item status\n    - Values: \"PENDING\", \"PICKED\", \"SHIPPED\", \"BACKORDERED\" product_code (VARCHAR 50) - REDUNDANT: Copy of tblProduct.strSKU - Denormalized for reporting performance - May be ou",
-        "payment records: The table contains core payment transaction fields such as PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, and authorization details, which strongly indicate a payment record entity. It also references an order header and includes sensitive card data, reinforcing that this table physically stores individual payment transactions rather than a master or reference concept.",
-        "Business concept 'payment records' — The table contains core payment transaction fields such as PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, and authorization details, which strongly indicate a payment record entity. It also references an order header and includes sensitive card data, reinforcing that this table physically stores individual payment transactions rather than a master or reference concept. is implemented by physical table TBLPAYMENT (columns: PaymentID, Or",
+        "Business concept 'Unknown' — This table clearly stores payment transaction data, but the provided business concepts only cover payment-method values, authorization codes, and security issues rather than a full Payment entity. The closest concepts are too narrow to represent the whole table, so no mapping is confident enough. is implemented by physical table TBLPAYMENT (columns: PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, CardNumberText, CardHolderName, AuthorizationCod",
+        "Unknown: This table clearly stores payment transaction data, but the provided business concepts only cover payment-method values, authorization codes, and security issues rather than a full Payment entity. The closest concepts are too narrow to represent the whole table, so no mapping is confident enough.",
         "## Domain-Specific Terminology\n\n### Backorder\n**Definition**: A situation where a customer orders a product that is out of stock. The order is accepted, but the line item is marked as BACKORDERED until inventory arrives. **Business Impact**: Backorders are allowed even with negative stock quantities. This is intentional to support pre-orders and special orders. --- ### Fulfillment **Definition**: The process of picking, packing, and shipping orders to customers. Managed by the warehouse team. **"
       ],
       "covered_sources": [],

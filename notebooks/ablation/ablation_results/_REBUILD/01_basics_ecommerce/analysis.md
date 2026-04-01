@@ -1,6 +1,6 @@
 # _REBUILD — 01_basics_ecommerce — Run Analysis
 
-**Timestamp:** 2026-03-30 22:48:09  
+**Timestamp:** 2026-03-31 16:30:08  
 **Run tag:** `v5-rebuild`
 
 ## Configuration
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 231 |
-| Entities resolved | 76 |
+| Triplets extracted | 252 |
+| Entities resolved | 84 |
 | Tables parsed | 7 |
 | Tables completed | 7 |
 
@@ -51,19 +51,19 @@ RAGAS evaluation not enabled for this run.
 > Each customer has a unique ID, full name, email address, geographic region code, creation date, and active status. The email must be unique across all customers.
 
 **System answer:**
-> For each customer, the physical customer master record is stored in CUSTOMER_MASTER. It contains CUST_ID (unique customer identifier), FULL_NAME, EMAIL (unique email address used for login), REGION_CODE (geographic region for tax), CREATED_AT (account creation timestamp), and IS_ACTIVE (whether the customer can place orders).
+> The retrieved context shows two different customer implementations, so the answer depends on which schema you mean.
 
-From the business glossary, the customer concept also includes a valid …
+In the simplified e-commerce schema, each customer is stored in CUSTOMER_MASTER with these fields: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, and IS_ACTIVE. The related business glossary also describes customer information at the concept level as including a unique customer…
 
-**Sources retrieved (12):** `Sales Order Header→SALES_ORDER_HDR`, `Customer Master→CUSTOMER_MASTER`, `the customer, items, payment status, and delivery information→PAYMENT`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `Shipment`, `parent_chunk_business_glossary.txt_1`, `Shipment→SHIPMENT`
+**Sources retrieved (12):** `the customer, items, payment status, and delivery information→CUSTOMER_MASTER`, `An individual or corporate entity that maintains a banking relationship with the institution, having completed Know Your Customer (KYC) verification→CUSTOMERS`, `Sales Order Header→SALES_ORDER_HDR`, `the customer, items, payment status, and delivery information→PAYMENT`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `LOANS→CUSTOMERS`
 
 **Context previews (first 3):**
 
-1. _Business concept 'Sales Order Header' — The table name and columns match a sales order header record: it has order ID, customer reference, order date, total amount, status, and fulfillment/payment tim…_
+1. _Business concept 'the customer, items, payment status, and delivery information' is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIV…_
 
-2. _Business concept 'Customer Master' — The table is a customer master record: it contains a unique customer ID, full name, unique email, region, creation timestamp, and active flag. This aligns most dir…_
+2. _Business concept 'An individual or corporate entity that maintains a banking relationship with the institution, having completed Know Your Customer (KYC) verification' is implemented by physical table…_
 
-3. _Business concept 'the customer, items, payment status, and delivery information' is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED…_
+3. _Business concept 'Sales Order Header' — The table name and structure strongly indicate a header-level sales order record: it has a unique order ID, customer reference, order date, total amount, and li…_
 
 ---
 
