@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.ablation_router import router as ablation_router
+from src.api.auth import require_api_key
 from src.api.demo_router import router as demo_router
 
 app = FastAPI(
@@ -16,6 +17,19 @@ app = FastAPI(
         "REST interface for end-to-end demos and ablation studies."
     ),
     description="""
+## Authentication
+
+All `/api/v1/*` endpoints require an `X-API-Key` header when the `API_KEY`
+environment variable is set on the server.
+
+Use the **Authorize** button (🔒) at the top of this page to enter your key —
+Swagger will include it in every request automatically.
+
+> **Local / dev mode:** if `API_KEY` is not set, authentication is disabled and
+> all requests pass through without a key.
+
+---
+
 ## E2E Demo  `/api/v1/demo/`
 
 Drive the full GraphRAG pipeline interactively:
@@ -73,11 +87,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(demo_router, prefix="/api/v1")
-app.include_router(ablation_router, prefix="/api/v1")
+# All /api/v1/* routes require an API key (no-op when API_KEY env var is not set)
+app.include_router(demo_router, prefix="/api/v1", dependencies=[Depends(require_api_key)])
+app.include_router(ablation_router, prefix="/api/v1", dependencies=[Depends(require_api_key)])
 
 
 @app.get("/health", tags=["Health"])
 def health() -> dict[str, str]:
-    """Liveness probe — returns 200 OK when the server is up."""
+    """Liveness probe — returns 200 OK when the server is up. No auth required."""
     return {"status": "ok"}
