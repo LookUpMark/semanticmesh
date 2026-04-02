@@ -1,0 +1,36 @@
+# Docker build context exclusions
+.git
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist
+build
+.mypy_cache
+.ruff_cache
+.pytest_cache
+htmlcov
+.coverage
+*.log
+*.bak
+.env
+.claude
+.vscode
+.idea
+
+# Large data not needed in container
+notebooks/ablation/ablation_results/
+notebooks/results/
+docs/overleaf/
+docs/draft/
+docs/completed/
+docs/implementation/
+
+# Image and binary artifacts
+*.png
+*.jpg
+*.pdf
+*.html

@@ -1,0 +1,973 @@
+{
+  "meta": {
+    "study_id": "AB-01",
+    "dataset_id": "03_advanced_healthcare",
+    "timestamp": "2026-03-30T22:18:24.506752+00:00",
+    "bundle_version": "1.0"
+  },
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-2026-03-05",
+    "extraction_model": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "vector",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 12,
+    "er_similarity_threshold": 0.75
+  },
+  "dataset_info": {
+    "dataset_id": "03_advanced_healthcare",
+    "dataset_name": "",
+    "domain": "",
+    "complexity": "",
+    "total_pairs": 30,
+    "query_type_distribution": {
+      "concept_lookup": 10,
+      "multi_hop": 10,
+      "temporal": 6,
+      "privacy_focused": 4
+    },
+    "difficulty_distribution": {
+      "unknown": 30
+    }
+  },
+  "builder_report": {
+    "triplets_extracted": 0,
+    "entities_resolved": 0,
+    "tables_parsed": 0,
+    "tables_completed": 0,
+    "cypher_failed": false,
+    "failed_mappings": [],
+    "ingestion_errors": [],
+    "parent_chunks": 0,
+    "child_chunks": 0,
+    "elapsed_s": 0,
+    "all_tables_completed": false,
+    "builder_skipped": false
+  },
+  "query_report": {
+    "total_questions": 30,
+    "grounded_count": 30,
+    "grounded_rate": 1.0,
+    "abstained_count": 0,
+    "avg_gt_coverage": 1.0,
+    "avg_top_score": 0.14771379388353958,
+    "avg_chunk_count": 4.0,
+    "elapsed_s": 0
+  },
+  "per_question": [
+    {
+      "query_id": "Q001",
+      "question": "What tables store information about patients?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "The patients table stores demographic and administrative information including MRN, name, date of birth, gender, contact details, and emergency contacts. Additionally, patient-related data is stored in diagnoses, treatments, medications, lab_results, appointments, and claims tables through foreign key relationships.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, the tables that store patient-related information are the Laboratory Test Result table, the Patient Appointment table, and the CLAIMS table.\n\nThe Laboratory Test Result table stores patient-linked diagnostic lab results, including test name, LOINC code, value, units, reference range, abnormal flag, and result date.\n\nThe Patient Appointment table stores patient appointment scheduling and encounter information, including appointment date/time, patient, provider, department, type, duration, status, and cancellation reason.\n\nThe CLAIMS table stores insurance claims and billing information for services rendered, and it includes claim identifiers plus patient and insurance plan references, billing amounts, claim status, and denial reasons.\n\nThe context also includes the business concept Medical Treatment, described as treatments and procedures performed on patients, but it does not explicitly identify a table name or schema details for it.",
+      "sources_retrieved": [
+        "Laboratory Test Result",
+        "Medical Treatment",
+        "Insurance Claim",
+        "Patient Appointment"
+      ],
+      "contexts_retrieved": [
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.878314245362953,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q002",
+      "question": "How are medical diagnoses coded and classified?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "Diagnoses are stored in the diagnoses table with ICD-10-CM codes (icd_10_code field). They are classified into four types: 'principal' (primary condition), 'comorbidity' (additional conditions), 'admitting' (condition causing admission), and 'secondary'. Each diagnosis includes the diagnosis name, type, the provider who made it, diagnosis date, and optional resolution date.",
+      "expected_sources": [],
+      "generated_answer": "I cannot determine how medical diagnoses are coded and classified from the retrieved context.\n\nWhat is known from the context is that it describes these concepts: CLAIMS for insurance claims and billing information, a laboratory test result table with fields such as test name and LOINC code, Medical Treatment for treatments and procedures, and Patient Appointment for scheduling and encounter information.\n\nWhat cannot be determined is any diagnosis-specific coding or classification approach, because the context does not mention a diagnosis table, diagnosis fields, diagnosis code systems, or diagnosis classification rules.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Laboratory Test Result",
+        "Medical Treatment",
+        "Patient Appointment"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.007204769088868755,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q003",
+      "question": "What information is tracked for medications prescribed to patients?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "The medications table tracks medication name, National Drug Code (NDC), dosage, route of administration (oral, IV, IM, topical, inhaled, subcutaneous), frequency, prescribing provider, start date, and end date. Active medications have a NULL end_date. The table uses temporal historization with valid_from and valid_to timestamps.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not provide enough information to say what information is tracked for medications prescribed to patients.\n\nWhat is known from the context is that it includes:\nInsurance Claim, which tracks claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons;\nPatient Appointment, which tracks appointment scheduling and encounter details such as date/time, patient, provider, department, type, duration, status, and cancellation reason;\nLaboratory Test Result, which tracks test name, LOINC code, value, units, reference range, abnormal flag, and result date;\nand a general Medical Treatment concept described only as “medical treatments and procedures performed on patients.”\n\nHowever, there is no medication or prescription table, no prescription-related business concept, and no medication-specific fields in the provided context. So the specific information tracked for prescribed medications cannot be determined from this knowledge graph excerpt.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.022586042786347345,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q004",
+      "question": "How are healthcare providers organized and tracked?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "Providers are stored in the providers table with a unique National Provider Identifier (NPI), name, provider type (MD, DO, NP, PA, RN, PT, Other), specialty, and department affiliation. Providers have is_active and is_deleted flags for status tracking. The table uses temporal historization to track credential and affiliation changes over time.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, healthcare providers are only tracked in the `Patient Appointment` concept. That table stores appointment scheduling and encounter information and includes columns for `provider` and `department`, along with appointment date/time, patient, type, duration, status, and cancellation reason.\n\nThe context therefore supports only this: a provider is recorded on each patient appointment, and a department is also recorded with the appointment. The retrieved context does not describe any broader provider organization model, hierarchy, master provider entity, or rules for how providers are structured beyond those appointment-level fields.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.001980039959665187,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q005",
+      "question": "What is the structure of departments and how do they relate to each other?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "Departments are stored in the departments table with department_name, department_code, parent_department_id (self-referential foreign key for hierarchy), service_line (strategic grouping), and location. Departments can have parent departments creating a hierarchical structure (e.g., Cardiology as a child of Internal Medicine). Each department has is_active and is_deleted flags.",
+      "expected_sources": [],
+      "generated_answer": "I cannot determine the structure of departments or how departments relate to each other from the retrieved context.\n\nThe only department-related information present is in the Patient Appointment concept: the appointment table stores scheduling and encounter information and includes a department reference along with appointment date/time, patient, provider, type, duration, status, and cancellation reason. That indicates appointments are associated to a department, but the context does not provide a department table, department attributes, or any parent/child or peer relationships between departments.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.0015916259996820177,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q006",
+      "question": "How are insurance plans and payers represented in the system?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "The insurance_plans table stores plan_name, payer_name (insurance company), plan_type (commercial, medicare, medicaid, tricare, self_pay), and prior_auth_required flag. Plans have is_active status and use temporal historization. The patients table references insurance_plans via primary_insurance_id foreign key for primary coverage.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, insurance plans are represented indirectly through the CLAIMS table: the Insurance Claim concept says CLAIMS stores claim identifiers, patient references, insurance plan references, billing amounts, claim status, and denial reasons. That means the system includes an insurance plan reference as part of each claim record.\n\nThe context does not describe a separate insurance plan table, any columns beyond the fact that a reference exists, or how payers are modeled. It also does not state whether payers are stored as a distinct entity, embedded in claims, or linked through insurance plans. So, based on the available information, only insurance plan references within CLAIMS can be confirmed; payer representation cannot be determined from this context.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.022158869355977103,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q007",
+      "question": "What constitutes an insurance claim and what is its lifecycle?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "Claims are stored in the claims table with claim_number (unique identifier), patient_id, insurance_plan_id, service_date, submission_date, CPT code (procedure), ICD-10 code (diagnosis), amounts (charged, allowed, paid), and claim_status. Status workflow includes: submitted → pending → approved/denied/partially_paid → appealed. Denied claims include denial_reason.",
+      "expected_sources": [],
+      "generated_answer": "An insurance claim, based on the retrieved context, is represented by the CLAIMS table and consists of claim identifiers, references to the patient and insurance plan, billing amounts, claim status, and denial reasons. The context also states that this aligns with storing insurance claims and billing information for services rendered.\n\nThe lifecycle of an insurance claim is not described in the retrieved context. The only lifecycle-related detail supported here is that the CLAIMS table includes a claim status field, and it also stores denial reasons. No specific stages, transitions, or process flow are provided.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Medical Treatment",
+        "Patient Appointment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.06500872992567674,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q008",
+      "question": "How are patient appointments scheduled and tracked?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "The appointments table stores patient_id, provider_id, department_id, appointment_date, appointment_time, appointment_type (new_patient, established, consultation, follow_up, procedure, telehealth), duration_minutes, and appointment_status. Status workflow: scheduled → confirmed → checked_in → in_progress → completed/canceled/no_show. Canceled appointments require cancellation_reason.",
+      "expected_sources": [],
+      "generated_answer": "Patient appointments are scheduled and tracked through the Patient Appointment table, which is documented as storing patient appointment scheduling and encounter information.\n\nFrom the available context, scheduling is represented by the appointment date/time and by linking the appointment to the patient, provider, and department. Tracking is represented through the appointment’s type, duration, status, and cancellation reason.\n\nSo, at the schema level, an appointment is managed by recording:\nthe appointment date/time, the patient, the provider, the department, the appointment type, the duration, the current status, and any cancellation reason.\n\nThe retrieved context does not provide a workflow beyond these recorded fields, so it shows what data is used to schedule and monitor appointments, but not the operational business process for creating or updating them.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.918917886176106,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q009",
+      "question": "What information is captured in laboratory test results?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "Lab results are stored in the lab_results table with test_name, LOINC code (Logical Observation Identifiers Names and Codes), test_value, unit of measurement, reference_range, is_abnormal flag, ordering_provider_id, result_date, and notes. The is_abnormal flag is automatically set when results fall outside the reference range. Abnormal results are indexed for quick clinical follow-up.",
+      "expected_sources": [],
+      "generated_answer": "Laboratory test results capture patient-linked test outcomes, including the test name, LOINC code, result value, units, reference range, abnormal flag, and result date. The context also states that this table is specifically for laboratory test results for patients.",
+      "sources_retrieved": [
+        "Laboratory Test Result",
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment"
+      ],
+      "contexts_retrieved": [
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.8784185801792785,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q010",
+      "question": "How are medical treatments and procedures documented?",
+      "query_type": "concept_lookup",
+      "difficulty": "",
+      "expected_answer": "The treatments table stores patient_id, diagnosis_id (for clinical justification), treatment_name, CPT code (for billing), provider_id, department_id, treatment_date, treatment_status (scheduled, completed, canceled, in_progress), and clinical notes. Treatments link to both providers and departments, and must reference a diagnosis for medical necessity documentation.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context only identifies the business concept Medical Treatment as “medical treatments and procedures performed on patients.”\n\nIt does not provide any table name, column definitions, or documentation details showing how those treatments and procedures are recorded in the schema. So from the available context, I can only say that medical treatments and procedures are represented as the Medical Treatment business concept, but the specific documentation structure is not provided.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Medical Treatment",
+        "Patient Appointment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.5230853816214955,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q011",
+      "question": "What are all the diagnoses for a specific patient, including the providers who diagnosed them?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "To get all diagnoses for a patient with provider information, join the patients table to diagnoses on patient_id, then left join to providers on provider_id. The query returns icd_10_code, diagnosis_name, diagnosis_type, diagnosis_date, resolution_date, and the provider's name (first_name, last_name, NPI). Filter by patient MRN or patient_id and exclude soft-deleted records (is_deleted = FALSE, valid_to IS NULL).",
+      "expected_sources": [],
+      "generated_answer": "I cannot answer this from the retrieved context because it does not include any diagnosis table, diagnosis concept, or schema describing how diagnoses are stored.\n\nThe available context only mentions these schema-level concepts:\nInsurance Claim via CLAIMS, which stores claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons.\nLaboratory Test Result, which stores patient-linked test outcomes such as test name, LOINC code, value, units, reference range, abnormal flag, and result date.\nMedical Treatment, described only as medical treatments and procedures performed on patients.\nPatient Appointment, which stores appointment scheduling and encounter information including appointment date/time, patient, provider, department, type, duration, status, and cancellation reason.\n\nBecause there is no diagnosis entity or table in the retrieved context, and no relationship showing which provider diagnosed a patient, the knowledge graph does not provide enough schema information to trace “all diagnoses for a specific patient, including the providers who diagnosed them.” If you want, I can still describe the closest available structure: Patient Appointment includes both patient and provider, but no diagnosis field is described in the retrieved context.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Laboratory Test Result",
+        "Medical Treatment",
+        "Patient Appointment"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.0034296039240944865,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q012",
+      "question": "Which patients have received treatments from cardiology department providers?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "Join patients to treatments on patient_id, treatments to providers on provider_id, and providers to departments on department_id. Filter where department_name = 'Cardiology' (or department_code). Return patient MRN, name, treatment_name, treatment_date, and provider name. Exclude soft-deleted records from all tables. This query supports departmental workload analysis.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not contain enough information to determine which specific patients have received treatments from cardiology department providers.\n\nWhat is known from the context is only high-level metadata:\nThe knowledge graph includes a business concept for Medical Treatment, described as medical treatments and procedures performed on patients. It also includes a Patient Appointment concept, which stores scheduling and encounter information and has columns for patient, provider, department, appointment date/time, type, duration, status, and cancellation reason.\n\nWhat cannot be determined from this context:\nThere are no patient-level records, no provider records, no department values such as “cardiology,” and no documented table or join path linking Medical Treatment to a provider or provider department. Because the context contains schema-level concept descriptions only, not operational data, it cannot answer which patients actually received such treatments.",
+      "sources_retrieved": [
+        "Medical Treatment",
+        "Patient Appointment",
+        "Laboratory Test Result",
+        "Insurance Claim"
+      ],
+      "contexts_retrieved": [
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.0008295891883591028,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q013",
+      "question": "What treatments have been performed for a patient's specific diagnosis?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "Join diagnoses to treatments on diagnosis_id, then treatments to patients on patient_id and providers on provider_id. Filter by patient_id and specific icd_10_code. Return treatment_name, CPT code, treatment_date, treatment_status, department_name, and provider name. This links clinical conditions to interventions for outcomes analysis.",
+      "expected_sources": [],
+      "generated_answer": "From the provided context, I can only say that the relevant business concept is Medical Treatment, described as “medical treatments and procedures performed on patients.”\n\nThe context does not provide a table definition, columns, or relationships for Medical Treatment, and it does not show any link between treatments and a patient’s specific diagnosis. It also does not contain patient-level records. The other available concepts do not answer this question: CLAIMS is about insurance claims and billing information, Patient Appointment stores scheduling and encounter information, and Laboratory Test Result stores lab outcomes.\n\nSo, based on the provided context, it is not possible to determine what treatments have been performed for a patient’s specific diagnosis.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Medical Treatment",
+        "Laboratory Test Result",
+        "Patient Appointment"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.9073122213606241,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q014",
+      "question": "Which providers have prescribed medications to patients with a specific diagnosis?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "Join diagnoses to patients on patient_id, patients to medications on patient_id, and medications to providers on prescribing_provider_id. Filter by specific icd_10_code. Return provider name, NPI, specialty, patient name, medication_name, dosage, and prescription dates. This supports medication pattern analysis for specific conditions.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, this cannot be determined.\n\nWhat is known is limited to high-level concepts: \"Patient Appointment\" includes patient, provider, department, appointment type, status, and related scheduling fields; \"Medical Treatment\" is described only as medical treatments and procedures performed on patients; \"Laboratory Test Result\" stores patient-linked lab outcomes; and \"Insurance Claim\" stores claim and billing information.\n\nWhat cannot be determined from this context is the specific answer to your question, because the context does not provide:\na table or concept for medication prescriptions, a table or concept for patient diagnoses, or any instance-level records showing which provider prescribed what to which patient. Therefore, there is not enough information in the knowledge graph excerpt to identify providers who prescribed medications to patients with a specific diagnosis.",
+      "sources_retrieved": [
+        "Medical Treatment",
+        "Laboratory Test Result",
+        "Insurance Claim",
+        "Patient Appointment"
+      ],
+      "contexts_retrieved": [
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.011732463956348185,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q015",
+      "question": "What is the complete medication history for a patient including prescribing providers?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "Join patients to medications on patient_id, then medications to providers on prescribing_provider_id. Filter by patient_id. Return medication_name, NDC code, dosage, route, frequency, start_date, end_date, and provider name. Include historical records (valid_to IS NOT NULL) to show medication changes over time. Active medications have NULL end_date.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, this cannot be determined.\n\nWhat is known is limited to these concepts: Insurance Claim/CLAIMS, Patient Appointment, Medical Treatment, and Laboratory Test Result. The only provider-related detail in the context is that the Patient Appointment table includes a provider column for appointments. There is no table, column, or concept in the provided context for medications, prescriptions, medication administration, dispensing, or prescribing providers tied to medications.\n\nSo, based strictly on the context, I cannot provide a patient’s complete medication history or identify prescribing providers. The missing pieces are any medication-related schema objects and any relationship connecting medications or prescriptions to providers.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.004520818046171076,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q016",
+      "question": "Which departments have the highest volume of patient appointments?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "Join appointments to departments on department_id and patients on patient_id. Group by department_id, department_name, and service_line. Count appointments and optionally filter by appointment_date range. Order by count DESC to identify high-volume departments. Exclude canceled and no-show appointments for utilization metrics.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, this cannot be determined.\n\nWhat is known is that the Patient Appointment table stores appointment scheduling and encounter information, including a department field along with appointment date/time, patient, provider, type, duration, status, and cancellation reason. That means the schema supports analyzing appointment volume by department.\n\nHowever, the context provides only schema/business-concept metadata and no appointment records, counts, or aggregated results. So the specific departments with the highest volume of patient appointments cannot be identified from the available context.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.02211658880207952,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q017",
+      "question": "What claims have been submitted for a specific patient's treatments?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "Join patients to treatments on patient_id, treatments to claims on patient_id and service_date ≈ treatment_date, and claims to insurance_plans on insurance_plan_id. Filter by patient_id. Return claim_number, service_date, CPT code, ICD-10 code, amount_charged, amount_paid, claim_status, payer_name, and plan_type. Link treatments to claims for revenue cycle analysis.",
+      "expected_sources": [],
+      "generated_answer": "I cannot identify which claims have been submitted for a specific patient’s treatments from the provided context, because the knowledge graph here contains only schema-level business metadata, not actual claim or treatment records.\n\nFrom the available context, the relevant structure is:\n\nThe business concept Insurance Claim maps to a table explicitly labeled CLAIMS. Its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This means CLAIMS is the place where submitted claim information for a patient would be stored.\n\nThe business concept Medical Treatment is described only as “medical treatments and procedures performed on patients.” No table name, columns, or relationship between treatments and CLAIMS is provided in the context.\n\nSo, based on the context:\nTo find claims for a specific patient, you would use the CLAIMS table and its patient reference.\nHowever, I cannot say which claims correspond to that patient’s treatments, because the context does not provide:\na treatment table definition,\na treatment identifier in CLAIMS,\nor any documented relationship between treatments and claims.\n\nIf you want, I can help restate this as a schema query requirement based strictly on the provided metadata.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Medical Treatment",
+        "Patient Appointment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.050237360130548074,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q018",
+      "question": "Which providers in a specific department have ordered abnormal lab results?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "Join lab_results to providers on ordering_provider_id, providers to departments on department_id. Filter by department_id and is_abnormal = TRUE. Return provider name, NPI, specialty, patient name, test_name, test_value, reference_range, and result_date. Order by result_date DESC. This identifies providers who may need follow-up support with critical results.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, this cannot be determined.\n\nWhat is known is:\nThe “Laboratory Test Result” table stores patient-linked lab outcomes and includes test name, LOINC code, value, units, reference range, abnormal flag, and result date.\nThe “Patient Appointment” table stores appointment and encounter information and includes patient, provider, and department, along with appointment date/time, type, duration, status, and cancellation reason.\n\nWhat cannot be determined from the context is:\nThere is no stated relationship showing that a lab result is linked to the provider who ordered it.\nThere is no stated column for ordering provider in the laboratory test result description.\nThere is no stated rule connecting abnormal lab results to a specific department through a provider.\n\nSo, based strictly on the retrieved context, you can identify that abnormal lab results exist and that appointments involve providers and departments, but you cannot determine which providers in a specific department ordered those abnormal results.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Laboratory Test Result",
+        "Patient Appointment",
+        "Medical Treatment"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.006564249220774553,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q019",
+      "question": "What is a patient's complete care journey including diagnoses, treatments, and medications?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "Perform multiple joins from patients: to diagnoses (patient_id), to treatments (patient_id), to medications (patient_id), to lab_results (patient_id), and to appointments (patient_id). Include provider joins for clinical context. Group by clinical event date (diagnosis_date, treatment_date, start_date, result_date, appointment_date) and order chronologically. This creates a longitudinal care timeline.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context is not sufficient to describe a patient’s complete care journey.\n\nWhat is supported by the context is only a partial, schema-level picture of care-related information. A “Patient Appointment” table/business concept exists and stores appointment scheduling and encounter information, including appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. A “Medical Treatment” business concept is defined as medical treatments and procedures performed on patients, but no table structure or columns are provided for it. A “Laboratory Test Result” table/business concept exists and stores patient-linked test outcomes, including test name, LOINC code, value, units, reference range, abnormal flag, and result date. An “Insurance Claim” table labeled CLAIMS stores claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons.\n\nWhat cannot be determined from the context is the full care journey “including diagnoses, treatments, and medications.” There is no diagnosis-related table or concept in the retrieved context, no medication or prescription information, and no documented relationships or join paths showing how appointments, treatments, lab results, and claims are linked into a single longitudinal patient journey. The context also provides metadata definitions, not actual patient-level records.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Medical Treatment",
+        "Patient Appointment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.05823862531097582,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q020",
+      "question": "Which insurance plans have the highest claim denial rates?",
+      "query_type": "multi_hop",
+      "difficulty": "",
+      "expected_answer": "Join claims to insurance_plans on insurance_plan_id. Group by plan_id, payer_name, and plan_type. Count total claims and count claims where claim_status = 'denied'. Calculate denial rate as (denied_claims / total_claims) * 100. Order by denial rate DESC. Filter by service_date range for current period analysis. Identifies payers requiring prior authorization improvements.",
+      "expected_sources": [],
+      "generated_answer": "I cannot determine which insurance plans have the highest claim denial rates from the provided context, because it contains only schema-level metadata, not actual claim records.\n\nWhat the context does show is that the CLAIMS table stores the fields needed to answer this operationally: claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. Based on that schema, denial rate would be evaluated by grouping CLAIMS by the insurance plan reference and comparing denied claims against total claims using the claim status field, with denial reasons available for additional breakdown.\n\nBut the retrieved context does not include any actual insurance plan values, claim counts, or denial statistics, so no specific plans can be identified.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Medical Treatment",
+        "Patient Appointment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.015247590621499623,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q021",
+      "question": "What were a patient's diagnoses in a specific past time period?",
+      "query_type": "temporal",
+      "difficulty": "",
+      "expected_answer": "Query the diagnoses table filtered by patient_id and date range (diagnosis_date >= start_date AND diagnosis_date <= end_date). Additionally check temporal validity: valid_from <= query_date AND (valid_to IS NULL OR valid_to > query_date). Return icd_10_code, diagnosis_name, diagnosis_type, provider name. This reconstructs historical clinical state for audit or longitudinal analysis.",
+      "expected_sources": [],
+      "generated_answer": "I cannot answer that directly from the retrieved context because it does not include any diagnosis concept, diagnosis table, or diagnosis-related columns.\n\nWhat the context does show is schema-level metadata for other patient-linked domains: laboratory test results include patient-linked outcomes and a result date; patient appointments include patient, provider, department, appointment date/time, type, status, and cancellation reason; insurance claims include claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons; and there is a business concept for medical treatment, described only as “medical treatments and procedures performed on patients.”\n\nSo, from the available context, I can say the knowledge graph contains schema/business metadata for lab results, appointments, claims, and treatments, but nothing that would let me determine a patient’s diagnoses for a specific past time period. If diagnoses are meant to be inferred from another table, that relationship is not present in the retrieved context.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Laboratory Test Result",
+        "Patient Appointment",
+        "Medical Treatment"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.003363492495187692,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q022",
+      "question": "How have a patient's medications changed over time?",
+      "query_type": "temporal",
+      "difficulty": "",
+      "expected_answer": "Query medications table for patient_id including historical records (ignore is_deleted and valid_to filters). Return medication_name, dosage, start_date, end_date, valid_from, valid_to. Order by start_date DESC, valid_from DESC. Changes appear as new records with end_date on the old record and start_date on the new record. Supports medication reconciliation.",
+      "expected_sources": [],
+      "generated_answer": "I cannot determine how a patient’s medications changed over time from the retrieved context.\n\nWhat the context does cover is limited to these schema/business concepts:\nInsurance Claim, which stores claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons;\nMedical Treatment, described only as medical treatments and procedures performed on patients;\nPatient Appointment, which stores appointment scheduling and encounter information such as appointment date/time, patient, provider, department, type, duration, status, and cancellation reason;\nand Laboratory Test Result, which stores patient-linked lab outcomes such as test name, LOINC code, value, units, reference range, abnormal flag, and result date.\n\nThere is no medication-related table, column, prescription concept, medication history concept, start/end date, dosage, or change-tracking information in the provided context. Because of that, the knowledge graph provided here does not support tracing medication changes over time for a patient.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Medical Treatment",
+        "Patient Appointment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.0007124459916397521,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q023",
+      "question": "What was a provider's department affiliation at a specific past date?",
+      "query_type": "temporal",
+      "difficulty": "",
+      "expected_answer": "Query providers table joined to departments on department_id. Filter by provider_id and check temporal validity: valid_from <= historical_date AND (valid_to IS NULL OR valid_to > historical_date). Return provider name, department_name, department_code, and service_line. This reconstructs organizational structure changes for credentialing audits.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, the only relevant source is Patient Appointment. It stores appointment scheduling and encounter information, including appointment date/time, provider, and department.\n\nSo, for a specific past date, you could identify the department associated with a provider only through a Patient Appointment record for that date/time, using the provider, appointment date/time, and department fields together.\n\nThe context does not describe any separate provider affiliation history or any rule for determining a provider’s department outside of what is recorded on Patient Appointment.",
+      "sources_retrieved": [
+        "Patient Appointment",
+        "Laboratory Test Result",
+        "Insurance Claim",
+        "Medical Treatment"
+      ],
+      "contexts_retrieved": [
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Medical Treatment: Medical treatments and procedures performed on patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.0015188508413778435,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q024",
+      "question": "Show all changes to a patient's primary insurance coverage over time.",
+      "query_type": "temporal",
+      "difficulty": "",
+      "expected_answer": "Query patients table joined to insurance_plans on primary_insurance_id. Include historical records by not filtering on valid_to. Return mrn, patient name, plan_name, payer_name, plan_type, valid_from, valid_to. Order by valid_from DESC. Insurance changes appear as new patient records with updated primary_insurance_id and historized timestamps.",
+      "expected_sources": [],
+      "generated_answer": "I cannot answer this as asked from the retrieved context.\n\nThe available context only describes the CLAIMS concept at a high level: it stores claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. That means the knowledge provided supports insurance claim billing data, not insurance coverage history.\n\nSpecifically, the retrieved context does not mention any table or column for primary insurance designation, coverage effective periods, coverage change history, enrollment records, or termination dates. Because of that, there is no supported way to “show all changes to a patient's primary insurance coverage over time.”\n\nAt most, the context indicates that CLAIMS contains a patient reference and an insurance plan reference, so you could potentially see which insurance plan was associated with individual claims for a patient. But that would reflect claim-level usage of an insurance plan, not authoritative primary coverage history over time.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.005240449620258945,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q025",
+      "question": "What diagnoses were resolved within a specific time period?",
+      "query_type": "temporal",
+      "difficulty": "",
+      "expected_answer": "Query diagnoses table where resolution_date IS NOT NULL and resolution_date falls within the date range. Include patient_id, icd_10_code, diagnosis_name, diagnosis_date, resolution_date, and provider. Join to patients for names. Filter for current records (is_deleted = FALSE, valid_to IS NULL). This supports outcomes analysis and closed episode reporting.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, this cannot be determined.\n\nWhat is known is that the context includes schema/business-concept metadata for:\nPatient Appointment, with appointment date/time, patient, provider, department, type, duration, status, and cancellation reason;\nInsurance Claim, with claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons;\nLaboratory Test Result, with patient-linked test outcomes including test name, LOINC code, value, units, reference range, abnormal flag, and result date;\nand Medical Treatment, described only as medical treatments and procedures performed on patients.\n\nWhat cannot be determined from this context is:\nwhether there is any diagnosis table or diagnosis concept;\nhow a diagnosis is represented;\nwhat “resolved” means or which column would indicate resolution;\nand what date field would be used to filter diagnoses within a time period.\n\nSo the retrieved context does not provide enough information to identify diagnoses resolved within a specific time period.",
+      "sources_retrieved": [
+        "Patient Appointment",
+        "Insurance Claim",
+        "Laboratory Test Result",
+        "Medical Treatment"
+      ],
+      "contexts_retrieved": [
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Medical Treatment: Medical treatments and procedures performed on patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.0001559802763374382,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q026",
+      "question": "Reconstruct a patient's active medications as of a specific historical date.",
+      "query_type": "temporal",
+      "difficulty": "",
+      "expected_answer": "Query medications for patient_id where: (1) start_date <= historical_date AND (end_date IS NULL OR end_date > historical_date) for medication active period, AND (2) valid_from <= historical_date AND (valid_to IS NULL OR valid_to > historical_date) for record validity. Return medication_name, dosage, route, frequency, and prescribing provider. This shows what medications were active at that point in time.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, this cannot be determined.\n\nWhat is known is that the knowledge graph only describes these concepts:\nInsurance Claim, with claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons;\nMedical Treatment, described only as medical treatments and procedures performed on patients;\nLaboratory Test Result, with patient-linked test outcomes such as test name, LOINC code, value, units, reference range, abnormal flag, and result date;\nand Patient Appointment, with appointment scheduling and encounter fields such as appointment date/time, patient, provider, department, type, duration, status, and cancellation reason.\n\nWhat cannot be determined from this context is any schema or procedure for medications. There is no medication-related table, no medication order or administration fields, no start/end dates, no status indicating whether a medication is active, and no historical-date logic for reconstructing a medication list as of a past date. So the context does not support reconstructing a patient’s active medications as of a specific historical date.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Medical Treatment",
+        "Laboratory Test Result",
+        "Patient Appointment"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.001761469680073981,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q027",
+      "question": "Count the number of patients per department without exposing individual patient identities.",
+      "query_type": "privacy_focused",
+      "difficulty": "",
+      "expected_answer": "Join appointments to departments on department_id. Group by department_id, department_name, service_line. Count DISTINCT patient_id for privacy (prevents counting multiple appointments per patient). Filter by appointment_date range and exclude canceled/no-show status. Return aggregated counts only—no patient identifiers. Follows HIPAA minimum necessary standard.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context only provides schema-level metadata, not actual patient records, so I cannot produce the counts themselves from the knowledge graph.\n\nBased on the available schema, the relevant source is the Patient Appointment table, because it stores both the patient reference and the department. To count patients per department without exposing identities, use that table and aggregate by the department column while counting patient references, returning only the department and the aggregated patient count. If you want each patient counted only once per department, count distinct patient references within each department. This avoids exposing individual patient identities because the output contains no patient-level fields, only department-level totals.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.002550912421286719,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q028",
+      "question": "What are the most common diagnoses (by count) without linking to specific patients?",
+      "query_type": "privacy_focused",
+      "difficulty": "",
+      "expected_answer": "Query diagnoses table grouped by icd_10_code and diagnosis_name. COUNT(*) each diagnosis. Order by count DESC. Return only icd_10_code, diagnosis_name, and count—no patient identifiers, MRNs, or names. Optionally filter by diagnosis_date range. This epidemiological analysis follows HIPAA de-identification standards by aggregating without direct identifiers.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not provide enough information to determine the most common diagnoses by count. It contains only high-level business concepts for Laboratory Test Result, Medical Treatment, Patient Appointment, and Insurance Claim, and no diagnosis-specific table, diagnosis codes, or aggregate record counts.\n\nBecause the knowledge graph here appears to contain schema-level/business metadata rather than operational data records, it cannot answer which diagnoses are most common. If you want to analyze diagnoses without identifying patients, the needed context would have to include a diagnosis-related table or concept and its fields, plus underlying data to count occurrences.",
+      "sources_retrieved": [
+        "Laboratory Test Result",
+        "Medical Treatment",
+        "Patient Appointment",
+        "Insurance Claim"
+      ],
+      "contexts_retrieved": [
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.003285833291878954,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q029",
+      "question": "Which providers have the highest patient volume without exposing patient information?",
+      "query_type": "privacy_focused",
+      "difficulty": "",
+      "expected_answer": "Join appointments to providers on provider_id. Group by provider_id, provider name, NPI, specialty, department. COUNT DISTINCT patient_id for unique patient count (not appointment count). Filter by appointment_date range and completed status. Return only provider information and aggregated counts—no patient names or MRNs. Supports capacity planning while protecting privacy.",
+      "expected_sources": [],
+      "generated_answer": "This cannot be determined from the retrieved context.\n\nWhat is known is that the Patient Appointment concept stores appointment scheduling and encounter information, including patient, provider, appointment date/time, department, type, duration, status, and cancellation reason. That means provider-linked appointment data exists at the schema/concept level.\n\nWhat cannot be determined is which providers have the highest patient volume, because the retrieved context does not include any actual records, provider identities, patient counts, or aggregation results. It only describes business concepts and high-level table purpose, not instance-level data.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.0007041515890570883,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q030",
+      "question": "What is the average claim payment amount by insurance plan type?",
+      "query_type": "privacy_focused",
+      "difficulty": "",
+      "expected_answer": "Join claims to insurance_plans on insurance_plan_id. Group by plan_type (commercial, medicare, medicaid, tricare, self_pay). Calculate AVG(amount_paid) and AVG(amount_charged). Filter by service_date range and claim_status = 'approved' or 'partially_paid'. Return only plan_type and aggregated averages—no patient identifiers, specific plan names, or claim details. Supports financial benchmarking.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not provide enough information to answer that as asked.\n\nIt tells us that the CLAIMS table stores claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. However, it does not mention a claim payment amount field, an insurance plan type attribute, or any table that defines insurance plans in more detail.\n\nSo, from the available context, I can only say that CLAIMS includes an insurance plan reference and billing amounts. I cannot determine how to calculate the average claim payment amount by insurance plan type because neither payment amount nor plan type is defined in the retrieved knowledge graph.",
+      "sources_retrieved": [
+        "Insurance Claim",
+        "Patient Appointment",
+        "Medical Treatment",
+        "Laboratory Test Result"
+      ],
+      "contexts_retrieved": [
+        "Insurance Claim: The table is explicitly labeled as CLAIMS and its columns capture claim identifiers, patient and insurance plan references, billing amounts, claim status, and denial reasons. This aligns directly with the concept of storing insurance claims and billing information for services rendered.",
+        "Patient Appointment: The table is explicitly documented as storing patient appointment scheduling and encounter information, and its columns capture appointment date/time, patient, provider, department, type, duration, status, and cancellation reason. This is a near-direct physical implementation of the appointment concept rather than a broader workflow or encounter domain.",
+        "Medical Treatment: Medical treatments and procedures performed on patients.",
+        "Laboratory Test Result: The table stores patient-linked test outcomes with fields for test name, LOINC code, value, units, reference range, abnormal flag, and result date, which directly matches diagnostic lab results. The table comment explicitly states it is for laboratory test results for patients."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.012624949281564407,
+      "chunk_count": 4,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    }
+  ],
+  "pipeline_health": {
+    "total_grader_rejections": 0,
+    "grader_inconsistencies": 0,
+    "gate_abstentions": 0,
+    "questions_with_low_retrieval_score": 25,
+    "cypher_failed": false,
+    "failed_mappings_count": 0,
+    "ingestion_errors_count": 0
+  },
+  "ragas": null
+}

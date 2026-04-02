@@ -1,0 +1,37 @@
+[
+  {
+    "id": "map-001",
+    "table_ddl": "CUSTOMER_MASTER: CUST_ID (INT, PK), FULL_NAME (VARCHAR), EMAIL (VARCHAR), REGION_CODE (VARCHAR), CREATED_AT (DATETIME)",
+    "concept_name": "Customer",
+    "confidence": 0.97,
+    "reasoning": "CUSTOMER_MASTER stores individual customer identity data — name, email, and region — which directly maps to the Customer concept defined as any entity that has purchased goods or services. The CUST_ID serves as the system identifier matching the concept's unique ID requirement."
+  },
+  {
+    "id": "map-002",
+    "table_ddl": "TB_PRODUCT: PRODUCT_ID (INT, PK), SKU (VARCHAR, UNIQUE), PRODUCT_NAME (VARCHAR), CATEGORY_ID (INT, FK), UNIT_PRICE (DECIMAL)",
+    "concept_name": "Product",
+    "confidence": 0.95,
+    "reasoning": "TB_PRODUCT holds the full product catalogue with SKU identification and pricing, exactly matching the Product concept which defines a tangible or digital item for sale with a unique SKU code."
+  },
+  {
+    "id": "map-003",
+    "table_ddl": "SALES_ORDER_HDR: ORDER_ID (BIGINT, PK), CUST_ID (INT, FK), ORDER_DATE (DATE), TOTAL_AMT (DECIMAL), STATUS_CODE (VARCHAR)",
+    "concept_name": "SalesOrder",
+    "confidence": 0.93,
+    "reasoning": "SALES_ORDER_HDR captures the header of each customer transaction including date, total amount, and status — all defining attributes of the SalesOrder concept which describes formal transactional documents."
+  },
+  {
+    "id": "map-004",
+    "table_ddl": "SYS_AUDIT_LOG: LOG_ID (BIGINT, PK), ACTION_TYPE (VARCHAR), TABLE_NAME (VARCHAR), CHANGED_BY (VARCHAR), CHANGED_AT (DATETIME)",
+    "concept_name": null,
+    "confidence": 0.0,
+    "reasoning": "SYS_AUDIT_LOG is a system-level technical table recording database change events. It has no business concept equivalent in the glossary. All columns reference system metadata rather than business entities."
+  },
+  {
+    "id": "map-005",
+    "table_ddl": "CUST_ADDRESS: ADDRESS_ID (INT, PK), CUST_ID (INT, FK), ADDRESS_TYPE (VARCHAR), STREET (VARCHAR), CITY (VARCHAR), POSTAL_CODE (VARCHAR), COUNTRY_CODE (CHAR)",
+    "concept_name": "CustomerAddress",
+    "confidence": 0.92,
+    "reasoning": "CUST_ADDRESS stores postal delivery and billing addresses linked to customers, matching the CustomerAddress concept which defines geographic addresses associated with a Customer. The ADDRESS_TYPE column (DELIVERY/BILLING) aligns with the concept's multi-address capability."
+  }
+]

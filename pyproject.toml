@@ -1,0 +1,84 @@
+[project]
+name = "thesis"
+version = "0.1.0"
+description = "Multi-Agent Framework for Semantic Discovery & GraphRAG"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "Marc'Antonio Lopez" }]
+
+dependencies = [
+    "langgraph>=0.2",
+    "langchain>=0.3",
+    "langchain-openrouter>=0.1",
+    "langchain-community>=0.3",
+    "neo4j>=5.0",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "sentence-transformers>=3.0",
+    "FlagEmbedding>=1.2",
+    "transformers>=4.40,<5.0",
+    "pymupdf>=1.24",
+    "sqlglot>=25.0",
+    "ragas>=0.2",
+    "rank-bm25>=0.2",
+    "httpx>=0.27",
+    "python-json-logger>=2.0",
+    "tiktoken>=0.7",
+    "scikit-learn>=1.4",
+    "faiss-cpu>=1.8",
+    "langchain-tavily>=0.1",
+    "tenacity>=8.0",
+    "spacy>=3.7,<4.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-mock>=3.14",
+    "testcontainers[neo4j]>=4.7",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "types-requests>=2.32",
+]
+
+[project.scripts]
+ragas-eval = "src.evaluation.ragas_runner:main"
+ablation-run = "scripts.run_ablation_full:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM", "TCH"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402", "E501"]  # E402: dotenv first, E501: borderline line length
+"src/prompts/templates.py" = ["E501"]  # Line too long (prompt strings can be long)
+"src/config/llm_client.py" = ["TC002"]  # Imports used for runtime type checking
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: marks tests requiring external services (Neo4j)",
+    "slow: marks tests that take > 10s",
+]
