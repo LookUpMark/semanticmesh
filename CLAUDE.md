@@ -53,6 +53,11 @@ ablation-run                        # Run ablation experiments
 # Utility scripts (via python -m scripts)
 python -m scripts.neo4j_lifecycle --help     # Neo4j database management
 python -m scripts.pipeline_run --help        # Run builder/query pipeline
+
+# REST API server (FastAPI + uvicorn)
+python -m scripts.serve_api                  # Default: 127.0.0.1:8000
+python -m scripts.serve_api --reload         # Auto-reload on code changes
+# Swagger UI: http://127.0.0.1:8000/docs
 ```
 
 ---
@@ -118,6 +123,10 @@ src/
 │       ├── retrieval_nodes.py  # Retrieval nodes
 │       ├── generation_nodes.py # Generation nodes
 │       └── expansion_nodes.py  # Context expansion nodes
+├── api/              # REST API (FastAPI)
+│   ├── app.py               # FastAPI application factory + routers
+│   ├── demo_api.py          # Demo endpoints: build, query, pipeline (async with polling)
+│   └── ablation_api.py      # Ablation endpoints: run preset/custom, status, matrix
 └── evaluation/       # EP-16: Evaluation metrics
     ├── ragas_runner.py      # run_ragas_evaluation()
     ├── custom_metrics.py    # cypher_healing_rate, hitl_confidence_agreement
@@ -155,15 +164,24 @@ notebooks/
 - Controlled via `settings.llm_model_temperature_*`
 
 ### LLM Usage Patterns
-- Always import from `src.config.llm_factory`: `get_reasoning_llm()`, `get_extraction_llm()`, `get_generation_llm()`
+- Always import from `src.config.llm_factory`: `get_reasoning_llm()`, `get_extraction_llm()`, `get_generation_llm()`, `get_lightweight_llm()`, `get_midtier_llm()`
 - Never construct LLM instances directly in pipeline nodes
 - Type annotate as `llm: LLMProtocol` (provider-agnostic)
 - The factory returns `InstrumentedLLM` wrappers with retry and logging
+- **Factory tiers:** `get_reasoning_llm()` (main reasoning), `get_extraction_llm()` (JSON extraction), `get_generation_llm()` (answer generation, T=0.3), `get_lightweight_llm()` (nano model, entity resolution judge, schema enrichment), `get_midtier_llm()` (mini model, RAG mapping, Actor-Critic, hallucination grading)
 - **Provider auto-detection:** `llm_factory.detect_provider(model)` in `provider_detection.py` selects the provider from the model name:
   - `"provider/model"` (contains `/`) → **OpenRouter** (e.g. `openai/gpt-oss-120b`, `anthropic/claude-3.5-sonnet`, `meta-llama/llama-3.3-70b-instruct:free`)
-  - `gpt-*`, `o1-*`, `o3-*` (no slash) → **OpenAI** direct (requires `OPENAI_API_KEY`)
+  - `ollama/<model>` → **Ollama** (graceful fallback to OpenAI-compat endpoint)
+  - `google/<model>`, `vertex_ai/<model>` → **Google Gemini/Vertex AI**
+  - `bedrock/<model>` → **AWS Bedrock**
+  - `azure/<model>`, `azure_openai/<model>` → **Azure OpenAI**
+  - `mistral/<model>`, `cohere/<model>`, `hf/<model>` → respective providers
+  - `groq/`, `together/`, `nvidia/`, `deepseek/`, `xai/` → OpenAI-compatible providers
+  - `gpt-*`, `o1-*`, `o3-*`, `o4-*` (no slash) → **OpenAI** direct (requires `OPENAI_API_KEY`)
   - `claude-*` (no slash) → **Anthropic** direct (requires `ANTHROPIC_API_KEY`, `langchain-anthropic`)
   - Anything else → **LM Studio** local (`LMSTUDIO_BASE_URL`, default `http://localhost:1234/v1`)
+- **Free→Paid fallback:** Models ending in `:free` get automatic fallback to paid version on HTTP 429 via `FallbackLLM` wrapper
+- **OpenAI reasoning models** (`o1-*`, `o3-*`, `o4-*`, `gpt-5*`): special handling with `reasoning_effort` parameter
 - Use `make_llm(model, temperature, max_tokens, role)` from `model_builders.py` to build one-off LLM instances from any provider
 - Call `reconfigure_from_env()` after changing `os.environ` in notebooks — clears both the settings cache (`reload_settings()`) and the LLM `lru_cache`
 
@@ -187,6 +205,7 @@ notebooks/
 
 ### Tracing and Debugging
 - **LangSmith tracing**: Configure via `LANGCHAIN_TRACING_V2` and `LANGCHAIN_API_KEY` env vars
+- **Debug trace system**: Enable via `settings.enable_debug_trace` — writes per-query traces to `settings.trace_output_dir` with configurable field compression and truncation
 - **Trace analysis**: `scripts/analyze_ab00_trace.py` — analyzes LangSmith traces for ablation experiments
 - **Debug runners**: `scripts/run_ab00_debug.py`, `scripts/run_ab00_logged.py` — pipeline runs with enhanced logging
 - **Manual testing**: `scripts/manual_analysis.py` — interactive query testing and analysis
@@ -215,6 +234,11 @@ Settings boolean flags to disable pipeline components:
 - `enable_critic_validation` — Skip Actor-Critic validation
 - `enable_reranker` — Skip cross-encoder reranking
 - `enable_hallucination_grader` — Skip hallucination grading
+- `enable_retrieval_quality_gate` — Skip retrieval quality gating
+- `enable_grader_consistency_validator` — Skip grader consistency checks
+- `enable_spacy_heuristics` — Skip spaCy-based heuristic extraction
+- `enable_lazy_expansion` — Skip lazy context expansion
+- `use_lazy_extraction` — Enable lazy extraction mode
 - `retrieval_mode` — "hybrid" | "vector" | "bm25"
 
 > **Note:** `er_similarity_threshold` default is now `0.75` (previously `0.85`).
@@ -247,7 +271,7 @@ Settings boolean flags to disable pipeline components:
 - Reciprocal Rank Fusion merges results without tuning weights
 - Final reranking with cross-encoder (bge-reranker-large)
 
-### Self-Reflection Loops
+### Self-Reflection Loops (JSON Nodes)
 All JSON-producing LLM nodes implement self-reflection on parse/validation failure using `REFLECTION_TEMPLATE` (PT-05). Retries are bounded by `settings.max_reflection_attempts` (default 3). Nodes with self-reflection:
 - `triplet_extractor.py` — via `_reflect_on_json()` helper; when `raw_json==""` (token cap hit) uses `truncated=True` variant that instructs "extract at most 10 triplets, be concise"
 - `rag_mapper.py` — inline `_clean_json()` + REFLECTION_TEMPLATE retry; markdown fences stripped before `json.loads`
@@ -277,6 +301,13 @@ Common utilities in `src/utils/`:
 - **`scripts/run_ablation_full.py`**: Full ablation campaign runner (CLI: `ablation-run`)
 - **`notebooks/00_interactive_demo.ipynb`**: End-to-end interactive demonstration
 - **`notebooks/ablation/`**: Analysis notebooks for ablation study results
+
+### REST API (FastAPI)
+- **`src/api/app.py`**: Application factory with two routers
+- **Demo API** (`/api/v1/demo/`): Async E2E pipeline — `POST /demo/build` starts Knowledge Graph build, poll via `GET /demo/build/{job_id}`; `POST /demo/query` for synchronous Q&A; `POST /demo/pipeline` for full async E2E with polling
+- **Ablation API** (`/api/v1/ablation/`): `POST /ablation/run/preset` for predefined AB-XX studies, `POST /ablation/run/custom` for custom runs, `GET /ablation/matrix` to browse 21 predefined conditions
+- Jobs run in background threads, status polled via job ID
+- Swagger UI at `/docs`, ReDoc at `/redoc`
 
 ---
 
@@ -348,7 +379,7 @@ Sensitive values in `.env`:
 | Category | Key Variables |
 |----------|---------------|
 | **Neo4j** | `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` |
-| **LLM (cloud)** | `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
+| **LLM (cloud)** | `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `MISTRAL_API_KEY`, `COHERE_API_KEY`, `GROQ_API_KEY` |
 | **LLM (local)** | `LMSTUDIO_BASE_URL` (default: `http://localhost:1234/v1`) |
 
 Non-sensitive defaults (in `config.py`, overrideable via env):

@@ -26,13 +26,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from functools import partial
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
+from typing import Any
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tracing Configuration
@@ -129,7 +125,7 @@ class BuilderTrace:
         ddl_paths: list[Path] | None = None,
     ) -> BuilderTrace:
         """Create a new BuilderTrace with initial metadata."""
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         trace = cls(study_id=study_id, timestamp=timestamp)
 
         # Record settings
@@ -160,35 +156,45 @@ class BuilderTrace:
         """Record chunks generated from documents."""
         truncated_chunks = []
         for chunk in chunks:
-            truncated_chunks.append({
-                "chunk_id": chunk.get("chunk_id", ""),
-                "text": truncate_text(chunk.get("text", "")),
-                "source": chunk.get("source", ""),
-                "page": chunk.get("page", 0),
-                "token_count": chunk.get("token_count", 0),
-            })
+            truncated_chunks.append(
+                {
+                    "chunk_id": chunk.get("chunk_id", ""),
+                    "text": truncate_text(chunk.get("text", "")),
+                    "source": chunk.get("source", ""),
+                    "page": chunk.get("page", 0),
+                    "token_count": chunk.get("token_count", 0),
+                }
+            )
         self.chunks = truncate_list(truncated_chunks)
         self.chunking_summary = {
             "total_chunks": len(chunks),
             "total_tokens": sum(int(c.get("token_count", 0) or 0) for c in chunks),
-            "avg_tokens": sum(int(c.get("token_count", 0) or 0) for c in chunks) / len(chunks) if chunks else 0,
+            "avg_tokens": sum(int(c.get("token_count", 0) or 0) for c in chunks) / len(chunks)
+            if chunks
+            else 0,
         }
 
-    def record_triplets(self, triplets: list[dict[str, Any]], extraction_errors: list[dict[str, Any]] | None = None) -> None:
+    def record_triplets(
+        self, triplets: list[dict[str, Any]], extraction_errors: list[dict[str, Any]] | None = None
+    ) -> None:
         """Record triplets extracted from chunks."""
         truncated_triplets = []
         for t in triplets:
-            truncated_triplets.append({
-                "chunk_index": t.get("chunk_index", -1),
-                "subject": truncate_text(t.get("subject", ""), 100),
-                "predicate": truncate_text(t.get("predicate", ""), 100),
-                "object": truncate_text(t.get("object", ""), 100),
-                "confidence": t.get("confidence", 0.0),
-            })
+            truncated_triplets.append(
+                {
+                    "chunk_index": t.get("chunk_index", -1),
+                    "subject": truncate_text(t.get("subject", ""), 100),
+                    "predicate": truncate_text(t.get("predicate", ""), 100),
+                    "object": truncate_text(t.get("object", ""), 100),
+                    "confidence": t.get("confidence", 0.0),
+                }
+            )
         self.triplets = truncate_list(truncated_triplets)
         self.extraction_summary = {
             "total_triplets": len(triplets),
-            "avg_confidence": sum(t.get("confidence", 0.0) for t in triplets) / len(triplets) if triplets else 0.0,
+            "avg_confidence": sum(t.get("confidence", 0.0) for t in triplets) / len(triplets)
+            if triplets
+            else 0.0,
             "extraction_errors": len(extraction_errors) if extraction_errors else 0,
         }
 
@@ -201,43 +207,60 @@ class BuilderTrace:
     ) -> None:
         """Record entity resolution process."""
         # Pre-resolution entities (raw from triplets)
-        self.entities_pre_resolution = truncate_list([
-            {"name": truncate_text(e.get("name", ""), 100), "provenance": e.get("provenance", "")}
-            for e in entities_pre
-        ])
+        self.entities_pre_resolution = truncate_list(
+            [
+                {
+                    "name": truncate_text(e.get("name", ""), 100),
+                    "provenance": e.get("provenance", ""),
+                }
+                for e in entities_pre
+            ]
+        )
 
         # Blocking results
-        self.blocks = truncate_list([
-            {"block_id": b.get("block_id", ""), "entity_count": len(b.get("entities", [])), "avg_similarity": b.get("avg_similarity", 0.0)}
-            for b in blocks
-        ])
+        self.blocks = truncate_list(
+            [
+                {
+                    "block_id": b.get("block_id", ""),
+                    "entity_count": len(b.get("entities", [])),
+                    "avg_similarity": b.get("avg_similarity", 0.0),
+                }
+                for b in blocks
+            ]
+        )
 
         # LLM judge decisions
-        self.cluster_decisions = truncate_list([
-            {
-                "cluster_id": d.get("cluster_id", ""),
-                "decision": d.get("decision", ""),
-                "reasoning": truncate_text(d.get("reasoning", ""), 200),
-            }
-            for d in decisions
-        ])
+        self.cluster_decisions = truncate_list(
+            [
+                {
+                    "cluster_id": d.get("cluster_id", ""),
+                    "decision": d.get("decision", ""),
+                    "reasoning": truncate_text(d.get("reasoning", ""), 200),
+                }
+                for d in decisions
+            ]
+        )
 
         # Post-resolution entities (canonical)
-        self.entities_post_resolution = truncate_list([
-            {
-                "name": truncate_text(e.get("name", ""), 100),
-                "definition": truncate_text(e.get("definition", ""), 200),
-                "synonyms": e.get("synonyms", [])[:5],  # Limit synonyms
-            }
-            for e in entities_post
-        ])
+        self.entities_post_resolution = truncate_list(
+            [
+                {
+                    "name": truncate_text(e.get("name", ""), 100),
+                    "definition": truncate_text(e.get("definition", ""), 200),
+                    "synonyms": e.get("synonyms", [])[:5],  # Limit synonyms
+                }
+                for e in entities_post
+            ]
+        )
 
         self.resolution_summary = {
             "entities_pre": len(entities_pre),
             "entities_post": len(entities_post),
             "blocks_created": len(blocks),
             "decisions_made": len(decisions),
-            "reduction_rate": 1.0 - (len(entities_post) / len(entities_pre)) if entities_pre else 0.0,
+            "reduction_rate": 1.0 - (len(entities_post) / len(entities_pre))
+            if entities_pre
+            else 0.0,
         }
 
     def record_schema_processing(
@@ -246,16 +269,20 @@ class BuilderTrace:
         enriched_tables: list[dict[str, Any]] | None = None,
     ) -> None:
         """Record DDL parsing and schema enrichment."""
-        self.tables_parsed = truncate_list([
-            {"name": t.get("name", ""), "columns": len(t.get("columns", []))}
-            for t in tables
-        ])
+        self.tables_parsed = truncate_list(
+            [{"name": t.get("name", ""), "columns": len(t.get("columns", []))} for t in tables]
+        )
 
         if enriched_tables:
-            self.tables_enriched = truncate_list([
-                {"name": t.get("name", ""), "description": truncate_text(t.get("description", ""), 200)}
-                for t in enriched_tables
-            ])
+            self.tables_enriched = truncate_list(
+                [
+                    {
+                        "name": t.get("name", ""),
+                        "description": truncate_text(t.get("description", ""), 200),
+                    }
+                    for t in enriched_tables
+                ]
+            )
 
         self.schema_summary = {
             "tables_parsed": len(tables),
@@ -265,15 +292,17 @@ class BuilderTrace:
 
     def record_mapping(self, mappings: list[dict[str, Any]]) -> None:
         """Record schema-to-ontology mapping results."""
-        self.table_mappings = truncate_list([
-            {
-                "table": m.get("table", ""),
-                "concept": m.get("concept", ""),
-                "confidence": m.get("confidence", 0.0),
-                "alternatives": m.get("alternatives", [])[:3],  # Top 3 alternatives
-            }
-            for m in mappings
-        ])
+        self.table_mappings = truncate_list(
+            [
+                {
+                    "table": m.get("table", ""),
+                    "concept": m.get("concept", ""),
+                    "confidence": m.get("confidence", 0.0),
+                    "alternatives": m.get("alternatives", [])[:3],  # Top 3 alternatives
+                }
+                for m in mappings
+            ]
+        )
 
         if mappings:
             confidences = [m.get("confidence", 0.0) for m in mappings]
@@ -291,15 +320,17 @@ class BuilderTrace:
         neo4j_stats: dict[str, int] | None = None,
     ) -> None:
         """Record Cypher generation and graph building."""
-        self.cypher_queries = truncate_list([
-            {
-                "table": c.get("table", ""),
-                "success": c.get("success", False),
-                "healing_attempts": c.get("healing_attempts", 0),
-                "cypher_preview": truncate_text(c.get("cypher", ""), 200),
-            }
-            for c in cypher_results
-        ])
+        self.cypher_queries = truncate_list(
+            [
+                {
+                    "table": c.get("table", ""),
+                    "success": c.get("success", False),
+                    "healing_attempts": c.get("healing_attempts", 0),
+                    "cypher_preview": truncate_text(c.get("cypher", ""), 200),
+                }
+                for c in cypher_results
+            ]
+        )
 
         self.neo4j_summary = {
             "queries_executed": len(cypher_results),
@@ -389,7 +420,9 @@ class QueryTrace:
     def __post_init__(self) -> None:
         """Generate trace_id if not provided."""
         if not self.trace_id:
-            self.trace_id = f"{self.study_id}.Q{self.query_index}.{self.timestamp.replace(':', '-')}"
+            self.trace_id = (
+                f"{self.study_id}.Q{self.query_index}.{self.timestamp.replace(':', '-')}"
+            )
 
     @classmethod
     def create(
@@ -400,7 +433,7 @@ class QueryTrace:
         builder_trace_id: str = "",
     ) -> QueryTrace:
         """Create a new QueryTrace."""
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         return cls(
             study_id=study_id,
             question=question,
@@ -418,32 +451,31 @@ class QueryTrace:
     ) -> None:
         """Record hybrid retrieval results."""
         if vector_results:
-            self.vector_results = truncate_list([
-                {"node": r.get("node", ""), "score": r.get("score", 0.0)}
-                for r in vector_results
-            ])
+            self.vector_results = truncate_list(
+                [{"node": r.get("node", ""), "score": r.get("score", 0.0)} for r in vector_results]
+            )
 
         if bm25_results:
-            self.bm25_results = truncate_list([
-                {"node": r.get("node", ""), "score": r.get("score", 0.0)}
-                for r in bm25_results
-            ])
+            self.bm25_results = truncate_list(
+                [{"node": r.get("node", ""), "score": r.get("score", 0.0)} for r in bm25_results]
+            )
 
         if graph_results:
-            self.graph_traversal_results = truncate_list([
-                {"node": r.get("node", ""), "depth": r.get("depth", 0)}
-                for r in graph_results
-            ])
+            self.graph_traversal_results = truncate_list(
+                [{"node": r.get("node", ""), "depth": r.get("depth", 0)} for r in graph_results]
+            )
 
         if rrf_fused:
-            self.rrf_fused = truncate_list([
-                {
-                    "node": r.get("node", ""),
-                    "rrf_score": r.get("rrf_score", 0.0),
-                    "sources": r.get("sources", []),
-                }
-                for r in rrf_fused
-            ])
+            self.rrf_fused = truncate_list(
+                [
+                    {
+                        "node": r.get("node", ""),
+                        "rrf_score": r.get("rrf_score", 0.0),
+                        "sources": r.get("sources", []),
+                    }
+                    for r in rrf_fused
+                ]
+            )
 
         self.retrieval_summary = {
             "vector_count": len(vector_results) if vector_results else 0,
@@ -459,24 +491,29 @@ class QueryTrace:
         model: str = "",
     ) -> None:
         """Record reranking results."""
-        self.pre_rerank = truncate_list([
-            {"node": r.get("node", ""), "score": r.get("score", 0.0)}
-            for r in pre_rerank
-        ])
+        self.pre_rerank = truncate_list(
+            [{"node": r.get("node", ""), "score": r.get("score", 0.0)} for r in pre_rerank]
+        )
 
-        self.post_rerank = truncate_list([
-            {
-                "node": r.get("node", ""),
-                "score": r.get("score", 0.0),
-                "score_delta": r.get("score", 0.0) - pre_rerank[i].get("score", 0.0) if i < len(pre_rerank) else 0.0,
-            }
-            for i, r in enumerate(post_rerank)
-        ])
+        self.post_rerank = truncate_list(
+            [
+                {
+                    "node": r.get("node", ""),
+                    "score": r.get("score", 0.0),
+                    "score_delta": r.get("score", 0.0) - pre_rerank[i].get("score", 0.0)
+                    if i < len(pre_rerank)
+                    else 0.0,
+                }
+                for i, r in enumerate(post_rerank)
+            ]
+        )
 
         # Calculate rank changes
         pre_ranks = {r.get("node", ""): i for i, r in enumerate(pre_rerank)}
         post_ranks = {r.get("node", ""): i for i, r in enumerate(post_rerank)}
-        rank_changes = [pre_ranks.get(n, 999) - post_ranks.get(n, 999) for n in post_ranks if n in pre_ranks]
+        rank_changes = [
+            pre_ranks.get(n, 999) - post_ranks.get(n, 999) for n in post_ranks if n in pre_ranks
+        ]
 
         self.reranker_summary = {
             "model": model,
@@ -492,14 +529,16 @@ class QueryTrace:
         context_limit: int | None = None,
     ) -> None:
         """Record contexts prepared for generation."""
-        self.contexts_for_generation = truncate_list([
-            {
-                "node": c.get("node", ""),
-                "text": truncate_text(c.get("text", "")),
-                "source": c.get("source", "unknown"),
-            }
-            for c in contexts
-        ])
+        self.contexts_for_generation = truncate_list(
+            [
+                {
+                    "node": c.get("node", ""),
+                    "text": truncate_text(c.get("text", "")),
+                    "source": c.get("source", "unknown"),
+                }
+                for c in contexts
+            ]
+        )
 
         total_chars = sum(len(c.get("text", "")) for c in contexts)
         self.context_summary = {
@@ -517,12 +556,14 @@ class QueryTrace:
         attempt_number: int = 1,
     ) -> None:
         """Record a single generation attempt."""
-        self.generation_attempts.append({
-            "attempt": attempt_number,
-            "answer": truncate_text(answer),
-            "critique": truncate_text(critique),
-            "grader_decision": grader_decision,
-        })
+        self.generation_attempts.append(
+            {
+                "attempt": attempt_number,
+                "answer": truncate_text(answer),
+                "critique": truncate_text(critique),
+                "grader_decision": grader_decision,
+            }
+        )
 
     def record_generation_summary(self) -> None:
         """Generate summary from generation attempts."""
@@ -603,19 +644,25 @@ class ComparisonReport:
 
             # Check coverage
             covered = [s for s in expected_sources if any(s in node for node in retrieved_nodes)]
-            missing = [s for s in expected_sources if not any(s in node for node in retrieved_nodes)]
+            missing = [
+                s for s in expected_sources if not any(s in node for node in retrieved_nodes)
+            ]
 
-            self.per_question_analysis.append({
-                "query_index": i,
-                "question": truncate_text(gt.get("question", ""), 100),
-                "expected_sources": expected_sources,
-                "retrieved_nodes": retrieved_nodes[:10],  # Top 10
-                "covered_sources": covered,
-                "missing_sources": missing,
-                "coverage_rate": len(covered) / len(expected_sources) if expected_sources else 1.0,
-                "grounded": trace.grounded,
-                "verification_score": trace.verification_score,
-            })
+            self.per_question_analysis.append(
+                {
+                    "query_index": i,
+                    "question": truncate_text(gt.get("question", ""), 100),
+                    "expected_sources": expected_sources,
+                    "retrieved_nodes": retrieved_nodes[:10],  # Top 10
+                    "covered_sources": covered,
+                    "missing_sources": missing,
+                    "coverage_rate": len(covered) / len(expected_sources)
+                    if expected_sources
+                    else 1.0,
+                    "grounded": trace.grounded,
+                    "verification_score": trace.verification_score,
+                }
+            )
 
     def generate_aggregate_metrics(self) -> None:
         """Generate aggregate metrics from per-question analysis."""
@@ -628,10 +675,16 @@ class ComparisonReport:
 
         self.aggregate_metrics = {
             "total_questions": len(self.per_question_analysis),
-            "avg_coverage_rate": sum(coverage_rates) / len(coverage_rates) if coverage_rates else 0.0,
+            "avg_coverage_rate": sum(coverage_rates) / len(coverage_rates)
+            if coverage_rates
+            else 0.0,
             "min_coverage_rate": min(coverage_rates) if coverage_rates else 0.0,
-            "grounded_rate": grounded_count / len(self.per_question_analysis) if self.per_question_analysis else 0.0,
-            "avg_verification_score": sum(verification_scores) / len(verification_scores) if verification_scores else 0.0,
+            "grounded_rate": grounded_count / len(self.per_question_analysis)
+            if self.per_question_analysis
+            else 0.0,
+            "avg_verification_score": sum(verification_scores) / len(verification_scores)
+            if verification_scores
+            else 0.0,
         }
 
     def identify_bottlenecks(self) -> None:
@@ -640,29 +693,39 @@ class ComparisonReport:
 
         # Coverage bottleneck
         if self.aggregate_metrics.get("avg_coverage_rate", 1.0) < 0.8:
-            bottlenecks.append({
-                "type": "retrieval_coverage",
-                "severity": "high" if self.aggregate_metrics["avg_coverage_rate"] < 0.6 else "medium",
-                "description": f"Low source coverage rate: {self.aggregate_metrics['avg_coverage_rate']:.2%}",
-            })
+            bottlenecks.append(
+                {
+                    "type": "retrieval_coverage",
+                    "severity": "high"
+                    if self.aggregate_metrics["avg_coverage_rate"] < 0.6
+                    else "medium",
+                    "description": f"Low source coverage rate: {self.aggregate_metrics['avg_coverage_rate']:.2%}",
+                }
+            )
 
         # Grounding bottleneck
         if self.aggregate_metrics.get("grounded_rate", 1.0) < 0.9:
-            bottlenecks.append({
-                "type": "answer_grounding",
-                "severity": "high" if self.aggregate_metrics["grounded_rate"] < 0.7 else "medium",
-                "description": f"Low grounding rate: {self.aggregate_metrics['grounded_rate']:.2%}",
-            })
+            bottlenecks.append(
+                {
+                    "type": "answer_grounding",
+                    "severity": "high"
+                    if self.aggregate_metrics["grounded_rate"] < 0.7
+                    else "medium",
+                    "description": f"Low grounding rate: {self.aggregate_metrics['grounded_rate']:.2%}",
+                }
+            )
 
         # Check per-question issues
         low_coverage_questions = [q for q in self.per_question_analysis if q["coverage_rate"] < 0.5]
         if low_coverage_questions:
-            bottlenecks.append({
-                "type": "specific_questions",
-                "severity": "medium",
-                "description": f"{len(low_coverage_questions)} questions with < 50% source coverage",
-                "affected_questions": [q["query_index"] for q in low_coverage_questions],
-            })
+            bottlenecks.append(
+                {
+                    "type": "specific_questions",
+                    "severity": "medium",
+                    "description": f"{len(low_coverage_questions)} questions with < 50% source coverage",
+                    "affected_questions": [q["query_index"] for q in low_coverage_questions],
+                }
+            )
 
         self.bottlenecks = bottlenecks
 
@@ -694,14 +757,14 @@ class ComparisonReport:
     def to_markdown(self) -> str:
         """Generate markdown report."""
         lines = [
-            f"# AB-00 End-to-End Analysis Report",
-            f"",
+            "# AB-00 End-to-End Analysis Report",
+            "",
             f"**Study ID**: {self.study_id}",
             f"**Timestamp**: {self.timestamp}",
             f"**Dataset**: {self.dataset_path}",
-            f"",
-            f"## Aggregate Metrics",
-            f"",
+            "",
+            "## Aggregate Metrics",
+            "",
         ]
 
         for key, value in self.aggregate_metrics.items():
@@ -710,34 +773,42 @@ class ComparisonReport:
             else:
                 lines.append(f"- **{key}**: {value}")
 
-        lines.extend([
-            f"",
-            f"## Bottlenecks Identified",
-            f"",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Bottlenecks Identified",
+                "",
+            ]
+        )
 
         for b in self.bottlenecks:
-            lines.extend([
-                f"### {b['type'].replace('_', ' ').title()} ({b['severity'].upper()})",
-                f"{b['description']}",
-                f"",
-            ])
+            lines.extend(
+                [
+                    f"### {b['type'].replace('_', ' ').title()} ({b['severity'].upper()})",
+                    f"{b['description']}",
+                    "",
+                ]
+            )
 
-        lines.extend([
-            f"## Recommendations",
-            f"",
-        ])
+        lines.extend(
+            [
+                "## Recommendations",
+                "",
+            ]
+        )
 
         for i, rec in enumerate(self.recommendations, 1):
             lines.append(f"{i}. {rec}")
 
-        lines.extend([
-            f"",
-            f"## Per-Question Analysis",
-            f"",
-            f"| Index | Question | Coverage | Grounded | Verification |",
-            f"|-------|----------|----------|----------|--------------|",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Per-Question Analysis",
+                "",
+                "| Index | Question | Coverage | Grounded | Verification |",
+                "|-------|----------|----------|----------|--------------|",
+            ]
+        )
 
         for q in self.per_question_analysis:
             question = q["question"][:50] + "..." if len(q["question"]) > 50 else q["question"]

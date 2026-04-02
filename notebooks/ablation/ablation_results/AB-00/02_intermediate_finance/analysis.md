@@ -1,18 +1,18 @@
 # AB-00 — 02_intermediate_finance — Run Analysis
 
-**Timestamp:** 2026-03-26 20:18:51  
-**Run tag:** `run-20260326_210140`
+**Timestamp:** 2026-03-30 18:17:59  
+**Run tag:** `post-fix-v5`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
-| Extraction model | `LLM (gpt-5.4-nano)` |
-| Reasoning model | `gpt-5.4-mini` |
+| Extraction model | `LLM (gpt-5.4-nano-2026-03-17)` |
+| Reasoning model | `gpt-5.4-2026-03-05` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
-| Reranker top_k | `10` |
+| Reranker top_k | `12` |
 | Chunk size / overlap | `256 / 32` |
 | ER similarity threshold | `0.75` |
 
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 653 |
-| Entities resolved | 262 |
+| Triplets extracted | 631 |
+| Entities resolved | 237 |
 | Tables parsed | 8 |
 | Tables completed | 8 |
 
@@ -29,100 +29,85 @@
 
 | Metric | Value |
 |--------|-------|
-| Questions | 15 |
-| Grounded | **15/15 (100%)** |
+| Questions | 25 |
+| Grounded | **25/25 (100%)** |
 | Avg GT Coverage | 100% |
-| Avg Top Score | 0.4678 |
-| Avg Chunk Count | 10.0 |
+| Avg Top Score | 0.4836 |
+| Avg Chunk Count | 12.0 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
 
-| Metric | Value | Interpretation |
-|--------|-------|----------------|
-| Faithfulness | **0.9867** | Answers grounded in context |
-| Answer Relevancy | **0.1089** | Answers relevant to question |
-| Context Precision | **0.1333** | Retrieved chunks are on-topic |
-| Context Recall | **0.1167** | All needed context retrieved |
+RAGAS evaluation not enabled for this run.
 
 ## Per-Question Deep Dive
 
 ### ✅ 1 — What is a checking account?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.7250 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.6477 | **Gate:** `proceed`
 
 **Expected answer:**
-> A checking account is a transactional deposit account designed for day-to-day spending. Key features include unlimited transactions, debit card access, bill pay, and check writing. Standard checking has a minimum balance requirement of $100 with a $12 monthly maintenance fee that can be waived with …
+> A checking account is one of five account types (Checking, Savings, MoneyMarket, CD, Investment) defined by the CHECK constraint on the accounts table. According to the business glossary, accounts are financial arrangements for deposit, withdrawal, and management of funds. The schema tracks current_…
 
 **System answer:**
-> A checking account appears to be one of the allowed account types in the `accounts` table, and it falls under the broader `Account` concept defined as a financial arrangement between a customer and the bank for depositing, withdrawing, and managing funds. The context does not provide a more specific definition of checking beyond that.
+> A checking account is an Account whose `account_type` is `Checking` in the `accounts` table.
 
-**RAGAS scores:**
+From the business glossary, an Account is “a financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds.” In this schema, checking is one of the valid account types alongside `Savings`, `MoneyMarket`, `CD`, and `Investment`.
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.25 |
+A checking account therefore…
 
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_13`, `parent_chunk_data_dictionary.md_14`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_7`, `parent_chunk_business_glossary.md_1`, `a physical banking location where customers can access in-person services including teller transactions, account opening, loan applications, and financial advisory services`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_12`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `all account activity→TRANSACTIONS`, `parent_chunk_business_glossary.md_0`
 
 **Context previews (first 3):**
 
-1. _**Constraints: ** - CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment')) - CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed')) - CHECK (parent_account_id != accou…_
+1. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
 
-2. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+2. _## customer_account  **Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. …_
 
-3. _## customer_account  **Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. …_
+3. _## transactions  **Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated f…_
 
 ---
 
 ### ✅ 2 — What is the difference between a savings account and a money market account?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.6894 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.6601 | **Gate:** `proceed`
 
 **Expected answer:**
-> A savings account is an interest-bearing account for accumulating funds with Federal Regulation D limiting withdrawals to 6 per month. It has tiered interest rates from 0.01% to 0.50% APY based on balance. A money market account is a hybrid savings/checking account with higher interest rates (0.15% …
+> Both savings and money market are account types defined in the accounts table CHECK constraint. The business glossary Interest section provides example rates: Standard Savings earns 0.25% APY (with monthly compounding), Premium Savings earns 0.50% APY (with daily compounding), while Money Market ear…
 
 **System answer:**
-> The retrieved context identifies both Savings and MoneyMarket as account types in the accounts table, but it does not describe any difference between them. I cannot determine the difference from the provided information.
+> The retrieved context does not define a business difference between a savings account and a money market account.
 
-**RAGAS scores:**
+What it does say is that both Savings and MoneyMarket are valid `account_type` values for the `ACCOUNTS` table and for the `Account` business concept. In the schema, accounts of these types are tracked using the same core attributes, including `current_balance`, `available_balance`, `…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_15`, `parent_chunk_data_dictionary.md_14`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`, `Checking, Savings, Money Market, CD, Investment`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_11`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `LOANS→ACCOUNTS`
 
 **Context previews (first 3):**
 
 1. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
 
-2. _**Constraints: ** - CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment')) - CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed')) - CHECK (parent_account_id != accou…_
+2. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
 
-3. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
+3. _## transactions  **Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated f…_
 
 ---
 
 ### ✅ 3 — What is APR versus APY?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.9818 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.9609 | **Gate:** `proceed`
 
 **Expected answer:**
 > APR (Annual Percentage Rate) is the annual cost of a loan including interest and fees, used for loan products. APY (Annual Percentage Yield) is the effective annual rate including compounding effects for deposit products. APY is higher than the nominal rate when compounding is more frequent than ann…
 
 **System answer:**
-> From the retrieved context, “Interest” is defined as the cost of borrowing money or the return on depositing money, expressed as an annual percentage rate. The context does not define APY, so I cannot determine the difference between APR and APY from the knowledge graph.
+> From the `Interest` business concept, APR is Annual Percentage Rate and is used for loans, while APY is Annual Percentage Yield and is used for deposits.
 
-**RAGAS scores:**
+APR relates to the cost of borrowing money. APY relates to the return on depositing money. The context also states that APY accounts for compounding.
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.25 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_15`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_16`, `parent_chunk_data_dictionary.md_13`, `Borrowing Arrangement`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`
 
 **Context previews (first 3):**
 
@@ -137,116 +122,98 @@
 ### ✅ 4 — What is KYC Level 2?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.9219 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.6105 | **Gate:** `proceed`
 
 **Expected answer:**
-> KYC Level 2 is enhanced due diligence requiring occupation verification and source of funds documentation beyond the basic identity verification (SSN, ID, address) required for Level 1. Level 2 is required for premium products and large transactions. Level 3 is for high-net-worth individuals requiri…
+> The customers table has a kyc_status column with a CHECK constraint allowing Level1, Level2, and Level3. The business glossary states that Level1 is the minimum requirement for account opening, Level3 is required for high-value accounts and international transfers, and risk_profile determines eligib…
 
 **System answer:**
-> The retrieved context mentions KYC only as a compliance/status attribute for customers and says customers have completed Know Your Customer (KYC) verification, but it does not define “KYC Level 2.” From the provided context, I cannot determine what KYC Level 2 means.
+> The retrieved context does not define the meaning of “KYC Level 2.” It only states that in the retail banking schema, customer KYC is tracked in the `customers` table via `kyc_status`, and that valid KYC levels are `Level1`, `Level2`, or `Level3`.
 
-**RAGAS scores:**
+So, from the available context, “KYC Level 2” is one of the allowed KYC status values for a customer, but its specific business definition is not provi…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_18`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_3`, `Customer Master Data`, `parent_chunk_business_glossary.md_7`, `parent_chunk_data_dictionary.md_13`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_12`, `Customer Master Data→CUSTOMERS`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_0`, `Customer Master Data`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`
 
 **Context previews (first 3):**
 
 1. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
 
-2. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+2. _Business concept 'Customer Master Data' — The table description explicitly says it is the core customer dimension containing master data for all individual and corporate banking customers, which align…_
 
-3. _## Customer  **Definition: ** An individual or corporate entity that maintains a banking relationship with the institution, having completed Know Your Customer (KYC) verification. **Business Context:*…_
+3. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
 
 ---
 
-### ✅ 5 — What is the minimum balance requirement for a premium checking account?
+### ✅ 5 — How does the schema support different account subtypes and their varying requirements?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.9110 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.1891 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
-> Premium checking accounts require a minimum balance of $2,500. This minimum must be maintained to avoid the monthly maintenance fee and qualify for premium benefits including waived fees, preferred interest rates, and higher transaction limits.
+> The accounts table has an account_subtype column (VARCHAR 30, nullable) that stores values like Premium or Standard to differentiate within each account_type. Combined with the minimum_balance and monthly_fee columns, each account can have different requirements configured per subtype. The account_t…
 
 **System answer:**
-> I cannot determine the minimum balance requirement for a premium checking account from the retrieved context. The context only says the `accounts` table supports `Checking` accounts and other account types, and the Retail Banking Business Glossary defines an `Account`, but it does not provide any minimum balance requirement or any “premium checking” details.
+> The schema supports account variation primarily in the `accounts` table. It includes both `account_type` and `account_subtype`, where `account_type` identifies the main category of account and is defined as `Checking`, `Savings`, `MoneyMarket`, `CD`, or `Investment`, and `account_subtype` is a nullable field for more specific variants such as `Premium`, `Student`, or `Standard`.
 
-**RAGAS scores:**
+The same `account…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_13`, `parent_chunk_data_dictionary.md_15`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_7`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_12`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_9`, `all account activity→TRANSACTIONS`, `Owner/JointOwner/AuthorizedSigner/Custodian→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_11`
 
 **Context previews (first 3):**
 
 1. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
 
-2. _**Constraints: ** - CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment')) - CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed')) - CHECK (parent_account_id != accou…_
+2. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
 
-3. _## customer_account  **Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. …_
+3. _Business concept 'balances, interest accrual, fees, and account lifecycle status' is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_…_
 
 ---
 
 ### ✅ 6 — What types of loan products does the bank offer?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.7005 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.6931 | **Gate:** `proceed`
 
 **Expected answer:**
-> The bank offers five types of loan products: (1) Mortgage - secured real estate loans with 15-30 year terms at 5.5%-7.5% APR; (2) Personal Loan - unsecured loans for $1,000-$40,000 with 12-60 month terms at 7.0%-18.0% APR; (3) Auto Loan - secured vehicle loans for $5,000-$75,000 with 24-72 month ter…
+> The bank offers five loan types defined by the CHECK constraint on loans.loan_type: (1) Mortgage — secured by real estate, glossary example shows $350,000 at 5.50% APR for 360 months; (2) Personal Loan — unsecured, example $15,000 at 8.50% APR for 48 months; (3) Auto Loan — secured by vehicle, examp…
 
 **System answer:**
-> The loans table indicates the bank offers mortgages, personal loans, auto loans, HELOCs, and credit cards.
+> The bank’s loan products, as described by the `LOANS` table and its business concept, are mortgages, personal loans, auto loans, HELOCs, and credit cards. In the `loan_type` column, these appear as `Mortgage`, `Personal`, `Auto`, `HELOC`, and `CreditCard`.
 
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.76 | 1.00 | 1.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_15`, `parent_chunk_data_dictionary.md_18`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_5`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards→LOANS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_7`, `LOANS→CUSTOMERS`, `Customer Master Data→CUSTOMERS`, `Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards`, `parent_chunk_business_glossary.md_1`
 
 **Context previews (first 3):**
 
-1. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
+1. _Business concept 'Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards' is implemented by physical table LOANS (columns: loan_id…_
 
-2. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+2. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
 
-3. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+3. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
 
 ---
 
 ### ✅ 7 — What is the daily ATM withdrawal limit for standard customers?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.6511 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.3743 | **Gate:** `proceed`
 
 **Expected answer:**
-> The daily ATM withdrawal limit for standard customers is $500. Premium customers have a higher limit of $2,000 per day. Out-of-network ATM withdrawals incur a $3.00 fee plus any fee charged by the ATM owner.
+> The cards table has an atm_daily_limit column with a default value of $500. The business glossary Card Examples confirm this: a standard Debit Card has a $500 ATM limit, while a Premium Debit card has a $2,000 ATM limit. The daily_limit column (default $3,000) controls POS spending separately. These…
 
 **System answer:**
-> I cannot find this information in the knowledge graph. The retrieved context mentions that the Card concept tracks spending limits and that ATM-related entities exist, but it does not specify any daily ATM withdrawal limit for standard customers.
+> The retrieved context does not provide a numeric daily ATM withdrawal limit for standard customers.
 
-**RAGAS scores:**
+What it does show is that the `cards` table stores an `atm_daily_limit` column, and the business concept mapping for `CARDS` includes that same field. The `accounts` table also shows `account_subtype` can include examples like `Standard`, but the context does not define any rule that maps a standar…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_16`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_18`, `parent_chunk_business_glossary.md_7`, `parent_chunk_business_glossary.md_6`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_5`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `Card ID and Card Number (PAN)→CARDS`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`
 
 **Context previews (first 3):**
 
 1. _## cards  **Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, …_
 
-2. _## atms  **Description: ** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location s…_
+2. _Business concept 'Card ID and Card Number (PAN)' is implemented by physical table CARDS (columns: card_id, account_id, customer_id, card_number, card_type, card_network, card_name, expiration_date, cv…_
 
-3. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+3. _## atms  **Description: ** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location s…_
 
 ---
 
@@ -256,18 +223,14 @@
 **GT Coverage:** 100% | **Top Score:** 0.3098 | **Gate:** `proceed`
 
 **Expected answer:**
-> A parent account is a primary account that aggregates sub-accounts for portfolio management and reporting. Parent accounts do not hold balances directly; they summarize child account totals. A child account is a sub-account linked to a parent account for organizational purposes, such as in portfolio…
+> The accounts table supports parent-child hierarchies through the parent_account_id self-referencing foreign key, with a CHECK constraint preventing circular references (parent_account_id != account_id). The data dictionary describes this as supporting portfolio aggregation where parent accounts (typ…
 
 **System answer:**
-> The context does not define separate business meanings for “parent account” and “child account.” It only shows that `accounts` has a self-referencing hierarchy via `PARENT_ACCOUNT_ID -> ACCOUNTS.ACCOUNT_ID`, and that investment accounts can contain child accounts for portfolio aggregation.
+> In the `accounts` table, a parent account is an account that other accounts reference through `parent_account_id`, while a child account is an account whose `parent_account_id` points to another row in `ACCOUNTS.ACCOUNT_ID`.
 
-**RAGAS scores:**
+The purpose of this relationship is hierarchical portfolio aggregation: the schema says `accounts` supports a parent-child hierarchy, and specifically notes that investment a…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.88 | 1.00 | 0.25 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_18`, `parent_chunk_data_dictionary.md_12`, `ACCOUNTS→ACCOUNTS`, `parent_chunk_data_dictionary.md_13`, `parent_chunk_data_dictionary.md_14`, `parent_chunk_data_dictionary.md_16`, `parent_chunk_data_dictionary.md_15`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_12`, `ACCOUNTS→ACCOUNTS`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`
 
 **Context previews (first 3):**
 
@@ -275,225 +238,433 @@
 
 2. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
 
-3. _**Constraints: ** - CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment')) - CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed')) - CHECK (parent_account_id != accou…_
+3. _Relationship: ACCOUNTS references ACCOUNTS via foreign key PARENT_ACCOUNT_ID -> ACCOUNTS.ACCOUNT_ID.…_
 
 ---
 
 ### ✅ 9 — What does the status 'Frozen' mean for a card?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.4898 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0630 | **Gate:** `proceed_with_warning`
 
 **Expected answer:**
-> A 'Frozen' card status means the card is temporarily suspended due to suspected fraudulent activity detected by monitoring, customer request (lost card, traveling), or negative account status. Frozen cards cannot process transactions. The freeze can be reversed after identity verification to reactiv…
+> The cards table has a status column with four states defined by CHECK constraint: Active, Frozen, Blocked, and Expired. The business glossary states that lost or stolen cards must be immediately blocked to prevent fraud, and that expired cards are automatically renewed. The glossary distinguishes Fr…
 
 **System answer:**
-> The retrieved context shows that card status can be one of the values in the `cards` table, including `Frozen`, but it does not define what `Frozen` means. So I can confirm that `Frozen` is a valid card status in the `cards` concept, but the specific business meaning is not provided in the context.
+> The retrieved context does not define what the card status 'Frozen' means.
 
-**RAGAS scores:**
+What the context does say is that the `cards` table includes a `status` column and tracks card status, but no status values or business rule definitions for card statuses are provided. The only place 'Frozen' appears in the retrieved context is for the business concept Account, where account status values include Active, D…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_17`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_15`, `parent_chunk_data_dictionary.md_16`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_14`, `parent_chunk_business_glossary.md_7`
-
-**Context previews (first 3):**
-
-1. _**Constraints: ** - CHECK (card_type IN ('Debit', 'Credit', 'ATM')) - CHECK (card_network IN ('Visa', 'Mastercard', 'Discover', 'AmericanExpress')) - CHECK (status IN ('Active', 'Frozen', 'Blocked', '…_
-
-2. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
-
-3. _**Constraints: ** - CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment')) - CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed')) - CHECK (parent_account_id != accou…_
-
----
-
-### ✅ 10 — What is the overdraft fee?
-
-**Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0945 | **Gate:** `proceed_with_warning`
-
-**Expected answer:**
-> The overdraft fee is $35 per overdraft transaction, with a maximum of 4 overdraft fees per day ($140 total). An overdraft protection transfer from savings to cover the overdraft costs $12. No overdraft fee is charged if the account balance is within $10 at the end of the business day. The fee applie…
-
-**System answer:**
-> The retrieved context does not define an overdraft fee, so I cannot determine what it is from the provided information.
-
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_14`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_15`, `parent_chunk_data_dictionary.md_16`, `parent_chunk_business_glossary.md_4`
-
-**Context previews (first 3):**
-
-1. _## transactions  **Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated f…_
-
-2. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
-
-3. _## Transaction  **Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represen…_
-
----
-
-### ✅ 11 — What accounts does James Wilson have?
-
-**Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.3761 | **Gate:** `proceed`
-
-**Expected answer:**
-> James Wilson has a portfolio of three accounts: (1) Checking account CHK-001001 with a current balance of $5,240.35, (2) Savings account SAV-001001 with a current balance of $15,250.75, and (3) 12-month Certificate of Deposit CD-001001 with a current balance of $50,000.00 earning 4.50% APY. His acco…
-
-**System answer:**
-> I can’t determine which accounts James Wilson has from the retrieved context, because it only describes the `accounts` and `customer_account` tables and their relationships, not any specific customer record for James Wilson. The grounded takeaway is that customer-to-account links are stored in `customer_account`, but James Wilson’s associated accounts are not provided here.
-
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 0.80 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_18`, `parent_chunk_data_dictionary.md_15`, `parent_chunk_data_dictionary.md_13`, `parent_chunk_data_dictionary.md_14`, `parent_chunk_data_dictionary.md_16`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_9`, `Card ID and Card Number (PAN)→CARDS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`
 
 **Context previews (first 3):**
 
 1. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
 
-2. _**Constraints: ** - CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment')) - CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed')) - CHECK (parent_account_id != accou…_
+2. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
 
-3. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
-
----
-
-### ✅ 12 — What is the current balance of Mary Johnson's savings account?
-
-**Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.1101 | **Gate:** `proceed_with_warning`
-
-**Expected answer:**
-> Mary Johnson's savings account SAV-003001 has a current balance of $48,750.50. This is a premium savings account earning 5.00% APY with a $2,500 minimum balance requirement. The account has earned $243.75 in year-to-date interest and has no monthly maintenance fee. Her account is held at the Downtow…
-
-**System answer:**
-> I cannot find this information in the knowledge graph.
-
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_15`, `parent_chunk_data_dictionary.md_14`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_13`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`
-
-**Context previews (first 3):**
-
-1. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
-
-2. _**Constraints: ** - CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment')) - CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed')) - CHECK (parent_account_id != accou…_
-
-3. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
+3. _## cards  **Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, …_
 
 ---
 
-### ✅ 13 — What loans does Michael Rodriguez have?
+### ✅ 10 — How does the transactions table track the impact of each transaction on account balances?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0019 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 100% | **Top Score:** 0.7230 | **Gate:** `proceed`
 
 **Expected answer:**
-> Michael Rodriguez has two active loans: (1) An auto loan for $35,000 at 6.50% APR with a 60-month term, monthly payment of $684.57, and current balance due of $28,000.00; (2) He is also a joint owner on a mortgage with Elizabeth Clark for $425,000 at 6.00% APR with a 360-month term, monthly payment …
+> The transactions table includes a balance_after column (DECIMAL 15,2) that records the account balance after each transaction is applied. Combined with the amount column, transaction_type (Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee), and status (Pending/Posted/Failed/Cancelled/OnHold), thi…
 
 **System answer:**
-> I cannot find this information in the knowledge graph.
+> The `TRANSACTIONS` table tracks balance impact in two complementary ways.
 
-**RAGAS scores:**
+First, each row is tied to a specific account through `account_id`, which is a foreign key to `ACCOUNTS.ACCOUNT_ID`. That establishes which account the transaction affects.
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
+Second, the table stores both the transaction characteristics and the resulting balance state. The relevant columns are `transaction_type`, `amount`, `…
 
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_15`, `parent_chunk_data_dictionary.md_18`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_4`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_13`, `parent_chunk_data_dictionary.md_14`, `parent_chunk_data_dictionary.md_12`
-
-**Context previews (first 3):**
-
-1. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
-
-2. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
-
-3. _## Loan  **Definition: ** A financial arrangement where the bank lends a principal amount to a customer, who repays with interest over a specified term according to a fixed schedule. **Business Contex…_
-
----
-
-### ✅ 14 — What transactions occurred in Patricia Davis's checking account in February 2024?
-
-**Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0309 | **Gate:** `proceed_with_warning`
-
-**Expected answer:**
-> Patricia Davis's checking account CHK-004001 had two transactions in February 2024: (1) A debit of $75.50 on February 13 for a point-of-sale purchase at Target Store #4567 in Chicago, IL, reducing her balance to $1,675.75; (2) A credit of $1,500.00 on February 12 from a mobile check deposit, bringin…
-
-**System answer:**
-> I cannot determine which transactions occurred in Patricia Davis’s checking account in February 2024 from the retrieved context. What is known is that the `transactions` table records account activity and references `accounts`, and that `accounts` includes a `Checking` account type. However, the context does not include any Patricia Davis account records, transaction rows, or February 2024 transac…
-
-**RAGAS scores:**
-
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_14`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_12`, `TRANSACTIONS→ACCOUNTS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_7`, `Financial Transaction, Account Activity, Bank Transaction`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_9`, `TRANSACTIONS→ACCOUNTS`, `all account activity→TRANSACTIONS`, `parent_chunk_data_dictionary.md_7`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `ACCOUNTS→BRANCHES`, `ACCOUNTS→ACCOUNTS`, `parent_chunk_data_dictionary.md_10`
 
 **Context previews (first 3):**
 
 1. _## transactions  **Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated f…_
 
-2. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+2. _Relationship: TRANSACTIONS references ACCOUNTS via foreign key ACCOUNT_ID -> ACCOUNTS.ACCOUNT_ID.…_
 
-3. _**Constraints: ** - CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment')) - CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed')) - CHECK (parent_account_id != accou…_
+3. _Business concept 'all account activity' is implemented by physical table TRANSACTIONS (columns: transaction_id, account_id, transaction_type, amount, currency, transaction_date, status, balance_after,…_
 
 ---
 
-### ✅ 15 — Which customers are joint owners on Robert Chen's accounts?
+### ✅ 11 — How does the customer_account junction table support multiple ownership types?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0226 | **Gate:** `proceed_with_warning`
+**GT Coverage:** 100% | **Top Score:** 0.9865 | **Gate:** `proceed`
 
 **Expected answer:**
-> Linda Thompson is a joint owner on both of Robert Chen's accounts with 50% ownership each: checking account CHK-002001 and savings account SAV-002001. Robert Chen also has joint ownership (50%) on William Harris's savings account SAV-006001. All three customers have Level 2 or Level 3 KYC status and…
+> The customer_account table implements a many-to-many relationship between customers and accounts with a composite primary key (customer_id, account_id). It supports four relationship types via CHECK constraint: Owner, JointOwner, AuthorizedSigner, and Custodian. The is_primary flag designates the pr…
 
 **System answer:**
-> I cannot determine which customers are joint owners on Robert Chen’s accounts from the retrieved context. The context only tells us that the `customer_account` table supports many-to-many customer-account relationships, including joint ownership, but it does not provide any row-level data or any record for Robert Chen.
+> The `customer_account` table supports multiple ownership types by implementing the many-to-many relationship between `customers` and `accounts`, so a single customer can be linked to multiple accounts and a single account can be linked to multiple customers.
 
-**RAGAS scores:**
+It captures the ownership or access role in `relationship_type`, which is defined as `Owner`, `JointOwner`, `AuthorizedSigner`, or `Custodia…
 
-| f | ar | cp | cr |
-|---|----|----|-----|
-| 1.00 | 0.00 | 0.00 | 0.00 |
-
-**Sources retrieved (10):** `parent_chunk_data_dictionary.md_13`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_18`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_15`, `parent_chunk_data_dictionary.md_17`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_8`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `Owner/JointOwner/AuthorizedSigner/Custodian→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_12`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `parent_chunk_data_dictionary.md_7`, `CUSTOMER_ACCOUNT→ACCOUNTS`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_11`
 
 **Context previews (first 3):**
 
 1. _## customer_account  **Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. …_
 
-2. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+2. _Business concept 'Owner/JointOwner/AuthorizedSigner/Custodian' is implemented by physical table CUSTOMER_ACCOUNT (columns: customer_id, account_id, relationship_type, is_primary, ownership_percentage,…_
 
 3. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
 
 ---
 
+### ✅ 12 — What is the difference between current_balance and available_balance in the accounts table?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.8328 | **Gate:** `proceed`
+
+**Expected answer:**
+> The accounts table tracks two separate balance fields: current_balance includes all transactions including pending ones, while available_balance excludes holds and pending transactions and represents what the customer can actually withdraw. The business glossary confirms this distinction, stating th…
+
+**System answer:**
+> The retrieved context shows that `ACCOUNTS` stores both `current_balance` and `available_balance` as separate columns, and the business glossary identifies “Current Balance vs. Available Balance” as a key account attribute. However, the exact business rule defining how `current_balance` differs from `available_balance` is not provided in the available context.
+
+So, from the knowledge graph, the su…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_9`, `ACCOUNTS→ACCOUNTS`, `ACCOUNTS→BRANCHES`, `Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards→LOANS`
+
+**Context previews (first 3):**
+
+1. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+
+2. _Business concept 'balances, interest accrual, fees, and account lifecycle status' is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_…_
+
+3. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
+
+---
+
+### ✅ 13 — How are loans linked to both customers and accounts in the schema?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.8105 | **Gate:** `proceed`
+
+**Expected answer:**
+> The loans table has a customer_id foreign key referencing the customers table (the borrower) and an optional account_id foreign key referencing the accounts table (for linked payment accounts). Each loan belongs to exactly one customer, and can optionally be connected to an account for automatic pay…
+
+**System answer:**
+> In the schema, `LOANS` links to `CUSTOMERS` through `LOANS.CUSTOMER_ID -> CUSTOMERS.CUSTOMER_ID` and to `ACCOUNTS` through `LOANS.ACCOUNT_ID -> ACCOUNTS.ACCOUNT_ID`.
+
+From the `loans` table definition, `customer_id` is required (`NOT NULL`) and is described as the foreign key to the borrower in `customers`, so every loan must be associated with a customer. This matches the entity relationship summ…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_12`, `LOANS→CUSTOMERS`, `LOANS→ACCOUNTS`, `parent_chunk_data_dictionary.md_10`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `parent_chunk_data_dictionary.md_8`, `CUSTOMER_ACCOUNT→ACCOUNTS`, `parent_chunk_data_dictionary.md_11`
+
+**Context previews (first 3):**
+
+1. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+
+2. _Relationship: LOANS references CUSTOMERS via foreign key CUSTOMER_ID -> CUSTOMERS.CUSTOMER_ID.…_
+
+3. _Relationship: LOANS references ACCOUNTS via foreign key ACCOUNT_ID -> ACCOUNTS.ACCOUNT_ID.…_
+
+---
+
+### ✅ 14 — What types of transactions does the system support and how does their status lifecycle work?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.3394 | **Gate:** `proceed`
+
+**Expected answer:**
+> The transactions table supports seven transaction types via CHECK constraint: Debit, Credit, Transfer, Payment, Withdrawal, Deposit, and Fee. Each transaction also has a status lifecycle with five states: Pending (initial default), Posted (final), Failed, Cancelled, and OnHold. The business glossary…
+
+**System answer:**
+> The system’s transaction activity is implemented in the TRANSACTIONS table and supports these transaction types through `transaction_type`: Debit, Credit, Transfer, Payment, Withdrawal, Deposit, and Fee.
+
+From the business definition of Transaction, these are financial activities that affect an account balance. The context also states that debit transactions reduce the account balance and credit t…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_7`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `all account activity→TRANSACTIONS`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_11`, `Automated Teller Machine→ATMS`, `parent_chunk_data_dictionary.md_12`
+
+**Context previews (first 3):**
+
+1. _## transactions  **Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated f…_
+
+2. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+
+3. _Business concept 'balances, interest accrual, fees, and account lifecycle status' is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_…_
+
+---
+
+### ✅ 15 — How does the schema support joint account ownership between multiple customers?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.4870 | **Gate:** `proceed`
+
+**Expected answer:**
+> Joint ownership is implemented through the customer_account junction table, which creates a many-to-many relationship between customers and accounts. Each row has a relationship_type CHECK constraint allowing Owner, JointOwner, AuthorizedSigner, or Custodian. The ownership_percentage field (DECIMAL …
+
+**System answer:**
+> The schema supports joint account ownership through the `customer_account` table, which is a junction table between `customers` and `accounts`. This implements a many-to-many relationship, so one customer can be linked to multiple accounts and one account can be linked to multiple customers.
+
+For joint ownership specifically, `customer_account.relationship_type` stores the role of each customer on…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `Owner/JointOwner/AuthorizedSigner/Custodian→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_11`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `CUSTOMER_ACCOUNT→ACCOUNTS`, `parent_chunk_business_glossary.md_0`
+
+**Context previews (first 3):**
+
+1. _## customer_account  **Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. …_
+
+2. _Business concept 'Owner/JointOwner/AuthorizedSigner/Custodian' is implemented by physical table CUSTOMER_ACCOUNT (columns: customer_id, account_id, relationship_type, is_primary, ownership_percentage,…_
+
+3. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+
+---
+
+### ✅ 16 — What information does the cards table track and how are cards linked to customers and accounts?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.9528 | **Gate:** `proceed`
+
+**Expected answer:**
+> The cards table links to both accounts (account_id FK) and customers (customer_id FK), tracking card_type (Debit/Credit/ATM), card_network (Visa/Mastercard/Discover/AmericanExpress), card_number, cardholder name, expiration_date, and CVV. For spending controls it stores credit_limit (nullable, for c…
+
+**System answer:**
+> The `cards` table is the payment card issuance table. It tracks debit, credit, and ATM cards, including the cardholder and linked account, security features, limits, network, and lifecycle/status information.
+
+From the context, `CARDS` includes these tracked attributes: `card_id` as the primary key; `account_id` as the linked account; `customer_id` as the cardholder; `card_number` as the PAN and i…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `CARDS→CUSTOMERS`, `CARDS→ACCOUNTS`, `parent_chunk_data_dictionary.md_10`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `CUSTOMER_ACCOUNT→ACCOUNTS`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_12`
+
+**Context previews (first 3):**
+
+1. _## cards  **Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, …_
+
+2. _Relationship: CARDS references CUSTOMERS via foreign key CUSTOMER_ID -> CUSTOMERS.CUSTOMER_ID.…_
+
+3. _Relationship: CARDS references ACCOUNTS via foreign key ACCOUNT_ID -> ACCOUNTS.ACCOUNT_ID.…_
+
+---
+
+### ✅ 17 — How does the schema handle interest rates across deposit and loan products?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.0574 | **Gate:** `proceed_with_warning`
+
+**Expected answer:**
+> Interest rates are stored differently for deposits and loans. The accounts table has an interest_rate column (nullable DECIMAL 5,4) and interest_earned for year-to-date tracking. The loans table has its own interest_rate column representing APR. The business glossary explains that APR (Annual Percen…
+
+**System answer:**
+> The schema handles interest rates separately for deposit products and loan products, using different tables with a shared `interest_rate` field.
+
+For deposit products, interest is stored in `ACCOUNTS`. The `accounts` table supports account types including Checking, Savings, MoneyMarket, CD, and Investment, and it explicitly includes `interest_rate` and `interest_earned`. Its description says it tr…
+
+**Sources retrieved (12):** `Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards→LOANS`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_7`, `LOANS→CUSTOMERS`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `LOANS→ACCOUNTS`, `parent_chunk_business_glossary.md_2`
+
+**Context previews (first 3):**
+
+1. _Business concept 'Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards' is implemented by physical table LOANS (columns: loan_id…_
+
+2. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+
+3. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
+
+---
+
+### ✅ 18 — What types of branches does the bank operate and how do they differ in capabilities?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.1556 | **Gate:** `proceed_with_warning`
+
+**Expected answer:**
+> The branches table supports three types via CHECK constraint: FullService, Satellite, and ATMOnly. The business glossary details each: FullService branches offer complete banking services including loan origination, financial advisors, and safe deposit boxes; Satellite branches have limited hours an…
+
+**System answer:**
+> The retrieved context says the bank operates three branch types in `BRANCHES.branch_type`: `FullService`, `Satellite`, and `ATMOnly`.
+
+What is known from the context is limited to the fact that these are the defined branch type values. The `branches` table description says branches are “physical bank locations including full-service branches, satellite offices, and ATM-only locations,” and that th…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_12`, `physical banking location→BRANCHES`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_6`, `Customer Master Data→CUSTOMERS`, `ATMS→BRANCHES`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_2`
+
+**Context previews (first 3):**
+
+1. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+
+2. _Business concept 'physical banking location' is implemented by physical table BRANCHES (columns: branch_id, branch_code, branch_name, branch_type, address, city, state, zip_code, phone, hours, atm_cou…_
+
+3. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+
+---
+
+### ✅ 19 — How are ATMs related to branches in the schema and what types of ATMs exist?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.6184 | **Gate:** `proceed`
+
+**Expected answer:**
+> The atms table has an optional branch_id foreign key referencing branches. When branch_id is NULL, the ATM is standalone and not affiliated with any branch. ATM types are defined by CHECK constraint: Branch (on-premises), DriveThrough (vehicle-accessible), and Standalone (independent locations). Eac…
+
+**System answer:**
+> In the schema, ATMs are stored in the ATMS table and branches are stored in the BRANCHES table. The relationship is ATMS.branch_id → BRANCHES.branch_id, so each ATM can reference a branch through the branch_id foreign key. The entity relationship summary describes this as branches → atms in a one-to-many relationship, meaning one branch can have multiple ATMs. The ATMS table also says branch_id is…
+
+**Sources retrieved (12):** `ATMS→BRANCHES`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_12`, `Automated Teller Machine→ATMS`, `physical banking location→BRANCHES`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_3`
+
+**Context previews (first 3):**
+
+1. _Relationship: ATMS references BRANCHES via foreign key BRANCH_ID -> BRANCHES.BRANCH_ID.…_
+
+2. _## atms  **Description: ** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location s…_
+
+3. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+
+---
+
+### ✅ 20 — What is the lifecycle of a loan from application to completion?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.0067 | **Gate:** `proceed_with_warning`
+
+**Expected answer:**
+> The loans table tracks loan status through five states defined by CHECK constraint: Pending (application submitted, default), Approved (credit approved but not yet funded), Active (loan funded and being repaid), PaidOff (fully repaid), and Defaulted (borrower failed to repay). Each loan records orig…
+
+**System answer:**
+> The retrieved context does not describe a full loan lifecycle from application through completion, so that cannot be determined here.
+
+What is known from the context is that the `LOANS` table represents loans after they are part of the portfolio. It tracks lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards, and stores `loan_id`, `customer_id`, `loan_type`, o…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_7`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards→LOANS`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_1`, `balances, interest accrual, fees, and account lifecycle status`
+
+**Context previews (first 3):**
+
+1. _## loans  **Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules…_
+
+2. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+
+3. _Business concept 'balances, interest accrual, fees, and account lifecycle status' is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_…_
+
+---
+
+### ✅ 21 — What does preferred customer status mean and how is it tracked in the schema?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.5129 | **Gate:** `proceed`
+
+**Expected answer:**
+> Preferred status is tracked via the is_preferred boolean flag in the customers table (default: false). The business glossary states that preferred customers receive waived fees, preferred interest rates, and priority service. The glossary examples show preferred customers with longer tenure and high…
+
+**System answer:**
+> Preferred customer status refers to a customer being flagged for VIP treatment. In the schema, it is tracked in the `CUSTOMERS` table, which is the core customer master data table for all individual and corporate banking customers. The specific column is `is_preferred`.
+
+This comes directly from the `customers` table description, which states that it includes “preferred customer flags for VIP trea…
+
+**Sources retrieved (12):** `Customer Master Data→CUSTOMERS`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_8`, `Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards→LOANS`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_4`
+
+**Context previews (first 3):**
+
+1. _Business concept 'Customer Master Data' — The table description explicitly says it is the core customer dimension containing master data for all individual and corporate banking customers, which align…_
+
+2. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+
+3. _## cards  **Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, …_
+
+---
+
+### ✅ 22 — How does the accounts table support interest tracking and what business rules govern interest?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.3044 | **Gate:** `proceed`
+
+**Expected answer:**
+> The accounts table has interest_rate (nullable DECIMAL for the annual rate) and interest_earned (DECIMAL for year-to-date interest credited). The business glossary states that deposit interest is credited monthly (typically the first day of the month) and that APY accounts for compounding effects. P…
+
+**System answer:**
+> The `ACCOUNTS` table supports interest tracking directly through the columns `interest_rate` and `interest_earned`. From the table description, it is a deposit account master table for account types such as Checking, Savings, MoneyMarket, CD, and Investment, and it explicitly tracks balances, interest accrual, fees, and account lifecycle status. The mapped physical columns relevant to interest are…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `balances, interest accrual, fees, and account lifecycle status→ACCOUNTS`, `Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards→LOANS`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_10`, `ACCOUNTS→BRANCHES`, `ACCOUNTS→ACCOUNTS`, `parent_chunk_data_dictionary.md_8`
+
+**Context previews (first 3):**
+
+1. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+
+2. _Business concept 'balances, interest accrual, fees, and account lifecycle status' is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_…_
+
+3. _Business concept 'Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards' is implemented by physical table LOANS (columns: loan_id…_
+
+---
+
+### ✅ 23 — Can an account exist without any customer linked to it?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.1394 | **Gate:** `proceed_with_warning`
+
+**Expected answer:**
+> Looking at the schema, there is no database-level constraint that forces every account to have a customer_account row. The accounts table has no direct foreign key to customers — the relationship is through the customer_account junction table with a composite primary key (customer_id, account_id). H…
+
+**System answer:**
+> The retrieved context does not state a rule that every account must be linked to at least one customer.
+
+What it does say is that customers and accounts have a many-to-many relationship through `customer_account`, and that the `customer_account` junction table “requires both customer and account to exist.” That means a link row cannot exist unless both the `CUSTOMERS` and `ACCOUNTS` records alread…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `parent_chunk_data_dictionary.md_12`, `CUSTOMER_ACCOUNT→ACCOUNTS`, `Owner/JointOwner/AuthorizedSigner/Custodian→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `LOANS→CUSTOMERS`
+
+**Context previews (first 3):**
+
+1. _## customer_account  **Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. …_
+
+2. _Relationship: CUSTOMER_ACCOUNT references CUSTOMERS via foreign key CUSTOMER_ID -> CUSTOMERS.CUSTOMER_ID.…_
+
+3. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+
+---
+
+### ✅ 24 — How does the schema handle failed or cancelled transactions?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.2042 | **Gate:** `proceed`
+
+**Expected answer:**
+> The transactions table has a status column with CHECK constraint allowing Pending, Posted, Failed, Cancelled, and OnHold states. The business glossary explains that failed transactions are logged for audit but do not affect the account balance — the balance_after field would reflect no change. Poste…
+
+**System answer:**
+> The schema handles failed or cancelled transactions through the `TRANSACTIONS` table, which implements the business concept of “all account activity.” That table includes a `status` column, and the `Transaction` business definition explicitly lists valid transaction states as `Pending`, `Posted`, `Failed`, `Cancelled`, and `OnHold`.
+
+So, failed or cancelled transactions are not described as separa…
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_7`, `TRANSACTIONS→ACCOUNTS`, `all account activity→TRANSACTIONS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`
+
+**Context previews (first 3):**
+
+1. _## transactions  **Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated f…_
+
+2. _## Entity Relationship Summary  **Key Relationships: ** - customers ←→ accounts (many-to-many via customer_account) - accounts → accounts (self-reference for parent-child hierarchy) - accounts → trans…_
+
+3. _## accounts  **Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggrega…_
+
+---
+
+### ✅ 25 — What operational states can an ATM have and what do they mean for available services?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.4507 | **Gate:** `proceed`
+
+**Expected answer:**
+> ATMs have three operational states defined by CHECK constraint: Operational (fully functional for all supported transactions), OutOfService (technical issue preventing all transactions), and OutOfCash (cash depleted, preventing withdrawals). The business glossary explains that cash replenishment is …
+
+**System answer:**
+> An ATM can have three status values in the context: Operational, OutOfService, and OutOfCash. The ATM business definition and the ATMS table both indicate that status is tracked for availability management.
+
+The context also explicitly says the ATMS table tracks cash_balance and last_replenished for replenishment scheduling, and it records ATM type as Standalone, Branch, or DriveThrough. However, …
+
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `Automated Teller Machine→ATMS`, `ATMS→BRANCHES`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_11`, `physical banking location→BRANCHES`, `parent_chunk_data_dictionary.md_9`, `Card ID and Card Number (PAN)→CARDS`
+
+**Context previews (first 3):**
+
+1. _## atms  **Description: ** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location s…_
+
+2. _Business concept 'Automated Teller Machine' is implemented by physical table ATMS (columns: atm_id, atm_code, branch_id, location, latitude, longitude, atm_type, status, cash_balance, last_replenished…_
+
+3. _Relationship: ATMS references BRANCHES via foreign key BRANCH_ID -> BRANCHES.BRANCH_ID.…_
+
+---
+
 ## Anomalies & Observations
 
-- **1**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **2**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **3**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **4**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **5**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **7**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **9**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **10**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **11**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **12**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **13**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **14**: Very low context precision (0.00) — many off-topic chunks retrieved
-- **15**: Very low context precision (0.00) — many off-topic chunks retrieved
+No anomalies detected. All questions grounded with acceptable RAGAS scores.

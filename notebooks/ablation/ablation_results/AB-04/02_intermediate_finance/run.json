@@ -1,0 +1,786 @@
+{
+  "study_id": "AB-04",
+  "dataset_id": "02_intermediate_finance",
+  "run_tag": "v5",
+  "timestamp": "2026-03-30T21:58:26.877739+00:00",
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-2026-03-05",
+    "extraction_model": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 5,
+    "er_similarity_threshold": 0.75
+  },
+  "builder": {
+    "triplets": 0,
+    "entities": 0,
+    "tables_parsed": 0,
+    "tables_completed": 0
+  },
+  "query": {
+    "total_questions": 25,
+    "grounded_count": 25,
+    "grounded_rate": 1.0,
+    "avg_gt_coverage": 1.0,
+    "avg_top_score": 0.47525000155029773,
+    "avg_chunk_count": 5.0,
+    "abstained_count": 0
+  },
+  "per_question": [
+    {
+      "query_id": "1",
+      "question": "What is a checking account?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The retrieved context does not provide a separate business definition for \u201cchecking account.\u201d\n\nFrom the available context, a checking account is an Account with `account_type = Checking` in the `accounts` table. More generally, the glossary defines an Account as a financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. The `accounts` table describes this as a deposit account master record that tracks balances, interest accrual, fees, and account lifecycle status, and it supports multiple account types including Checking, Savings, MoneyMarket, CD, and Investment.\n\nThe context also indicates that accounts may be individual or jointly held, with customer relationships managed through the `customer_account` table using relationship types such as `Owner`, `JointOwner`, `AuthorizedSigner`, and `Custodian`. Accounts may also be organized into parent-child hierarchy structures for portfolio aggregation.\n\nSo, strictly from the retrieved context, a checking account is not separately defined beyond being one of the supported account types under the broader Account concept.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_7",
+        "parent_chunk_data_dictionary.md_8",
+        "parent_chunk_business_glossary.md_0",
+        "Deposit Account",
+        "parent_chunk_business_glossary.md_1"
+      ],
+      "contexts": [
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "## customer_account\n\n**Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes. **Primary Key:** Composite (`customer_id`, `account_id`) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Foreign key to customers (part of PK) | NO | | account_id | INTEGER | Foreign key to accounts (part of PK) | NO | | relationship_type | VARCHAR(20) | Relationship: Owner/JointOwner/AuthorizedSigner/Custodian | NO | | is_primary | BOOLEAN | Whether this is the primary owner | NO | | ownership_percentage | DECIMAL(5,2) | Percentage ownership (0.00-100.00)",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan",
+        "Deposit Account: This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type.",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio"
+      ],
+      "expected_answer": "A checking account is one of five account types (Checking, Savings, MoneyMarket, CD, Investment) defined by the CHECK constraint on the accounts table. According to the business glossary, accounts are financial arrangements for deposit, withdrawal, and management of funds. The schema tracks current_balance, available_balance, minimum_balance, monthly_fee, and interest_rate (nullable for non-interest accounts). Checking accounts can have subtypes like Premium or Standard via the account_subtype column. Debit cards can be linked to checking accounts for direct spending, as noted in the Card business rules.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.6476868057700992,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "2",
+      "question": "What is the difference between a savings account and a money market account?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The retrieved context does not define a business difference between a savings account and a money market account.\n\nWhat it does show is that both are deposit account types under the `accounts` table and the Account business concept:\n`account_type` can be `Checking`, `Savings`, `MoneyMarket`, `CD`, or `Investment`.\n\nFrom the context, both would therefore be treated as account categories within the same deposit account master structure, which tracks balances, interest accrual, fees, and account lifecycle status. The context also indicates that deposit accounts can have attributes such as current and available balance, interest rate, interest earned, minimum balance requirements, monthly fees, and status.\n\nHowever, the knowledge provided does not state how `Savings` differs from `MoneyMarket` in terms of eligibility, transaction limits, rates, fees, balance rules, or usage.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_7",
+        "parent_chunk_data_dictionary.md_10",
+        "parent_chunk_business_glossary.md_0",
+        "parent_chunk_business_glossary.md_2",
+        "parent_chunk_business_glossary.md_1"
+      ],
+      "contexts": [
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "## loans\n\n**Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management. **Primary Key:** `loan_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | loan_id | INTEGER | Unique loan identifier (primary key) | NO | | customer_id | INTEGER | Foreign key to customers (borrower) | NO | | loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | | account_id | INTEGER | Foreign key to accounts (optional, for linked accounts) | YES | | principal_amount | DECIMAL(15,2) | Original loan principal | NO | | interes",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan",
+        "## Interest\n\n**Definition: ** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. **Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. **Key Attributes:** - Interest Rate (annual percentage) - APR (Annual Percentage Rate) - for loans - APY (Annual Percentage Yield) - for deposits - Compounding Frequency (daily, monthly, annually) - Simple vs. Compound Interest - Fixed vs. Variable Rates **Business Rules:** - Deposit interest is credited monthly (typically on first day of month) - Loan interest is amortized (early payments are mostly interest, later mostly principal) - APY accounts for compoundi",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio"
+      ],
+      "expected_answer": "Both savings and money market are account types defined in the accounts table CHECK constraint. The business glossary Interest section provides example rates: Standard Savings earns 0.25% APY (with monthly compounding), Premium Savings earns 0.50% APY (with daily compounding), while Money Market earns 0.75% APY tiered by balance. Both account types have interest_rate, minimum_balance, and monthly_fee columns in the schema. The glossary examples show savings accounts with varying balances and subtypes (Standard, Premium), while money market accounts are listed alongside checking and savings as deposit products.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.6600628294854518,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "3",
+      "question": "What is APR versus APY?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "APR is Annual Percentage Rate and, in this context, it is used for loans. It refers to the annual interest rate associated with borrowing.\n\nAPY is Annual Percentage Yield and, in this context, it is used for deposits. It refers to the return on deposited money, and the glossary explicitly states that APY accounts for compounding.\n\nSynthesizing the Interest definition and business rules: APR is tied to the cost of borrowing money on lending products, while APY is tied to the return earned on deposit products, with deposit interest typically credited monthly and APY reflecting the effect of compounding.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_10",
+        "parent_chunk_business_glossary.md_2",
+        "parent_chunk_business_glossary.md_0",
+        "parent_chunk_business_glossary.md_1",
+        "Automated Teller Machine"
+      ],
+      "contexts": [
+        "## loans\n\n**Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management. **Primary Key:** `loan_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | loan_id | INTEGER | Unique loan identifier (primary key) | NO | | customer_id | INTEGER | Foreign key to customers (borrower) | NO | | loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | | account_id | INTEGER | Foreign key to accounts (optional, for linked accounts) | YES | | principal_amount | DECIMAL(15,2) | Original loan principal | NO | | interes",
+        "## Interest\n\n**Definition: ** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. **Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. **Key Attributes:** - Interest Rate (annual percentage) - APR (Annual Percentage Rate) - for loans - APY (Annual Percentage Yield) - for deposits - Compounding Frequency (daily, monthly, annually) - Simple vs. Compound Interest - Fixed vs. Variable Rates **Business Rules:** - Deposit interest is credited monthly (typically on first day of month) - Loan interest is amortized (early payments are mostly interest, later mostly principal) - APY accounts for compoundi",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio",
+        "Automated Teller Machine"
+      ],
+      "expected_answer": "APR (Annual Percentage Rate) is the annual cost of a loan including interest and fees, used for loan products. APY (Annual Percentage Yield) is the effective annual rate including compounding effects for deposit products. APY is higher than the nominal rate when compounding is more frequent than annually. For example, a savings account might quote 0.25% APY reflecting daily compounding, while a loan quotes 5.5% APR including origination fees.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.9608783531246672,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "4",
+      "question": "What is KYC Level 2?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The retrieved context does not define what \u201cKYC Level 2\u201d means. It only shows that KYC is tracked on the CUSTOMERS table via the kyc_status attribute and that valid KYC levels are constrained to Level1, Level2, or Level3. So from the knowledge graph, I can say Level2 is an allowed KYC status value, but its business meaning or criteria are not provided.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_12",
+        "Customer Master Data\u2192CUSTOMERS",
+        "parent_chunk_data_dictionary.md_4",
+        "parent_chunk_business_glossary.md_0",
+        "Customer Master Data"
+      ],
+      "contexts": [
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "Business concept 'Customer Master Data' \u2014 The table is explicitly described as the core customer dimension and contains identity, contact, KYC, risk, and preferred-flag attributes, which is characteristic of customer master data. Although the business glossary mentions both individual and corporate banking customers, the physical columns here more clearly implement a person-level customer master record rather than the full generalized entity concept. is implemented by physical table CUSTOMERS (columns: customer_id, first_name, last_name, tax_id, email, phone, address, city, state, zip_code, kyc_status, risk_profile, customer_since, is_preferred, created_at, updated_at).",
+        "# Retail Banking Data Dictionary\n\nThis document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.\n\n---\n\n## customers\n\n**Description: ** Core customer dimension table containing master data for all individual and corporate banking customers. Includes KYC (Know Your Customer) compliance status, risk profiling for investment suitability, and preferred customer flags for VIP treatment. **Primary Key:** `customer_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Unique customer identifier (primary key) | NO | | first_name | VARCHAR(50) | Customer's first name | NO | | last_name | VARCHAR(50) | Customer's last name | NO | | tax_id | VARCHAR(11) | Tax identification number (SSN/EIN), must be unique | NO | | email | VARCHAR(100) | Primary email address for notifications | NO | | phone | VARCHAR(20) | Primary phone num",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan",
+        "Customer Master Data: The table is explicitly described as the core customer dimension and contains identity, contact, KYC, risk, and preferred-flag attributes, which is characteristic of customer master data. Although the business glossary mentions both individual and corporate banking customers, the physical columns here more clearly implement a person-level customer master record rather than the full generalized entity concept."
+      ],
+      "expected_answer": "The customers table has a kyc_status column with a CHECK constraint allowing Level1, Level2, and Level3. The business glossary states that Level1 is the minimum requirement for account opening, Level3 is required for high-value accounts and international transfers, and risk_profile determines eligibility for products. KYC levels represent increasing verification requirements for regulatory compliance. Level2 falls between basic identity verification (Level1) and high-value account access (Level3), though the specific documentation requirements for each level are not detailed in the source documents.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.6105115237967107,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "5",
+      "question": "How does the schema support different account subtypes and their varying requirements?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The schema supports account subtypes in the `ACCOUNTS` table through two classification columns: `account_type` and `account_subtype`. From the retrieved context, `account_type` identifies the main product category (`Checking`, `Savings`, `MoneyMarket`, `CD`, `Investment`), and `account_subtype` stores a more specific subtype, with examples such as `Premium`, `Student`, and `Standard`.\n\nThe same `ACCOUNTS` record also carries the business attributes that represent account requirements and behavior, including `current_balance`, `available_balance`, `interest_rate`, `interest_earned`, `minimum_balance`, `monthly_fee`, `status`, `opened_date`, `closed_date`, and `last_transaction_date`. The glossary and concept mapping describe this table as the core master record for deposit accounts, covering type, subtype, balances, interest, fees, status, and lifecycle dates.\n\nSo, based strictly on the context, subtype support is implemented by recording subtype values in `ACCOUNTS` and storing requirement-related attributes in that same table. However, the retrieved context does not specify any explicit subtype-specific rules, validation logic, calculation logic, or separate subtype tables. It shows that the schema can represent different subtypes and the relevant account attributes, but it does not define exactly how varying requirements are enforced per subtype.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_7",
+        "Deposit Account\u2192ACCOUNTS",
+        "parent_chunk_data_dictionary.md_12",
+        "Deposit Account",
+        "parent_chunk_business_glossary.md_0"
+      ],
+      "contexts": [
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "Business concept 'Deposit Account' \u2014 This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type. is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_account_id, branch_id, status, current_balance, available_balance, interest_rate, interest_earned, minimum_balance, monthly_fee, opened_date, closed_date, last_transaction_date, created_at, updated_at).",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "Deposit Account: This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type.",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan"
+      ],
+      "expected_answer": "The accounts table has an account_subtype column (VARCHAR 30, nullable) that stores values like Premium or Standard to differentiate within each account_type. Combined with the minimum_balance and monthly_fee columns, each account can have different requirements configured per subtype. The account_type CHECK constraint defines the broad categories (Checking, Savings, MoneyMarket, CD, Investment) while account_subtype provides finer differentiation. The business glossary confirms that minimum balance requirements may trigger monthly fees if not met.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.18907149226772618,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "6",
+      "question": "What types of loan products does the bank offer?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The bank offers these loan product types, as defined in `loans.loan_type`: Mortgage, Personal, Auto, HELOC, and CreditCard. The `loans` table description also says the loan portfolio tracks mortgages, personal loans, auto loans, HELOCs, and credit cards.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_10",
+        "parent_chunk_data_dictionary.md_12",
+        "parent_chunk_business_glossary.md_1",
+        "parent_chunk_business_glossary.md_2",
+        "parent_chunk_business_glossary.md_0"
+      ],
+      "contexts": [
+        "## loans\n\n**Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management. **Primary Key:** `loan_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | loan_id | INTEGER | Unique loan identifier (primary key) | NO | | customer_id | INTEGER | Foreign key to customers (borrower) | NO | | loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | | account_id | INTEGER | Foreign key to accounts (optional, for linked accounts) | YES | | principal_amount | DECIMAL(15,2) | Original loan principal | NO | | interes",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio",
+        "## Interest\n\n**Definition: ** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. **Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. **Key Attributes:** - Interest Rate (annual percentage) - APR (Annual Percentage Rate) - for loans - APY (Annual Percentage Yield) - for deposits - Compounding Frequency (daily, monthly, annually) - Simple vs. Compound Interest - Fixed vs. Variable Rates **Business Rules:** - Deposit interest is credited monthly (typically on first day of month) - Loan interest is amortized (early payments are mostly interest, later mostly principal) - APY accounts for compoundi",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan"
+      ],
+      "expected_answer": "The bank offers five loan types defined by the CHECK constraint on loans.loan_type: (1) Mortgage \u2014 secured by real estate, glossary example shows $350,000 at 5.50% APR for 360 months; (2) Personal Loan \u2014 unsecured, example $15,000 at 8.50% APR for 48 months; (3) Auto Loan \u2014 secured by vehicle, example $35,000 at 6.50% APR for 60 months; (4) HELOC \u2014 revolving home equity credit line at variable rates, example $50,000 at 8.50% APR; (5) Credit Card \u2014 revolving credit, example $10,000 limit at 18.50% APR. The glossary notes that rates vary by type and creditworthiness, mortgages require collateral, and defaulted loans trigger collections.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.40203990856835936,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "7",
+      "question": "What is the daily ATM withdrawal limit for standard customers?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The retrieved context does not provide a specific daily ATM withdrawal limit for standard customers, so that cannot be determined.\n\nWhat is known from the context is that the `CARDS` table includes an `atm_daily_limit` column, and the table tracks card spending limits and ATM limits for issued cards. It also links each card to an `account_id` and `customer_id`. However, the context does not define a \u201cstandard customer\u201d category and does not provide any limit values or rules by customer type.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_11",
+        "Payment card issuance table for debit, credit, and ATM cards\u2192CARDS",
+        "parent_chunk_business_glossary.md_3",
+        "parent_chunk_business_glossary.md_1",
+        "parent_chunk_business_glossary.md_2"
+      ],
+      "contexts": [
+        "## cards\n\n**Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, and card status. Supports multiple networks (Visa, Mastercard, Discover, American Express). **Primary Key:** `card_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | card_id | INTEGER | Unique card identifier (primary key) | NO | | account_id | INTEGER | Foreign key to accounts (linked account) | NO | | customer_id | INTEGER | Foreign key to customers (cardholder) | NO | | card_number | VARCHAR(20) | Primary Account Number (PAN), must be unique | NO | | card_type | VARCHAR(20) | Type: Debit/Credit/ATM | NO | | card_network | VARCHAR",
+        "Business concept 'Payment card issuance table for debit, credit, and ATM cards' is implemented by physical table CARDS (columns: card_id, account_id, customer_id, card_number, card_type, card_network, card_name, expiration_date, cvv, credit_limit, daily_limit, atm_daily_limit, pin_set, has_chip, contactless_enabled, status, issued_date, last_used_date, created_at).",
+        "## ATM\n\n**Definition: ** Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance. **Business Context:** ATMs extend banking access beyond branch hours and locations. They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores. **Key Attributes:** - ATM ID and Code - Location (address and GPS coordinates) - ATM Type (Standalone, Branch, DriveThrough) - Status (Operational, OutOfService, OutOfCash) - Cash Balance and Last Replenished Date - Supported Features (Deposit, Cardless Withdrawal) - Installation Date **Business Rules:** - Standalone ATMs are not affiliated with a branch - Branch ATMs are located on branch premises - DriveThrough ATMs serve vehicles only - Ca",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio",
+        "## Interest\n\n**Definition: ** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. **Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. **Key Attributes:** - Interest Rate (annual percentage) - APR (Annual Percentage Rate) - for loans - APY (Annual Percentage Yield) - for deposits - Compounding Frequency (daily, monthly, annually) - Simple vs. Compound Interest - Fixed vs. Variable Rates **Business Rules:** - Deposit interest is credited monthly (typically on first day of month) - Loan interest is amortized (early payments are mostly interest, later mostly principal) - APY accounts for compoundi"
+      ],
+      "expected_answer": "The cards table has an atm_daily_limit column with a default value of $500. The business glossary Card Examples confirm this: a standard Debit Card has a $500 ATM limit, while a Premium Debit card has a $2,000 ATM limit. The daily_limit column (default $3,000) controls POS spending separately. These limits are per-card, not per-customer, so different card types can have different limits. The glossary states that daily limits prevent fraud and control exposure.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.37433314757091174,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "8",
+      "question": "What is the difference between a parent account and a child account?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "A parent account is an account in the `ACCOUNTS` hierarchy that other accounts roll up to for portfolio aggregation. The context says the `accounts` table supports a parent-child hierarchy and that investment accounts can contain child accounts.\n\nA child account is an account that belongs under another account in that hierarchy. In schema terms, this is represented by `ACCOUNTS.parent_account_id`, which points back to another row in `ACCOUNTS`.\n\nSo the difference is hierarchical role: the parent account is the higher-level container or aggregator, while the child account is the subordinate account linked to it. The business rules also state that this hierarchy cannot be circular, so a parent account cannot reference itself and the relationship must remain valid.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_7",
+        "parent_chunk_data_dictionary.md_12",
+        "Deposit Account\u2192ACCOUNTS",
+        "parent_chunk_data_dictionary.md_8",
+        "parent_chunk_business_glossary.md_0"
+      ],
+      "contexts": [
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "Business concept 'Deposit Account' \u2014 This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type. is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_account_id, branch_id, status, current_balance, available_balance, interest_rate, interest_earned, minimum_balance, monthly_fee, opened_date, closed_date, last_transaction_date, created_at, updated_at).",
+        "## customer_account\n\n**Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes. **Primary Key:** Composite (`customer_id`, `account_id`) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Foreign key to customers (part of PK) | NO | | account_id | INTEGER | Foreign key to accounts (part of PK) | NO | | relationship_type | VARCHAR(20) | Relationship: Owner/JointOwner/AuthorizedSigner/Custodian | NO | | is_primary | BOOLEAN | Whether this is the primary owner | NO | | ownership_percentage | DECIMAL(5,2) | Percentage ownership (0.00-100.00)",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan"
+      ],
+      "expected_answer": "The accounts table supports parent-child hierarchies through the parent_account_id self-referencing foreign key, with a CHECK constraint preventing circular references (parent_account_id != account_id). The data dictionary describes this as supporting portfolio aggregation where parent accounts (typically Investment type) contain child accounts. The business glossary states accounts may be organized into hierarchical portfolio structures for relationship management purposes. Child accounts set parent_account_id to reference their parent, while top-level accounts have parent_account_id as NULL.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.3097540193443018,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "9",
+      "question": "What does the status 'Frozen' mean for a card?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The retrieved context does not define what the card status \"Frozen\" means.\n\nFrom the available context, the `cards` table tracks card status, but no card-status values or definitions are provided. The only \"Frozen\" status explicitly mentioned is for the business concept Account, where account status can be Active, Dormant, Frozen, or Closed, but the context does not explain the meaning of \"Frozen\" for cards specifically.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_7",
+        "parent_chunk_data_dictionary.md_10",
+        "parent_chunk_data_dictionary.md_11",
+        "parent_chunk_business_glossary.md_0",
+        "parent_chunk_business_glossary.md_3"
+      ],
+      "contexts": [
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "## loans\n\n**Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management. **Primary Key:** `loan_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | loan_id | INTEGER | Unique loan identifier (primary key) | NO | | customer_id | INTEGER | Foreign key to customers (borrower) | NO | | loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | | account_id | INTEGER | Foreign key to accounts (optional, for linked accounts) | YES | | principal_amount | DECIMAL(15,2) | Original loan principal | NO | | interes",
+        "## cards\n\n**Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, and card status. Supports multiple networks (Visa, Mastercard, Discover, American Express). **Primary Key:** `card_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | card_id | INTEGER | Unique card identifier (primary key) | NO | | account_id | INTEGER | Foreign key to accounts (linked account) | NO | | customer_id | INTEGER | Foreign key to customers (cardholder) | NO | | card_number | VARCHAR(20) | Primary Account Number (PAN), must be unique | NO | | card_type | VARCHAR(20) | Type: Debit/Credit/ATM | NO | | card_network | VARCHAR",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan",
+        "## ATM\n\n**Definition: ** Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance. **Business Context:** ATMs extend banking access beyond branch hours and locations. They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores. **Key Attributes:** - ATM ID and Code - Location (address and GPS coordinates) - ATM Type (Standalone, Branch, DriveThrough) - Status (Operational, OutOfService, OutOfCash) - Cash Balance and Last Replenished Date - Supported Features (Deposit, Cardless Withdrawal) - Installation Date **Business Rules:** - Standalone ATMs are not affiliated with a branch - Branch ATMs are located on branch premises - DriveThrough ATMs serve vehicles only - Ca"
+      ],
+      "expected_answer": "The cards table has a status column with four states defined by CHECK constraint: Active, Frozen, Blocked, and Expired. The business glossary states that lost or stolen cards must be immediately blocked to prevent fraud, and that expired cards are automatically renewed. The glossary distinguishes Frozen from Blocked as separate statuses, suggesting Frozen is a temporary or reversible suspension. The Account concept also supports a Frozen status alongside Active, Dormant, and Closed, indicating the bank uses Frozen consistently to mean a temporary restriction on the entity.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.06301947157511502,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "10",
+      "question": "How does the transactions table track the impact of each transaction on account balances?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The `TRANSACTIONS` table tracks balance impact at the account-activity level by storing each balance-affecting event against an `account_id` and recording both what happened and the resulting balance.\n\nFrom the context, it does this through these fields and rules in `TRANSACTIONS`:\n`account_id` links the transaction to the affected account in `ACCOUNTS`.\n`transaction_type` identifies how the balance should be affected. Supported types include Debit, Credit, Transfer, Payment, Withdrawal, Deposit, and Fee.\n`amount` stores the transaction amount and is always positive, so the direction of impact comes from `transaction_type`, not from the sign of the amount.\n`balance_after` stores the account balance after the transaction is applied, which is the direct column showing the impact on the account balance.\n`status` tracks lifecycle states such as Pending, Posted, Failed, Cancelled, and OnHold, and the business context says transactions flow through states like Pending \u2192 Posted.\n`transaction_date` provides when the balance-affecting event occurred.\n\nThe business rules in the context state that debit transactions reduce account balance and credit transactions increase account balance. Combined with the `balance_after` column, this means the table captures both the nature of the balance change and the resulting post-transaction balance for each account activity.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_9",
+        "Account Activity\u2192TRANSACTIONS",
+        "parent_chunk_data_dictionary.md_7",
+        "Account Activity",
+        "parent_chunk_business_glossary.md_1"
+      ],
+      "contexts": [
+        "## transactions\n\n**Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated fields (balance_after) and includes location data for POS and ATM transactions for fraud detection. **Primary Key:** `transaction_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | transaction_id | INTEGER | Unique transaction identifier (primary key) | NO | | account_id | INTEGER | Foreign key to accounts | NO | | transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO | | amount | DECIMAL(15,2) | Transaction amount (always positive) | NO | | currency | VARCHAR(3) | Currency code (default: USD) | NO",
+        "Business concept 'Account Activity' \u2014 The table is explicitly a transaction fact table and its columns capture balance-affecting events tied to an account, including transaction_type, amount, transaction_date, status, and balance_after. This aligns most closely with the business concept of account activity rather than a generic transaction master because it records contextual details such as external_account and location. is implemented by physical table TRANSACTIONS (columns: transaction_id, account_id, transaction_type, amount, currency, transaction_date, status, balance_after, description, reference_number, external_account, location, created_at).",
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "Account Activity: The table is explicitly a transaction fact table and its columns capture balance-affecting events tied to an account, including transaction_type, amount, transaction_date, status, and balance_after. This aligns most closely with the business concept of account activity rather than a generic transaction master because it records contextual details such as external_account and location.",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio"
+      ],
+      "expected_answer": "The transactions table includes a balance_after column (DECIMAL 15,2) that records the account balance after each transaction is applied. Combined with the amount column, transaction_type (Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee), and status (Pending/Posted/Failed/Cancelled/OnHold), this allows tracking how each transaction affects the account. The business glossary states that debit transactions reduce account balance, credit transactions increase it, posted transactions are final and cannot be modified (only reversed with a new transaction), and failed transactions are logged for audit but do not affect the balance.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.8054792244270543,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "11",
+      "question": "How does the customer_account junction table support multiple ownership types?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "The `CUSTOMER_ACCOUNT` junction table supports multiple ownership types by modeling the customer\u2013account association as a many-to-many relationship between `CUSTOMERS` and `ACCOUNTS`. This means one customer can be linked to multiple accounts, and one account can be linked to multiple customers.\n\nIt distinguishes the type of participation through the `relationship_type` column, which is defined for roles such as `Owner`, `JointOwner`, `AuthorizedSigner`, and `Custodian`. That is how the table represents different ownership or access arrangements on the same account structure.\n\nIt also stores attributes that further define the relationship: `is_primary` identifies the primary owner for billing and legal purposes, and `ownership_percentage` records each party\u2019s share of ownership from `0.00` to `100.00`. In the concept mapping, the relationship also includes `linked_date` and `unlinked_date`, which indicate when the relationship is active, plus `created_at`.\n\nThe table is implemented with a composite primary key of (`customer_id`, `account_id`), and both columns are foreign keys, so each relationship row requires both a valid customer and a valid account to exist.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_8",
+        "Customer Account Relationship\u2192CUSTOMER_ACCOUNT",
+        "parent_chunk_data_dictionary.md_12",
+        "CUSTOMER_ACCOUNT\u2192CUSTOMERS",
+        "Customer Account Relationship"
+      ],
+      "contexts": [
+        "## customer_account\n\n**Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes. **Primary Key:** Composite (`customer_id`, `account_id`) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Foreign key to customers (part of PK) | NO | | account_id | INTEGER | Foreign key to accounts (part of PK) | NO | | relationship_type | VARCHAR(20) | Relationship: Owner/JointOwner/AuthorizedSigner/Custodian | NO | | is_primary | BOOLEAN | Whether this is the primary owner | NO | | ownership_percentage | DECIMAL(5,2) | Percentage ownership (0.00-100.00)",
+        "Business concept 'Customer Account Relationship' \u2014 The DDL explicitly describes this as a junction table implementing a many-to-many relationship between customers and accounts, with relationship attributes like role, primary flag, ownership percentage, and link dates. This aligns directly with the business concept of the customer-account relationship rather than either entity alone. is implemented by physical table CUSTOMER_ACCOUNT (columns: customer_id, account_id, relationship_type, is_primary, ownership_percentage, linked_date, unlinked_date, created_at).",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "Relationship: CUSTOMER_ACCOUNT references CUSTOMERS via foreign key CUSTOMER_ID -> CUSTOMERS.CUSTOMER_ID.",
+        "Customer Account Relationship: The DDL explicitly describes this as a junction table implementing a many-to-many relationship between customers and accounts, with relationship attributes like role, primary flag, ownership percentage, and link dates. This aligns directly with the business concept of the customer-account relationship rather than either entity alone."
+      ],
+      "expected_answer": "The customer_account table implements a many-to-many relationship between customers and accounts with a composite primary key (customer_id, account_id). It supports four relationship types via CHECK constraint: Owner, JointOwner, AuthorizedSigner, and Custodian. The is_primary flag designates the primary owner for billing and legal purposes, while ownership_percentage (DECIMAL 0-100, default 100) tracks proportional ownership. This allows a single account to have multiple customers with different roles, and a single customer to own multiple accounts.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.9865198970247337,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "12",
+      "question": "What is the difference between current_balance and available_balance in the accounts table?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The retrieved context shows that the `accounts` table includes both `current_balance` and `available_balance`, and the business glossary treats \u201cCurrent Balance vs. Available Balance\u201d as an important account attribute in the `Account` / `Deposit Account` concept.\n\nHowever, the retrieved excerpt does not provide the full column definitions or the complete business rule text that explains the exact distinction between them. The glossary text is cut off at \u201cAvailable balan\u2026\u201d, so I cannot state the precise difference from the provided context alone.\n\nFrom the context I can say only that both are separate balance fields tracked on `ACCOUNTS` for deposit accounts, alongside interest, fees, status, and lifecycle dates.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_7",
+        "Deposit Account\u2192ACCOUNTS",
+        "parent_chunk_data_dictionary.md_10",
+        "parent_chunk_data_dictionary.md_9",
+        "parent_chunk_business_glossary.md_0"
+      ],
+      "contexts": [
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "Business concept 'Deposit Account' \u2014 This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type. is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_account_id, branch_id, status, current_balance, available_balance, interest_rate, interest_earned, minimum_balance, monthly_fee, opened_date, closed_date, last_transaction_date, created_at, updated_at).",
+        "## loans\n\n**Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management. **Primary Key:** `loan_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | loan_id | INTEGER | Unique loan identifier (primary key) | NO | | customer_id | INTEGER | Foreign key to customers (borrower) | NO | | loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | | account_id | INTEGER | Foreign key to accounts (optional, for linked accounts) | YES | | principal_amount | DECIMAL(15,2) | Original loan principal | NO | | interes",
+        "## transactions\n\n**Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated fields (balance_after) and includes location data for POS and ATM transactions for fraud detection. **Primary Key:** `transaction_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | transaction_id | INTEGER | Unique transaction identifier (primary key) | NO | | account_id | INTEGER | Foreign key to accounts | NO | | transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO | | amount | DECIMAL(15,2) | Transaction amount (always positive) | NO | | currency | VARCHAR(3) | Currency code (default: USD) | NO",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan"
+      ],
+      "expected_answer": "The accounts table tracks two separate balance fields: current_balance includes all transactions including pending ones, while available_balance excludes holds and pending transactions and represents what the customer can actually withdraw. The business glossary confirms this distinction, stating that available balance may be less than current balance due to holds or pending transactions. Both are DECIMAL(15,2) fields with a default of 0.00.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.8327813311689884,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "13",
+      "question": "How are loans linked to both customers and accounts in the schema?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "In the schema, loans are linked directly to customers through the `loans.customer_id` column, which is a non-null foreign key to `customers`. The relationship summary describes this as `customers \u2192 loans` in a one-to-many relationship, so a customer can have multiple loans, and each loan must belong to a customer.\n\nLoans are also linked to accounts through the `loans.account_id` column, which is an optional foreign key to `accounts`. The `loans` table description says this is \u201cfor linked accounts,\u201d so a loan may be associated with an account, but it is not required.\n\nSo, structurally, each loan must be tied to one borrower via `customer_id`, and it may additionally be tied to an account via `account_id`. Also, per the relationship rules, foreign keys use no cascade by default, so these links are managed with manual integrity rules rather than cascading actions.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_12",
+        "parent_chunk_data_dictionary.md_10",
+        "parent_chunk_data_dictionary.md_8",
+        "Customer Account Relationship\u2192CUSTOMER_ACCOUNT",
+        "Customer Account Relationship"
+      ],
+      "contexts": [
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "## loans\n\n**Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management. **Primary Key:** `loan_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | loan_id | INTEGER | Unique loan identifier (primary key) | NO | | customer_id | INTEGER | Foreign key to customers (borrower) | NO | | loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | | account_id | INTEGER | Foreign key to accounts (optional, for linked accounts) | YES | | principal_amount | DECIMAL(15,2) | Original loan principal | NO | | interes",
+        "## customer_account\n\n**Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes. **Primary Key:** Composite (`customer_id`, `account_id`) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Foreign key to customers (part of PK) | NO | | account_id | INTEGER | Foreign key to accounts (part of PK) | NO | | relationship_type | VARCHAR(20) | Relationship: Owner/JointOwner/AuthorizedSigner/Custodian | NO | | is_primary | BOOLEAN | Whether this is the primary owner | NO | | ownership_percentage | DECIMAL(5,2) | Percentage ownership (0.00-100.00)",
+        "Business concept 'Customer Account Relationship' \u2014 The DDL explicitly describes this as a junction table implementing a many-to-many relationship between customers and accounts, with relationship attributes like role, primary flag, ownership percentage, and link dates. This aligns directly with the business concept of the customer-account relationship rather than either entity alone. is implemented by physical table CUSTOMER_ACCOUNT (columns: customer_id, account_id, relationship_type, is_primary, ownership_percentage, linked_date, unlinked_date, created_at).",
+        "Customer Account Relationship: The DDL explicitly describes this as a junction table implementing a many-to-many relationship between customers and accounts, with relationship attributes like role, primary flag, ownership percentage, and link dates. This aligns directly with the business concept of the customer-account relationship rather than either entity alone."
+      ],
+      "expected_answer": "The loans table has a customer_id foreign key referencing the customers table (the borrower) and an optional account_id foreign key referencing the accounts table (for linked payment accounts). Each loan belongs to exactly one customer, and can optionally be connected to an account for automatic payment drafting. The loan tracks principal_amount, interest_rate (APR), term_months, monthly_payment, balance_due, origination_date, maturity_date, and status. The loan_type CHECK constraint defines the product types: Mortgage, Personal, Auto, HELOC, and CreditCard.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.8104789086703224,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "14",
+      "question": "What types of transactions does the system support and how does their status lifecycle work?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The system supports these transaction types, as shown in both the `transactions` table and the `Transaction` business concept: Debit, Credit, Transfer, Payment, Withdrawal, Deposit, and Fee.\n\nThe `Transaction` business concept defines a transaction as any financial activity that affects an account balance, including debits, credits, transfers, withdrawals, and fees, and the table description adds that it records all account activity across those supported types. The `transactions.amount` is always positive, so the business meaning of the type determines balance impact: debit transactions reduce the account balance, while credit transactions increase it.\n\nThe status lifecycle described in the `Transaction` business concept is: Pending \u2192 Posted. The context also lists the supported transaction statuses as Pending, Posted, Failed, Cancelled, and OnHold. It states that transactions flow through multiple states and create audit trails for regulatory compliance and customer service, but it does not provide detailed transition rules for when a transaction becomes Failed, Cancelled, or OnHold beyond listing those statuses.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_9",
+        "parent_chunk_data_dictionary.md_7",
+        "Deposit Account\u2192ACCOUNTS",
+        "Deposit Account",
+        "parent_chunk_business_glossary.md_1"
+      ],
+      "contexts": [
+        "## transactions\n\n**Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated fields (balance_after) and includes location data for POS and ATM transactions for fraud detection. **Primary Key:** `transaction_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | transaction_id | INTEGER | Unique transaction identifier (primary key) | NO | | account_id | INTEGER | Foreign key to accounts | NO | | transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO | | amount | DECIMAL(15,2) | Transaction amount (always positive) | NO | | currency | VARCHAR(3) | Currency code (default: USD) | NO",
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "Business concept 'Deposit Account' \u2014 This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type. is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_account_id, branch_id, status, current_balance, available_balance, interest_rate, interest_earned, minimum_balance, monthly_fee, opened_date, closed_date, last_transaction_date, created_at, updated_at).",
+        "Deposit Account: This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type.",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio"
+      ],
+      "expected_answer": "The transactions table supports seven transaction types via CHECK constraint: Debit, Credit, Transfer, Payment, Withdrawal, Deposit, and Fee. Each transaction also has a status lifecycle with five states: Pending (initial default), Posted (final), Failed, Cancelled, and OnHold. The business glossary explains that debit transactions reduce account balance, credit transactions increase it, posted transactions are final and cannot be modified (only reversed with a new transaction), and failed transactions are logged for audit but do not affect balance. POS transactions include location data for fraud detection.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.3393895823048515,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "15",
+      "question": "How does the schema support joint account ownership between multiple customers?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "The schema supports joint account ownership through the `customer_account` table, which is explicitly defined as a junction table between `customers` and `accounts`. This creates a many-to-many relationship, so one account can be linked to multiple customers, and one customer can be linked to multiple accounts.\n\nFor joint ownership specifically, `customer_account` stores one row per customer-account link using the composite primary key `(`customer_id`, `account_id`)`. It also records relationship details that make joint ownership workable:\n\n`relationship_type` identifies the customer\u2019s role on the account, including values such as `Owner`, `JointOwner`, `AuthorizedSigner`, and `Custodian`.\n`is_primary` indicates which linked customer is the primary owner for billing and legal purposes.\n`ownership_percentage` stores each customer\u2019s share of ownership on the account.\nThe concept mapping also shows `linked_date` and `unlinked_date`, so the relationship can be tracked over time, plus `created_at`.\n\nThe retrieved context also states that accounts can be \u201cindividual or jointly held,\u201d and that the `customer_account` table is the physical implementation of the business concept \u201cCustomer Account Relationship.\u201d\n\nFrom a relational perspective, the join path is `customers` \u2194 `customer_account` \u2194 `accounts`. The entity relationship summary also says the junction table requires both the customer and account to exist, and foreign keys use no cascade by default, so integrity is managed manually.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_8",
+        "parent_chunk_data_dictionary.md_12",
+        "Customer Account Relationship\u2192CUSTOMER_ACCOUNT",
+        "Customer Account Relationship",
+        "parent_chunk_business_glossary.md_0"
+      ],
+      "contexts": [
+        "## customer_account\n\n**Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes. **Primary Key:** Composite (`customer_id`, `account_id`) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Foreign key to customers (part of PK) | NO | | account_id | INTEGER | Foreign key to accounts (part of PK) | NO | | relationship_type | VARCHAR(20) | Relationship: Owner/JointOwner/AuthorizedSigner/Custodian | NO | | is_primary | BOOLEAN | Whether this is the primary owner | NO | | ownership_percentage | DECIMAL(5,2) | Percentage ownership (0.00-100.00)",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "Business concept 'Customer Account Relationship' \u2014 The DDL explicitly describes this as a junction table implementing a many-to-many relationship between customers and accounts, with relationship attributes like role, primary flag, ownership percentage, and link dates. This aligns directly with the business concept of the customer-account relationship rather than either entity alone. is implemented by physical table CUSTOMER_ACCOUNT (columns: customer_id, account_id, relationship_type, is_primary, ownership_percentage, linked_date, unlinked_date, created_at).",
+        "Customer Account Relationship: The DDL explicitly describes this as a junction table implementing a many-to-many relationship between customers and accounts, with relationship attributes like role, primary flag, ownership percentage, and link dates. This aligns directly with the business concept of the customer-account relationship rather than either entity alone.",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan"
+      ],
+      "expected_answer": "Joint ownership is implemented through the customer_account junction table, which creates a many-to-many relationship between customers and accounts. Each row has a relationship_type CHECK constraint allowing Owner, JointOwner, AuthorizedSigner, or Custodian. The ownership_percentage field (DECIMAL 5,2) tracks each customer's share of the account, and the is_primary flag designates the primary account holder. Multiple customers can be linked to the same account with different roles and ownership percentages, and each link tracks linked_date and optional unlinked_date.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.48696431947084423,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "16",
+      "question": "What information does the cards table track and how are cards linked to customers and accounts?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "The `cards` table is the payment card issuance table for debit, credit, and ATM cards. It tracks card-related information including the linked customer and account, security features such as chip, contactless, and PIN, spending limits, card status, and supported card networks including Visa, Mastercard, Discover, and American Express.\n\nCards are linked directly to both customers and accounts through foreign keys:\n`account_id` is a foreign key to `accounts` and identifies the linked account.\n`customer_id` is a foreign key to `customers` and identifies the cardholder.\n\nThe table\u2019s primary key is `card_id`. It also stores `card_number`, which must be unique. From the relationship summary, the schema defines a one-to-many relationship from `accounts` to `cards`, meaning an account can have multiple cards.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_11",
+        "parent_chunk_data_dictionary.md_10",
+        "parent_chunk_data_dictionary.md_8",
+        "parent_chunk_data_dictionary.md_12",
+        "Customer Account Relationship"
+      ],
+      "contexts": [
+        "## cards\n\n**Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, and card status. Supports multiple networks (Visa, Mastercard, Discover, American Express). **Primary Key:** `card_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | card_id | INTEGER | Unique card identifier (primary key) | NO | | account_id | INTEGER | Foreign key to accounts (linked account) | NO | | customer_id | INTEGER | Foreign key to customers (cardholder) | NO | | card_number | VARCHAR(20) | Primary Account Number (PAN), must be unique | NO | | card_type | VARCHAR(20) | Type: Debit/Credit/ATM | NO | | card_network | VARCHAR",
+        "## loans\n\n**Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management. **Primary Key:** `loan_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | loan_id | INTEGER | Unique loan identifier (primary key) | NO | | customer_id | INTEGER | Foreign key to customers (borrower) | NO | | loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | | account_id | INTEGER | Foreign key to accounts (optional, for linked accounts) | YES | | principal_amount | DECIMAL(15,2) | Original loan principal | NO | | interes",
+        "## customer_account\n\n**Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes. **Primary Key:** Composite (`customer_id`, `account_id`) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Foreign key to customers (part of PK) | NO | | account_id | INTEGER | Foreign key to accounts (part of PK) | NO | | relationship_type | VARCHAR(20) | Relationship: Owner/JointOwner/AuthorizedSigner/Custodian | NO | | is_primary | BOOLEAN | Whether this is the primary owner | NO | | ownership_percentage | DECIMAL(5,2) | Percentage ownership (0.00-100.00)",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "Customer Account Relationship: The DDL explicitly describes this as a junction table implementing a many-to-many relationship between customers and accounts, with relationship attributes like role, primary flag, ownership percentage, and link dates. This aligns directly with the business concept of the customer-account relationship rather than either entity alone."
+      ],
+      "expected_answer": "The cards table links to both accounts (account_id FK) and customers (customer_id FK), tracking card_type (Debit/Credit/ATM), card_network (Visa/Mastercard/Discover/AmericanExpress), card_number, cardholder name, expiration_date, and CVV. For spending controls it stores credit_limit (nullable, for credit cards), daily_limit (default $3,000 for POS), and atm_daily_limit (default $500). Security features include has_chip (EMV), contactless_enabled (tap-to-pay), and pin_set. Card status follows a lifecycle: Active, Frozen, Blocked, or Expired. The glossary states that debit cards deduct from linked checking accounts and ATM cards only work at ATMs.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.9527502864985101,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "17",
+      "question": "How does the schema handle interest rates across deposit and loan products?",
+      "query_type": "",
+      "difficulty": "Hard",
+      "answer": "From the retrieved context, the schema handling is clear for deposit products but not fully defined for loan products.\n\nFor deposit products, interest is handled in the ACCOUNTS table, which implements the business concept \u201cDeposit Account.\u201d That table includes the columns interest_rate and interest_earned, so the schema stores both the rate applied to the deposit account and the amount of interest earned. The same table also carries account balances, fees, status, and lifecycle dates, which means deposit interest is modeled as part of the core account master record. The glossary also states that deposit interest is the return on depositing money, that APY is the deposit-oriented measure, and that deposit interest is credited monthly, typically on the first day of the month.\n\nFor loan products, the context only gives business-level interest rules, not the physical schema. It states that interest on loans is the cost of borrowing, that APR is the loan-oriented measure, and that loan interest is amortized so early payments are mostly interest and later payments mostly principal. The relationship summary shows customers \u2192 loans as one-to-many, which confirms loans exist in the data model, but no loan table definition or loan interest-related columns are provided in the retrieved context.\n\nSo, based strictly on the context, the schema explicitly stores deposit interest in ACCOUNTS.interest_rate and ACCOUNTS.interest_earned, while loan interest handling is described only conceptually and cannot be traced to specific table columns because the loan table metadata is not present.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_12",
+        "Deposit Account\u2192ACCOUNTS",
+        "parent_chunk_business_glossary.md_2",
+        "parent_chunk_business_glossary.md_0",
+        "parent_chunk_business_glossary.md_1"
+      ],
+      "contexts": [
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "Business concept 'Deposit Account' \u2014 This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type. is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_account_id, branch_id, status, current_balance, available_balance, interest_rate, interest_earned, minimum_balance, monthly_fee, opened_date, closed_date, last_transaction_date, created_at, updated_at).",
+        "## Interest\n\n**Definition: ** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. **Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. **Key Attributes:** - Interest Rate (annual percentage) - APR (Annual Percentage Rate) - for loans - APY (Annual Percentage Yield) - for deposits - Compounding Frequency (daily, monthly, annually) - Simple vs. Compound Interest - Fixed vs. Variable Rates **Business Rules:** - Deposit interest is credited monthly (typically on first day of month) - Loan interest is amortized (early payments are mostly interest, later mostly principal) - APY accounts for compoundi",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio"
+      ],
+      "expected_answer": "Interest rates are stored differently for deposits and loans. The accounts table has an interest_rate column (nullable DECIMAL 5,4) and interest_earned for year-to-date tracking. The loans table has its own interest_rate column representing APR. The business glossary explains that APR (Annual Percentage Rate) applies to loans and includes fees, while APY (Annual Percentage Yield) applies to deposits and accounts for compounding. Deposit interest is credited monthly, loan interest is amortized. Promotional rates may be temporary such as CD bonus rates, and penalty rates may apply for early withdrawal.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.0573875346753933,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "18",
+      "question": "What types of branches does the bank operate and how do they differ in capabilities?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The bank operates three branch types in `branches.branch_type`: `FullService`, `Satellite`, and `ATMOnly`. The `branches` table is described as covering \u201cphysical bank locations including full-service branches, satellite offices, and ATM-only locations.\u201d\n\nThe retrieved context does not explicitly define how those three branch types differ in capabilities, so I cannot attribute specific services to `FullService`, `Satellite`, or `ATMOnly` individually.\n\nWhat the context does state is that the business concept of a \u201cphysical banking location\u201d includes in-person services such as teller transactions, account opening, loan applications, and financial advisory services, and that the bank also has `ATM` entities that support basic self-service transactions without teller assistance. The schema also shows a one-to-many relationship from `branches` to `atms`, and the `branches` table tracks `atm_count` and `teller_count`. However, the context does not map those capabilities or staffing/service differences to each specific `branch_type` value.",
+      "sources": [
+        "physical banking location\u2192BRANCHES",
+        "parent_chunk_data_dictionary.md_12",
+        "parent_chunk_data_dictionary.md_5",
+        "parent_chunk_business_glossary.md_2",
+        "parent_chunk_business_glossary.md_3"
+      ],
+      "contexts": [
+        "Business concept 'physical banking location' \u2014 A physical banking location where customers can access in-person services including teller transactions, account opening, loan applications, and financial advisory services. is implemented by physical table BRANCHES (columns: branch_id, branch_code, branch_name, branch_type, address, city, state, zip_code, phone, hours, atm_count, teller_count, manager_name, opened_date, status, created_at).",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "## branches\n\n**Description: ** Physical bank locations including full-service branches, satellite offices, and ATM-only locations. Tracks staffing levels, operating hours, ATM counts, and branch status for operational management. **Primary Key:** `branch_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | branch_id | INTEGER | Unique branch identifier (primary key) | NO | | branch_code | VARCHAR(4) | 4-digit branch code, must be unique | NO | | branch_name | VARCHAR(100) | Human-readable branch name | NO | | branch_type | VARCHAR(20) | Type: FullService/Satellite/ATMOnly | NO | | address | VARCHAR(200) | Street address | NO | | city | VARCHAR(50) | City where branch is located | NO | | state | VARCHAR(2) | Two-letter state code | NO",
+        "## Interest\n\n**Definition: ** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. **Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. **Key Attributes:** - Interest Rate (annual percentage) - APR (Annual Percentage Rate) - for loans - APY (Annual Percentage Yield) - for deposits - Compounding Frequency (daily, monthly, annually) - Simple vs. Compound Interest - Fixed vs. Variable Rates **Business Rules:** - Deposit interest is credited monthly (typically on first day of month) - Loan interest is amortized (early payments are mostly interest, later mostly principal) - APY accounts for compoundi",
+        "## ATM\n\n**Definition: ** Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance. **Business Context:** ATMs extend banking access beyond branch hours and locations. They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores. **Key Attributes:** - ATM ID and Code - Location (address and GPS coordinates) - ATM Type (Standalone, Branch, DriveThrough) - Status (Operational, OutOfService, OutOfCash) - Cash Balance and Last Replenished Date - Supported Features (Deposit, Cardless Withdrawal) - Installation Date **Business Rules:** - Standalone ATMs are not affiliated with a branch - Branch ATMs are located on branch premises - DriveThrough ATMs serve vehicles only - Ca"
+      ],
+      "expected_answer": "The branches table supports three types via CHECK constraint: FullService, Satellite, and ATMOnly. The business glossary details each: FullService branches offer complete banking services including loan origination, financial advisors, and safe deposit boxes; Satellite branches have limited hours and staff with no loan officers; ATMOnly locations have no staff, only cash machines with 24/7 access. Each branch tracks branch_code (unique 4-digit identifier), physical address, operating hours, teller_count, atm_count, manager_name, and status (Active/TemporarilyClosed/PermanentlyClosed).",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.15559099407709326,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "19",
+      "question": "How are ATMs related to branches in the schema and what types of ATMs exist?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "In the schema, ATMs are related to branches through `ATMS.branch_id` as a foreign key to `BRANCHES.branch_id`. The relationship is `branches \u2192 atms` as one-to-many, meaning a branch can have multiple ATMs. The `atms` table explicitly marks `branch_id` as nullable, which means standalone ATMs can exist without being affiliated to any branch. This matches the business rule that standalone ATMs are not affiliated with a branch, while branch ATMs are located on branch premises.\n\nThe ATM types identified in the context are `Standalone`, `Branch`, and `DriveThrough`. The ATM description also characterizes them as standalone units, branch-attached machines, and drive-through ATMs.",
+      "sources": [
+        "ATMS\u2192BRANCHES",
+        "parent_chunk_data_dictionary.md_6",
+        "parent_chunk_data_dictionary.md_12",
+        "Automated Teller Machine\u2192ATMS",
+        "parent_chunk_business_glossary.md_3"
+      ],
+      "contexts": [
+        "Relationship: ATMS references BRANCHES via foreign key BRANCH_ID -> BRANCHES.BRANCH_ID.",
+        "## atms\n\n**Description: ** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location services, and operational status for availability management. **Primary Key:** `atm_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | atm_id | INTEGER | Unique ATM identifier (primary key) | NO | | atm_code | VARCHAR(10) | Unique ATM code | NO | | branch_id | INTEGER | Foreign key to branches (NULL for standalone) | YES | | location | VARCHAR(200) | Human-readable location description | NO | | latitude | DECIMAL(10,6) | GPS latitude coordinate | YES | | longitude | DECIMAL(11,6) | GPS longitude coordinate | YES | | atm_type | VARCH",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "Business concept 'Automated Teller Machine' is implemented by physical table ATMS (columns: atm_id, atm_code, branch_id, location, latitude, longitude, atm_type, status, cash_balance, last_replenished, supports_deposit, supports_cardless, installed_date, created_at).",
+        "## ATM\n\n**Definition: ** Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance. **Business Context:** ATMs extend banking access beyond branch hours and locations. They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores. **Key Attributes:** - ATM ID and Code - Location (address and GPS coordinates) - ATM Type (Standalone, Branch, DriveThrough) - Status (Operational, OutOfService, OutOfCash) - Cash Balance and Last Replenished Date - Supported Features (Deposit, Cardless Withdrawal) - Installation Date **Business Rules:** - Standalone ATMs are not affiliated with a branch - Branch ATMs are located on branch premises - DriveThrough ATMs serve vehicles only - Ca"
+      ],
+      "expected_answer": "The atms table has an optional branch_id foreign key referencing branches. When branch_id is NULL, the ATM is standalone and not affiliated with any branch. ATM types are defined by CHECK constraint: Branch (on-premises), DriveThrough (vehicle-accessible), and Standalone (independent locations). Each ATM tracks atm_code (unique), operational status (Operational/OutOfService/OutOfCash), cash_balance, last_replenished timestamp, and feature flags for deposit support and cardless withdrawal. The glossary states that cash replenishment is triggered when balance falls below a threshold, and OutOfCash ATMs may still allow balance inquiries.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.6183772176019395,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "20",
+      "question": "What is the lifecycle of a loan from application to completion?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "The retrieved context does not describe the full lifecycle of a loan from application to completion, so that cannot be determined here.\n\nWhat is known from the context is limited to the `loans` table and the `Interest` concept. The `loans` table is a loan portfolio table for lending products such as Mortgage, Personal, Auto, HELOC, and CreditCard, and it tracks original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management. The `Interest` concept adds that loan interest is amortized, meaning early payments are mostly interest and later payments are mostly principal.\n\nFrom that, the only lifecycle portion supported by the context is the servicing phase after a loan exists: a loan has original terms, accrues amortized interest, has a current balance that changes over time, and continues until its maturity date. However, the context does not provide any information about application, underwriting, approval, origination, disbursement, payoff, closure, or loan status transitions.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_10",
+        "parent_chunk_data_dictionary.md_7",
+        "parent_chunk_business_glossary.md_2",
+        "parent_chunk_business_glossary.md_1",
+        "loan amortization, balances, and maturity dates"
+      ],
+      "contexts": [
+        "## loans\n\n**Description: ** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management. **Primary Key:** `loan_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | loan_id | INTEGER | Unique loan identifier (primary key) | NO | | customer_id | INTEGER | Foreign key to customers (borrower) | NO | | loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | | account_id | INTEGER | Foreign key to accounts (optional, for linked accounts) | YES | | principal_amount | DECIMAL(15,2) | Original loan principal | NO | | interes",
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "## Interest\n\n**Definition: ** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. **Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. **Key Attributes:** - Interest Rate (annual percentage) - APR (Annual Percentage Rate) - for loans - APY (Annual Percentage Yield) - for deposits - Compounding Frequency (daily, monthly, annually) - Simple vs. Compound Interest - Fixed vs. Variable Rates **Business Rules:** - Deposit interest is credited monthly (typically on first day of month) - Loan interest is amortized (early payments are mostly interest, later mostly principal) - APY accounts for compoundi",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio",
+        "loan amortization, balances, and maturity dates"
+      ],
+      "expected_answer": "The loans table tracks loan status through five states defined by CHECK constraint: Pending (application submitted, default), Approved (credit approved but not yet funded), Active (loan funded and being repaid), PaidOff (fully repaid), and Defaulted (borrower failed to repay). Each loan records origination_date, maturity_date, term_months, monthly_payment, and balance_due for progress tracking. The business glossary adds that defaulted loans trigger collections and credit reporting, early payoff may incur prepayment penalties, and HELOC allows revolving access to equity with no fixed payoff schedule.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.0066669319312806586,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "21",
+      "question": "What does preferred customer status mean and how is it tracked in the schema?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "Preferred customer status means the customer is flagged for VIP treatment. In the schema, it is tracked in the `customers` / `CUSTOMERS` table, which is the core customer master data table. The specific attribute is `is_preferred`, alongside other customer master attributes such as identity, contact, KYC, and risk profile fields. The retrieved context does not provide additional rules or values for how `is_preferred` is set beyond describing it as a preferred customer flag for VIP treatment.",
+      "sources": [
+        "Customer Master Data\u2192CUSTOMERS",
+        "parent_chunk_data_dictionary.md_12",
+        "parent_chunk_data_dictionary.md_11",
+        "parent_chunk_data_dictionary.md_4",
+        "Customer Master Data"
+      ],
+      "contexts": [
+        "Business concept 'Customer Master Data' \u2014 The table is explicitly described as the core customer dimension and contains identity, contact, KYC, risk, and preferred-flag attributes, which is characteristic of customer master data. Although the business glossary mentions both individual and corporate banking customers, the physical columns here more clearly implement a person-level customer master record rather than the full generalized entity concept. is implemented by physical table CUSTOMERS (columns: customer_id, first_name, last_name, tax_id, email, phone, address, city, state, zip_code, kyc_status, risk_profile, customer_since, is_preferred, created_at, updated_at).",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "## cards\n\n**Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, and card status. Supports multiple networks (Visa, Mastercard, Discover, American Express). **Primary Key:** `card_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | card_id | INTEGER | Unique card identifier (primary key) | NO | | account_id | INTEGER | Foreign key to accounts (linked account) | NO | | customer_id | INTEGER | Foreign key to customers (cardholder) | NO | | card_number | VARCHAR(20) | Primary Account Number (PAN), must be unique | NO | | card_type | VARCHAR(20) | Type: Debit/Credit/ATM | NO | | card_network | VARCHAR",
+        "# Retail Banking Data Dictionary\n\nThis document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.\n\n---\n\n## customers\n\n**Description: ** Core customer dimension table containing master data for all individual and corporate banking customers. Includes KYC (Know Your Customer) compliance status, risk profiling for investment suitability, and preferred customer flags for VIP treatment. **Primary Key:** `customer_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Unique customer identifier (primary key) | NO | | first_name | VARCHAR(50) | Customer's first name | NO | | last_name | VARCHAR(50) | Customer's last name | NO | | tax_id | VARCHAR(11) | Tax identification number (SSN/EIN), must be unique | NO | | email | VARCHAR(100) | Primary email address for notifications | NO | | phone | VARCHAR(20) | Primary phone num",
+        "Customer Master Data: The table is explicitly described as the core customer dimension and contains identity, contact, KYC, risk, and preferred-flag attributes, which is characteristic of customer master data. Although the business glossary mentions both individual and corporate banking customers, the physical columns here more clearly implement a person-level customer master record rather than the full generalized entity concept."
+      ],
+      "expected_answer": "Preferred status is tracked via the is_preferred boolean flag in the customers table (default: false). The business glossary states that preferred customers receive waived fees, preferred interest rates, and priority service. The glossary examples show preferred customers with longer tenure and higher balances. Additionally, the customer risk_profile (Conservative/Moderate/Aggressive) determines eligibility for investment products and credit limits, while kyc_status (Level1/Level2/Level3) determines which products and services a customer can access.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.5128831951464482,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "22",
+      "question": "How does the accounts table support interest tracking and what business rules govern interest?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "The `ACCOUNTS` table supports interest tracking directly through its deposit-account fields. In the table mapping for the business concept `Deposit Account`, the table includes `interest_rate` and `interest_earned`, along with `current_balance`, `available_balance`, `opened_date`, `closed_date`, and `last_transaction_date`. From the table description, this means each deposit account stores both the rate applied to the account and the amount of interest accrued/earned, alongside the balances and lifecycle dates needed to manage the account over time.\n\nThe governing business rules for interest, from the `Interest` concept, are that interest is the return on depositing money paid by the bank and is expressed as an annual percentage rate. The context says key interest attributes include interest rate, APY for deposits, compounding frequency such as daily, monthly, or annually, and whether the rate structure is simple vs. compound and fixed vs. variable. The explicit deposit rule given is that deposit interest is credited monthly, typically on the first day of the month.\n\nThe context does not provide a calculation formula for `interest_earned` in `ACCOUNTS`, so it supports storage and tracking of interest data, but the exact computation method is not specified.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_7",
+        "Deposit Account\u2192ACCOUNTS",
+        "parent_chunk_data_dictionary.md_12",
+        "parent_chunk_business_glossary.md_2",
+        "Deposit Account"
+      ],
+      "contexts": [
+        "## accounts\n\n**Description: ** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status. **Primary Key:** `account_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | account_id | INTEGER | Unique account identifier (primary key) | NO | | account_number | VARCHAR(16) | Human-readable account number, must be unique | NO | | account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO | | account_subtype | VARCHAR(30) | Subtype (e.g., Premium, Student, Standard) | YES | | parent_accou",
+        "Business concept 'Deposit Account' \u2014 This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type. is implemented by physical table ACCOUNTS (columns: account_id, account_number, account_type, account_subtype, parent_account_id, branch_id, status, current_balance, available_balance, interest_rate, interest_earned, minimum_balance, monthly_fee, opened_date, closed_date, last_transaction_date, created_at, updated_at).",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "## Interest\n\n**Definition: ** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. **Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. **Key Attributes:** - Interest Rate (annual percentage) - APR (Annual Percentage Rate) - for loans - APY (Annual Percentage Yield) - for deposits - Compounding Frequency (daily, monthly, annually) - Simple vs. Compound Interest - Fixed vs. Variable Rates **Business Rules:** - Deposit interest is credited monthly (typically on first day of month) - Loan interest is amortized (early payments are mostly interest, later mostly principal) - APY accounts for compoundi",
+        "Deposit Account: This table is the core master record for bank deposit accounts, with account number, type, subtype, balances, interest, fees, status, and lifecycle dates. The description explicitly says it supports deposit accounts with hierarchy, which aligns best with a deposit account concept rather than a narrower attribute like account type."
+      ],
+      "expected_answer": "The accounts table has interest_rate (nullable DECIMAL for the annual rate) and interest_earned (DECIMAL for year-to-date interest credited). The business glossary states that deposit interest is credited monthly (typically the first day of the month) and that APY accounts for compounding effects. Promotional rates may be temporary (e.g., 12-month CD bonus rates), and penalty rates may apply for rule violations such as early CD withdrawal. The interest_rate column is nullable because not all account types earn interest \u2014 non-interest-bearing checking accounts would have NULL for this field.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.30435172533855,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "23",
+      "question": "Can an account exist without any customer linked to it?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "The retrieved context does not state that every account must have at least one linked customer.\n\nWhat it does say is that customers and accounts have a many-to-many relationship through the `customer_account` junction table, and that any `customer_account` row requires both the customer and the account to already exist. That means a link cannot exist without a valid account and valid customer, but it does not establish the reverse rule that every account is required to have a link row in `customer_account`.\n\nSo, from the provided context alone, I cannot confirm that an account cannot exist without a customer linked to it. The schema metadata only shows how the relationship is implemented, not a mandatory minimum-link rule for accounts.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_8",
+        "Customer Account Relationship\u2192CUSTOMER_ACCOUNT",
+        "parent_chunk_data_dictionary.md_12",
+        "parent_chunk_data_dictionary.md_11",
+        "Customer Account Relationship"
+      ],
+      "contexts": [
+        "## customer_account\n\n**Description: ** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes. **Primary Key:** Composite (`customer_id`, `account_id`) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Foreign key to customers (part of PK) | NO | | account_id | INTEGER | Foreign key to accounts (part of PK) | NO | | relationship_type | VARCHAR(20) | Relationship: Owner/JointOwner/AuthorizedSigner/Custodian | NO | | is_primary | BOOLEAN | Whether this is the primary owner | NO | | ownership_percentage | DECIMAL(5,2) | Percentage ownership (0.00-100.00)",
+        "Business concept 'Customer Account Relationship' \u2014 The DDL explicitly describes this as a junction table implementing a many-to-many relationship between customers and accounts, with relationship attributes like role, primary flag, ownership percentage, and link dates. This aligns directly with the business concept of the customer-account relationship rather than either entity alone. is implemented by physical table CUSTOMER_ACCOUNT (columns: customer_id, account_id, relationship_type, is_primary, ownership_percentage, linked_date, unlinked_date, created_at).",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "## cards\n\n**Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, and card status. Supports multiple networks (Visa, Mastercard, Discover, American Express). **Primary Key:** `card_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | card_id | INTEGER | Unique card identifier (primary key) | NO | | account_id | INTEGER | Foreign key to accounts (linked account) | NO | | customer_id | INTEGER | Foreign key to customers (cardholder) | NO | | card_number | VARCHAR(20) | Primary Account Number (PAN), must be unique | NO | | card_type | VARCHAR(20) | Type: Debit/Credit/ATM | NO | | card_network | VARCHAR",
+        "Customer Account Relationship: The DDL explicitly describes this as a junction table implementing a many-to-many relationship between customers and accounts, with relationship attributes like role, primary flag, ownership percentage, and link dates. This aligns directly with the business concept of the customer-account relationship rather than either entity alone."
+      ],
+      "expected_answer": "Looking at the schema, there is no database-level constraint that forces every account to have a customer_account row. The accounts table has no direct foreign key to customers \u2014 the relationship is through the customer_account junction table with a composite primary key (customer_id, account_id). However, the business glossary states that accounts cannot exist without customer ownership, so this is a business rule enforced at the application level rather than a schema constraint. The junction table's relationship_type defaults to Owner, and the business rule ensures at least one Owner relationship exists per account.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.13939637966532398,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "24",
+      "question": "How does the schema handle failed or cancelled transactions?",
+      "query_type": "",
+      "difficulty": "Medium",
+      "answer": "The provided context shows that failed and cancelled transactions are handled through the Transaction status lifecycle.\n\nIn the business concept for Transaction, status is a key attribute, with the values Pending, Posted, Failed, Cancelled, and OnHold. The context also says transactions flow through multiple states, specifically noting Pending \u2192 Posted as part of the normal lifecycle, and that transactions create audit trails for regulatory compliance and customer service. From that, failed or cancelled transactions are represented as transaction records whose status is set to Failed or Cancelled rather than being described as removed.\n\nThe transactions table context confirms that transactions are stored in a transaction fact table recording account activity, but the retrieved schema excerpt does not show a specific status column definition there. So, based on the available context, the schema/business model supports failed and cancelled transactions via the Transaction status attribute, but it does not provide additional rules such as reversal logic, deletion behavior, retry handling, or special balance treatment for those statuses.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_9",
+        "parent_chunk_data_dictionary.md_12",
+        "parent_chunk_business_glossary.md_1",
+        "parent_chunk_business_glossary.md_0",
+        "parent_chunk_data_dictionary.md_4"
+      ],
+      "contexts": [
+        "## transactions\n\n**Description: ** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated fields (balance_after) and includes location data for POS and ATM transactions for fraud detection. **Primary Key:** `transaction_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | transaction_id | INTEGER | Unique transaction identifier (primary key) | NO | | account_id | INTEGER | Foreign key to accounts | NO | | transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO | | amount | DECIMAL(15,2) | Transaction amount (always positive) | NO | | currency | VARCHAR(3) | Currency code (default: USD) | NO",
+        "## Entity Relationship Summary\n\n**Key Relationships: ** - customers \u2190\u2192 accounts (many-to-many via customer_account) - accounts \u2192 accounts (self-reference for parent-child hierarchy) - accounts \u2192 transactions (one-to-many) - customers \u2192 loans (one-to-many) - accounts \u2192 cards (one-to-many) - branches \u2192 accounts (one-to-many) - branches \u2192 atms (one-to-many) **Cascade Rules:** - All foreign keys have NO CASCADE by default (manual integrity management) - customer_account junction table requires both customer and account to exist **Business Rules Enforced:** - Account numbers must be unique - Tax IDs must be unique - Branch codes must be unique - ATM codes must be unique - Card numbers must be unique - Account hierarchy prevents circular references (parent != child) - KYC levels must be Level1, Level2, or Level3 - Risk profiles must be Conservativ",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio",
+        "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition: ** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. **Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. **Key Attributes:** - Account Number (unique identifier) - Account Type (Checking, Savings, MoneyMarket, CD, Investment) - Current Balance vs. Available Balance - Interest Rate and Interest Earned - Minimum Balance Requirements - Monthly Fees - Account Status (Active, Dormant, Frozen, Closed) **Business Rules:** - Account numbers must be unique across the system - Parent accounts cannot reference themselves (no circular hierarchies) - Available balan",
+        "# Retail Banking Data Dictionary\n\nThis document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.\n\n---\n\n## customers\n\n**Description: ** Core customer dimension table containing master data for all individual and corporate banking customers. Includes KYC (Know Your Customer) compliance status, risk profiling for investment suitability, and preferred customer flags for VIP treatment. **Primary Key:** `customer_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | customer_id | INTEGER | Unique customer identifier (primary key) | NO | | first_name | VARCHAR(50) | Customer's first name | NO | | last_name | VARCHAR(50) | Customer's last name | NO | | tax_id | VARCHAR(11) | Tax identification number (SSN/EIN), must be unique | NO | | email | VARCHAR(100) | Primary email address for notifications | NO | | phone | VARCHAR(20) | Primary phone num"
+      ],
+      "expected_answer": "The transactions table has a status column with CHECK constraint allowing Pending, Posted, Failed, Cancelled, and OnHold states. The business glossary explains that failed transactions are logged for audit but do not affect the account balance \u2014 the balance_after field would reflect no change. Posted transactions are final and cannot be modified, only reversed with a new transaction. The transaction record preserves all fields (description, reference_number, location, amount) regardless of status, maintaining a complete audit trail for regulatory compliance.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.2041831701075589,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "25",
+      "question": "What operational states can an ATM have and what do they mean for available services?",
+      "query_type": "",
+      "difficulty": "Easy",
+      "answer": "The retrieved context identifies three ATM status values: Operational, OutOfService, and OutOfCash, under the ATM concept\u2019s \u201cStatus\u201d attribute.\n\nFrom the context, these statuses are part of the ATM\u2019s operational status and are tracked for availability management. However, the context does not explicitly define what services are available or unavailable in each specific state. So I can say the valid operational states are Operational, OutOfService, and OutOfCash, but I cannot state, from the provided context alone, exactly what each one means for available services.",
+      "sources": [
+        "parent_chunk_data_dictionary.md_6",
+        "parent_chunk_business_glossary.md_3",
+        "parent_chunk_data_dictionary.md_5",
+        "parent_chunk_business_glossary.md_1",
+        "parent_chunk_business_glossary.md_2"
+      ],
+      "contexts": [
+        "## atms\n\n**Description: ** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location services, and operational status for availability management. **Primary Key:** `atm_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | atm_id | INTEGER | Unique ATM identifier (primary key) | NO | | atm_code | VARCHAR(10) | Unique ATM code | NO | | branch_id | INTEGER | Foreign key to branches (NULL for standalone) | YES | | location | VARCHAR(200) | Human-readable location description | NO | | latitude | DECIMAL(10,6) | GPS latitude coordinate | YES | | longitude | DECIMAL(11,6) | GPS longitude coordinate | YES | | atm_type | VARCH",
+        "## ATM\n\n**Definition: ** Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance. **Business Context:** ATMs extend banking access beyond branch hours and locations. They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores. **Key Attributes:** - ATM ID and Code - Location (address and GPS coordinates) - ATM Type (Standalone, Branch, DriveThrough) - Status (Operational, OutOfService, OutOfCash) - Cash Balance and Last Replenished Date - Supported Features (Deposit, Cardless Withdrawal) - Installation Date **Business Rules:** - Standalone ATMs are not affiliated with a branch - Branch ATMs are located on branch premises - DriveThrough ATMs serve vehicles only - Ca",
+        "## branches\n\n**Description: ** Physical bank locations including full-service branches, satellite offices, and ATM-only locations. Tracks staffing levels, operating hours, ATM counts, and branch status for operational management. **Primary Key:** `branch_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | branch_id | INTEGER | Unique branch identifier (primary key) | NO | | branch_code | VARCHAR(4) | 4-digit branch code, must be unique | NO | | branch_name | VARCHAR(100) | Human-readable branch name | NO | | branch_type | VARCHAR(20) | Type: FullService/Satellite/ATMOnly | NO | | address | VARCHAR(200) | Street address | NO | | city | VARCHAR(50) | City where branch is located | NO | | state | VARCHAR(2) | Two-letter state code | NO",
+        "## Transaction\n\n**Definition: ** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. **Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. **Key Attributes:** - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) **Business Rules:** - Debit transactions reduce account balance - Credit transactions increase account balance - Transactio",
+        "## Interest\n\n**Definition: ** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. **Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. **Key Attributes:** - Interest Rate (annual percentage) - APR (Annual Percentage Rate) - for loans - APY (Annual Percentage Yield) - for deposits - Compounding Frequency (daily, monthly, annually) - Simple vs. Compound Interest - Fixed vs. Variable Rates **Business Rules:** - Deposit interest is credited monthly (typically on first day of month) - Loan interest is amortized (early payments are mostly interest, later mostly principal) - APY accounts for compoundi"
+      ],
+      "expected_answer": "ATMs have three operational states defined by CHECK constraint: Operational (fully functional for all supported transactions), OutOfService (technical issue preventing all transactions), and OutOfCash (cash depleted, preventing withdrawals). The business glossary explains that cash replenishment is triggered when balance falls below a threshold, OutOfCash ATMs may still allow deposit transactions if supports_deposit is true, and cardless transactions require mobile app authentication. The atms table tracks cash_balance and last_replenished timestamp for operational management.",
+      "expected_sources": [],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.4506917891452081,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    }
+  ]
+}

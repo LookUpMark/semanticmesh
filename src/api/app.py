@@ -1,4 +1,5 @@
-"""FastAPI application — mounts both the Ablation Studies and E2E Demo APIs."""
+"""FastAPI application — mounts both the E2E Demo and Ablation Studies APIs."""
+
 from __future__ import annotations
 
 from fastapi import FastAPI
@@ -12,18 +13,10 @@ app = FastAPI(
     version="1.0.0",
     summary=(
         "Multi-Agent Framework for Semantic Discovery & GraphRAG — "
-        "REST interface for ablation studies and end-to-end demos."
+        "REST interface for end-to-end demos and ablation studies."
     ),
     description="""
 ## APIs
-
-### Ablation Studies  `/api/v1/ablation/`
-Run, monitor and compare ablation experiments:
-- **POST `/ablation/run`** — launch a custom ablation run (any flags + hyperparameters)
-- **GET `/ablation/status/{job_id}`** — poll status and RAGAS metrics
-- **GET `/ablation/jobs`** — list all submitted jobs
-- **GET `/ablation/matrix`** — browse the 21 predefined AB-00…AB-20 conditions
-- **GET `/ablation/datasets`** — list available gold-standard evaluation fixtures
 
 ### E2E Demo  `/api/v1/demo/`
 Drive the full GraphRAG pipeline interactively:
@@ -33,6 +26,15 @@ Drive the full GraphRAG pipeline interactively:
 - **POST `/demo/pipeline`** — full async E2E: build + multi-question answering
 - **GET `/demo/pipeline/{job_id}`** — poll pipeline results
 - **GET `/demo/graph/stats`** — live Neo4j node/edge counts
+
+### Ablation Studies  `/api/v1/ablation/`
+Run, monitor and compare ablation experiments:
+- **POST `/ablation/run/preset`** — launch a predefined AB-XX study (matrix config auto-applied)
+- **POST `/ablation/run/custom`** — launch a fully custom run (any flags + hyperparameters)
+- **GET `/ablation/status/{job_id}`** — poll status and metrics
+- **GET `/ablation/jobs`** — list all submitted jobs
+- **GET `/ablation/matrix`** — browse the 21 predefined AB-00…AB-20 conditions
+- **GET `/ablation/datasets`** — list available gold-standard evaluation fixtures
     """,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -48,8 +50,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(ablation_router, prefix="/api/v1")
 app.include_router(demo_router, prefix="/api/v1")
+app.include_router(ablation_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["Health"])

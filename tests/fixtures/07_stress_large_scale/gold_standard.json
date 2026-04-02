@@ -1,551 +1,528 @@
 {
   "dataset_name": "Enterprise ERP Stress Test",
   "dataset_id": "07_stress_large_scale",
-  "version": "1.0",
-  "description": "Large-scale stress testing dataset with 37 tables, complex multi-hop queries, and enterprise scenarios",
+  "version": "2.0",
+  "description": "Large-scale stress testing dataset with 37 tables across Sales, Procurement, Inventory, Manufacturing, Quality, Finance, HR, Logistics, Projects, and System domains. Schema-level questions about structure, relationships, constraints, and business rules.",
   "domain": "Enterprise Resource Planning (ERP)",
   "created_date": "2024-03-23",
+  "updated_date": "2026-03-27",
   "qa_pairs": [
     {
       "id": "QA-001",
-      "question": "What are the top 5 customers by total order value in the last 90 days, and what is their credit score and payment history?",
-      "answer_type": "aggregation",
-      "tables_involved": ["customer", "customer_type", "sales_order", "invoice", "payment"],
-      "complexity": "medium",
-      "expected_result_format": "List of customers with order totals, credit scores, and payment metrics",
-      "query_pattern": "JOIN + GROUP BY + ORDER BY + date filter"
+      "question": "What information does the customer table store and what constraints does it have?",
+      "answer": "The customer table stores customer_id (PK), customer_number (UNIQUE), customer_name, customer_type_id (FK to customer_type), tax_id, registration_date, status (ACTIVE/INACTIVE/SUSPENDED via CHECK), credit_limit (default 0), currency (default USD), payment_terms (default 30 days), credit_score (CHECK 0-100), annual_revenue, industry_code, and website. Timestamps created_at and updated_at track record changes.",
+      "category": "Direct Mapping",
+      "entities": ["Customer"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-002",
-      "question": "Which products have the highest scrap rate in production, and what is the total cost of scrap for each product in the last 6 months?",
-      "answer_type": "aggregation",
-      "tables_involved": ["product", "work_order", "work_order_material", "inventory_transaction"],
-      "complexity": "medium",
-      "expected_result_format": "Products ranked by scrap rate with total scrap cost",
-      "query_pattern": "JOIN + GROUP BY + HAVING + calculation"
+      "question": "How does the schema classify different types of products?",
+      "answer": "Products are classified by product_type via CHECK constraint: FINISHED_GOOD, RAW_MATERIAL, SERVICE, or CONSUMABLE. They also belong to a hierarchical product_category (via category_id FK) where product_category has a self-referencing parent_category_id for nested categories. Products also track status (ACTIVE/DISCONTINUED/PHASE_OUT), shelf_life_days, storage temperature range (min/max), and a hazardous boolean flag.",
+      "category": "Direct Mapping",
+      "entities": ["Product", "Product Category"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-003",
-      "question": "Find all suppliers that have quality inspection failure rates above 5% and identify which products they supply.",
-      "answer_type": "filtering",
-      "tables_involved": ["supplier", "purchase_order", "purchase_order_line", "product", "purchase_receipt", "quality_inspection"],
-      "complexity": "high",
-      "expected_result_format": "Suppliers with failure rates and their supplied products",
-      "query_pattern": "JOIN + subquery + HAVING + aggregation"
+      "question": "What is the structure of the sales order and how does it link to customers and products?",
+      "answer": "The sales_order table links to customer via customer_id FK and to warehouse via warehouse_id. It tracks order_number (UNIQUE), order_date, required_date, promised_date, subtotal/tax_amount/freight_amount/total_amount, and status (DRAFT/CONFIRMED/PICKED/SHIPPED/INVOICED/CANCELLED via CHECK). Priority can be LOW/NORMAL/HIGH/URGENT. Sales order lines (sales_order_line) link each order to products via product_id FK, tracking quantities (ordered/shipped/invoiced), unit_price, discount_percentage, and line-level status.",
+      "category": "Multi-hop",
+      "entities": ["Sales Order", "Customer", "Product"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-004",
-      "question": "What is the complete bill of materials for product 'Industrial Assembly Robot ARM-500' including all sub-assemblies and raw materials?",
-      "answer_type": "hierarchical",
-      "tables_involved": ["product", "bill_of_materials"],
-      "complexity": "high",
-      "expected_result_format": "Multi-level BOM tree with quantities and costs",
-      "query_pattern": "Recursive self-join + hierarchical traversal"
+      "question": "How does the schema represent supplier information and their classification?",
+      "answer": "The supplier table stores supplier_id (PK), supplier_number (UNIQUE), supplier_name, supplier_type (MANUFACTURER/DISTRIBUTOR/SERVICE_PROVIDER via CHECK), tax_id, registration_date, and status (ACTIVE/INACTIVE/ON_HOLD/BLACKLISTED). Performance metrics are tracked: credit_rating (A/B/C/D), lead_time_days, quality_rating (0-5), and on_time_delivery_rate (0-100%). Suppliers have associated supplier_address (with types MAIN/BILLING/SHIPPING/RETURN) and supplier_contact tables.",
+      "category": "Direct Mapping",
+      "entities": ["Supplier"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-005",
-      "question": "Which customers have duplicate records based on matching tax IDs or similar names, and what orders should be merged?",
-      "answer_type": "entity_resolution",
-      "tables_involved": ["customer", "customer_address", "customer_contact", "sales_order", "invoice"],
-      "complexity": "high",
-      "expected_result_format": "Duplicate customer groups with merge recommendations",
-      "query_pattern": "Self-join + similarity matching + group analysis"
+      "question": "What types of warehouses does the system support and how is storage organized?",
+      "answer": "The warehouse table defines four types via CHECK: COMPANY_OWNED, 3PL (third-party logistics), VIRTUAL, and TRANSIT. Each warehouse has capacity_cubic_meters and status (ACTIVE/INACTIVE/UNDER_MAINTENANCE). Storage is organized hierarchically: warehouse → warehouse_zone (types: BULK/PICK/STAGING/RECEIVING/SHIPPING, with temperature_controlled flag) → bin_location (types: BULK/PICK/FLOW_RACK/CANTILEVER, with capacity_quantity, capacity_weight, and status ACTIVE/FULL/LOCKED/QUARANTINE). Bin codes are unique within each warehouse.",
+      "category": "Multi-hop",
+      "entities": ["Warehouse", "Warehouse Zone", "Bin Location"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-006",
-      "question": "What is the trial balance for accounting period 2024-Q1, showing total debits and credits by account hierarchy?",
-      "answer_type": "aggregation",
-      "tables_involved": ["general_ledger_account", "account_type", "journal_entry", "journal_entry_line", "accounting_period"],
-      "complexity": "high",
-      "expected_result_format": "Balanced trial balance with account hierarchy",
-      "query_pattern": "JOIN + recursive hierarchy + GROUP BY + SUM"
+      "question": "How does the inventory tracking system work across the schema?",
+      "answer": "Inventory is tracked at two levels. The inventory_on_hand table records current stock per product/warehouse/bin/lot combination (UNIQUE constraint), with quantity_on_hand, quantity_allocated, and a computed quantity_available column (on_hand minus allocated). The inventory_transaction table logs all movements with types: RECEIPT, ISSUE, TRANSFER, ADJUSTMENT, CYCLE_COUNT, SCRAP, and RETURN. Each transaction references a product, warehouse, bin, and optionally a source document (reference_type + reference_id) for traceability.",
+      "category": "Multi-hop",
+      "entities": ["Inventory", "Warehouse", "Product"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-007",
-      "question": "Which warehouses have inventory items with quantities available below their safety stock of 100 units, and what products are affected?",
-      "answer_type": "filtering",
-      "tables_involved": ["warehouse", "inventory_on_hand", "product", "product_category", "bin_location"],
-      "complexity": "medium",
-      "expected_result_format": "Warehouses with low stock items and product details",
-      "query_pattern": "JOIN + WHERE + GROUP BY"
+      "question": "What is the Bill of Materials structure and how does it support multi-level product hierarchies?",
+      "answer": "The bill_of_materials table implements a many-to-many self-referencing relationship on the product table: parent_product_id (FK to product) contains component_product_id (FK to product) with a specified quantity and unit_of_measure. Components are classified as COMPONENT, PHANTOM, BYPRODUCT, or CO_PRODUCT via CHECK. Each BOM entry has effective_start_date and optional effective_end_date for date-effectivity, with a UNIQUE constraint on (parent_product_id, component_product_id, effective_start_date). Multi-level hierarchies are traversed recursively through the product table.",
+      "category": "Direct Mapping",
+      "entities": ["Bill of Materials", "Product"],
+      "hops": 1,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-008",
-      "question": "What is the total value of overdue accounts receivable by customer, and which customers have the highest overdue amounts?",
-      "answer_type": "aggregation",
-      "tables_involved": ["customer", "accounts_receivable", "invoice"],
-      "complexity": "medium",
-      "expected_result_format": "Customers ranked by overdue AR amounts",
-      "query_pattern": "JOIN + GROUP BY + ORDER BY + date calculation"
+      "question": "How are work orders structured and what do they track?",
+      "answer": "The work_order table references product_id (what to produce), production_line_id (where), and warehouse_id (inventory location). It tracks quantity_ordered, quantity_completed, quantity_scrapped, planned dates (start_date, required_date), actual dates (actual_start_date, actual_finish_date), status (DRAFT/RELEASED/IN_PROGRESS/COMPLETED/CANCELLED), and priority (LOW/NORMAL/HIGH/URGENT). Materials are tracked via work_order_material which links to products and bins with quantity_required vs quantity_issued. Production is scheduled via production_schedule linking work_orders to production_lines with planned vs actual timestamps.",
+      "category": "Multi-hop",
+      "entities": ["Work Order", "Production Line", "Product"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-009",
-      "question": "Identify all work orders that are behind schedule (actual completion after required date) and calculate the delay in days.",
-      "answer_type": "filtering",
-      "tables_involved": ["work_order", "product", "production_line", "warehouse"],
-      "complexity": "medium",
-      "expected_result_format": "Work orders with delay calculations",
-      "query_pattern": "JOIN + WHERE + date calculation"
+      "question": "How does the quality management system work in the schema?",
+      "answer": "Quality is managed through three related tables. quality_inspection records inspections with types INCOMING/IN_PROCESS/FINAL/AUDIT, results PENDING/PASS/FAIL/CONDITIONAL_PASS, and links to quality_standard (types INTERNAL/ISO/ASTM/FDA/CE). Inspections track defects_found, sample_size, and batch_size. When inspections fail, non_conformance_report records are created with types PRODUCT/PROCESS/DOCUMENTATION/SUPPLIER, severity MINOR/MAJOR/CRITICAL, and status OPEN/IN_PROGRESS/CLOSED/VERIFIED. NCRs track root_cause, corrective_action, and preventive_action for CAPA compliance.",
+      "category": "Multi-hop",
+      "entities": ["Quality Inspection", "Quality Standard", "Non-Conformance Report"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-010",
-      "question": "What is the on-time delivery rate for each supplier, and which suppliers have delivery rates below 90%?",
-      "answer_type": "aggregation",
-      "tables_involved": ["supplier", "purchase_order", "purchase_receipt"],
-      "complexity": "medium",
-      "expected_result_format": "Supplier delivery rates with underperformers highlighted",
-      "query_pattern": "JOIN + GROUP BY + HAVING + percentage calculation"
+      "question": "What is the complete invoice lifecycle and how are invoices linked to orders and payments?",
+      "answer": "The invoice table supports four types via CHECK: SALES, PURCHASE, CREDIT_MEMO, and DEBIT_MEMO. Invoices link to customer_id and optionally order_id (FK to sales_order). They track subtotal/tax_amount/total_amount/amount_paid/balance_due and status (DRAFT/POSTED/PAID/OVERDUE/VOID). Each invoice has invoice_line items linking to products and optionally back to order_line_id. Payments reference invoices via invoice_id FK, with payment_type (RECEIPT/PAYMENT/REFUND), payment_method (CASH/CREDIT_CARD/WIRE/CHECK/ACH), and status (PENDING/COMPLETED/FAILED/REVERSED).",
+      "category": "Multi-hop",
+      "entities": ["Invoice", "Payment", "Sales Order"],
+      "hops": 3,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-011",
-      "question": "Which projects are over budget, and what is the variance between budgeted and actual costs by department?",
-      "answer_type": "aggregation",
-      "tables_involved": ["project", "project_task", "employee", "department", "time_entry"],
-      "complexity": "high",
-      "expected_result_format": "Projects with budget variances by department",
-      "query_pattern": "JOIN + GROUP BY + HAVING + variance calculation"
+      "question": "How does the procurement process flow from purchase order to receipt?",
+      "answer": "Purchase orders (purchase_order) link to supplier_id FK and warehouse_id, with status lifecycle DRAFT/SUBMITTED/ACKNOWLEDGED/PARTIAL/RECEIVED/CLOSED/CANCELLED. Each PO has purchase_order_line items referencing products with quantity tracking (ordered/received/invoiced) and supplier_part_number. When goods arrive, purchase_receipt records the receipt linked to po_id and supplier_id, with status RECEIVED/INSPECTED/PUT_AWAY/REJECTED. Purchase_receipt_line links back to PO lines, tracking quantity_ordered vs quantity_received vs quantity_rejected, plus lot_number and expiration_date for traceability.",
+      "category": "Multi-hop",
+      "entities": ["Purchase Order", "Supplier", "Purchase Receipt"],
+      "hops": 3,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-012",
-      "question": "Find all products that are supplied by only one supplier (single source) and have annual usage over $100,000.",
-      "answer_type": "filtering",
-      "tables_involved": ["product", "purchase_order_line", "purchase_order", "supplier"],
-      "complexity": "high",
-      "expected_result_format": "Single-source products with high spend",
-      "query_pattern": "JOIN + GROUP BY + HAVING + subquery"
+      "question": "How does the general ledger and accounting system work?",
+      "answer": "The GL is built on account_type (DEBIT or CREDIT balance_type), general_ledger_account (with hierarchical parent_account_id self-reference and status ACTIVE/INACTIVE), and accounting_period (with fiscal_year, start/end dates, and is_closed flag). Journal entries (journal_entry) reference a period, have entry_type (SALES/PURCHASE/PAYMENT/RECEIPT/ADJUSTMENT/REVERSAL), status lifecycle (DRAFT/SUBMITTED/APPROVED/POSTED/REVERSED), and must balance total_debit = total_credit. Journal_entry_line items reference accounts and enforce a CHECK that each line has either a debit OR credit amount, never both.",
+      "category": "Multi-hop",
+      "entities": ["General Ledger Account", "Journal Entry", "Accounting Period"],
+      "hops": 2,
+      "difficulty": "Hard"
     },
     {
       "id": "QA-013",
-      "question": "What is the inventory turnover ratio by product category, and which categories have the lowest turnover?",
-      "answer_type": "aggregation",
-      "tables_involved": ["product", "product_category", "inventory_transaction", "inventory_on_hand"],
-      "complexity": "medium",
-      "expected_result_format": "Categories ranked by turnover ratio",
-      "query_pattern": "JOIN + GROUP BY + calculation + ORDER BY"
+      "question": "How are accounts receivable and accounts payable tracked?",
+      "answer": "Accounts receivable (accounts_receivable) links to customer_id and invoice_id, tracking amount_original, amount_due, due_date, and a computed days_overdue column. Status values are CURRENT/DUE/OVERDUE/COLLECTION/WRITE_OFF, with collection_status and next_action_date for collections workflow. Accounts payable (accounts_payable) links to supplier_id and invoice_id, tracking amount_due, discount_available, discount_until date, payment_terms, payment_priority (1-10), and status NEW/APPROVED/PAID/OVERDUE/DISPUTED. Both tables link back to the invoice table for the original transaction.",
+      "category": "Multi-hop",
+      "entities": ["Accounts Receivable", "Accounts Payable", "Customer", "Supplier"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-014",
-      "question": "Which employees have worked more than 40 hours per week on average in the last month, and on which projects?",
-      "answer_type": "filtering",
-      "tables_involved": ["employee", "time_entry", "project", "department"],
-      "complexity": "medium",
-      "expected_result_format": "Employees with overtime hours and project assignments",
-      "query_pattern": "JOIN + GROUP BY + HAVING + date filter"
+      "question": "How is the employee and organizational structure represented?",
+      "answer": "The department table has hierarchical parent_department_id self-reference with status ACTIVE/INACTIVE. Positions (position table) belong to departments via department_id FK, with grade_level, salary range (min/max), and FLSA status (EXEMPT/NON_EXEMPT). Employees reference department_id, position_id, and manager_id (self-referencing FK to employee) for reporting hierarchy. Employee types are FULL_TIME/PART_TIME/CONTRACT/TEMPORARY with status ACTIVE/ON_LEAVE/TERMINATED. Time entries (time_entry) link employees to projects with hours_worked and approval_status (PENDING/APPROVED/REJECTED).",
+      "category": "Multi-hop",
+      "entities": ["Employee", "Department", "Position"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-015",
-      "question": "What are the top 10 products by gross margin (selling price minus cost), and what is their total sales revenue?",
-      "answer_type": "aggregation",
-      "tables_involved": ["product", "product_category", "sales_order_line", "sales_order"],
-      "complexity": "medium",
-      "expected_result_format": "Products ranked by gross margin with revenue",
-      "query_pattern": "JOIN + GROUP BY + ORDER BY + calculation"
+      "question": "How does the shipment and logistics system work?",
+      "answer": "Carriers (carrier table) are classified by type: LTL/FTL/PARCEL/AIR/OCEAN/RAIL with rating (0-5). Shipping routes define paths between warehouses (origin_location_id, destination_location_id both FK to warehouse) with distance_km, estimated_hours, and cost_per_km. Shipments reference origin/destination warehouses, carrier, and route, with types OUTBOUND/INBOUND/TRANSFER/RETURN and status lifecycle PENDING/PICKED/SHIPPED/IN_TRANSIT/DELIVERED/EXCEPTION/CANCELLED. Shipment_line items link to products with quantity and weight. A generic reference_type + reference_id pattern links shipments to source documents (sales_order, purchase_order, etc.).",
+      "category": "Multi-hop",
+      "entities": ["Shipment", "Carrier", "Shipping Route", "Warehouse"],
+      "hops": 3,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-016",
-      "question": "Identify all shipments that are in transit or delayed, and calculate the average delay time by carrier.",
-      "answer_type": "aggregation",
-      "tables_involved": ["shipment", "carrier", "shipping_route", "warehouse"],
-      "complexity": "medium",
-      "expected_result_format": "Shipment status with carrier delay statistics",
-      "query_pattern": "JOIN + GROUP BY + CASE + date calculation"
+      "question": "How does the project management module work?",
+      "answer": "Projects link to customer_id (for customer-facing projects) and project_manager_id (FK to employee). Project types are CUSTOMER/INTERNAL/R&D/CAPITAL with status PLANNING/ACTIVE/ON_HOLD/COMPLETED/CANCELLED and priority levels. Projects track budget_amount vs actual_cost. Project tasks (project_task) support hierarchical breakdown via parent_task_id self-reference, with assigned_to (FK to employee), estimated vs actual hours, completion_percentage (CHECK 0-100), and status (NOT_STARTED/IN_PROGRESS/COMPLETED/ON_HOLD/CANCELLED). Time entries link employees to projects for cost tracking.",
+      "category": "Multi-hop",
+      "entities": ["Project", "Project Task", "Employee"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-017",
-      "question": "What is the total value of open purchase orders by supplier, and which suppliers have the largest outstanding commitments?",
-      "answer_type": "aggregation",
-      "tables_involved": ["supplier", "purchase_order", "purchase_order_line"],
-      "complexity": "medium",
-      "expected_result_format": "Suppliers ranked by open PO value",
-      "query_pattern": "JOIN + GROUP BY + ORDER BY + SUM"
+      "question": "How does the system handle user authentication, roles, and permissions?",
+      "answer": "The app_user table links to employee_id, customer_id, or supplier_id depending on user_type (EMPLOYEE/CUSTOMER/SUPPLIER/ADMIN). Users have status ACTIVE/INACTIVE/LOCKED/PENDING with failed_login_attempts tracking. Roles (role table) are typed as SYSTEM/BUSINESS/CUSTOM with ACTIVE/INACTIVE status. The user_role junction table implements many-to-many with assigned_date, expiry_date, and status ACTIVE/EXPIRED/REVOKED. All system activity is logged in audit_log with action types CREATE/READ/UPDATE/DELETE/LOGIN/LOGOUT/EXPORT, storing old_value and new_value as JSON.",
+      "category": "Multi-hop",
+      "entities": ["User", "Role", "Audit Log"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-018",
-      "question": "Which quality inspection results show 'FAIL' status, and what are the associated non-conformance reports?",
-      "answer_type": "filtering",
-      "tables_involved": ["quality_inspection", "non_conformance_report", "product", "supplier", "purchase_receipt"],
-      "complexity": "high",
-      "expected_result_format": "Failed inspections with NCR details",
-      "query_pattern": "JOIN + WHERE + LEFT JOIN"
+      "question": "What is the complete path from a customer placing an order to the product being shipped?",
+      "answer": "The order-to-ship path traverses: customer → sales_order (via customer_id FK) → sales_order_line (via order_id FK) → product (via product_id FK). For fulfillment: sales_order references warehouse_id for the fulfillment location. Inventory is checked via inventory_on_hand (product_id + warehouse_id). A shipment is created referencing origin warehouse, with shipment_line items for each product. The sales_order status progresses DRAFT → CONFIRMED → PICKED → SHIPPED → INVOICED. Finally, invoice is created referencing the sales_order, and payment settles the invoice.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Sales Order", "Product", "Inventory", "Shipment", "Invoice", "Payment"],
+      "hops": 6,
+      "difficulty": "Hard"
     },
     {
       "id": "QA-019",
-      "question": "What is the revenue by customer type for the current fiscal year, and how does it compare to the previous year?",
-      "answer_type": "aggregation",
-      "tables_involved": ["customer_type", "customer", "sales_order", "invoice", "accounting_period"],
-      "complexity": "high",
-      "expected_result_format": "Revenue by customer type with YoY comparison",
-      "query_pattern": "JOIN + GROUP BY + CASE + year comparison"
+      "question": "How does the schema support supplier contracts and their relationship to purchase orders?",
+      "answer": "The supplier_contract table links to supplier_id FK, with contract_type (FIXED_PRICE/COST_PLUS/RATE_BASED/FRAMEWORK), start/end dates, auto_renew flag, payment_terms, total_value, and status (DRAFT/ACTIVE/EXPIRED/TERMINATED). Purchase orders independently link to the same supplier via supplier_id FK. While there is no direct FK between supplier_contract and purchase_order, they share the supplier_id relationship. Purchase order lines track unit_price and supplier_part_number, which can be compared against contracted terms.",
+      "category": "Multi-hop",
+      "entities": ["Supplier", "Supplier Contract", "Purchase Order"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-020",
-      "question": "Find all stock transfers between warehouses in the last 30 days and calculate the total transfer cost.",
-      "answer_type": "aggregation",
-      "tables_involved": ["stock_transfer", "stock_transfer_line", "warehouse", "product", "bin_location"],
-      "complexity": "medium",
-      "expected_result_format": "Stock transfers with costs by warehouse pair",
-      "query_pattern": "JOIN + GROUP BY + date filter + SUM"
+      "question": "What self-referencing hierarchies exist in the schema?",
+      "answer": "The schema has five self-referencing hierarchies: (1) product_category.parent_category_id → product_category.category_id for nested product classifications; (2) general_ledger_account.parent_account_id → general_ledger_account.account_id for chart of accounts hierarchy; (3) department.parent_department_id → department.department_id for organizational structure; (4) employee.manager_id → employee.employee_id for reporting hierarchy; (5) project_task.parent_task_id → project_task.task_id for work breakdown structure. All use nullable foreign keys where NULL indicates a root/top-level node.",
+      "category": "Direct Mapping",
+      "entities": ["Product Category", "General Ledger Account", "Department", "Employee", "Project Task"],
+      "hops": 1,
+      "difficulty": "Hard"
     },
     {
       "id": "QA-021",
-      "question": "Which production lines have the highest efficiency (actual output vs. planned output), and what products do they produce?",
-      "answer_type": "aggregation",
-      "tables_involved": ["production_line", "work_order", "production_schedule", "product"],
-      "complexity": "medium",
-      "expected_result_format": "Production lines ranked by efficiency",
-      "query_pattern": "JOIN + GROUP BY + calculation + ORDER BY"
+      "question": "How does the price list system work for products?",
+      "answer": "The price_list table defines named price lists with currency, effective_date, expiration_date, and status. The product_price junction table links products to price lists with price, minimum_quantity (for volume pricing), discount_percentage, and effective_date. A UNIQUE constraint on (product_id, price_list_id, effective_date) ensures each product has one price per list per effective date. Products also have a base_price on the product table itself, separate from price list entries.",
+      "category": "Multi-hop",
+      "entities": ["Product", "Price List"],
+      "hops": 2,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-022",
-      "question": "What is the total accounts payable aging by supplier, showing current, 1-30 days, 31-60 days, and 61+ days overdue?",
-      "answer_type": "aggregation",
-      "tables_involved": ["supplier", "accounts_payable", "invoice"],
-      "complexity": "medium",
-      "expected_result_format": "AP aging report by supplier with buckets",
-      "query_pattern": "JOIN + GROUP BY + CASE for aging buckets"
+      "question": "What CHECK constraints on status columns exist across the major tables?",
+      "answer": "Key status CHECK constraints include: customer (ACTIVE/INACTIVE/SUSPENDED), product (ACTIVE/DISCONTINUED/PHASE_OUT), sales_order (DRAFT/CONFIRMED/PICKED/SHIPPED/INVOICED/CANCELLED), purchase_order (DRAFT/SUBMITTED/ACKNOWLEDGED/PARTIAL/RECEIVED/CLOSED/CANCELLED), work_order (DRAFT/RELEASED/IN_PROGRESS/COMPLETED/CANCELLED), invoice (DRAFT/POSTED/PAID/OVERDUE/VOID), payment (PENDING/COMPLETED/FAILED/REVERSED), supplier (ACTIVE/INACTIVE/ON_HOLD/BLACKLISTED), shipment (PENDING/PICKED/SHIPPED/IN_TRANSIT/DELIVERED/EXCEPTION/CANCELLED), and warehouse (ACTIVE/INACTIVE/UNDER_MAINTENANCE).",
+      "category": "Direct Mapping",
+      "entities": ["Customer", "Product", "Sales Order", "Purchase Order", "Work Order", "Invoice"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-023",
-      "question": "Identify all products that have been returned (quantity rejected > 0) in purchase receipts and analyze supplier quality.",
-      "answer_type": "aggregation",
-      "tables_involved": ["product", "purchase_receipt_line", "purchase_receipt", "purchase_order", "supplier"],
-      "complexity": "medium",
-      "expected_result_format": "Products with rejection rates by supplier",
-      "query_pattern": "JOIN + GROUP BY + HAVING + percentage"
+      "question": "How does the stock transfer process work between warehouses?",
+      "answer": "Stock transfers use the stock_transfer table with from_warehouse_id and to_warehouse_id (both FK to warehouse), transfer_date, shipment_method, tracking_number, and status (DRAFT/PICKED/SHIPPED/RECEIVED/CANCELLED). Individual items are tracked via stock_transfer_line with from_bin_id and to_bin_id (FK to bin_location), quantity_requested/quantity_shipped/quantity_received, and status (PENDING/PICKED/SHIPPED/RECEIVED/CANCELLED). This creates full traceability from source bin to destination bin across warehouses.",
+      "category": "Multi-hop",
+      "entities": ["Stock Transfer", "Warehouse", "Bin Location"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-024",
-      "question": "What is the complete order-to-cash cycle time for each customer, from order date to payment date?",
-      "answer_type": "aggregation",
-      "tables_involved": ["customer", "sales_order", "invoice", "payment"],
-      "complexity": "medium",
-      "expected_result_format": "Customers with average cycle times",
-      "query_pattern": "JOIN + GROUP BY + date calculation + AVG"
+      "question": "How are production lines defined and what types exist?",
+      "answer": "The production_line table defines manufacturing resources with line_code (UNIQUE), line_name, line_type (ASSEMBLY/DISCRETE/PROCESS/MIXING via CHECK), location_id (FK to warehouse for the physical location), capacity_per_hour, setup_time_minutes, and status (ACTIVE/MAINTENANCE/INACTIVE). Production lines are referenced by work_order (production_line_id FK) and production_schedule (production_line_id FK) for capacity planning.",
+      "category": "Direct Mapping",
+      "entities": ["Production Line"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-025",
-      "question": "Which projects have tasks that are overdue (due_date < current_date and status not completed), and who is assigned?",
-      "answer_type": "filtering",
-      "tables_involved": ["project", "project_task", "employee", "department"],
-      "complexity": "medium",
-      "expected_result_format": "Overdue tasks with project and assignee details",
-      "query_pattern": "JOIN + WHERE + date comparison"
+      "question": "How does the budget system integrate with the financial accounts?",
+      "answer": "The budget table links to both department_id and account_id (FK to general_ledger_account). It tracks budget_type (OPERATING/CAPITAL/PROJECT), fiscal_year, budgeted_amount, actual_amount, and a computed variance column (budgeted minus actual). Budget status follows DRAFT/APPROVED/ACTIVE/CLOSED. This allows variance analysis by comparing budgeted amounts against actual journal_entry_line postings to the same accounts. Budget versions are tracked via a version integer field.",
+      "category": "Multi-hop",
+      "entities": ["Budget", "General Ledger Account", "Department"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-026",
-      "question": "What is the material usage variance (actual vs. standard) for work orders in the last quarter?",
-      "answer_type": "aggregation",
-      "tables_involved": ["work_order", "work_order_material", "product", "bill_of_materials"],
-      "complexity": "high",
-      "expected_result_format": "Material variance by product and work order",
-      "query_pattern": "JOIN + GROUP BY + calculation + subquery"
+      "question": "What computed/generated columns exist in the schema?",
+      "answer": "The schema has three computed columns using GENERATED ALWAYS AS: (1) inventory_on_hand.quantity_available = quantity_on_hand - quantity_allocated; (2) accounts_receivable.days_overdue = DATEDIFF(CURRENT_DATE, due_date); (3) budget.variance = budgeted_amount - actual_amount. All are STORED (materialized). These columns provide real-time calculated values without requiring application logic.",
+      "category": "Direct Mapping",
+      "entities": ["Inventory", "Accounts Receivable", "Budget"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-027",
-      "question": "Find all bins in warehouses that are over 90% full and identify the products occupying them.",
-      "answer_type": "filtering",
-      "tables_involved": ["warehouse", "warehouse_zone", "bin_location", "inventory_on_hand", "product"],
-      "complexity": "medium",
-      "expected_result_format": "Near-full bins with product details",
-      "query_pattern": "JOIN + WHERE + calculation"
+      "question": "How are customer addresses and contacts structured?",
+      "answer": "Customer addresses are stored in customer_address with address_type (BILLING/SHIPPING/BOTH via CHECK), full address fields (line1, line2, city, state, postal_code, country_code), and is_default flag. The customer_id FK has ON DELETE CASCADE. Customer contacts are in customer_contact with contact_name, contact_role, email, phone, and is_primary flag (also with ON DELETE CASCADE). This allows multiple addresses and contacts per customer with designated defaults.",
+      "category": "Multi-hop",
+      "entities": ["Customer", "Customer Address", "Customer Contact"],
+      "hops": 2,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-028",
-      "question": "What is the profit margin by product category, and which categories have margins below 20%?",
-      "answer_type": "aggregation",
-      "tables_involved": ["product_category", "product", "sales_order_line", "sales_order"],
-      "complexity": "medium",
-      "expected_result_format": "Categories with profit margins",
-      "query_pattern": "JOIN + GROUP BY + HAVING + calculation"
+      "question": "What CASCADE rules exist in the schema and what tables use them?",
+      "answer": "ON DELETE CASCADE is used on child tables that should be automatically removed when the parent is deleted: customer_address and customer_contact (cascade from customer), supplier_address and supplier_contact (cascade from supplier), sales_order_line (cascade from sales_order), purchase_order_line (cascade from purchase_order), invoice_line (cascade from invoice), purchase_receipt_line (cascade from purchase_receipt), shipment_line (cascade from shipment), stock_transfer_line (cascade from stock_transfer), warehouse_zone (cascade from warehouse), bin_location (cascade from warehouse), work_order_material (cascade from work_order), project_task (cascade from project), journal_entry_line (cascade from journal_entry), and user_role (cascade from both app_user and role).",
+      "category": "Direct Mapping",
+      "entities": ["Customer", "Supplier", "Sales Order", "Purchase Order"],
+      "hops": 1,
+      "difficulty": "Hard"
     },
     {
       "id": "QA-029",
-      "question": "Which employees have pending time entries (approval_status = 'PENDING') for more than 7 days, and for which projects?",
-      "answer_type": "filtering",
-      "tables_involved": ["employee", "time_entry", "project", "department"],
-      "complexity": "medium",
-      "expected_result_format": "Employees with overdue pending time entries",
-      "query_pattern": "JOIN + WHERE + date calculation"
+      "question": "How does the schema link quality inspections to their source documents?",
+      "answer": "Quality inspections use a polymorphic reference pattern: reference_type (VARCHAR) identifies the source table (e.g., 'purchase_receipt', 'work_order') and reference_id (INT) stores the primary key of that source record. The inspection also directly references product_id and warehouse_id via foreign keys. This allows a single inspection table to serve incoming material inspections (linked to purchase receipts), in-process inspections (linked to work orders), and final product inspections, all unified in one table.",
+      "category": "Multi-hop",
+      "entities": ["Quality Inspection", "Purchase Receipt", "Work Order"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-030",
-      "question": "What is the customer retention rate, showing customers who placed orders in both previous and current years?",
-      "answer_type": "aggregation",
-      "tables_involved": ["customer", "sales_order", "customer_type"],
-      "complexity": "high",
-      "expected_result_format": "Retention rate with customer counts",
-      "query_pattern": "JOIN + GROUP BY + subquery + EXISTS"
+      "question": "How does the journal entry enforce double-entry bookkeeping?",
+      "answer": "The journal_entry table requires total_debit and total_credit columns to be present (both NOT NULL DECIMAL 15,2). Journal_entry_line items each reference a general_ledger_account and have a CHECK constraint ensuring exactly one of debit_amount or credit_amount is positive: CHECK ((debit_amount > 0 AND credit_amount = 0) OR (credit_amount > 0 AND debit_amount = 0)). This enforces that each line item is either a debit or a credit, never both. The entry-level totals must balance for the journal to be approved and posted.",
+      "category": "Direct Mapping",
+      "entities": ["Journal Entry", "General Ledger Account"],
+      "hops": 1,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-031",
-      "question": "Identify all non-conformance reports with 'CRITICAL' severity that are still open (status not 'CLOSED').",
-      "answer_type": "filtering",
-      "tables_involved": ["non_conformance_report", "product", "supplier", "quality_inspection"],
-      "complexity": "medium",
-      "expected_result_format": "Open critical NCRs with details",
-      "query_pattern": "JOIN + WHERE + date filter"
+      "question": "What types of non-conformance reports exist and what is their lifecycle?",
+      "answer": "Non-conformance reports (NCRs) have four types via CHECK: PRODUCT, PROCESS, DOCUMENTATION, and SUPPLIER. Severity is classified as MINOR/MAJOR/CRITICAL. The status lifecycle is OPEN → IN_PROGRESS → CLOSED → VERIFIED. NCRs track root_cause, corrective_action, and preventive_action (all TEXT fields) for CAPA compliance. They reference product_id and the source document via polymorphic reference_type + reference_id. Resolution is tracked via resolution_date.",
+      "category": "Direct Mapping",
+      "entities": ["Non-Conformance Report"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-032",
-      "question": "What is the utilization rate of each warehouse (inventory value / capacity), and which warehouses are over 80% capacity?",
-      "answer_type": "aggregation",
-      "tables_involved": ["warehouse", "inventory_on_hand", "product"],
-      "complexity": "medium",
-      "expected_result_format": "Warehouses with utilization rates",
-      "query_pattern": "JOIN + GROUP BY + HAVING + calculation"
+      "question": "How does the purchase receipt track rejected quantities and lot information?",
+      "answer": "The purchase_receipt_line table tracks three quantity measures: quantity_ordered, quantity_received, and quantity_rejected. When quantity_rejected > 0, materials failed inspection. Each receipt line also records lot_number (for lot traceability), expiration_date (for perishable items), location_id (storage destination), and inspection_required flag (for items needing quality check before put-away). Receipt lines link back to specific PO lines via po_line_id FK for three-way matching (PO → receipt → invoice).",
+      "category": "Multi-hop",
+      "entities": ["Purchase Receipt", "Purchase Order"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-033",
-      "question": "Which sales representatives have the highest sales volume in the current quarter, and what is their average order value?",
-      "answer_type": "aggregation",
-      "tables_involved": ["sales_order", "employee", "customer", "customer_type"],
-      "complexity": "medium",
-      "expected_result_format": "Sales reps ranked by volume with metrics",
-      "query_pattern": "JOIN + GROUP BY + ORDER BY + AVG"
+      "question": "What UNIQUE constraints exist across the schema and what do they enforce?",
+      "answer": "Key UNIQUE constraints include: customer.customer_number, product.product_number, supplier.supplier_number (business identifiers); invoice.invoice_number, payment.payment_number, shipment.shipment_number (document numbers); sales_order.order_number, purchase_order.po_number; warehouse.warehouse_code, production_line.line_code, quality_standard.standard_code; app_user.username and app_user.email. Composite UNIQUE constraints include: (order_id, line_number) on order lines, (product_id, warehouse_id, bin_id, lot_number) on inventory, (product_id, price_list_id, effective_date) on product_price, (warehouse_id, zone_code) on warehouse_zone, and (warehouse_id, bin_code) on bin_location.",
+      "category": "Direct Mapping",
+      "entities": ["Customer", "Product", "Supplier", "Invoice", "Warehouse"],
+      "hops": 1,
+      "difficulty": "Hard"
     },
     {
       "id": "QA-034",
-      "question": "Find all invoices that are overdue (due_date < current_date) and have a balance due greater than $10,000.",
-      "answer_type": "filtering",
-      "tables_involved": ["invoice", "customer", "accounts_receivable"],
-      "complexity": "medium",
-      "expected_result_format": "Large overdue invoices with customer details",
-      "query_pattern": "JOIN + WHERE + date comparison + amount filter"
+      "question": "How does the schema handle the relationship between employees, departments, and projects?",
+      "answer": "Employees belong to departments via department_id FK and hold positions via position_id FK. Positions also reference department_id, creating a redundant but verifiable link. Employee.manager_id (self-referencing FK) creates reporting chains. Projects link to project_manager_id (FK to employee) and optionally customer_id. Project tasks are assigned to employees via assigned_to FK. Time entries link employees to projects with hours_worked, creating a many-to-many relationship between employees and projects for cost tracking.",
+      "category": "Multi-hop",
+      "entities": ["Employee", "Department", "Project", "Time Entry"],
+      "hops": 3,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-035",
-      "question": "What is the supplier diversity breakdown by supplier type, and what percentage of spend goes to each type?",
-      "answer_type": "aggregation",
-      "tables_involved": ["supplier", "supplier_type", "purchase_order", "purchase_order_line"],
-      "complexity": "medium",
-      "expected_result_format": "Spend by supplier type with percentages",
-      "query_pattern": "JOIN + GROUP BY + percentage calculation"
+      "question": "What is the relationship between sales orders, invoices, and payments?",
+      "answer": "Sales orders are invoiced by creating invoice records with order_id FK referencing sales_order. Invoice line items (invoice_line) can link back to specific sales_order_line items via order_line_id FK. Payments reference invoice_id FK to settle invoices. The invoice tracks amount_paid and balance_due. Accounts receivable (accounts_receivable) also links to both customer_id and invoice_id, tracking days_overdue (computed) and collection_status. This path supports order → invoice → payment → AR tracking.",
+      "category": "Multi-hop",
+      "entities": ["Sales Order", "Invoice", "Payment", "Accounts Receivable"],
+      "hops": 3,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-036",
-      "question": "Which products have the longest lead times (difference between required_date and order_date in purchase orders)?",
-      "answer_type": "aggregation",
-      "tables_involved": ["product", "purchase_order_line", "purchase_order", "supplier"],
-      "complexity": "medium",
-      "expected_result_format": "Products ranked by lead time",
-      "query_pattern": "JOIN + GROUP BY + ORDER BY + AVG"
+      "question": "What types of inventory transactions does the system track?",
+      "answer": "The inventory_transaction table supports seven transaction types via CHECK constraint: RECEIPT (goods received from suppliers), ISSUE (materials consumed by production or shipped to customers), TRANSFER (movement between warehouses/bins), ADJUSTMENT (corrections to inventory counts), CYCLE_COUNT (periodic physical verification), SCRAP (damaged or unusable inventory), and RETURN (goods returned by customers or to suppliers). Each transaction records product_id, warehouse_id, bin_id, quantity, unit_cost, reason_code, and source document via reference_type + reference_id.",
+      "category": "Direct Mapping",
+      "entities": ["Inventory Transaction"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-037",
-      "question": "What is the cross-sell analysis showing which product categories are frequently purchased together by the same customers?",
-      "answer_type": "aggregation",
-      "tables_involved": ["customer", "sales_order", "sales_order_line", "product", "product_category"],
-      "complexity": "high",
-      "expected_result_format": "Product category pairs with co-purchase frequency",
-      "query_pattern": "Self-join + GROUP BY + COUNT + ORDER BY"
+      "question": "How does the BOM component type affect manufacturing?",
+      "answer": "The bill_of_materials table classifies components into four types via CHECK: COMPONENT (standard parts consumed in production), PHANTOM (sub-assemblies that are not stocked — their components are consumed directly), BYPRODUCT (secondary outputs of the production process), and CO_PRODUCT (additional planned outputs with economic value). A scrap_percentage field accounts for expected material waste during production. The effective_start_date and effective_end_date enable date-effective BOM management where component substitutions can be scheduled.",
+      "category": "Direct Mapping",
+      "entities": ["Bill of Materials", "Product"],
+      "hops": 1,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-038",
-      "question": "Identify all journal entries that have not been approved (status = 'DRAFT' or 'SUBMITTED') and are older than 7 days.",
-      "answer_type": "filtering",
-      "tables_involved": ["journal_entry", "journal_entry_line", "general_ledger_account", "accounting_period", "employee"],
-      "complexity": "medium",
-      "expected_result_format": "Unapproved journal entries with account details",
-      "query_pattern": "JOIN + WHERE + date calculation"
+      "question": "How does the audit log track system events and changes?",
+      "answer": "The audit_log table records every significant system event with event_type, user_id (FK to app_user), entity_type (which table was affected), entity_id (which record), and action (CREATE/READ/UPDATE/DELETE/LOGIN/LOGOUT/EXPORT via CHECK). For data changes, old_value and new_value are stored as JSON. The log also captures ip_address, user_agent, and timestamp. Indexes on (entity_type, entity_id), user_id, and timestamp support efficient querying for compliance audits and security investigations.",
+      "category": "Direct Mapping",
+      "entities": ["Audit Log", "User"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-039",
-      "question": "What is the project profitability analysis showing budgeted revenue, actual revenue, budgeted cost, and actual cost?",
-      "answer_type": "aggregation",
-      "tables_involved": ["project", "customer", "project_task", "time_entry", "invoice"],
-      "complexity": "high",
-      "expected_result_format": "Projects with profitability metrics",
-      "query_pattern": "JOIN + GROUP BY + multiple aggregations"
+      "question": "What are the different address types supported across the schema?",
+      "answer": "Customer addresses support three types: BILLING, SHIPPING, and BOTH. Supplier addresses support four types: MAIN, BILLING, SHIPPING, and RETURN. Both customer_address and supplier_address have is_default/is_primary flags and cascade delete from their parent. The warehouse table stores location_address directly as a single field rather than having a separate address table, since warehouses have one fixed location.",
+      "category": "Direct Mapping",
+      "entities": ["Customer Address", "Supplier Address", "Warehouse"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-040",
-      "question": "Which products have safety stock levels defined, and which locations have fallen below safety stock?",
-      "answer_type": "filtering",
-      "tables_involved": ["product", "inventory_on_hand", "warehouse", "bin_location"],
-      "complexity": "medium",
-      "expected_result_format": "Products below safety stock by location",
-      "query_pattern": "JOIN + WHERE + comparison with safety stock"
+      "question": "How would the schema support tracing a product from purchase receipt to customer shipment?",
+      "answer": "The full traceability path is: purchase_receipt (inbound from supplier) → purchase_receipt_line (with lot_number) → inventory_on_hand (lot_number at warehouse/bin) → inventory_transaction (RECEIPT type logs the inbound). For production: work_order_material records material consumption → work_order tracks production output → inventory_transaction (RECEIPT for finished goods). For outbound: sales_order → shipment (with shipment_line items) → inventory_transaction (ISSUE type). Lot_number on purchase_receipt_line and inventory_on_hand enables lot-level traceability throughout.",
+      "category": "Multi-hop",
+      "entities": ["Purchase Receipt", "Inventory", "Work Order", "Shipment"],
+      "hops": 5,
+      "difficulty": "Hard"
     },
     {
       "id": "QA-041",
-      "question": "What is the payment collection rate by customer type, and which types have the lowest collection rates?",
-      "answer_type": "aggregation",
-      "tables_involved": ["customer_type", "customer", "invoice", "payment"],
-      "complexity": "medium",
-      "expected_result_format": "Collection rates by customer type",
-      "query_pattern": "JOIN + GROUP BY + percentage calculation"
+      "question": "How are supplier addresses and contacts structured compared to customer addresses?",
+      "answer": "Both follow the same pattern: parent entity → address table + contact table, both with ON DELETE CASCADE. Supplier_address has address_type MAIN/BILLING/SHIPPING/RETURN (vs customer's BILLING/SHIPPING/BOTH) and uses is_primary flag (vs customer_address's is_default). Supplier_contact mirrors customer_contact with contact_name, contact_role, email, phone, and is_primary. The key difference is that suppliers have a RETURN address type that customers do not, and customers have a BOTH address type that suppliers do not.",
+      "category": "Direct Mapping",
+      "entities": ["Supplier", "Customer"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-042",
-      "question": "Find all work orders where the quantity_completed is less than quantity_ordered and calculate completion percentage.",
-      "answer_type": "filtering",
-      "tables_involved": ["work_order", "product", "production_line"],
-      "complexity": "medium",
-      "expected_result_format": "Incomplete work orders with completion %",
-      "query_pattern": "JOIN + WHERE + calculation"
+      "question": "Does the schema track employee compensation history?",
+      "answer": "The employee table has current annual_salary and hourly_rate columns and the position table defines min_salary and max_salary ranges. However, there is no compensation history table in the schema — salary changes would overwrite the current values without preserving history. The only historical tracking of employee data comes indirectly through the audit_log table, which stores old_value and new_value as JSON when records are updated.",
+      "category": "Negative",
+      "entities": ["Employee", "Position"],
+      "hops": 1,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-043",
-      "question": "What is the budget vs. actual analysis by department for the current fiscal year?",
-      "answer_type": "aggregation",
-      "tables_involved": ["department", "budget", "employee", "time_entry", "journal_entry_line"],
-      "complexity": "high",
-      "expected_result_format": "Departments with budget variances",
-      "query_pattern": "JOIN + GROUP BY + variance calculation"
+      "question": "How does the shipping route connect two warehouses through a carrier?",
+      "answer": "The shipping_route table has origin_location_id and destination_location_id (both FK to warehouse), carrier_id (FK to carrier), plus route_code (UNIQUE), distance_km, estimated_hours, cost_per_km, and service_level. Shipments reference route_id FK to use a predefined route, plus independently reference carrier_id FK and origin/destination warehouses. This means a shipment can follow a defined route or specify ad-hoc origin/destination/carrier combinations.",
+      "category": "Multi-hop",
+      "entities": ["Shipping Route", "Warehouse", "Carrier", "Shipment"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-044",
-      "question": "Which shipments have tracking numbers but no actual_arrival_date (potential lost shipments)?",
-      "answer_type": "filtering",
-      "tables_involved": ["shipment", "carrier", "warehouse", "sales_order"],
-      "complexity": "medium",
-      "expected_result_format": "Shipments potentially lost in transit",
-      "query_pattern": "JOIN + WHERE + IS NULL + date filter"
+      "question": "What is the production scheduling model and how does it relate to work orders?",
+      "answer": "The production_schedule table links work_order_id (FK to work_order) to production_line_id (FK to production_line) with scheduled_start and scheduled_end timestamps, plus actual_start and actual_end for tracking real execution. Status progresses SCHEDULED → RUNNING → COMPLETED (or CANCELLED). Priority is a numeric value 1-10 (CHECK BETWEEN 1 AND 10). This is a one-to-many relationship: a work order can have multiple schedule entries (e.g., if rescheduled or split across time periods).",
+      "category": "Multi-hop",
+      "entities": ["Production Schedule", "Work Order", "Production Line"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-045",
-      "question": "What is the supplier performance scorecard combining on-time delivery, quality pass rate, and cost variance?",
-      "answer_type": "aggregation",
-      "tables_involved": ["supplier", "purchase_order", "purchase_receipt", "quality_inspection", "purchase_order_line"],
-      "complexity": "high",
-      "expected_result_format": "Suppliers with composite performance scores",
-      "query_pattern": "JOIN + GROUP BY + weighted calculation"
+      "question": "How does the invoice line link back to both sales order lines and products?",
+      "answer": "Invoice_line references invoice_id FK (parent invoice), product_id FK (what was invoiced), and optionally order_line_id FK (back-reference to the specific sales_order_line). This three-way linkage supports: invoice → sales_order (via invoice.order_id), invoice_line → product (direct), and invoice_line → sales_order_line (via order_line_id) for line-level reconciliation between what was ordered, what was shipped, and what was invoiced.",
+      "category": "Multi-hop",
+      "entities": ["Invoice", "Sales Order", "Product"],
+      "hops": 3,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-046",
-      "question": "Identify all products that have never been sold (no sales_order_line records) but have inventory on hand.",
-      "answer_type": "filtering",
-      "tables_involved": ["product", "sales_order_line", "inventory_on_hand"],
-      "complexity": "medium",
-      "expected_result_format": "Unsold products with inventory value",
-      "query_pattern": "LEFT JOIN + WHERE NULL + GROUP BY"
+      "question": "Is there a returns or reverse logistics capability in the schema?",
+      "answer": "Returns are partially supported: payment_type includes REFUND, invoice_type includes CREDIT_MEMO, shipment_type includes RETURN, and inventory_transaction has a RETURN transaction type. However, there is no dedicated returns management table (e.g., return_authorization or RMA). Returns would be tracked through these distributed mechanisms across multiple tables rather than a centralized return workflow. The non_conformance_report table could capture quality issues triggering returns.",
+      "category": "Negative",
+      "entities": ["Payment", "Invoice", "Shipment", "Inventory Transaction"],
+      "hops": 1,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-047",
-      "question": "What is the inter-departmental collaboration analysis showing which departments work together on projects?",
-      "answer_type": "aggregation",
-      "tables_involved": ["department", "employee", "project_task", "project"],
-      "complexity": "high",
-      "expected_result_format": "Department pairs with joint project count",
-      "query_pattern": "Self-join + GROUP BY + COUNT"
+      "question": "How many tables are in each business domain and what are they?",
+      "answer": "The schema has 37 tables across 7+ domains: Sales & Customer (10: customer_type, customer, customer_address, customer_contact, product_category, product, price_list, product_price, sales_order, sales_order_line), Invoicing & Payment (4: invoice, invoice_line, payment, accounts_receivable), Procurement (8: supplier, supplier_address, supplier_contact, supplier_contract, purchase_order, purchase_order_line, purchase_receipt, purchase_receipt_line), Inventory (7: warehouse, warehouse_zone, bin_location, inventory_on_hand, inventory_transaction, stock_transfer, stock_transfer_line), Manufacturing (5: production_line, bill_of_materials, work_order, work_order_material, production_schedule), Quality (3: quality_standard, quality_inspection, non_conformance_report), Finance (6: account_type, general_ledger_account, accounting_period, journal_entry, journal_entry_line, accounts_payable, budget), HR (4: department, position, employee, time_entry), Logistics (4: carrier, shipping_route, shipment, shipment_line), Projects (2: project, project_task), System (4: app_user, role, user_role, audit_log).",
+      "category": "Direct Mapping",
+      "entities": ["All"],
+      "hops": 1,
+      "difficulty": "Hard"
     },
     {
       "id": "QA-048",
-      "question": "Which customers have decreased their order volume by more than 20% compared to the previous period?",
-      "answer_type": "aggregation",
-      "tables_involved": ["customer", "sales_order", "sales_order_line"],
-      "complexity": "high",
-      "expected_result_format": "Customers with declining order volumes",
-      "query_pattern": "JOIN + GROUP BY + subquery + percentage comparison"
+      "question": "How does the accounting period system work?",
+      "answer": "The accounting_period table defines fiscal periods with period_code (UNIQUE), period_name, start_date, end_date, fiscal_year, and is_closed flag. A UNIQUE constraint on (fiscal_year, period_code) prevents duplicate periods within a year. Journal entries reference period_id FK to ensure postings land in the correct fiscal period. When is_closed is TRUE, closed_at timestamp records when the period was closed. This prevents posting to closed periods at the application level.",
+      "category": "Direct Mapping",
+      "entities": ["Accounting Period", "Journal Entry"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-049",
-      "question": "What is the complete audit trail for a specific entity showing all changes with user, timestamp, and action?",
-      "answer_type": "filtering",
-      "tables_involved": ["audit_log", "app_user", "employee"],
-      "complexity": "medium",
-      "expected_result_format": "Chronological audit log with user details",
-      "query_pattern": "JOIN + WHERE + ORDER BY"
+      "question": "How do work order materials track material consumption against BOM requirements?",
+      "answer": "The work_order_material table links work_order_id FK to product_id FK (the material), with quantity_required (from BOM calculation) and quantity_issued (actually consumed). Status tracks progress: PENDING/ISSUED/PARTIAL/COMPLETE. Materials are sourced from specific bins via bin_id FK to bin_location, with unit_cost recorded. This allows comparing planned material usage (from BOM explosion) against actual consumption per work order, identifying material variances.",
+      "category": "Multi-hop",
+      "entities": ["Work Order", "Product", "Bin Location"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-050",
-      "question": "Find all price list entries where the price is more than 20% different from the product base price.",
-      "answer_type": "filtering",
-      "tables_involved": ["product", "product_price", "price_list"],
-      "complexity": "medium",
-      "expected_result_format": "Products with significant price variations",
-      "query_pattern": "JOIN + WHERE + percentage calculation"
+      "question": "Does the schema support multi-currency transactions?",
+      "answer": "Multiple tables have currency columns defaulting to USD: customer.currency, sales_order.currency, invoice.currency, payment.currency, purchase_order.currency, supplier.currency, supplier_contract.currency, general_ledger_account.currency, and price_list.currency. However, there is no currency exchange rate table in the schema. Multi-currency transactions are supported at the document level (each order, invoice, payment can have its own currency) but exchange rate conversion must be handled outside the schema.",
+      "category": "Negative",
+      "entities": ["Customer", "Sales Order", "Invoice", "Payment"],
+      "hops": 1,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-051",
-      "question": "What is the multi-level BOM cost rollup for each finished good, showing material, labor, and overhead costs?",
-      "answer_type": "hierarchical",
-      "tables_involved": ["product", "bill_of_materials", "work_order"],
-      "complexity": "very_high",
-      "expected_result_format": "Cost breakdown by BOM level and cost component",
-      "query_pattern": "Recursive CTE + multiple joins + aggregation"
+      "question": "How does the schema handle product storage requirements for hazardous or temperature-sensitive items?",
+      "answer": "Products have three relevant fields: hazardous (BOOLEAN, default FALSE), storage_temperature_min (DECIMAL), and storage_temperature_max (DECIMAL). Warehouse zones have a temperature_controlled (BOOLEAN) flag. When a product requires temperature control, it should be stored in bins within temperature-controlled zones. Bin locations can be set to QUARANTINE status for isolating hazardous materials. However, there is no explicit constraint linking hazardous products to quarantine bins — this would be enforced at the application level.",
+      "category": "Multi-hop",
+      "entities": ["Product", "Warehouse Zone", "Bin Location"],
+      "hops": 2,
+      "difficulty": "Medium"
     },
     {
       "id": "QA-052",
-      "question": "Which warehouses have the fastest order fulfillment time (order date to ship date), and what is their average?",
-      "answer_type": "aggregation",
-      "tables_involved": ["warehouse", "sales_order", "shipment"],
-      "complexity": "medium",
-      "expected_result_format": "Warehouses ranked by fulfillment speed",
-      "query_pattern": "JOIN + GROUP BY + AVG + ORDER BY"
+      "question": "What polymorphic reference patterns exist in the schema?",
+      "answer": "The schema uses reference_type + reference_id polymorphic patterns in several tables: (1) quality_inspection — reference_type identifies the source (purchase_receipt, work_order) and reference_id stores the ID; (2) inventory_transaction — reference_type identifies the source document (sales_order, purchase_receipt, work_order) and reference_id the ID; (3) journal_entry — source_document_type and source_document_id link to originating business transactions; (4) non_conformance_report — reference_type and reference_id link to the inspected entity; (5) shipment — reference_type and reference_id link to the source order.",
+      "category": "Direct Mapping",
+      "entities": ["Quality Inspection", "Inventory Transaction", "Journal Entry", "Non-Conformance Report", "Shipment"],
+      "hops": 1,
+      "difficulty": "Hard"
     },
     {
       "id": "QA-053",
-      "question": "Identify all products with hazardous material flags and show their current inventory locations and quantities.",
-      "answer_type": "filtering",
-      "tables_involved": ["product", "inventory_on_hand", "bin_location", "warehouse_zone"],
-      "complexity": "medium",
-      "expected_result_format": "Hazardous products with location details",
-      "query_pattern": "JOIN + WHERE + safety flag check"
+      "question": "Is there a customer loyalty or rewards program in the schema?",
+      "answer": "No, the schema does not contain any tables or columns for customer loyalty programs, reward points, or promotional campaigns. Customer classification is limited to customer_type_id (FK to customer_type), credit_score, and is_preferred-style fields do not exist. The customer table focuses on commercial attributes: credit_limit, payment_terms, annual_revenue, and industry_code.",
+      "category": "Negative",
+      "entities": ["Customer"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": "QA-054",
-      "question": "What is the employee skills gap analysis showing which departments have the highest resource utilization?",
-      "answer_type": "aggregation",
-      "tables_involved": ["department", "employee", "time_entry", "project", "position"],
-      "complexity": "high",
-      "expected_result_format": "Departments with utilization rates and resource gaps",
-      "query_pattern": "JOIN + GROUP BY + subquery + percentage"
+      "question": "How does the schema support three-way matching in procurement?",
+      "answer": "Three-way matching (PO → receipt → invoice) is supported through linked tables: purchase_order_line tracks quantity_ordered, quantity_received, and quantity_invoiced. Purchase_receipt_line links back to po_line_id FK. Invoice can be linked to purchase activities via invoice_type = 'PURCHASE' and accounts_payable links supplier_id + invoice_id. However, there is no explicit purchase_invoice_line → po_line linkage like there is for sales (invoice_line.order_line_id). Purchase three-way matching would require joining through the receipt line's po_line_id.",
+      "category": "Multi-hop",
+      "entities": ["Purchase Order", "Purchase Receipt", "Invoice", "Accounts Payable"],
+      "hops": 3,
+      "difficulty": "Hard"
     },
     {
       "id": "QA-055",
-      "question": "Which customers have the highest concentration risk (single customer represents >10% of total revenue)?",
-      "answer_type": "aggregation",
-      "tables_involved": ["customer", "customer_type", "sales_order"],
-      "complexity": "medium",
-      "expected_result_format": "High-concentration customers with risk flag",
-      "query_pattern": "JOIN + GROUP BY + window function + HAVING"
+      "question": "What indexes exist for performance optimization and which tables have the most?",
+      "answer": "The schema defines explicit indexes beyond primary keys: customer has 3 indexes (on customer_type_id, status, customer_name), product has 4 (category, status, type, name), sales_order has 4 (customer, status, date, warehouse), purchase_order has 4 (supplier, status, date, warehouse), inventory has 5 across inventory_on_hand and inventory_transaction, work_order has 3, invoice has 3, payment has 3, AR has 3, AP has 3, employee has 3, project_task has 2, quality_inspection has 3, and shipment has 4. The audit_log has inline indexes on (entity_type, entity_id), user_id, and timestamp for efficient querying.",
+      "category": "Direct Mapping",
+      "entities": ["All"],
+      "hops": 1,
+      "difficulty": "Medium"
     }
   ],
-  "metadata": {
-    "total_questions": 55,
-    "complexity_distribution": {
-      "low": 0,
-      "medium": 32,
-      "high": 19,
-      "very_high": 4
-    },
-    "table_frequency": {
-      "product": 25,
-      "customer": 18,
-      "supplier": 15,
-      "sales_order": 14,
-      "warehouse": 12,
-      "invoice": 10,
-      "employee": 10,
-      "project": 8,
-      "purchase_order": 8,
-      "inventory_on_hand": 7,
-      "work_order": 6,
-      "department": 6,
-      "time_entry": 5,
-      "shipment": 5,
-      "accounts_receivable": 4,
-      "accounts_payable": 3,
-      "quality_inspection": 4,
-      "bill_of_materials": 3,
-      "journal_entry": 3,
-      "project_task": 4,
-      "payment": 3,
-      "production_line": 3,
-      "bin_location": 4
-    },
-    "max_joins_required": 10,
-    "avg_joins_required": 4.2,
-    "test_categories": [
-      "Multi-hop retrieval",
-      "Hierarchical data traversal",
-      "Entity resolution",
-      "Aggregation and grouping",
-      "Date range filtering",
-      "Variance analysis",
-      "Network analysis",
-      "Complex filtering"
-    ]
-  }
+  "categories": {
+    "Direct Mapping": 22,
+    "Multi-hop": 26,
+    "Negative": 7
+  },
+  "difficulty_distribution": {
+    "Easy": 14,
+    "Medium": 30,
+    "Hard": 11
+  },
+  "testing_capabilities": [
+    "Large schema navigation (37 tables, 150+ relationships)",
+    "Multi-hop traversal across business domains (order-to-cash, procure-to-pay)",
+    "Self-referencing hierarchy traversal (5 hierarchies)",
+    "CHECK constraint interpretation across all major tables",
+    "Computed/generated column understanding",
+    "Polymorphic reference pattern recognition",
+    "CASCADE rule identification",
+    "Negative case reasoning (missing features: loyalty, currency exchange, compensation history)",
+    "UNIQUE constraint and composite key interpretation",
+    "Cross-domain relationship understanding (sales → finance → GL)"
+  ]
 }

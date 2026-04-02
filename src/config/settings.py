@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = SecretStr("")
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
+    llm_model_midtier: str = DEFAULT_CONFIG.llm_model_midtier
     llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
     llm_temperature_reasoning: float = DEFAULT_CONFIG.llm_temperature_reasoning
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
@@ -89,7 +90,6 @@ class Settings(BaseSettings):
     enable_reranker: bool = DEFAULT_CONFIG.enable_reranker
     enable_hallucination_grader: bool = DEFAULT_CONFIG.enable_hallucination_grader
     enable_retrieval_quality_gate: bool = DEFAULT_CONFIG.enable_retrieval_quality_gate
-    enable_semantic_verifier: bool = DEFAULT_CONFIG.enable_semantic_verifier
     enable_grader_consistency_validator: bool = DEFAULT_CONFIG.enable_grader_consistency_validator
     grader_timeout_seconds: float = DEFAULT_CONFIG.grader_timeout_seconds
     use_lazy_extraction: bool = DEFAULT_CONFIG.use_lazy_extraction

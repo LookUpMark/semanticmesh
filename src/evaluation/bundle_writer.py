@@ -141,18 +141,12 @@ def _build_bundle(
     pq_detail = per_question
 
     # ── Pipeline Health Indicators ────────────────────────────────────────
-    total_grader_rejections = sum(
-        pq.get("grader_rejection_count", 0) for pq in per_question
-    )
+    total_grader_rejections = sum(pq.get("grader_rejection_count", 0) for pq in per_question)
     grader_inconsistencies = sum(
         1 for pq in per_question if not pq.get("grader_consistency_valid", True)
     )
-    gate_abstentions = sum(
-        1 for pq in per_question if pq.get("gate_decision") == "abstain_early"
-    )
-    low_retrieval = sum(
-        1 for pq in per_question if pq.get("retrieval_quality_score", 1.0) < 0.2
-    )
+    gate_abstentions = sum(1 for pq in per_question if pq.get("gate_decision") == "abstain_early")
+    low_retrieval = sum(1 for pq in per_question if pq.get("retrieval_quality_score", 1.0) < 0.2)
 
     pipeline_health = {
         "total_grader_rejections": total_grader_rejections,

@@ -14,9 +14,10 @@ The active backend is auto-detected from ``settings.embedding_model``:
 
 from __future__ import annotations
 
-import numpy as np
 from functools import lru_cache
 from typing import TYPE_CHECKING
+
+import numpy as np
 
 from src.config.logging import get_logger
 from src.config.settings import get_settings
@@ -125,4 +126,3 @@ def embed_text(text: str, model=None) -> list[float]:
         A float list.
     """
     return embed_texts([text], model=model)[0]
-

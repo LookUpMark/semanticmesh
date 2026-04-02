@@ -223,7 +223,9 @@ def sample_complex_schema() -> Path:
 @pytest.fixture
 def sample_business_glossary() -> Path:
     """Path to the business glossary text file."""
-    return Path(__file__).parent / "fixtures" / "00_legacy" / "sample_docs" / "business_glossary.txt"
+    return (
+        Path(__file__).parent / "fixtures" / "00_legacy" / "sample_docs" / "business_glossary.txt"
+    )
 
 
 @pytest.fixture

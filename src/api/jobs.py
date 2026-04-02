@@ -3,6 +3,7 @@
 Stores job state keyed by job_id (12-hex string).
 All operations are thread-safe via a Lock.
 """
+
 from __future__ import annotations
 
 import uuid

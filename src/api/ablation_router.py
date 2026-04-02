@@ -1,4 +1,5 @@
 """Ablation Studies REST API — /api/v1/ablation/..."""
+
 from __future__ import annotations
 
 import json
@@ -15,8 +16,12 @@ from src.api.models import (
     AblationMatrixEntry,
     AblationResultResponse,
     AblationRunRequest,
+    CustomAblationRequest,
+    PresetAblationJobResponse,
+    PresetAblationRequest,
 )
 from src.evaluation.ablation_runner import ABLATION_MATRIX, _settings_override
+from src.utils.text_utils import normalize_source_name as _normalize_source
 
 router = APIRouter(prefix="/ablation", tags=["Ablation Studies"])
 
@@ -30,7 +35,7 @@ def _fixtures_dir() -> Path:
 
 
 def _build_env_overrides(req: AblationRunRequest) -> dict[str, str]:
-    """Translate non-None hyperparameter fields in the request to env vars."""
+    """Translate non-None hyperparameter and LLM fields in the request to env vars."""
     mapping: dict[str, Any] = {
         "RETRIEVAL_MODE": req.retrieval_mode,
         "ENABLE_RERANKER": req.enable_reranker,
@@ -47,6 +52,10 @@ def _build_env_overrides(req: AblationRunRequest) -> dict[str, str]:
         "CONFIDENCE_THRESHOLD": req.confidence_threshold,
         "RETRIEVAL_VECTOR_TOP_K": req.retrieval_vector_top_k,
         "LLM_MAX_TOKENS_EXTRACTION": req.llm_max_tokens_extraction,
+        # LLM model overrides — forwarded as env vars read by settings
+        "LLM_MODEL_REASONING": getattr(req, "reasoning_model", None),
+        "LLM_MODEL_EXTRACTION": getattr(req, "extraction_model", None),
+        "PROVIDER_BASE_URL": getattr(req, "provider_base_url", None),
     }
     # Boolean values must be lowercased for Pydantic settings env parsing
     # (pydantic-settings reads "true"/"false" for bool fields)
@@ -62,6 +71,7 @@ def _build_env_overrides(req: AblationRunRequest) -> dict[str, str]:
 
 
 # ── Background task ───────────────────────────────────────────────────────────
+
 
 def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
     """Execute the full ablation pipeline in a background thread.
@@ -176,9 +186,8 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
                 gate = qr.get("retrieval_gate_decision", "proceed")
                 top_score = qr.get("retrieval_quality_score", 0.0)
                 chunk_count = qr.get("retrieval_chunk_count", 0)
-                sem_passed = qr.get("semantic_verification_passed", True)
-                overlap = qr.get("semantic_verification_overlap", 0.0)
-                grounded = bool(sem_passed and gate != "abstain_early")
+                grader_grounded = qr.get("grader_grounded", True)
+                grounded = bool(grader_grounded and gate != "abstain_early")
 
                 if grounded:
                     grounded_count += 1
@@ -187,50 +196,44 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
 
                 # GT source coverage
                 covered = [
-                    s for s in expected_sources
-                    if any(s.lower() in src.lower() for src in sources)
+                    s
+                    for s in expected_sources
+                    if any(_normalize_source(s) in _normalize_source(src) for src in sources)
                 ]
                 gt_coverage = len(covered) / len(expected_sources) if expected_sources else 1.0
 
-                per_question.append({
-                    "query_id": pair.get("query_id", f"Q{i + 1:03d}"),
-                    "question": question,
-                    "query_type": pair.get("query_type", ""),
-                    "difficulty": pair.get("difficulty", ""),
-                    "expected_answer": expected_answer,
-                    "expected_sources": expected_sources,
-                    "generated_answer": answer,
-                    "sources_retrieved": sources,
-                    "contexts_retrieved": [
-                        c[:500] for c in qr.get("retrieved_contexts", [])
-                    ],
-                    "covered_sources": covered,
-                    "gt_coverage": gt_coverage,
-                    "grounded": grounded,
-                    "gate_decision": gate,
-                    "retrieval_quality_score": top_score,
-                    "chunk_count": chunk_count,
-                    "semantic_verification_passed": sem_passed,
-                    "semantic_verification_overlap": overlap,
-                    "grader_rejection_count": qr.get("grader_rejection_count", 0),
-                    "grader_consistency_valid": qr.get("grader_consistency_valid", True),
-                    "context_sufficiency": qr.get("context_sufficiency", ""),
-                })
+                per_question.append(
+                    {
+                        "query_id": pair.get("query_id", f"Q{i + 1:03d}"),
+                        "question": question,
+                        "query_type": pair.get("query_type", ""),
+                        "difficulty": pair.get("difficulty", ""),
+                        "expected_answer": expected_answer,
+                        "expected_sources": expected_sources,
+                        "generated_answer": answer,
+                        "sources_retrieved": sources,
+                        "contexts_retrieved": [c[:500] for c in qr.get("retrieved_contexts", [])],
+                        "covered_sources": covered,
+                        "gt_coverage": gt_coverage,
+                        "grounded": grounded,
+                        "gate_decision": gate,
+                        "retrieval_quality_score": top_score,
+                        "chunk_count": chunk_count,
+                        "grader_rejection_count": qr.get("grader_rejection_count", 0),
+                        "grader_consistency_valid": qr.get("grader_consistency_valid", True),
+                        "context_sufficiency": qr.get("context_sufficiency", ""),
+                    }
+                )
 
             query_elapsed = time.time() - t1
             total_q = len(per_question)
-            avg_gt = (
-                sum(pq["gt_coverage"] for pq in per_question) / total_q
-                if total_q else 0.0
-            )
+            avg_gt = sum(pq["gt_coverage"] for pq in per_question) / total_q if total_q else 0.0
             avg_score = (
                 sum(pq["retrieval_quality_score"] for pq in per_question) / total_q
-                if total_q else 0.0
+                if total_q
+                else 0.0
             )
-            avg_chunks = (
-                sum(pq["chunk_count"] for pq in per_question) / total_q
-                if total_q else 0.0
-            )
+            avg_chunks = sum(pq["chunk_count"] for pq in per_question) / total_q if total_q else 0.0
 
             result["query"] = {
                 "total_questions": total_q,
@@ -261,8 +264,214 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
             bundle_dir = (
-                _ROOT / "notebooks" / "ablation" / "ablation_results"
-                / req.study_id / dataset_id
+                _ROOT / "notebooks" / "ablation" / "ablation_results" / req.study_id / dataset_id
+            )
+            bundle_dir.mkdir(parents=True, exist_ok=True)
+            bundle_path = write_evaluation_bundle(
+                output_dir=bundle_dir,
+                study_id=req.study_id,
+                dataset_id=dataset_id,
+                dataset_info=dataset_raw,
+                config=result.get("config", {}),
+                builder_info=builder_info,
+                query_summary=result.get("query", {}),
+                per_question=per_question,
+                ragas_metrics=ragas_metrics,
+            )
+            result["bundle_path"] = str(bundle_path)
+
+        set_done(job_id, result)
+    except Exception as exc:  # noqa: BLE001
+        set_failed(job_id, str(exc))
+
+
+def _run_preset_ablation_task(
+    job_id: str,
+    req: CustomAblationRequest,
+    preset_env: dict[str, str],
+) -> None:
+    """Wrapper that merges preset matrix env vars before running the ablation task.
+
+    The matrix env overrides (feature flags etc.) are injected first, then the
+    request-level LLM overrides (reasoning_model, extraction_model) are applied
+    on top via _build_env_overrides — so user-supplied LLM overrides always win.
+    """
+    # Patch the request's env overrides into os.environ temporarily
+    # by preloading the merged dict into LMSTUDIO_BASE_URL / LLM_MODEL_*
+    # The cleanest approach: temporarily set env vars inside _settings_override,
+    # which _run_ablation_task will then pick up via _build_env_overrides.
+    # We store the preset env in req's __dict__ as _preset_env to be merged.
+    req.__dict__["_preset_env"] = preset_env
+    _run_ablation_task_with_preset(job_id, req, preset_env)
+
+
+def _run_ablation_task_with_preset(
+    job_id: str,
+    req: CustomAblationRequest,
+    preset_env: dict[str, str],
+) -> None:
+    """Like _run_ablation_task but uses preset_env as the base env override dict."""
+    set_running(job_id)
+    try:
+        from src.config.settings import get_settings
+        from src.generation.query_graph import run_query
+        from src.graph.builder_graph import run_builder
+
+        dataset_path = Path(req.dataset)
+        if not dataset_path.is_absolute():
+            dataset_path = _ROOT / dataset_path
+        if not dataset_path.exists():
+            raise FileNotFoundError(f"Dataset not found: {dataset_path}")
+
+        dataset_raw = json.loads(dataset_path.read_text(encoding="utf-8"))
+        all_pairs = (
+            dataset_raw.get("pairs")
+            or dataset_raw.get("qa_pairs")
+            or dataset_raw.get("questions")
+            or []
+        )
+        dataset_id = dataset_raw.get("dataset_id", dataset_path.parent.name)
+        if req.max_samples is not None and req.max_samples > 0:
+            all_pairs = all_pairs[: req.max_samples]
+
+        fixture_dir = dataset_path.parent
+        doc_paths_raw = sorted(fixture_dir.glob("*.txt")) + sorted(fixture_dir.glob("*.md"))
+        doc_paths = [str(p) for p in doc_paths_raw if p.name != "gold_standard.json"]
+        ddl_paths = [str(p) for p in sorted(fixture_dir.glob("*.sql"))]
+
+        # Merge: preset matrix overrides first, then request-level LLM overrides
+        req_llm_env = _build_env_overrides(req)
+        env_overrides = {**preset_env, **req_llm_env}
+
+        with _settings_override(env_overrides):
+            settings = get_settings()
+            result: dict[str, Any] = {
+                "config": {
+                    "extraction_model": settings.llm_model_extraction,
+                    "reasoning_model": settings.llm_model_reasoning,
+                    "retrieval_mode": settings.retrieval_mode,
+                    "enable_reranker": settings.enable_reranker,
+                    "chunk_size": settings.chunk_size,
+                    "chunk_overlap": settings.chunk_overlap,
+                    "er_similarity_threshold": settings.er_similarity_threshold,
+                },
+            }
+
+            # ── Stage 1: Builder Graph ─────────────────────────────────────
+            builder_state: Any = {}
+            builder_info: dict[str, Any] = {}
+            if not req.skip_builder:
+                t0 = time.time()
+                builder_state = run_builder(
+                    raw_documents=doc_paths,
+                    ddl_paths=ddl_paths,
+                    production=False,
+                    clear_graph=True,
+                    study_id=req.study_id,
+                )
+                elapsed = time.time() - t0
+                builder_info = {
+                    "triplets_extracted": len(builder_state.get("triplets") or []),
+                    "entities_resolved": len(builder_state.get("resolved_entities") or []),
+                    "tables_parsed": len(builder_state.get("table_schemas") or []),
+                    "tables_completed": len(builder_state.get("completed_tables") or []),
+                    "cypher_failed": builder_state.get("cypher_failed", False),
+                    "elapsed_s": round(elapsed, 1),
+                }
+            result["builder"] = builder_info
+
+            # ── Stage 2: Query Evaluation ──────────────────────────────────
+            per_question: list[dict[str, Any]] = []
+            t1 = time.time()
+            for item in all_pairs:
+                question = item.get("question", "")
+                expected = item.get("answer", item.get("expected_answer", ""))
+                metadata = item.get("metadata", {})
+                try:
+                    query_state = run_query(user_query=question)
+                    answer = query_state.get("answer", "")
+                    contexts = query_state.get("contexts") or []
+                    score = (
+                        query_state.get("rerank_scores", [0.0])[0]
+                        if query_state.get("rerank_scores")
+                        else 0.0
+                    )
+                    is_grounded = bool(query_state.get("is_grounded", True))
+                    abstained = "cannot" in answer.lower() or "don't have" in answer.lower()
+                    exp_lower = expected.lower()
+                    ans_lower = answer.lower()
+                    stopwords = {"the", "a", "an", "is", "are", "in", "of", "for", "to"}
+                    exp_words = set(exp_lower.split()) - stopwords
+                    gt_coverage = (
+                        sum(1 for w in exp_words if w in ans_lower) / len(exp_words)
+                        if exp_words
+                        else 0.0
+                    )
+                    per_question.append(
+                        {
+                            "question": question,
+                            "expected": expected,
+                            "answer": answer,
+                            "is_grounded": is_grounded,
+                            "abstained": abstained,
+                            "gt_coverage": round(gt_coverage, 3),
+                            "top_rerank_score": round(score, 4),
+                            "chunk_count": len(contexts),
+                            "metadata": metadata,
+                        }
+                    )
+                except Exception as q_exc:  # noqa: BLE001
+                    per_question.append(
+                        {
+                            "question": question,
+                            "expected": expected,
+                            "answer": "",
+                            "error": str(q_exc),
+                            "is_grounded": False,
+                            "abstained": False,
+                            "gt_coverage": 0.0,
+                            "top_rerank_score": 0.0,
+                            "chunk_count": 0,
+                            "metadata": metadata,
+                        }
+                    )
+            query_elapsed = time.time() - t1
+            total_q = len(per_question)
+            grounded_count = sum(1 for pq in per_question if pq.get("is_grounded"))
+            abstained_count = sum(1 for pq in per_question if pq.get("abstained"))
+            avg_gt = sum(pq["gt_coverage"] for pq in per_question) / total_q if total_q else 0.0
+            avg_score = (
+                sum(pq["top_rerank_score"] for pq in per_question) / total_q if total_q else 0.0
+            )
+            avg_chunks = sum(pq["chunk_count"] for pq in per_question) / total_q if total_q else 0.0
+            result["query"] = {
+                "total_questions": total_q,
+                "grounded_count": grounded_count,
+                "grounded_rate": grounded_count / total_q if total_q else 0.0,
+                "abstained_count": abstained_count,
+                "avg_gt_coverage": avg_gt,
+                "avg_top_score": avg_score,
+                "avg_chunk_count": avg_chunks,
+                "elapsed_s": round(query_elapsed, 1),
+            }
+            result["per_question"] = per_question
+
+            ragas_metrics: dict[str, Any] = {}
+            if req.run_ragas:
+                from src.evaluation.ragas_runner import run_ragas_evaluation
+
+                ragas_metrics = run_ragas_evaluation(
+                    dataset_path=dataset_path,
+                    run_ragas=True,
+                    evaluator_model=req.ragas_model,
+                    max_samples=req.max_samples,
+                )
+            result["ragas_metrics"] = ragas_metrics
+
+            from src.evaluation.bundle_writer import write_evaluation_bundle
+
+            bundle_dir = (
+                _ROOT / "notebooks" / "ablation" / "ablation_results" / req.study_id / dataset_id
             )
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
@@ -285,17 +494,93 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+
 @router.post(
-    "/run",
-    response_model=AblationJobResponse,
-    summary="Launch a custom ablation run",
+    "/run/preset",
+    response_model=PresetAblationJobResponse,
+    summary="Launch a predefined AB-XX ablation study",
     description=(
-        "Start an ablation run with any combination of feature flags and hyperparameters. "
+        "Starts an ablation run using the configuration defined in the ablation matrix "
+        "for the given `study_id`. All feature flags and hyperparameters are set automatically. "
+        "Optional LLM overrides (`reasoning_model`, `extraction_model`, `provider_base_url`) "
+        "win over the matrix defaults. "
         "Returns a `job_id` to poll for status and results."
     ),
 )
-def post_ablation_run(
-    req: AblationRunRequest,
+def post_ablation_run_preset(
+    req: PresetAblationRequest,
+    background_tasks: BackgroundTasks,
+) -> PresetAblationJobResponse:
+    if req.study_id not in ABLATION_MATRIX:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Unknown study_id '{req.study_id}'. "
+                f"Valid values: {sorted(ABLATION_MATRIX.keys())}. "
+                "Use GET /ablation/matrix to browse all studies."
+            ),
+        )
+    matrix_cfg = ABLATION_MATRIX[req.study_id]
+    # Matrix env_overrides provide the base; LLM overrides are layered on top
+    matrix_env: dict[str, str] = dict(matrix_cfg["env_overrides"])
+    llm_overrides: dict[str, str] = {}
+    if req.reasoning_model:
+        llm_overrides["LLM_MODEL_REASONING"] = req.reasoning_model
+    if req.extraction_model:
+        llm_overrides["LLM_MODEL_EXTRACTION"] = req.extraction_model
+    if req.provider_base_url:
+        llm_overrides["PROVIDER_BASE_URL"] = req.provider_base_url
+    applied_env = {**matrix_env, **llm_overrides}
+
+    # Build an equivalent CustomAblationRequest to reuse _run_ablation_task
+    custom_req = CustomAblationRequest(
+        dataset=req.dataset,
+        study_id=req.study_id,
+        max_samples=req.max_samples,
+        run_ragas=req.run_ragas,
+        ragas_model=req.ragas_model,
+        skip_builder=req.skip_builder,
+        reasoning_model=req.reasoning_model,
+        extraction_model=req.extraction_model,
+        provider_base_url=req.provider_base_url,
+    )
+    # Inject matrix env overrides — patch the request so _build_env_overrides picks them up
+    # via _settings_override inside _run_ablation_task. We store them in a side-channel
+    # by temporarily setting env vars; instead we pass a pre-built override dict via
+    # a wrapper task so the matrix flags are applied upstream.
+    job_id = create_job(
+        meta={
+            "study_id": req.study_id,
+            "dataset": req.dataset,
+            "preset": True,
+            "applied_env_overrides": applied_env,
+        }
+    )
+    background_tasks.add_task(_run_preset_ablation_task, job_id, custom_req, applied_env)
+    return PresetAblationJobResponse(
+        job_id=job_id,
+        status="queued",
+        study_id=req.study_id,
+        dataset=req.dataset,
+        description=matrix_cfg["description"],
+        applied_env_overrides=applied_env,
+    )
+
+
+@router.post(
+    "/run/custom",
+    response_model=AblationJobResponse,
+    summary="Launch a fully custom ablation run",
+    description=(
+        "Start an ablation run with any combination of feature flags, hyperparameters, "
+        "and LLM model overrides. "
+        "Use `reasoning_model` / `extraction_model` to override the LLM for this run "
+        "(provider is auto-detected from the model name prefix). "
+        "Returns a `job_id` to poll for status and results."
+    ),
+)
+def post_ablation_run_custom(
+    req: CustomAblationRequest,
     background_tasks: BackgroundTasks,
 ) -> AblationJobResponse:
     job_id = create_job(meta={"study_id": req.study_id, "dataset": req.dataset})
@@ -306,6 +591,23 @@ def post_ablation_run(
         study_id=req.study_id,
         dataset=req.dataset,
     )
+
+
+@router.post(
+    "/run",
+    response_model=AblationJobResponse,
+    summary="Launch a custom ablation run (alias)",
+    description=(
+        "Alias for `POST /ablation/run/custom` — kept for backward compatibility. "
+        "New integrations should use `/run/custom`."
+    ),
+    include_in_schema=False,  # hide from Swagger to reduce clutter
+)
+def post_ablation_run(
+    req: AblationRunRequest,
+    background_tasks: BackgroundTasks,
+) -> AblationJobResponse:
+    return post_ablation_run_custom(req, background_tasks)
 
 
 @router.get(
@@ -348,8 +650,7 @@ def get_ablation_status(job_id: str) -> AblationResultResponse:
     ragas: dict[str, float] | None = None
     ragas_keys = {"faithfulness", "answer_relevancy", "context_precision", "context_recall"}
     ragas_values = {
-        k: v for k, v in ragas_raw.items()
-        if k in ragas_keys and isinstance(v, (int, float))
+        k: v for k, v in ragas_raw.items() if k in ragas_keys and isinstance(v, (int, float))
     }
     if ragas_values:
         ragas = ragas_values
@@ -425,10 +726,16 @@ def get_ablation_datasets() -> list[str]:
 
 # ── Evaluation Bundle Endpoints ───────────────────────────────────────────────
 
+
 def _bundle_path(study_id: str, dataset_id: str) -> Path:
     return (
-        _ROOT / "notebooks" / "ablation" / "ablation_results"
-        / study_id / dataset_id / "evaluation_bundle.json"
+        _ROOT
+        / "notebooks"
+        / "ablation"
+        / "ablation_results"
+        / study_id
+        / dataset_id
+        / "evaluation_bundle.json"
     )
 
 
@@ -478,11 +785,13 @@ def get_ai_judge_payload(study_id: str, dataset_id: str) -> JSONResponse:
     prompt_text = prompt_file.read_text(encoding="utf-8")
     bundle_data = json.loads(bundle_file.read_text(encoding="utf-8"))
 
-    return JSONResponse(content={
-        "system_prompt": prompt_text,
-        "evaluation_bundle": bundle_data,
-        "instructions": (
-            "Feed system_prompt as the system message and evaluation_bundle as the user message "
-            "to any AI (Claude, GPT, etc.) to obtain a structured qualitative evaluation."
-        ),
-    })
+    return JSONResponse(
+        content={
+            "system_prompt": prompt_text,
+            "evaluation_bundle": bundle_data,
+            "instructions": (
+                "Feed system_prompt as the system message and evaluation_bundle as the user message "
+                "to any AI (Claude, GPT, etc.) to obtain a structured qualitative evaluation."
+            ),
+        }
+    )

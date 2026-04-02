@@ -1,0 +1,479 @@
+# AB-01 — 05_edgecases_incomplete — Run Analysis
+
+**Timestamp:** 2026-03-31 01:49:34  
+**Run tag:** `v5`
+
+## Configuration
+
+| Parameter | Value |
+|-----------|-------|
+| Extraction model | `LLM (gpt-5.4-nano-2026-03-17)` |
+| Reasoning model | `gpt-5.4-2026-03-05` |
+| Embedding model | `BAAI/bge-m3` |
+| Retrieval mode | `vector` |
+| Reranker | `True` |
+| Reranker top_k | `12` |
+| Chunk size / overlap | `256 / 32` |
+| ER similarity threshold | `0.75` |
+
+## Builder Results
+
+Builder skipped (`--no-builder`).
+
+## Query Evaluation Summary
+
+| Metric | Value |
+|--------|-------|
+| Questions | 20 |
+| Grounded | **6/20 (30%)** |
+| Avg GT Coverage | 100% |
+| Avg Top Score | 0.1193 |
+| Avg Chunk Count | 2.0 |
+| Abstained | 14 |
+
+## RAGAS Metrics
+
+RAGAS evaluation not enabled for this run.
+
+## Per-Question Deep Dive
+
+### ✅ ec_001 — What is a customer?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.0253 | **Gate:** `proceed_with_warning`
+
+**Expected answer:**
+> The business glossary defines Customer as "an individual or organization that... [definition incomplete]". Related terms include Client (a person or company that purchases goods or services, sometimes used interchangeably with Customer), Account Holder (the primary owner of an account), and End User…
+
+**System answer:**
+> From the retrieved context, a customer is only implied, not explicitly defined. What is known is that the Sales Order concept includes a customer_id, and the order is described as “an order placed by a customer.” This indicates that a customer is the party associated with a sales order through customer_id.
+
+The context does not provide a separate customer business concept, customer table, customer…
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_002 — What's the difference between firstName and first_name in the CUSTOMERS table?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0052 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> Both columns exist in the CUSTOMERS table with identical VARCHAR(50) data types. The data dictionary notes they appear to be duplicates resulting from inconsistent naming conventions (snake_case vs camelCase), but the actual usage by the application is not documented.
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ✅ ec_003 — Which customer column should be used as a foreign key reference: customer_id or CustomerID?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.2456 | **Gate:** `proceed`
+
+**Expected answer:**
+> The CUSTOMERS table has both customer_id (defined as PRIMARY KEY) and CustomerID (defined as INTEGER with no constraints). The ORDERS table also has both customer_id and CustomerID columns with ambiguous FK references. The data dictionary indicates this inconsistency is documented but not yet resolv…
+
+**System answer:**
+> Based on the retrieved context, the customer foreign key reference is customer_id. The Sales Order business concept explicitly identifies customer_id as the canonical order-header customer column. CustomerID is not mentioned anywhere in the provided context, so it cannot be validated from the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ✅ ec_004 — What are the valid values for order_status?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.1566 | **Gate:** `proceed_with_warning`
+
+**Expected answer:**
+> The business glossary documents several order statuses: Pending, Processing, Completed, Cancelled, On Hold, and Failed (which is marked as [definition missing]). However, these are not enforced by a CHECK constraint in the schema, and the data dictionary notes that valid values reference '[missing d…
+
+**System answer:**
+> The retrieved context shows that order_status is a canonical order-header attribute in the Sales Order business concept, alongside order_id, customer_id, order_date, and financial totals. However, the context does not provide the valid values for order_status. There is no enumeration, code list, status lifecycle, constraint, or reference table in the provided material, so the specific allowed valu…
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_005 — Is there a difference between Product, Item, and SKU?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0071 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> The glossary indicates these terms are related but distinct: Product is defined as "A thing that is... [definition needs clarification]"; Item is a synonym for Product used in inventory context; SKU (Stock Keeping Unit) is a unique identifier for a product variant; Inventory Item refers to physical …
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Order Items`, `Sales Order`
+
+**Context previews (first 3):**
+
+1. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+2. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+---
+
+### ✅ ec_006 — Which table should ORDER_ITEMS.product_id reference: PRODUCTS or INVENTORY?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.7335 | **Gate:** `proceed`
+
+**Expected answer:**
+> The data dictionary states the FK reference is to 'PRODUCTS (or INVENTORY?)' and notes it is 'not verified'. The schema provides two potential targets: PRODUCTS table (which has product_id) and an INVENTORY table that is referenced in documentation but not defined in the DDL. The actual relationship…
+
+**System answer:**
+> From the retrieved context, I cannot determine whether ORDER_ITEMS.product_id should reference PRODUCTS or INVENTORY.
+
+What the context does support is this: ORDER_ITEMS is described as a line-item order details table, with columns including order_id, product_id, quantity, unit price, discounts, and line total. The context also distinguishes Sales Order as the order-header entity, with attributes …
+
+**Sources retrieved (2):** `Order Items`, `Sales Order`
+
+**Context previews (first 3):**
+
+1. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+2. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+---
+
+### ⛔ ec_007 — What's the difference between Revenue and Sales?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0017 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> Both terms show circular definitions: Revenue is defined as 'Income from sales. The same as... [definition circular, see Sales]', while Sales is defined as 'Revenue from selling products. See Revenue.' The glossary provides no clear distinction between these concepts.
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_008 — Can one order have multiple payments?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0006 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> The PAYMENTS table has an order_id column, suggesting a many-to-one relationship (multiple payments can reference a single order). However, the relationship section in the glossary asks 'Or is it one-to-one?' indicating uncertainty. The ORDERS table has both payment_status and payment_method columns…
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_009 — What payment methods are accepted?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0001 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> The PAYMENTS table has a payment_method column (VARCHAR(30)), but the data dictionary notes '[missing valid values]' and no CHECK constraint exists to enumerate acceptable methods. The schema does not document what values are valid (e.g., credit_card, debit, paypal, etc.).
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ✅ ec_010 — What's the correct table name: ORDER_ITEMS or ORDER_DETAILS?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.9938 | **Gate:** `proceed`
+
+**Expected answer:**
+> The DDL creates a table named ORDER_ITEMS, but the data dictionary header shows 'ORDER_ITEMS (or ORDER_DETAILS?)' and notes 'Table name ambiguity: ORDER_ITEMS vs ORDER_DETAILS'. The actual table name in the schema is ORDER_ITEMS, but documentation suggests the application may reference it differentl…
+
+**System answer:**
+> The retrieved context explicitly names the table as ORDER_ITEMS. There is no mention of a table named ORDER_DETAILS in the provided context.
+
+**Sources retrieved (2):** `Order Items`, `Sales Order`
+
+**Context previews (first 3):**
+
+1. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+2. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+---
+
+### ✅ ec_011 — Which date column should be used to track when an order was created: order_date, OrderDate, or created_at?
+
+**Status:** GROUNDED  
+**GT Coverage:** 100% | **Top Score:** 0.1446 | **Gate:** `proceed_with_warning`
+
+**Expected answer:**
+> The ORDERS table has three date-related columns: order_date (DATE type), OrderDate (DATETIME type with different precision), and created_at (TIMESTAMP type). The data dictionary provides no guidance on which is actually used by the application or why three columns exist for potentially the same purp…
+
+**System answer:**
+> Use order_date. In the retrieved context, Sales Order explicitly identifies order_date as a canonical order-header attribute for the order entity. There is no information in the context about OrderDate or created_at, so I cannot confirm those.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_012 — What does the Failed order status mean?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0009 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> The business glossary lists Failed as an order status but marks it as '[definition missing]'. Other statuses have definitions (Pending, Processing, Completed, Cancelled, On Hold), but Failed is undefined despite being a valid status value.
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_013 — Are there any NOT NULL constraints defined in the schema?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0154 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> No NOT NULL constraints are defined in the DDL. The data dictionary explicitly states 'NOT NULL constraints not defined' under 'Missing Documentation' and notes 'assumed, not verified'. All columns are nullable by default.
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Order Items`, `Sales Order`
+
+**Context previews (first 3):**
+
+1. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+2. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+---
+
+### ⛔ ec_014 — What's the difference between unit_price and current_price in PRODUCTS?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0172 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> The PRODUCTS table has both unit_price and current_price columns (both DECIMAL(10,2)). The data dictionary asks 'Different from unit_price?' but provides no explanation of the distinction or when each would be used.
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Order Items`, `Sales Order`
+
+**Context previews (first 3):**
+
+1. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+2. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+---
+
+### ⛔ ec_015 — When is an invoice generated vs payment processed?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> The relationship section in the glossary asks 'An invoice is generated for an order. But when? And can one order have multiple invoices?' indicating the timing and cardinality are not defined. The glossary defines Invoice as 'A document requesting payment. Related to Bill' and Payment as 'The transf…
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_016 — Is the sku column in PRODUCTS unique?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0050 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> The PRODUCTS table has both product_sku and sku columns. The data dictionary notes sku 'should be UNIQUE?' but the DDL does not define a UNIQUE constraint on either column. No index is documented for these columns.
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Order Items`, `Sales Order`
+
+**Context previews (first 3):**
+
+1. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+2. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+---
+
+### ⛔ ec_017 — What is the relationship between customers and orders?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0189 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> The glossary states 'A customer can place multiple orders. Or is it accounts that place orders?' indicating uncertainty about the relationship. The ORDERS table has both customer_id and CustomerID columns with ambiguous FK references, and the data dictionary notes they reference 'customer (which tab…
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_018 — Which price column represents what the customer actually pays?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0114 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> Multiple price columns exist across tables: ORDERS has orderAmount and total_amount; ORDER_ITEMS has unit_price and UnitPrice; PRODUCTS has unit_price, current_price, and cost_price. The data dictionary does not explain which represents the final customer price, whether discounts are applied, or how…
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_019 — What's the difference between Shipment, Delivery, and Fulfillment?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0025 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> The glossary provides definitions but unclear boundaries: Shipment is 'The process of delivering goods to a customer'; Delivery is 'The completion of a Shipment when goods reach the customer'; Fulfillment is 'The process of preparing and delivering orders. Encompasses Shipment and Delivery.' The exa…
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Sales Order`, `Order Items`
+
+**Context previews (first 3):**
+
+1. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+2. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+---
+
+### ⛔ ec_020 — Are foreign key constraints enforced in the schema?
+
+**Status:** ABSTAINED  
+**GT Coverage:** 100% | **Top Score:** 0.0011 | **Gate:** `abstain_early`
+
+**Expected answer:**
+> No foreign key constraints are enforced in the DDL. While the data dictionary documents FK relationships (e.g., customer_id → CUSTOMERS, order_id → ORDERS), the actual CREATE TABLE statements omit the REFERENCES clauses. The schema explicitly notes 'FK constraints defined in data dictionary but not …
+
+**System answer:**
+> I cannot find this information in the knowledge graph.
+
+**Sources retrieved (2):** `Order Items`, `Sales Order`
+
+**Context previews (first 3):**
+
+1. _Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy …_
+
+2. _Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sal…_
+
+---
+
+## Anomalies & Observations
+
+- **ec_002**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_005**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_007**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_008**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_009**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_012**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_013**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_014**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_015**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_016**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_017**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_018**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_019**: ABSTAINED early — retrieval quality gate rejected all chunks
+- **ec_020**: ABSTAINED early — retrieval quality gate rejected all chunks

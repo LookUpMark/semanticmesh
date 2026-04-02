@@ -1,0 +1,710 @@
+{
+  "meta": {
+    "study_id": "AB-04",
+    "dataset_id": "05_edgecases_incomplete",
+    "timestamp": "2026-03-31T02:05:58.351948+00:00",
+    "bundle_version": "1.0"
+  },
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-2026-03-05",
+    "extraction_model": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 5,
+    "er_similarity_threshold": 0.75
+  },
+  "dataset_info": {
+    "dataset_id": "05_edgecases_incomplete",
+    "dataset_name": "",
+    "domain": "",
+    "complexity": "",
+    "total_pairs": 20,
+    "query_type_distribution": {
+      "unknown": 20
+    },
+    "difficulty_distribution": {
+      "unknown": 20
+    }
+  },
+  "builder_report": {
+    "triplets_extracted": 0,
+    "entities_resolved": 0,
+    "tables_parsed": 0,
+    "tables_completed": 0,
+    "cypher_failed": false,
+    "failed_mappings": [],
+    "ingestion_errors": [],
+    "parent_chunks": 0,
+    "child_chunks": 0,
+    "elapsed_s": 0,
+    "all_tables_completed": false,
+    "builder_skipped": false
+  },
+  "query_report": {
+    "total_questions": 20,
+    "grounded_count": 20,
+    "grounded_rate": 1.0,
+    "abstained_count": 0,
+    "avg_gt_coverage": 1.0,
+    "avg_top_score": 0.4705872696170476,
+    "avg_chunk_count": 5.0,
+    "elapsed_s": 0
+  },
+  "per_question": [
+    {
+      "query_id": "ec_001",
+      "question": "What is a customer?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The business glossary defines Customer as \"an individual or organization that... [definition incomplete]\". Related terms include Client (a person or company that purchases goods or services, sometimes used interchangeably with Customer), Account Holder (the primary owner of an account), and End User (the actual user, who may differ from the purchaser).",
+      "expected_sources": [],
+      "generated_answer": "In the retrieved context, Customer is defined only partially: “An individual or organization that...”, and the definition is marked incomplete in the business glossary.\n\nRelated context says Client is “a person or company that purchases goods or services” and may be used interchangeably with Customer in some contexts, but the glossary does not explicitly complete the Customer definition with that wording.\n\nAt the schema level, the business concept CUSTOMERS is implemented by the CUSTOMERS table, which includes identifiers and profile/status fields such as customer_id or CustomerID, first/last name variants, email variants, phone variants, created date fields, account_status or status, customer_type, and customer_region.",
+      "sources_retrieved": [
+        "CUSTOMERS→CUSTOMERS",
+        "parent_chunk_data_dictionary.txt_1",
+        "Sales Order→ORDERS",
+        "parent_chunk_business_glossary.txt_0",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'CUSTOMERS' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, last_name, email, emailAddress, phone, phoneNumber, created_at, CreatedDate, account_status, status, customer_type, customer_region).",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.8713654401007822,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_002",
+      "question": "What's the difference between firstName and first_name in the CUSTOMERS table?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "Both columns exist in the CUSTOMERS table with identical VARCHAR(50) data types. The data dictionary notes they appear to be duplicates resulting from inconsistent naming conventions (snake_case vs camelCase), but the actual usage by the application is not documented.",
+      "expected_sources": [],
+      "generated_answer": "Based on the retrieved context, there is no documented business difference between `firstName` and `first_name` in `CUSTOMERS`.\n\nThe `CUSTOMERS` data dictionary shows both columns as `VARCHAR(50)`. `firstName` is described as “Customer's first name,” while `first_name` is explicitly noted as “[appears to be duplicate].” The concept-to-table mapping for `CUSTOMERS` also includes both names, which suggests inconsistent naming in the physical table rather than two distinct attributes.\n\nSo, from the available context, `first_name` appears to be a duplicate or alternate naming variant of `firstName`, not a separately defined field with a different meaning.",
+      "sources_retrieved": [
+        "CUSTOMERS→CUSTOMERS",
+        "parent_chunk_data_dictionary.txt_1",
+        "parent_chunk_data_dictionary.txt_2",
+        "Sales Order→ORDERS",
+        "parent_chunk_business_glossary.txt_0"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'CUSTOMERS' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, last_name, email, emailAddress, phone, phoneNumber, created_at, CreatedDate, account_status, status, customer_type, customer_region).",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.5988401598166446,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_003",
+      "question": "Which customer column should be used as a foreign key reference: customer_id or CustomerID?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The CUSTOMERS table has both customer_id (defined as PRIMARY KEY) and CustomerID (defined as INTEGER with no constraints). The ORDERS table also has both customer_id and CustomerID columns with ambiguous FK references. The data dictionary indicates this inconsistency is documented but not yet resolved, pending verification with the DBA team.",
+      "expected_sources": [],
+      "generated_answer": "Based on the retrieved context, the strongest documented choice is customer_id.\n\nThe context says the CUSTOMERS table primary key is \"customer_id (or is it CustomerID? check with DBA),\" so customer_id is the primary key currently indicated, but the documentation is explicitly inconsistent. That is reinforced by other tables: PAYMENTS uses customer_id as an FK referencing CUSTOMERS, and the Sales Order mapping lists both customer_id and CustomerID as duplicate-style variants rather than clearly making CustomerID the canonical key.\n\nSo, from the available metadata, use customer_id as the foreign key reference, but this cannot be confirmed definitively because the data dictionary itself flags ambiguity and says to check with the DBA.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_data_dictionary.txt_1",
+        "CUSTOMERS→CUSTOMERS",
+        "parent_chunk_data_dictionary.txt_3",
+        "Sales Order→ORDERS"
+      ],
+      "contexts_retrieved": [
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi",
+        "Business concept 'CUSTOMERS' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, last_name, email, emailAddress, phone, phoneNumber, created_at, CreatedDate, account_status, status, customer_type, customer_region).",
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.9257686295391643,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_004",
+      "question": "What are the valid values for order_status?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The business glossary documents several order statuses: Pending, Processing, Completed, Cancelled, On Hold, and Failed (which is marked as [definition missing]). However, these are not enforced by a CHECK constraint in the schema, and the data dictionary notes that valid values reference '[missing documentation]'.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not provide the valid values for ORDERS.order_status.\n\nWhat it does show is that order_status is an order-header attribute in the ORDERS table, which implements the business concept Sales Order. But no enumeration, code list, or allowed status values is included in the context.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_3",
+        "Sales Order→ORDERS",
+        "Sales Order",
+        "Order Items",
+        "Payment gateway response→PAYMENTS"
+      ],
+      "contexts_retrieved": [
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Business concept 'Payment gateway response' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_id, TransactionID, response_code, response_message, created_at)."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.3950758298918357,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_005",
+      "question": "Is there a difference between Product, Item, and SKU?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The glossary indicates these terms are related but distinct: Product is defined as \"A thing that is... [definition needs clarification]\"; Item is a synonym for Product used in inventory context; SKU (Stock Keeping Unit) is a unique identifier for a product variant; Inventory Item refers to physical products in stock; and Merchandise is described as goods available for sale, similar to Product. The exact distinctions are not clearly defined.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, only part of this can be answered.\n\nThe context does not define separate business concepts named “Product” or “SKU,” so it does not establish an explicit business difference among “Product,” “Item,” and “SKU.”\n\nWhat it does show is this:\n\n“Merchandise” is the business concept implemented by the PRODUCTS table. PRODUCTS contains columns such as product_id, product_name, product_sku, sku, product_category, unit_price/current_price, cost_price, stock_quantity/quantity_in_stock, reorder_level, is_active/active_flag, created_at, updated_at, and product_description.\n\n“Order Items” is a separate business concept implemented by the ORDER_ITEMS table. ORDER_ITEMS contains line-level order detail columns including order_item_id, order_id, product_id, quantity, unit_price, discount_percent, discount_amount, and line_total. The context also states that ORDER_ITEMS has product_id as a foreign key referencing PRODUCTS.\n\nSo, based strictly on the schema metadata provided, the clear distinction is between:\nMerchandise in PRODUCTS, which represents the catalog/inventory-side record, and\nOrder Items in ORDER_ITEMS, which represents line items on an order that point back to PRODUCTS through product_id.\n\nFor “SKU,” the context only shows product_sku and sku as columns on PRODUCTS. It does not define SKU as a separate concept or explain how it differs from Merchandise or Order Items.\n\nTherefore, the supported answer is: the context distinguishes Merchandise/PRODUCTS from Order Items/ORDER_ITEMS, but it does not explicitly define a separate conceptual difference for “Product” or “SKU.”",
+      "sources_retrieved": [
+        "Merchandise→PRODUCTS",
+        "parent_chunk_data_dictionary.txt_2",
+        "Order Items→ORDER_ITEMS",
+        "parent_chunk_business_glossary.txt_0",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'Merchandise' is implemented by physical table PRODUCTS (columns: product_id, ProductID, product_name, ProductName, product_sku, sku, product_category, category, unit_price, current_price, cost_price, stock_quantity, quantity_in_stock, reorder_level, is_active, active_flag, created_at, updated_at, product_description).",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "Business concept 'Order Items' — The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data. is implemented by physical table ORDER_ITEMS (columns: order_item_id, order_id, product_id, ProductID, quantity, u",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.569553406443815,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_006",
+      "question": "Which table should ORDER_ITEMS.product_id reference: PRODUCTS or INVENTORY?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The data dictionary states the FK reference is to 'PRODUCTS (or INVENTORY?)' and notes it is 'not verified'. The schema provides two potential targets: PRODUCTS table (which has product_id) and an INVENTORY table that is referenced in documentation but not defined in the DDL. The actual relationship cannot be determined from the available documentation.",
+      "expected_sources": [],
+      "generated_answer": "Based on the retrieved context, ORDER_ITEMS.product_id should most likely reference PRODUCTS, not INVENTORY.\n\nThe strongest support is that the business concept “Order Items” is implemented by ORDER_ITEMS with a classic order-line structure including product_id, and the business concept “Merchandise” is implemented by PRODUCTS, which contains product_id/ProductID and product attributes such as product_name, SKU, category, pricing, and stock fields. That makes PRODUCTS the natural parent table for an order line’s product reference.\n\nThe only mention of INVENTORY appears in the partially documented foreign key note: “product_id → References PRODUCTS (or INVENTORY?)”, which explicitly signals uncertainty in the documentation. Since no INVENTORY table definition or business concept mapping is provided in the context, there is no supporting evidence for INVENTORY as the intended reference.\n\nSo, from the available context: the intended reference is most likely PRODUCTS, but the FK documentation is not fully finalized and contains an explicit ambiguity.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_2",
+        "Order Items→ORDER_ITEMS",
+        "Merchandise→PRODUCTS",
+        "Order Items",
+        "parent_chunk_business_glossary.txt_0"
+      ],
+      "contexts_retrieved": [
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "Business concept 'Order Items' — The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data. is implemented by physical table ORDER_ITEMS (columns: order_item_id, order_id, product_id, ProductID, quantity, u",
+        "Business concept 'Merchandise' is implemented by physical table PRODUCTS (columns: product_id, ProductID, product_name, ProductName, product_sku, sku, product_category, category, unit_price, current_price, cost_price, stock_quantity, quantity_in_stock, reorder_level, is_active, active_flag, created_at, updated_at, product_description).",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.9608048667967017,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_007",
+      "question": "What's the difference between Revenue and Sales?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "Both terms show circular definitions: Revenue is defined as 'Income from sales. The same as... [definition circular, see Sales]', while Sales is defined as 'Revenue from selling products. See Revenue.' The glossary provides no clear distinction between these concepts.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not define Revenue or Sales as financial business terms, so I cannot state a supported difference between them from this knowledge graph.\n\nWhat the context does show is only the order-related use of “Sales”: the business concept “Sales Order” is mapped to the physical table ORDERS, and it is described as clearly representing “an order placed by a customer.” The ORDERS table includes canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals including orderAmount, total_amount, shippingAmount, tax_amount, plus payment_status and payment_method. The glossary also defines Order as “a request to purchase products or services” and says it “can be in various states.” It defines Transaction as a similar but more general term.\n\nSo, from the available context, I can say that “Sales” appears only in the specific concept “Sales Order,” which refers to customer orders. The context provides no definition of Revenue, and it does not define Sales as a standalone financial measure, so the actual conceptual difference between Revenue and Sales is not available here.",
+      "sources_retrieved": [
+        "Sales Order→ORDERS",
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_business_glossary.txt_0",
+        "Sales Order",
+        "parent_chunk_data_dictionary.txt_1"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.42244506697948814,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_008",
+      "question": "Can one order have multiple payments?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The PAYMENTS table has an order_id column, suggesting a many-to-one relationship (multiple payments can reference a single order). However, the relationship section in the glossary asks 'Or is it one-to-one?' indicating uncertainty. The ORDERS table has both payment_status and payment_method columns (singular), which might suggest a single payment per order, but this conflicts with the PAYMENTS table structure.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not explicitly say whether one order can have multiple payments.\n\nWhat it does say is that PAYMENTS includes order_id as a foreign key that references ORDERS, and ORDERS is the physical table for the business concept “Sales Order.” That establishes that a payment row can be linked to an order through PAYMENTS.order_id → ORDERS.order_id. However, the context does not document cardinality, uniqueness on order_id, or any business rule stating that multiple PAYMENTS rows per order are allowed or disallowed.\n\nSo, from the available context, the supported conclusion is only that PAYMENTS references ORDERS via order_id; whether one order can have multiple payments cannot be determined from this knowledge graph.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_3",
+        "Sales Order→ORDERS",
+        "Payment gateway response→PAYMENTS",
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_business_glossary.txt_0"
+      ],
+      "contexts_retrieved": [
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "Business concept 'Payment gateway response' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_id, TransactionID, response_code, response_message, created_at).",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.09807932347046003,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_009",
+      "question": "What payment methods are accepted?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The PAYMENTS table has a payment_method column (VARCHAR(30)), but the data dictionary notes '[missing valid values]' and no CHECK constraint exists to enumerate acceptable methods. The schema does not document what values are valid (e.g., credit_card, debit, paypal, etc.).",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not list the accepted payment methods.\n\nIt shows a `payment_method` column in both `PAYMENTS` and `ORDERS`, but for `PAYMENTS` the documentation explicitly says “[missing valid values],” and no enumerated values are provided anywhere in the context. So, from the available knowledge graph, I can only say that payment method is captured in `PAYMENTS.payment_method` and `ORDERS.payment_method`; the actual accepted methods are not documented here.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_3",
+        "Payment gateway response→PAYMENTS",
+        "Sales Order→ORDERS",
+        "parent_chunk_business_glossary.txt_0",
+        "Payment gateway response"
+      ],
+      "contexts_retrieved": [
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "Business concept 'Payment gateway response' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_id, TransactionID, response_code, response_message, created_at).",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
+        "Payment gateway response"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.17909941966896972,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_010",
+      "question": "What's the correct table name: ORDER_ITEMS or ORDER_DETAILS?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The DDL creates a table named ORDER_ITEMS, but the data dictionary header shows 'ORDER_ITEMS (or ORDER_DETAILS?)' and notes 'Table name ambiguity: ORDER_ITEMS vs ORDER_DETAILS'. The actual table name in the schema is ORDER_ITEMS, but documentation suggests the application may reference it differently.",
+      "expected_sources": [],
+      "generated_answer": "Based on the retrieved context, the correct table name is ORDER_ITEMS.\n\nThe strongest evidence is that the business concept \"Order Items\" is explicitly mapped to the physical table ORDER_ITEMS, and the context states that \"the table is explicitly named ORDER_ITEMS.\" The mention of \"ORDER_DETAILS?\" appears only as an uncertainty in incomplete documentation, not as the confirmed physical table name.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_2",
+        "Order Items→ORDER_ITEMS",
+        "Order Items",
+        "Sales Order→ORDERS",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "Business concept 'Order Items' — The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data. is implemented by physical table ORDER_ITEMS (columns: order_item_id, order_id, product_id, ProductID, quantity, u",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.9938070098421449,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_011",
+      "question": "Which date column should be used to track when an order was created: order_date, OrderDate, or created_at?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The ORDERS table has three date-related columns: order_date (DATE type), OrderDate (DATETIME type with different precision), and created_at (TIMESTAMP type). The data dictionary provides no guidance on which is actually used by the application or why three columns exist for potentially the same purpose.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, `order_date` is the strongest candidate to track when the order was created/placed.\n\nThe reason is that the business concept “Sales Order” says the table contains canonical order-header attributes such as `order_id`, `customer_id`, `order_date`, `order_status`, and financial totals. That makes `order_date` the canonical business date for the order. `OrderDate` appears to be a duplicate column variant in a messy implementation, similar to `order_id`/`OrderID`. `created_at` is also present in `ORDERS`, but the context does not define it as the order creation date.\n\nSo, based only on the context:\n`order_date` should be preferred,\n`OrderDate` is likely a duplicate variant of the same field,\nand `created_at` cannot be confirmed from the context as the correct business column for order creation.",
+      "sources_retrieved": [
+        "Sales Order→ORDERS",
+        "Payment gateway response→PAYMENTS",
+        "parent_chunk_data_dictionary.txt_1",
+        "parent_chunk_data_dictionary.txt_3",
+        "CUSTOMERS→CUSTOMERS"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "Business concept 'Payment gateway response' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_id, TransactionID, response_code, response_message, created_at).",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi",
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "Business concept 'CUSTOMERS' is implemented by physical table CUSTOMERS (columns: customer_id, CustomerID, firstName, first_name, lastName, last_name, email, emailAddress, phone, phoneNumber, created_at, CreatedDate, account_status, status, customer_type, customer_region)."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.7678639706205701,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_012",
+      "question": "What does the Failed order status mean?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The business glossary lists Failed as an order status but marks it as '[definition missing]'. Other statuses have definitions (Pending, Processing, Completed, Cancelled, On Hold), but Failed is undefined despite being a valid status value.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not define a “Failed” order status.\n\nWhat it does show is that the business concept Sales Order is implemented by the ORDERS table, and that ORDERS includes an order_status column alongside order_id, customer_id, and order_date. The glossary also says an Order “can be in various states.” However, no valid values or meanings for order_status are documented in the retrieved context.\n\nSo, based strictly on the available context, the meaning of a Failed order status cannot be determined.",
+      "sources_retrieved": [
+        "Sales Order→ORDERS",
+        "parent_chunk_data_dictionary.txt_3",
+        "parent_chunk_data_dictionary.txt_1",
+        "parent_chunk_business_glossary.txt_0",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.0030515101629349155,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_013",
+      "question": "Are there any NOT NULL constraints defined in the schema?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "No NOT NULL constraints are defined in the DDL. The data dictionary explicitly states 'NOT NULL constraints not defined' under 'Missing Documentation' and notes 'assumed, not verified'. All columns are nullable by default.",
+      "expected_sources": [],
+      "generated_answer": "No explicit NOT NULL constraints are shown in the retrieved context.\n\nThe schema excerpts list constraints such as PK, FK, and possibly UNIQUE on some columns, but none of the displayed column definitions explicitly say NOT NULL. For example, in CUSTOMERS, PAYMENTS, and ORDER_ITEMS, many constraint entries are shown as ?, missing documentation, or inferred relationships, not NOT NULL.\n\nThe only nuance is that columns marked as primary keys, such as CUSTOMERS.customer_id, PAYMENTS.payment_id, and ORDER_ITEMS.order_item_id, are identified as PK, but the retrieved context does not explicitly state NOT NULL for them.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_3",
+        "parent_chunk_data_dictionary.txt_2",
+        "Order Items→ORDER_ITEMS",
+        "parent_chunk_data_dictionary.txt_1",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "Business concept 'Order Items' — The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data. is implemented by physical table ORDER_ITEMS (columns: order_item_id, order_id, product_id, ProductID, quantity, u",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.7627776615116516,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_014",
+      "question": "What's the difference between unit_price and current_price in PRODUCTS?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The PRODUCTS table has both unit_price and current_price columns (both DECIMAL(10,2)). The data dictionary asks 'Different from unit_price?' but provides no explanation of the distinction or when each would be used.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, I can only say that the business concept “Merchandise” is implemented by the PRODUCTS table, and that PRODUCTS includes both unit_price and current_price as separate columns.\n\nThe context does not define the semantic difference between unit_price and current_price within PRODUCTS. There is no column description for either one in the PRODUCTS mapping.\n\nThe only related definition present is outside PRODUCTS: in ORDER_ITEMS, unit_price is described as “Price per unit.” That supports that unit_price is a per-unit price field in at least the order-line context, but the context does not state whether PRODUCTS.unit_price means the same thing, nor how it differs from PRODUCTS.current_price.\n\nSo the supported answer is: PRODUCTS has both columns, but the knowledge graph excerpt does not document what distinguishes unit_price from current_price in that table.",
+      "sources_retrieved": [
+        "Merchandise→PRODUCTS",
+        "parent_chunk_data_dictionary.txt_2",
+        "Order Items→ORDER_ITEMS",
+        "Order Items",
+        "parent_chunk_business_glossary.txt_0"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'Merchandise' is implemented by physical table PRODUCTS (columns: product_id, ProductID, product_name, ProductName, product_sku, sku, product_category, category, unit_price, current_price, cost_price, stock_quantity, quantity_in_stock, reorder_level, is_active, active_flag, created_at, updated_at, product_description).",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "Business concept 'Order Items' — The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data. is implemented by physical table ORDER_ITEMS (columns: order_item_id, order_id, product_id, ProductID, quantity, u",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data.",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.500800132068459,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_015",
+      "question": "When is an invoice generated vs payment processed?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The relationship section in the glossary asks 'An invoice is generated for an order. But when? And can one order have multiple invoices?' indicating the timing and cardinality are not defined. The glossary defines Invoice as 'A document requesting payment. Related to Bill' and Payment as 'The transfer of money to settle an order', but doesn't specify the workflow or sequence.",
+      "expected_sources": [],
+      "generated_answer": "From the retrieved context, I cannot determine when an invoice is generated, because there is no invoice table, invoice column, or business glossary entry for “Invoice,” and no lifecycle rule describing invoice creation.\n\nWhat the context does show is how payment processing is represented at the schema level. The `PAYMENTS` table contains `payment_id`, `order_id`, `customer_id`, `payment_date`, `payment_amount`, `payment_method`, `payment_status`, `transaction_id`, and `response_code` (with the response message field appearing truncated in the extract). That means the schema records a payment as a distinct event tied to an order and customer, and the closest available indicator of when payment was processed is `PAYMENTS.payment_date`. The presence of `transaction_id` and `response_code` also suggests this table stores the result of an external payment-gateway transaction, but the valid statuses and exact processing rules are not documented in the provided context.\n\nThe `ORDERS` table, which implements the business concept “Sales Order,” contains `order_id`, `customer_id`, `order_date`, `order_status`, financial totals, and also `payment_status` and `payment_method`. So at the order-header level, payment-related state is also tracked on `ORDERS`, while the actual payment event details are stored in `PAYMENTS`. To trace payment processing for an order, the join path in the schema is `PAYMENTS.order_id -> ORDERS.order_id`, and `PAYMENTS.customer_id -> CUSTOMERS.customer_id`.\n\nSo the supported answer is: payment processing is represented when a record exists in `PAYMENTS`, with timing indicated by `payment_date`, and linked back to the sales order through `order_id`. Invoice generation timing cannot be answered from this context because no invoice-related schema or business rule is provided.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_3",
+        "Sales Order→ORDERS",
+        "parent_chunk_data_dictionary.txt_1",
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_business_glossary.txt_0"
+      ],
+      "contexts_retrieved": [
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.6598436742594872,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_016",
+      "question": "Is the sku column in PRODUCTS unique?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The PRODUCTS table has both product_sku and sku columns. The data dictionary notes sku 'should be UNIQUE?' but the DDL does not define a UNIQUE constraint on either column. No index is documented for these columns.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not state that `sku` in `PRODUCTS` is unique. It only shows that the `PRODUCTS` table includes `product_sku` and `sku` as columns under the business concept `Merchandise`, but no uniqueness constraint is documented for either column.",
+      "sources_retrieved": [
+        "Merchandise→PRODUCTS",
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_data_dictionary.txt_3",
+        "parent_chunk_business_glossary.txt_0",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'Merchandise' is implemented by physical table PRODUCTS (columns: product_id, ProductID, product_name, ProductName, product_sku, sku, product_category, category, unit_price, current_price, cost_price, stock_quantity, quantity_in_stock, reorder_level, is_active, active_flag, created_at, updated_at, product_description).",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed",
+      "retrieval_quality_score": 0.39326850456398726,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_017",
+      "question": "What is the relationship between customers and orders?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The glossary states 'A customer can place multiple orders. Or is it accounts that place orders?' indicating uncertainty about the relationship. The ORDERS table has both customer_id and CustomerID columns with ambiguous FK references, and the data dictionary notes they reference 'customer (which table?)' and '[FK reference unclear]' respectively.",
+      "expected_sources": [],
+      "generated_answer": "The relationship is that ORDERS is linked to CUSTOMERS through the customer_id field. In the retrieved context, the Sales Order concept is implemented by the ORDERS table, which includes customer_id (and also a duplicate variant CustomerID). A foreign key definition also states customer_id → CUSTOMERS(customer_id or CustomerID?).\n\nBased on that schema metadata, an order is associated with a customer, and the business concept description supports this by describing Sales Order as “an order placed by a customer.” The glossary also defines an Order as “a request to purchase products or services” and Customer/Client as the purchaser, which is consistent with that relationship.\n\nSo, schema-level, the relationship is: CUSTOMERS to ORDERS via ORDERS.customer_id, meaning orders belong to or are placed by customers. The exact cardinality is not explicitly stated, but the structure clearly shows each order carries a customer reference.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_3",
+        "Sales Order→ORDERS",
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_business_glossary.txt_0",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.08586245629955466,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_018",
+      "question": "Which price column represents what the customer actually pays?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "Multiple price columns exist across tables: ORDERS has orderAmount and total_amount; ORDER_ITEMS has unit_price and UnitPrice; PRODUCTS has unit_price, current_price, and cost_price. The data dictionary does not explain which represents the final customer price, whether discounts are applied, or how these columns relate to each other.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not identify any single column as definitively “what the customer actually pays.”\n\nWhat is known from the context is:\n\nIn ORDERS, the Sales Order table includes financial total fields: orderAmount, total_amount, shippingAmount, tax_amount, and TaxAmount. The business concept description says these are “financial totals (amount, shipping, tax),” but it does not define which one is the final payable amount.\n\nIn PAYMENTS, the Payment gateway response table includes payment_amount. That indicates an amount recorded with a payment event, but the context does not explicitly say it is the authoritative final order price.\n\nIn ORDER_ITEMS, unit_price is documented as “Price per unit,” so it is clearly an item-level price, not necessarily the full amount the customer pays for the order. That table also includes quantity and discount_percent, which suggests line-level pricing components, but no formula or final-total rule is provided.\n\nSo, based strictly on the context, the candidate columns related to payment or pricing are ORDERS.orderAmount, ORDERS.total_amount, PAYMENTS.payment_amount, and ORDER_ITEMS.unit_price, but the knowledge provided does not define which one represents the final customer-paid price.",
+      "sources_retrieved": [
+        "Payment gateway response→PAYMENTS",
+        "Sales Order→ORDERS",
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_business_glossary.txt_0",
+        "Sales Order"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'Payment gateway response' is implemented by physical table PAYMENTS (columns: payment_id, PaymentID, order_id, customer_id, payment_date, payment_amount, payment_method, payment_status, transaction_id, TransactionID, response_code, response_message, created_at).",
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.058131594864695615,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_019",
+      "question": "What's the difference between Shipment, Delivery, and Fulfillment?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "The glossary provides definitions but unclear boundaries: Shipment is 'The process of delivering goods to a customer'; Delivery is 'The completion of a Shipment when goods reach the customer'; Fulfillment is 'The process of preparing and delivering orders. Encompasses Shipment and Delivery.' The exact distinction and sequence of these processes is not clearly defined, and Fulfillment appears to be a superset of the other two.",
+      "expected_sources": [],
+      "generated_answer": "The provided context does not define Shipment, Delivery, or Fulfillment, so their differences cannot be determined from the available information.\n\nThe only related concepts present are:\nOrder — “A request to purchase products or services. Can be in various states.”\nSales Order — represented by table ORDERS, with order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals.\n\nBecause there are no glossary entries, table definitions, or status descriptions for Shipment, Delivery, or Fulfillment in the provided context, I cannot distinguish them further.",
+      "sources_retrieved": [
+        "Sales Order→ORDERS",
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_business_glossary.txt_0",
+        "Sales Order",
+        "parent_chunk_data_dictionary.txt_1"
+      ],
+      "contexts_retrieved": [
+        "Business concept 'Sales Order' — The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer. is implemented by physical table ORDERS (columns: order_id, OrderID, customer_id, CustomerID, order_date, OrderDate, order_",
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
+        "Sales Order: The table contains canonical order-header attributes such as order_id, customer_id, order_date, order_status, and financial totals (amount, shipping, tax), which align strongly with a sales order entity. Duplicate column variants suggest messy implementation, but the underlying business concept is still clearly an order placed by a customer.",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi"
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.005040703111845644,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "ec_020",
+      "question": "Are foreign key constraints enforced in the schema?",
+      "query_type": "",
+      "difficulty": "",
+      "expected_answer": "No foreign key constraints are enforced in the DDL. While the data dictionary documents FK relationships (e.g., customer_id → CUSTOMERS, order_id → ORDERS), the actual CREATE TABLE statements omit the REFERENCES clauses. The schema explicitly notes 'FK constraints defined in data dictionary but not enforced in DDL' under known inconsistencies.",
+      "expected_sources": [],
+      "generated_answer": "The retrieved context does not confirm that foreign key constraints are enforced at the database level.\n\nIt does show documented foreign key relationships in the schema metadata:\nORDER_ITEMS has order_id marked as FK to ORDERS and product_id marked as FK to PRODUCTS (with uncertainty noted as “or INVENTORY?”), and PAYMENTS has order_id marked as FK to ORDERS and customer_id marked as FK to CUSTOMERS. There is also a note referencing customer_id → CUSTOMERS.\n\nHowever, the same context repeatedly indicates uncertainty and incomplete documentation: “missing other FK definitions,” “unverified,” inconsistent duplicate column names such as product_id/ProductID, and incomplete constraints documentation. So from the context, foreign keys are intended/documented, but actual enforcement of those constraints cannot be verified.",
+      "sources_retrieved": [
+        "parent_chunk_data_dictionary.txt_2",
+        "parent_chunk_data_dictionary.txt_3",
+        "parent_chunk_data_dictionary.txt_1",
+        "Order Items→ORDER_ITEMS",
+        "Order Items"
+      ],
+      "contexts_retrieved": [
+        "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
+        "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
+        "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi",
+        "Business concept 'Order Items' — The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data. is implemented by physical table ORDER_ITEMS (columns: order_item_id, order_id, product_id, ProductID, quantity, u",
+        "Order Items: The table is explicitly named ORDER_ITEMS and its columns form a classic order line structure with order_id, product_id, quantity, unit price, discounts, and line total. Duplicate legacy columns and missing constraints reduce certainty slightly, but the physical intent is still clearly line-item order details rather than product or order header data."
+      ],
+      "covered_sources": [],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "gate_decision": "proceed_with_warning",
+      "retrieval_quality_score": 0.1602660323277607,
+      "chunk_count": 5,
+      "grader_rejection_count": 0,
+      "grader_consistency_valid": true,
+      "context_sufficiency": "adequate"
+    }
+  ],
+  "pipeline_health": {
+    "total_grader_rejections": 0,
+    "grader_inconsistencies": 0,
+    "gate_abstentions": 0,
+    "questions_with_low_retrieval_score": 7,
+    "cypher_failed": false,
+    "failed_mappings_count": 0,
+    "ingestion_errors_count": 0
+  },
+  "ragas": null
+}

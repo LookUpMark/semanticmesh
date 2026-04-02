@@ -18,8 +18,8 @@ from pydantic import ValidationError
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.generation.answer_generator import format_context
-from src.utils.json_utils import extract_text_content
 from src.prompts.templates import GRADER_SYSTEM, GRADER_USER, REFLECTION_TEMPLATE
+from src.utils.json_utils import extract_text_content
 
 if TYPE_CHECKING:
     import logging

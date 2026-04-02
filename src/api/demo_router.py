@@ -1,4 +1,5 @@
 """E2E Demo REST API — /api/v1/demo/..."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -25,6 +26,7 @@ _ROOT = Path(__file__).parent.parent.parent  # repo root
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _to_abs(path: str) -> str:
     p = Path(path)
     return str(p if p.is_absolute() else _ROOT / p)
@@ -39,7 +41,7 @@ def _query_result_to_response(result: dict[str, Any]) -> QueryResponse:
         retrieval_quality_score=float(result.get("retrieval_quality_score", 0.0)),
         retrieval_chunk_count=int(result.get("retrieval_chunk_count", 0)),
         gate_decision=result.get("retrieval_gate_decision", "proceed"),
-        grounded=bool(result.get("semantic_verification_passed", True)),
+        grounded=bool(result.get("grader_grounded", True)),
         context_previews=previews,
     )
 
@@ -66,6 +68,7 @@ def _build_state_to_response(
 
 
 # ── Background tasks ──────────────────────────────────────────────────────────
+
 
 def _run_build_task(job_id: str, req: BuildRequest) -> None:
     set_running(job_id)
@@ -153,6 +156,7 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+
 @router.post(
     "/build",
     response_model=BuildResultResponse,
@@ -174,8 +178,7 @@ def post_build(req: BuildRequest, background_tasks: BackgroundTasks) -> BuildRes
     response_model=BuildResultResponse,
     summary="Get Knowledge Graph build status",
     description=(
-        "Poll the result of a build job. "
-        "`status` transitions: queued → running → done | failed."
+        "Poll the result of a build job. `status` transitions: queued → running → done | failed."
     ),
 )
 def get_build_status(job_id: str) -> BuildResultResponse:
@@ -304,7 +307,7 @@ def get_graph_stats() -> GraphStatsResponse:
         counts_query = "MATCH (n) " + cypher_nodes
         rel_query = "MATCH ()-[r]->() RETURN count(r) AS total_relationships"
         rel_mentions = "MATCH ()-[r:MENTIONS]->() RETURN count(r) AS n"
-        rel_maps = "MATCH ()-[r:MAPS_TO]->() RETURN count(r) AS n"
+        rel_maps = "MATCH ()-[r:MAPPED_TO]->() RETURN count(r) AS n"
         node_total = "MATCH (n) RETURN count(n) AS total_nodes"
 
         with Neo4jClient() as client:

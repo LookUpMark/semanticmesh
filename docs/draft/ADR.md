@@ -1,7 +1,7 @@
 # Architecture Decision Records (ADR)
 
 > **Project:** Multi-Agent Framework for Semantic Discovery & GraphRAG
-> **Version:** 1.0 — March 2026
+> **Version:** 2.0 — Updated March 2026
 > **Purpose:** Documents every significant architectural decision, its rationale, and the alternatives that were evaluated and rejected.
 
 ---
