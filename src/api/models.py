@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any, Literal, TypeAlias
 
-from fastapi import File, UploadFile
 from pydantic import BaseModel, Field
 
 # ── Shared LLM override fields ────────────────────────────────────────────────
@@ -47,7 +46,7 @@ class CustomAblationRequest(BaseModel):
         examples=["tests/fixtures/02_intermediate_finance/gold_standard.json"],
     )
     study_id: str = Field(
-        default="CUSTOM",
+        default="custom-run",
         description="Output directory prefix under notebooks/ablation/ablation_results/.",
     )
     max_samples: int | None = Field(
@@ -151,7 +150,7 @@ class CustomAblationRequest(BaseModel):
         default=16384,
         ge=512,
         le=32768,
-        description="Max output tokens for the extraction LLM (default: 16384 from AB-10 best result).",
+        description="Max output tokens for the extraction LLM.",
     )
 
     # ── LLM model overrides ───────────────────────────────────────────────────
@@ -303,7 +302,10 @@ class BuildRequest(BaseModel):
         default=True,
         description="Wipe all Neo4j nodes/edges before building (recommended for clean runs).",
     )
-    study_id: str = Field(default="demo")
+    study_id: str = Field(
+        default="demo",
+        description="Run identifier used for logging and trace output.",
+    )
     lazy_extraction: bool = Field(
         default=False,
         description="Use heuristic rule-based extraction instead of LLM (faster, less accurate).",
@@ -367,13 +369,22 @@ class PipelineRequest(BaseModel):
             ]
         ],
     )
-    clear_graph: bool = Field(default=True)
-    lazy_extraction: bool = Field(default=False)
+    clear_graph: bool = Field(
+        default=True,
+        description="Wipe all Neo4j nodes/edges before building (recommended for clean runs).",
+    )
+    lazy_extraction: bool = Field(
+        default=False,
+        description="Use heuristic rule-based extraction instead of LLM (faster, less accurate).",
+    )
     run_ragas: bool = Field(
         default=False,
-        description="Compute RAGAS faithfulness/AR/CP/CR (requires expected answers).",
+        description="Compute RAGAS faithfulness/AR/CP/CR after answering (requires expected answers in the fixture).",
     )
-    study_id: str = Field(default="demo")
+    study_id: str = Field(
+        default="demo",
+        description="Run identifier used for logging and trace output.",
+    )
 
 
 class PipelineJobResponse(BaseModel):
@@ -404,39 +415,3 @@ class GraphStatsResponse(BaseModel):
     total_relationships: int
 
 
-# ── File Upload Models (for AWS deployment — users upload instead of using fixture paths) ────
-
-class BuildRequestWithUpload(BaseModel):
-    """Build KG from uploaded documentation and DDL files."""
-
-    doc_files: list[UploadFile] = Field(
-        description="Business documentation files (PDF, MD, TXT).",
-    )
-    ddl_files: list[UploadFile] = Field(
-        description="SQL DDL files to map onto the ontology.",
-    )
-    clear_graph: bool = Field(
-        default=True,
-        description="Wipe Neo4j before building (recommended).",
-    )
-    study_id: str = Field(default="demo")
-    lazy_extraction: bool = Field(default=False)
-
-
-class PipelineRequestWithUpload(BaseModel):
-    """Run full E2E pipeline from uploaded files."""
-
-    doc_files: list[UploadFile] = Field(
-        description="Business documentation files.",
-    )
-    ddl_files: list[UploadFile] = Field(
-        description="SQL DDL files.",
-    )
-    questions: list[str] = Field(
-        min_length=1,
-        description="Natural language questions to answer after build.",
-    )
-    clear_graph: bool = Field(default=True)
-    lazy_extraction: bool = Field(default=False)
-    run_ragas: bool = Field(default=False)
-    study_id: str = Field(default="demo")

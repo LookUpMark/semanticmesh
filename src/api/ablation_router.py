@@ -495,6 +495,44 @@ def _run_ablation_task_with_preset(
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 
+@router.get(
+    "/matrix",
+    response_model=list[AblationMatrixEntry],
+    summary="Browse predefined ablation conditions (AB-00 … AB-20)",
+    description=(
+        "Returns all pre-configured ablation studies defined in the ablation matrix. "
+        "Use the `study_id` from this list as input to **POST /ablation/run/preset**."
+    ),
+)
+def get_ablation_matrix() -> list[AblationMatrixEntry]:
+    return [
+        AblationMatrixEntry(
+            study_id=sid,
+            description=cfg["description"],
+            env_overrides=cfg["env_overrides"],
+            run_ragas=cfg.get("run_ragas", False),
+        )
+        for sid, cfg in ABLATION_MATRIX.items()
+    ]
+
+
+@router.get(
+    "/datasets",
+    response_model=list[str],
+    summary="List available evaluation datasets",
+    description=(
+        "Scans `tests/fixtures/` and returns relative paths to all `gold_standard.json` files. "
+        "Use the returned paths as the `dataset` field in run requests."
+    ),
+)
+def get_ablation_datasets() -> list[str]:
+    fixture_dir = _fixtures_dir()
+    if not fixture_dir.exists():
+        return []
+    paths = sorted(fixture_dir.rglob("gold_standard.json"))
+    return [str(p.relative_to(_ROOT)) for p in paths]
+
+
 @router.post(
     "/run/preset",
     response_model=PresetAblationJobResponse,
@@ -502,9 +540,9 @@ def _run_ablation_task_with_preset(
     description=(
         "Starts an ablation run using the configuration defined in the ablation matrix "
         "for the given `study_id`. All feature flags and hyperparameters are set automatically. "
-        "Optional LLM overrides (`reasoning_model`, `extraction_model`, `provider_base_url`) "
-        "win over the matrix defaults. "
-        "Returns a `job_id` to poll for status and results."
+        "Optionally override the LLM via `reasoning_model`, `extraction_model`, `provider_base_url` — "
+        "these win over the matrix defaults. "
+        "Returns a `job_id` — poll **GET /ablation/status/{job_id}** for results."
     ),
 )
 def post_ablation_run_preset(
@@ -573,10 +611,11 @@ def post_ablation_run_preset(
     summary="Launch a fully custom ablation run",
     description=(
         "Start an ablation run with any combination of feature flags, hyperparameters, "
-        "and LLM model overrides. "
-        "Use `reasoning_model` / `extraction_model` to override the LLM for this run "
+        "and LLM model overrides. All fields are optional — `None` means use the current "
+        "environment/settings default. "
+        "Use `reasoning_model` / `extraction_model` to override the LLM "
         "(provider is auto-detected from the model name prefix). "
-        "Returns a `job_id` to poll for status and results."
+        "Returns a `job_id` — poll **GET /ablation/status/{job_id}** for results."
     ),
 )
 def post_ablation_run_custom(
@@ -597,11 +636,8 @@ def post_ablation_run_custom(
     "/run",
     response_model=AblationJobResponse,
     summary="Launch a custom ablation run (alias)",
-    description=(
-        "Alias for `POST /ablation/run/custom` — kept for backward compatibility. "
-        "New integrations should use `/run/custom`."
-    ),
-    include_in_schema=False,  # hide from Swagger to reduce clutter
+    description="Alias for `POST /ablation/run/custom` — kept for backward compatibility.",
+    include_in_schema=False,
 )
 def post_ablation_run(
     req: AblationRunRequest,
@@ -689,41 +725,6 @@ def get_ablation_jobs() -> list[AblationJobResponse]:
     ]
 
 
-@router.get(
-    "/matrix",
-    response_model=list[AblationMatrixEntry],
-    summary="List the predefined ablation matrix (AB-00 … AB-20)",
-    description=(
-        "Returns all 21 pre-configured ablation conditions defined in ABLATION_MATRIX. "
-        "Use study_id from this list as input to POST /ablation/run to replicate a study."
-    ),
-)
-def get_ablation_matrix() -> list[AblationMatrixEntry]:
-    return [
-        AblationMatrixEntry(
-            study_id=sid,
-            description=cfg["description"],
-            env_overrides=cfg["env_overrides"],
-            run_ragas=cfg.get("run_ragas", False),
-        )
-        for sid, cfg in ABLATION_MATRIX.items()
-    ]
-
-
-@router.get(
-    "/datasets",
-    response_model=list[str],
-    summary="List available evaluation datasets",
-    description="Scans tests/fixtures/ and returns relative paths to all gold_standard.json files.",
-)
-def get_ablation_datasets() -> list[str]:
-    fixture_dir = _fixtures_dir()
-    if not fixture_dir.exists():
-        return []
-    paths = sorted(fixture_dir.rglob("gold_standard.json"))
-    return [str(p.relative_to(_ROOT)) for p in paths]
-
-
 # ── Evaluation Bundle Endpoints ───────────────────────────────────────────────
 
 
@@ -741,10 +742,10 @@ def _bundle_path(study_id: str, dataset_id: str) -> Path:
 
 @router.get(
     "/bundle/{study_id}/{dataset_id}",
-    summary="Retrieve evaluation bundle for AI analysis",
+    summary="Download evaluation bundle",
     description=(
-        "Returns the evaluation_bundle.json for a completed ablation run. "
-        "This structured file contains all data an AI judge needs to evaluate the run."
+        "Returns the `evaluation_bundle.json` for a completed ablation run. "
+        "Contains all per-question results, builder metrics, and RAGAS scores."
     ),
 )
 def get_evaluation_bundle(study_id: str, dataset_id: str) -> JSONResponse:
@@ -760,11 +761,11 @@ def get_evaluation_bundle(study_id: str, dataset_id: str) -> JSONResponse:
 
 @router.get(
     "/evaluate/{study_id}/{dataset_id}",
-    summary="Get AI-as-Judge evaluation payload",
+    summary="AI-as-Judge evaluation payload",
     description=(
-        "Returns the AI Judge system prompt combined with the evaluation bundle, "
-        "ready to be fed to an AI agent for qualitative analysis. "
-        "Copy-paste the returned `prompt` + `bundle` into any AI chat to get an expert evaluation."
+        "Returns the AI Judge system prompt combined with the evaluation bundle — "
+        "ready to feed to any AI (Claude, GPT, etc.) for a structured qualitative evaluation. "
+        "Use the returned `system_prompt` as the system message and `evaluation_bundle` as the user message."
     ),
 )
 def get_ai_judge_payload(study_id: str, dataset_id: str) -> JSONResponse:
@@ -781,6 +782,7 @@ def get_ai_judge_payload(study_id: str, dataset_id: str) -> JSONResponse:
             status_code=500,
             detail="AI_JUDGE_PROMPT.md not found in docs/.",
         )
+
 
     prompt_text = prompt_file.read_text(encoding="utf-8")
     bundle_data = json.loads(bundle_file.read_text(encoding="utf-8"))
