@@ -24,9 +24,7 @@ from src.retrieval.embeddings import embed_text, get_embeddings
 logger: logging.Logger = get_logger(__name__)
 
 
-def _find_entity_for_concept(
-    concept_name: str, entities: list[Entity]
-) -> Entity | None:
+def _find_entity_for_concept(concept_name: str, entities: list[Entity]) -> Entity | None:
     """Find the resolved Entity matching a mapped concept name.
 
     Performs case-insensitive lookup, preferring exact match then substring.
@@ -188,8 +186,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             chunk_indexes: set[int] = set()
             for t in triplets:
                 if t.source_chunk_index is not None and (
-                    concept_lower in t.subject.lower()
-                    or concept_lower in t.object.lower()
+                    concept_lower in t.subject.lower() or concept_lower in t.object.lower()
                 ):
                     chunk_indexes.add(t.source_chunk_index)
             for idx in chunk_indexes:

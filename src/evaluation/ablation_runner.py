@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -304,8 +304,8 @@ def run_ablation(
 
         # Generate comparison report if debug tracing is enabled
         if debug_trace:
-            from src.config.tracing import ComparisonReport
             from src.config.settings import get_settings
+            from src.config.tracing import ComparisonReport
 
             settings = get_settings()
             trace_dir = Path(settings.trace_output_dir) / experiment_id
@@ -336,7 +336,7 @@ def run_ablation(
             if query_traces and ground_truth:
                 report = ComparisonReport(
                     study_id=experiment_id,
-                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    timestamp=datetime.now(UTC).isoformat(),
                     dataset_path=str(gt_path),
                 )
                 report.generate_per_question_analysis(query_traces, ground_truth)

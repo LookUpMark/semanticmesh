@@ -14,7 +14,11 @@ from typing import Any
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
-from src.config.llm_factory import get_extraction_llm, get_lightweight_llm, get_midtier_llm, get_reasoning_llm
+from src.config.llm_factory import (
+    get_extraction_llm,
+    get_lightweight_llm,
+    get_midtier_llm,
+)
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.config.tracing import BuilderTrace
@@ -462,7 +466,9 @@ def run_builder(
         # Record graph stats
         with Neo4jClient() as client:
             node_count = client.execute_cypher("MATCH (n) RETURN count(n) as count")[0]["count"]
-            rel_count = client.execute_cypher("MATCH ()-[r]->() RETURN count(r) as count")[0]["count"]
+            rel_count = client.execute_cypher("MATCH ()-[r]->() RETURN count(r) as count")[0][
+                "count"
+            ]
             builder_trace.neo4j_summary = {
                 "total_nodes": node_count,
                 "total_relationships": rel_count,

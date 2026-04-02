@@ -345,7 +345,7 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
     return chunks
 
 
-def fetch_concept_table_mappings(client: "Neo4jClient") -> list[RetrievedChunk]:
+def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
     """Return all MAPPED_TO edges (BusinessConcept → PhysicalTable) as human-readable chunks.
 
     Each edge is rendered as a sentence that names the business concept, the physical

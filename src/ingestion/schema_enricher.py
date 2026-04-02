@@ -82,8 +82,7 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
             content = extract_text_content(response.content)
             if not content.strip():
                 logger.warning(
-                    "LLM returned empty content for table '%s' -- "
-                    "returning unenriched schema.",
+                    "LLM returned empty content for table '%s' -- returning unenriched schema.",
                     table.table_name,
                 )
                 return EnrichedTableSchema.from_table_schema(table)

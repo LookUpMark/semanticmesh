@@ -1,4 +1,5 @@
 """Ablation Studies REST API — /api/v1/ablation/..."""
+
 from __future__ import annotations
 
 import json
@@ -70,6 +71,7 @@ def _build_env_overrides(req: AblationRunRequest) -> dict[str, str]:
 
 
 # ── Background task ───────────────────────────────────────────────────────────
+
 
 def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
     """Execute the full ablation pipeline in a background thread.
@@ -194,51 +196,44 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
 
                 # GT source coverage
                 covered = [
-                    s for s in expected_sources
-                    if any(
-                        _normalize_source(s) in _normalize_source(src)
-                        for src in sources
-                    )
+                    s
+                    for s in expected_sources
+                    if any(_normalize_source(s) in _normalize_source(src) for src in sources)
                 ]
                 gt_coverage = len(covered) / len(expected_sources) if expected_sources else 1.0
 
-                per_question.append({
-                    "query_id": pair.get("query_id", f"Q{i + 1:03d}"),
-                    "question": question,
-                    "query_type": pair.get("query_type", ""),
-                    "difficulty": pair.get("difficulty", ""),
-                    "expected_answer": expected_answer,
-                    "expected_sources": expected_sources,
-                    "generated_answer": answer,
-                    "sources_retrieved": sources,
-                    "contexts_retrieved": [
-                        c[:500] for c in qr.get("retrieved_contexts", [])
-                    ],
-                    "covered_sources": covered,
-                    "gt_coverage": gt_coverage,
-                    "grounded": grounded,
-                    "gate_decision": gate,
-                    "retrieval_quality_score": top_score,
-                    "chunk_count": chunk_count,
-                    "grader_rejection_count": qr.get("grader_rejection_count", 0),
-                    "grader_consistency_valid": qr.get("grader_consistency_valid", True),
-                    "context_sufficiency": qr.get("context_sufficiency", ""),
-                })
+                per_question.append(
+                    {
+                        "query_id": pair.get("query_id", f"Q{i + 1:03d}"),
+                        "question": question,
+                        "query_type": pair.get("query_type", ""),
+                        "difficulty": pair.get("difficulty", ""),
+                        "expected_answer": expected_answer,
+                        "expected_sources": expected_sources,
+                        "generated_answer": answer,
+                        "sources_retrieved": sources,
+                        "contexts_retrieved": [c[:500] for c in qr.get("retrieved_contexts", [])],
+                        "covered_sources": covered,
+                        "gt_coverage": gt_coverage,
+                        "grounded": grounded,
+                        "gate_decision": gate,
+                        "retrieval_quality_score": top_score,
+                        "chunk_count": chunk_count,
+                        "grader_rejection_count": qr.get("grader_rejection_count", 0),
+                        "grader_consistency_valid": qr.get("grader_consistency_valid", True),
+                        "context_sufficiency": qr.get("context_sufficiency", ""),
+                    }
+                )
 
             query_elapsed = time.time() - t1
             total_q = len(per_question)
-            avg_gt = (
-                sum(pq["gt_coverage"] for pq in per_question) / total_q
-                if total_q else 0.0
-            )
+            avg_gt = sum(pq["gt_coverage"] for pq in per_question) / total_q if total_q else 0.0
             avg_score = (
                 sum(pq["retrieval_quality_score"] for pq in per_question) / total_q
-                if total_q else 0.0
+                if total_q
+                else 0.0
             )
-            avg_chunks = (
-                sum(pq["chunk_count"] for pq in per_question) / total_q
-                if total_q else 0.0
-            )
+            avg_chunks = sum(pq["chunk_count"] for pq in per_question) / total_q if total_q else 0.0
 
             result["query"] = {
                 "total_questions": total_q,
@@ -269,8 +264,7 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
             bundle_dir = (
-                _ROOT / "notebooks" / "ablation" / "ablation_results"
-                / req.study_id / dataset_id
+                _ROOT / "notebooks" / "ablation" / "ablation_results" / req.study_id / dataset_id
             )
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
@@ -410,44 +404,46 @@ def _run_ablation_task_with_preset(
                     exp_words = set(exp_lower.split()) - stopwords
                     gt_coverage = (
                         sum(1 for w in exp_words if w in ans_lower) / len(exp_words)
-                        if exp_words else 0.0
+                        if exp_words
+                        else 0.0
                     )
-                    per_question.append({
-                        "question": question,
-                        "expected": expected,
-                        "answer": answer,
-                        "is_grounded": is_grounded,
-                        "abstained": abstained,
-                        "gt_coverage": round(gt_coverage, 3),
-                        "top_rerank_score": round(score, 4),
-                        "chunk_count": len(contexts),
-                        "metadata": metadata,
-                    })
+                    per_question.append(
+                        {
+                            "question": question,
+                            "expected": expected,
+                            "answer": answer,
+                            "is_grounded": is_grounded,
+                            "abstained": abstained,
+                            "gt_coverage": round(gt_coverage, 3),
+                            "top_rerank_score": round(score, 4),
+                            "chunk_count": len(contexts),
+                            "metadata": metadata,
+                        }
+                    )
                 except Exception as q_exc:  # noqa: BLE001
-                    per_question.append({
-                        "question": question,
-                        "expected": expected,
-                        "answer": "",
-                        "error": str(q_exc),
-                        "is_grounded": False,
-                        "abstained": False,
-                        "gt_coverage": 0.0,
-                        "top_rerank_score": 0.0,
-                        "chunk_count": 0,
-                        "metadata": metadata,
-                    })
+                    per_question.append(
+                        {
+                            "question": question,
+                            "expected": expected,
+                            "answer": "",
+                            "error": str(q_exc),
+                            "is_grounded": False,
+                            "abstained": False,
+                            "gt_coverage": 0.0,
+                            "top_rerank_score": 0.0,
+                            "chunk_count": 0,
+                            "metadata": metadata,
+                        }
+                    )
             query_elapsed = time.time() - t1
             total_q = len(per_question)
             grounded_count = sum(1 for pq in per_question if pq.get("is_grounded"))
             abstained_count = sum(1 for pq in per_question if pq.get("abstained"))
             avg_gt = sum(pq["gt_coverage"] for pq in per_question) / total_q if total_q else 0.0
             avg_score = (
-                sum(pq["top_rerank_score"] for pq in per_question) / total_q
-                if total_q else 0.0
+                sum(pq["top_rerank_score"] for pq in per_question) / total_q if total_q else 0.0
             )
-            avg_chunks = (
-                sum(pq["chunk_count"] for pq in per_question) / total_q if total_q else 0.0
-            )
+            avg_chunks = sum(pq["chunk_count"] for pq in per_question) / total_q if total_q else 0.0
             result["query"] = {
                 "total_questions": total_q,
                 "grounded_count": grounded_count,
@@ -475,8 +471,7 @@ def _run_ablation_task_with_preset(
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
             bundle_dir = (
-                _ROOT / "notebooks" / "ablation" / "ablation_results"
-                / req.study_id / dataset_id
+                _ROOT / "notebooks" / "ablation" / "ablation_results" / req.study_id / dataset_id
             )
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
@@ -498,6 +493,7 @@ def _run_ablation_task_with_preset(
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
 
 @router.post(
     "/run/preset",
@@ -552,12 +548,14 @@ def post_ablation_run_preset(
     # via _settings_override inside _run_ablation_task. We store them in a side-channel
     # by temporarily setting env vars; instead we pass a pre-built override dict via
     # a wrapper task so the matrix flags are applied upstream.
-    job_id = create_job(meta={
-        "study_id": req.study_id,
-        "dataset": req.dataset,
-        "preset": True,
-        "applied_env_overrides": applied_env,
-    })
+    job_id = create_job(
+        meta={
+            "study_id": req.study_id,
+            "dataset": req.dataset,
+            "preset": True,
+            "applied_env_overrides": applied_env,
+        }
+    )
     background_tasks.add_task(_run_preset_ablation_task, job_id, custom_req, applied_env)
     return PresetAblationJobResponse(
         job_id=job_id,
@@ -652,8 +650,7 @@ def get_ablation_status(job_id: str) -> AblationResultResponse:
     ragas: dict[str, float] | None = None
     ragas_keys = {"faithfulness", "answer_relevancy", "context_precision", "context_recall"}
     ragas_values = {
-        k: v for k, v in ragas_raw.items()
-        if k in ragas_keys and isinstance(v, (int, float))
+        k: v for k, v in ragas_raw.items() if k in ragas_keys and isinstance(v, (int, float))
     }
     if ragas_values:
         ragas = ragas_values
@@ -729,10 +726,16 @@ def get_ablation_datasets() -> list[str]:
 
 # ── Evaluation Bundle Endpoints ───────────────────────────────────────────────
 
+
 def _bundle_path(study_id: str, dataset_id: str) -> Path:
     return (
-        _ROOT / "notebooks" / "ablation" / "ablation_results"
-        / study_id / dataset_id / "evaluation_bundle.json"
+        _ROOT
+        / "notebooks"
+        / "ablation"
+        / "ablation_results"
+        / study_id
+        / dataset_id
+        / "evaluation_bundle.json"
     )
 
 
@@ -782,11 +785,13 @@ def get_ai_judge_payload(study_id: str, dataset_id: str) -> JSONResponse:
     prompt_text = prompt_file.read_text(encoding="utf-8")
     bundle_data = json.loads(bundle_file.read_text(encoding="utf-8"))
 
-    return JSONResponse(content={
-        "system_prompt": prompt_text,
-        "evaluation_bundle": bundle_data,
-        "instructions": (
-            "Feed system_prompt as the system message and evaluation_bundle as the user message "
-            "to any AI (Claude, GPT, etc.) to obtain a structured qualitative evaluation."
-        ),
-    })
+    return JSONResponse(
+        content={
+            "system_prompt": prompt_text,
+            "evaluation_bundle": bundle_data,
+            "instructions": (
+                "Feed system_prompt as the system message and evaluation_bundle as the user message "
+                "to any AI (Claude, GPT, etc.) to obtain a structured qualitative evaluation."
+            ),
+        }
+    )

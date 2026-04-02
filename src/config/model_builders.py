@@ -216,7 +216,7 @@ def _build_openai_compatible_chat(
 
     # Strip the "<provider>/" prefix so we send the native model id
     prefix = f"{provider}/"
-    native_model = model[len(prefix):] if model.lower().startswith(prefix) else model
+    native_model = model[len(prefix) :] if model.lower().startswith(prefix) else model
 
     base_url = (
         base_url_override
@@ -264,7 +264,7 @@ def _build_ollama_chat(
     from src.config.provider_detection import _PROVIDER_BASE_URLS
 
     # Strip provider prefix
-    native_model = model[len("ollama/"):] if model.lower().startswith("ollama/") else model
+    native_model = model[len("ollama/") :] if model.lower().startswith("ollama/") else model
     ollama_base = base_url or os.environ.get("OLLAMA_BASE_URL") or _PROVIDER_BASE_URLS["ollama"]
 
     try:
@@ -315,7 +315,7 @@ def _build_google_chat(
     # Strip provider prefix(es)
     for prefix in ("google/", "vertex_ai/"):
         if model.lower().startswith(prefix):
-            model = model[len(prefix):]
+            model = model[len(prefix) :]
             break
 
     return ChatGoogleGenerativeAI(  # type: ignore[no-any-return]
@@ -343,7 +343,7 @@ def _build_bedrock_chat(
             "Install langchain-aws to use AWS Bedrock models: pip install langchain-aws"
         ) from exc
 
-    native_model = model[len("bedrock/"):] if model.lower().startswith("bedrock/") else model
+    native_model = model[len("bedrock/") :] if model.lower().startswith("bedrock/") else model
     return ChatBedrock(  # type: ignore[no-any-return]
         model_id=native_model,
         model_kwargs={"temperature": temperature, "max_tokens": max_tokens},
@@ -374,7 +374,7 @@ def _build_azure_chat(
 
     for prefix in ("azure_openai/", "azure/"):
         if model.lower().startswith(prefix):
-            model = model[len(prefix):]
+            model = model[len(prefix) :]
             break
 
     return AzureChatOpenAI(
@@ -403,13 +403,12 @@ def _build_mistral_chat(
         from langchain_mistralai import ChatMistralAI  # type: ignore[import-not-found]
     except ImportError as exc:
         raise ImportError(
-            "Install langchain-mistralai to use Mistral models: "
-            "pip install langchain-mistralai"
+            "Install langchain-mistralai to use Mistral models: pip install langchain-mistralai"
         ) from exc
 
     for prefix in ("mistral/",):
         if model.lower().startswith(prefix):
-            model = model[len(prefix):]
+            model = model[len(prefix) :]
             break
 
     return ChatMistralAI(model=model, temperature=temperature, max_tokens=max_tokens)  # type: ignore[no-any-return]
@@ -440,7 +439,7 @@ def _build_huggingface_chat(
 
     for prefix in ("huggingface/", "hf/"):
         if model.lower().startswith(prefix):
-            model = model[len(prefix):]
+            model = model[len(prefix) :]
             break
 
     endpoint = HuggingFaceEndpoint(
@@ -465,7 +464,7 @@ def _build_cohere_chat(
     """
     for prefix in ("cohere/",):
         if model.lower().startswith(prefix):
-            model = model[len(prefix):]
+            model = model[len(prefix) :]
             break
 
     try:

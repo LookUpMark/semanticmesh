@@ -1,9 +1,9 @@
 # Dataset Specification
 
 > **Project:** Multi-Agent Framework for Semantic Discovery & GraphRAG
-> **Version:** 1.0 — March 2026
-> **Companion documents:** [SPECS.md](./SPECS.md), [REQUIREMENTS.md](./REQUIREMENTS.md), [TEST_PLAN.md](./TEST_PLAN.md)
-> **Purpose:** Defines ALL datasets used by the system — inputs (PDFs, DDL), few-shot example banks, and the synthetic gold-standard evaluation dataset. An AI coding agent must use these specifications to generate fixture files and seed data.
+> **Version:** 2.0 — Updated March 2026
+> **Companion documents:** [SPECS.md](./SPECS.md), [REQUIREMENTS.md](./REQUIREMENTS.md), [TEST_PLAN.md](./TEST_PLAN.md), [ABLATION.md](./ABLATION.md)
+> **Purpose:** Defines ALL datasets used by the system — inputs (PDFs, DDL), few-shot example banks, the gold-standard evaluation dataset, and the six synthetic ablation datasets. An AI coding agent must use these specifications to generate fixture files and seed data.
 
 ---
 

@@ -1,4 +1,5 @@
 """E2E Demo REST API — /api/v1/demo/..."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -24,6 +25,7 @@ _ROOT = Path(__file__).parent.parent.parent  # repo root
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _to_abs(path: str) -> str:
     p = Path(path)
@@ -66,6 +68,7 @@ def _build_state_to_response(
 
 
 # ── Background tasks ──────────────────────────────────────────────────────────
+
 
 def _run_build_task(job_id: str, req: BuildRequest) -> None:
     set_running(job_id)
@@ -153,6 +156,7 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+
 @router.post(
     "/build",
     response_model=BuildResultResponse,
@@ -174,8 +178,7 @@ def post_build(req: BuildRequest, background_tasks: BackgroundTasks) -> BuildRes
     response_model=BuildResultResponse,
     summary="Get Knowledge Graph build status",
     description=(
-        "Poll the result of a build job. "
-        "`status` transitions: queued → running → done | failed."
+        "Poll the result of a build job. `status` transitions: queued → running → done | failed."
     ),
 )
 def get_build_status(job_id: str) -> BuildResultResponse:

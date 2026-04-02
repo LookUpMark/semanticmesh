@@ -181,9 +181,7 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
         ),
         "context_sufficiency": state.get("context_sufficiency", "insufficient"),
         "retrieval_gate_decision": gate_decision,
-        "grader_grounded": bool(
-            getattr(state.get("grader_decision"), "grounded", True)
-        ),
+        "grader_grounded": bool(getattr(state.get("grader_decision"), "grounded", True)),
         "grader_consistency_valid": bool(state.get("grader_consistency_valid", True)),
         "grader_rejection_count": int(state.get("grader_rejection_count", 0)),
     }
@@ -304,8 +302,8 @@ def run_query(
             "grader_rejection_count": int,
         }``
     """
-    from src.config.tracing import QueryTrace
     from src.config.settings import get_settings
+    from src.config.tracing import QueryTrace
 
     settings = get_settings()
 
@@ -362,7 +360,10 @@ def run_query(
         # Record retrieval details from final state
         retrieved = result.get("retrieved_chunks", [])
         query_trace.record_retrieval(
-            rrf_fused=[{"node": r.node_id, "rrf_score": r.score, "sources": [r.source_type]} for r in retrieved],
+            rrf_fused=[
+                {"node": r.node_id, "rrf_score": r.score, "sources": [r.source_type]}
+                for r in retrieved
+            ],
         )
 
         # Record reranking
@@ -376,7 +377,10 @@ def run_query(
         # Record context preparation
         generation_chunks = result.get("generation_chunks", reranked)
         query_trace.record_context_preparation(
-            contexts=[{"node": c.node_id, "text": c.text, "source": c.source_type} for c in generation_chunks],
+            contexts=[
+                {"node": c.node_id, "text": c.text, "source": c.source_type}
+                for c in generation_chunks
+            ],
             context_limit=None,
         )
 

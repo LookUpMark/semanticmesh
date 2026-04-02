@@ -1,9 +1,9 @@
 # Test Plan
 
 > **Project:** Multi-Agent Framework for Semantic Discovery & GraphRAG
-> **Version:** 1.0 — March 2026
-> **Companion documents:** [SPECS.md](./SPECS.md), [REQUIREMENTS.md](./REQUIREMENTS.md), [DATASET.md](./DATASET.md)
-> **Purpose:** Complete test strategy for every component of the system. An AI coding agent must implement these tests alongside the production code — not after.
+> **Version:** 2.0 — Updated March 2026
+> **Companion documents:** [SPECS.md](./SPECS.md), [REQUIREMENTS.md](./REQUIREMENTS.md), [DATASET.md](./DATASET.md), [ABLATION.md](./ABLATION.md)
+> **Purpose:** Complete test strategy for every component of the system.
 
 ---
 

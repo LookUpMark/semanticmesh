@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config.logging import get_logger
-from src.utils.json_utils import extract_text_content
 from src.prompts.templates import (
     ANSWER_SYSTEM_ADEQUATE,
     ANSWER_SYSTEM_INSUFFICIENT,
@@ -20,6 +19,7 @@ from src.prompts.templates import (
     ANSWER_USER,
     ANSWER_WITH_CRITIQUE_USER,
 )
+from src.utils.json_utils import extract_text_content
 
 if TYPE_CHECKING:
     import logging

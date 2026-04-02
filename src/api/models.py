@@ -1,4 +1,5 @@
 """Pydantic request/response models for both REST APIs."""
+
 from __future__ import annotations
 
 from typing import Any, Literal, TypeAlias
@@ -35,6 +36,7 @@ _LLM_BASE_URL_DESC = (
 
 # ── Ablation API ──────────────────────────────────────────────────────────────
 
+
 class CustomAblationRequest(BaseModel):
     """Launch a fully custom ablation run with any combination of flags/hyperparameters."""
 
@@ -48,7 +50,8 @@ class CustomAblationRequest(BaseModel):
         description="Output directory prefix under notebooks/ablation/ablation_results/.",
     )
     max_samples: int | None = Field(
-        default=None, ge=1,
+        default=None,
+        ge=1,
         description="Limit evaluation to the first N QA pairs (None = all).",
     )
     run_ragas: bool = Field(
@@ -70,59 +73,83 @@ class CustomAblationRequest(BaseModel):
 
     # ── Ablation flags ────────────────────────────────────────────────────────
     retrieval_mode: Literal["hybrid", "vector", "bm25"] | None = Field(
-        default=None, description="Retrieval channel combination. Default: hybrid.",
+        default=None,
+        description="Retrieval channel combination. Default: hybrid.",
     )
     enable_reranker: bool | None = Field(
-        default=None, description="Cross-encoder reranking (bge-reranker-v2-m3).",
+        default=None,
+        description="Cross-encoder reranking (bge-reranker-v2-m3).",
     )
     reranker_top_k: int | None = Field(
-        default=None, ge=1, le=50,
+        default=None,
+        ge=1,
+        le=50,
         description="Number of candidates kept after reranking.",
     )
     enable_hallucination_grader: bool | None = Field(
-        default=None, description="Self-RAG hallucination grader.",
+        default=None,
+        description="Self-RAG hallucination grader.",
     )
     enable_cypher_healing: bool | None = Field(
-        default=None, description="Cypher auto-fix loop on syntax errors.",
+        default=None,
+        description="Cypher auto-fix loop on syntax errors.",
     )
     enable_critic_validation: bool | None = Field(
-        default=None, description="Actor-Critic mapping validation.",
+        default=None,
+        description="Actor-Critic mapping validation.",
     )
     enable_schema_enrichment: bool | None = Field(
-        default=None, description="LLM-based DDL acronym expansion.",
+        default=None,
+        description="LLM-based DDL acronym expansion.",
     )
 
     # ── Hyperparameters ───────────────────────────────────────────────────────
     chunk_size: int | None = Field(
-        default=None, ge=64, le=2048,
+        default=None,
+        ge=64,
+        le=2048,
         description="Child chunk token size for vector search.",
     )
     chunk_overlap: int | None = Field(
-        default=None, ge=0, le=512,
+        default=None,
+        ge=0,
+        le=512,
         description="Child chunk overlap in tokens.",
     )
     parent_chunk_size: int | None = Field(
-        default=None, ge=128, le=4096,
+        default=None,
+        ge=128,
+        le=4096,
         description="Parent chunk token size returned verbatim to the LLM.",
     )
     er_similarity_threshold: float | None = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="Minimum cosine similarity for entity blocking.",
     )
     er_blocking_top_k: int | None = Field(
-        default=None, ge=1, le=50,
+        default=None,
+        ge=1,
+        le=50,
         description="K-NN candidates per entity in ER blocking.",
     )
     confidence_threshold: float | None = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="Mapping confidence threshold below which HITL interrupt fires.",
     )
     retrieval_vector_top_k: int | None = Field(
-        default=None, ge=1, le=100,
+        default=None,
+        ge=1,
+        le=100,
         description="Number of vector-search candidates before reranking.",
     )
     llm_max_tokens_extraction: int | None = Field(
-        default=None, ge=512, le=32768,
+        default=None,
+        ge=512,
+        le=32768,
         description="Max output tokens for the extraction LLM.",
     )
 
@@ -167,7 +194,8 @@ class PresetAblationRequest(BaseModel):
         examples=["tests/fixtures/02_intermediate_finance/gold_standard.json"],
     )
     max_samples: int | None = Field(
-        default=None, ge=1,
+        default=None,
+        ge=1,
         description="Limit evaluation to the first N QA pairs (None = all).",
     )
     run_ragas: bool = Field(
@@ -231,8 +259,7 @@ class AblationResultResponse(BaseModel):
     ragas: dict[str, float] | None = Field(
         default=None,
         description=(
-            "RAGAS metrics: faithfulness, answer_relevancy, "
-            "context_precision, context_recall."
+            "RAGAS metrics: faithfulness, answer_relevancy, context_precision, context_recall."
         ),
     )
     per_question: list[dict[str, Any]] | None = Field(
@@ -254,13 +281,18 @@ class AblationMatrixEntry(BaseModel):
 
 # ── Demo / E2E API ────────────────────────────────────────────────────────────
 
+
 class BuildRequest(BaseModel):
     """Trigger the Builder pipeline to ingest docs and populate the Knowledge Graph."""
 
     doc_paths: list[str] = Field(
         description="Paths to business documentation files (PDF, MD, TXT).",
-        examples=[["tests/fixtures/01_basics_ecommerce/business_glossary.md",
-                   "tests/fixtures/01_basics_ecommerce/data_dictionary.md"]],
+        examples=[
+            [
+                "tests/fixtures/01_basics_ecommerce/business_glossary.md",
+                "tests/fixtures/01_basics_ecommerce/data_dictionary.md",
+            ]
+        ],
     )
     ddl_paths: list[str] = Field(
         description="Paths to DDL SQL files to map onto the ontology.",
@@ -294,8 +326,10 @@ class QueryRequest(BaseModel):
 
     question: str = Field(
         description="Natural language question to answer from the Knowledge Graph.",
-        examples=["What information is stored for each customer?",
-                  "How are products and orders related?"],
+        examples=[
+            "What information is stored for each customer?",
+            "How are products and orders related?",
+        ],
     )
 
 
@@ -325,8 +359,12 @@ class PipelineRequest(BaseModel):
     questions: list[str] = Field(
         min_length=1,
         description="One or more natural-language questions to answer after build.",
-        examples=[["What information is stored for each customer?",
-                   "How are products and orders related?"]],
+        examples=[
+            [
+                "What information is stored for each customer?",
+                "How are products and orders related?",
+            ]
+        ],
     )
     clear_graph: bool = Field(default=True)
     lazy_extraction: bool = Field(default=False)

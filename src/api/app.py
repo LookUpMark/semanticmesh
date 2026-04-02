@@ -1,4 +1,5 @@
 """FastAPI application — mounts both the E2E Demo and Ablation Studies APIs."""
+
 from __future__ import annotations
 
 from fastapi import FastAPI

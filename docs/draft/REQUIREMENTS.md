@@ -1,9 +1,10 @@
 # Requirements & User Stories — Multi-Agent Framework for Semantic Discovery & GraphRAG
 
-> **Version:** 1.0 — March 2026
+> **Version:** 2.0 — Updated March 2026
 > **Author:** Marc'Antonio Lopez
-> **Companion document:** [SPECS.md](./SPECS.md)
+> **Companion documents:** [SPECS.md](./SPECS.md), [ABLATION.md](./ABLATION.md), [PROMPTS.md](./PROMPTS.md)
 > **Purpose:** Full implementation requirements. Every story includes acceptance criteria, technical constraints, and enough context to implement without ambiguity.
+> **Status:** All EP-01 through EP-16 are implemented. EP-17 (REST API), EP-18 (Ablation Framework), and EP-19 (Debug Tracing) were added during development.
 
 ---
 
@@ -43,8 +44,8 @@
 
 | Term | Definition |
 |---|---|
-| **SLM** | Small Language Model (`qwen/qwen3-next-80b-a3b-instruct:free` via OpenRouter). Used for constrained JSON extraction only. |
-| **LLM** | Large frontier Language Model (`qwen/qwen3-coder:free` via OpenRouter). Used for reasoning, mapping, Cypher generation. |
+| **SLM** | Small Language Model (e.g. `gpt-5.4-nano` or `qwen/qwen3-next-80b-a3b-instruct:free`). Used for constrained JSON extraction and lightweight tasks. |
+| **LLM** | Large frontier Language Model (e.g. `gpt-5.4` or `qwen/qwen3-coder:free`). Used for reasoning, mapping, Cypher generation. Provider-agnostic via `LLMProtocol`. |
 | **Triplet** | `(subject, predicate, object)` semantic fact extracted from text, augmented with `provenance_text`. |
 | **Entity** | A canonical business concept after Entity Resolution (deduplication + canonicalization). |
 | **Mapping** | A proposed alignment between a `BusinessConcept` (logical) and a `PhysicalTable` (physical). |
@@ -95,25 +96,28 @@ graph LR
     style EP16 fill:#ffe599,stroke:#f6b26b
 ```
 
-| Epic ID | Name | Phase | Priority |
-|---|---|---|---|
-| EP-01 | Infrastructure & Configuration | Month 1 | P0 — Blocker |
-| EP-02 | Document Ingestion & Chunking | Month 1 | P0 |
-| EP-03 | SLM Triplet Extraction | Month 1 | P0 |
-| EP-04 | Agentic Entity Resolution | Month 2 | P0 |
-| EP-05 | DDL Schema Parsing | Month 1 | P0 |
-| EP-05b | LLM Schema Enrichment | Month 2 | P0 |
-| EP-06 | RAG Semantic Mapping | Month 2 | P0 |
-| EP-07 | Mapping Validation & Actor-Critic | Month 3 | P0 |
-| EP-08 | Human-in-the-Loop Breakpoint | Month 3 | P1 |
-| EP-09 | Cypher Generation & Healing | Month 3 | P0 |
-| EP-10 | Knowledge Graph Build (Neo4j) | Month 3 | P0 |
-| EP-11 | Builder LangGraph Orchestration | Month 3 | P0 |
-| EP-12 | Hybrid Retrieval (Query Graph) | Month 4 | P0 |
-| EP-13 | Cross-Encoder Reranking | Month 4 | P0 |
-| EP-14 | Answer Generation & Hallucination Grader | Month 4 | P0 |
-| EP-15 | Query LangGraph Orchestration | Month 4 | P0 |
-| EP-16 | RAGAS Evaluation Pipeline | Month 5 | P1 |
+| Epic ID | Name | Phase | Priority | Status |
+|---|---|---|---|---|
+| EP-01 | Infrastructure & Configuration | Month 1 | P0 — Blocker | Done |
+| EP-02 | Document Ingestion & Chunking | Month 1 | P0 | Done |
+| EP-03 | SLM Triplet Extraction | Month 1 | P0 | Done |
+| EP-04 | Agentic Entity Resolution | Month 2 | P0 | Done |
+| EP-05 | DDL Schema Parsing | Month 1 | P0 | Done |
+| EP-05b | LLM Schema Enrichment | Month 2 | P0 | Done |
+| EP-06 | RAG Semantic Mapping | Month 2 | P0 | Done |
+| EP-07 | Mapping Validation & Actor-Critic | Month 3 | P0 | Done |
+| EP-08 | Human-in-the-Loop Breakpoint | Month 3 | P1 | Done |
+| EP-09 | Cypher Generation & Healing | Month 3 | P0 | Done |
+| EP-10 | Knowledge Graph Build (Neo4j) | Month 3 | P0 | Done |
+| EP-11 | Builder LangGraph Orchestration | Month 3 | P0 | Done |
+| EP-12 | Hybrid Retrieval (Query Graph) | Month 4 | P0 | Done |
+| EP-13 | Cross-Encoder Reranking | Month 4 | P0 | Done |
+| EP-14 | Answer Generation & Hallucination Grader | Month 4 | P0 | Done |
+| EP-15 | Query LangGraph Orchestration | Month 4 | P0 | Done |
+| EP-16 | RAGAS Evaluation Pipeline | Month 5 | P1 | Done |
+| EP-17 | REST API (FastAPI) | Month 5 | P1 | Done |
+| EP-18 | Ablation Framework | Month 5 | P1 | Done |
+| EP-19 | Debug Tracing | Month 5 | P2 | Done |
 
 ---
 
@@ -301,51 +305,73 @@ Bootstrap the project: environment, dependencies, settings management, logging, 
 - `.env.example` documents every variable with a comment and a safe placeholder value
 - Settings are a singleton (module-level `settings = Settings()`)
 
-**Required settings:**
+**Required settings (current implementation — see `src/config/settings.py` for full list):**
 
 ```python
 class Settings(BaseSettings):
     # Neo4j
-    neo4j_uri: str                        # bolt://localhost:7687
-    neo4j_user: str                       # neo4j
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_user: str = "neo4j"
     neo4j_password: SecretStr
 
-    # LLM (OpenRouter Free Tier)
-    openrouter_api_key: SecretStr
-    llm_model_reasoning: str              # "qwen/qwen3-coder:free"
-    llm_model_extraction: str             # "qwen/qwen3-next-80b-a3b-instruct:free"
-    llm_temperature_extraction: float = 0.0
-    llm_temperature_generation: float = 0.3
-    max_llm_retries: int = 3
+    # LLM Configuration (provider-agnostic via auto-detection)
+    openrouter_api_key: SecretStr | None = None
+    openai_api_key: SecretStr | None = None
+    anthropic_api_key: SecretStr | None = None
+    lmstudio_base_url: str = "http://localhost:1234/v1"
+
+    llm_model_reasoning: str              # e.g. "gpt-5.4" or "openai/gpt-5.4"
+    llm_model_extraction: str             # e.g. "gpt-5.4-nano"
+    llm_model_midtier: str                # e.g. "gpt-5.4-mini"
+    llm_model_lightweight: str            # e.g. "gpt-5.4-nano"
+    llm_model_temperature_extraction: float = 0.0
+    llm_model_temperature_generation: float = 0.3
+    llm_max_tokens_extraction: int = 8192
+    llm_max_tokens_reasoning: int = 16384
 
     # Embeddings & Reranking
     embedding_model: str = "BAAI/bge-m3"
-    reranker_model: str = "BAAI/bge-reranker-large"
-    reranker_top_k: int = 5
+    reranker_model: str = "BAAI/bge-reranker-v2-m3"
+    reranker_top_k: int = 10
 
     # Entity Resolution
-    er_blocking_top_k: int = 10          # K-NN candidates before LLM judge
-    er_similarity_threshold: float = 0.85
+    er_blocking_top_k: int = 10
+    er_similarity_threshold: float = 0.75
 
     # Confidence & Loops
-    confidence_threshold: float = 0.90   # below this → HITL
-    max_reflection_attempts: int = 3     # max Actor-Critic retries
+    confidence_threshold: float = 0.90
+    max_reflection_attempts: int = 3
     max_cypher_healing_attempts: int = 3
     max_hallucination_retries: int = 3
 
     # Chunking
-    chunk_size: int = 512
-    chunk_overlap: int = 64
+    chunk_size: int = 256
+    chunk_overlap: int = 32
 
     # Retrieval
     retrieval_vector_top_k: int = 20
     retrieval_bm25_top_k: int = 10
-    retrieval_graph_depth: int = 2       # graph traversal hops
+    retrieval_graph_depth: int = 2
+    retrieval_mode: str = "hybrid"          # "hybrid" | "vector" | "bm25"
 
-    # Few-Shot
-    few_shot_cypher_examples: int = 5
+    # Ablation Flags
+    enable_schema_enrichment: bool = True
+    enable_cypher_healing: bool = True
+    enable_critic_validation: bool = True
+    enable_reranker: bool = True
+    enable_hallucination_grader: bool = True
+    enable_retrieval_quality_gate: bool = True
+    enable_grader_consistency_validator: bool = True
+    enable_spacy_heuristics: bool = True
+    enable_lazy_expansion: bool = True
+    use_lazy_extraction: bool = False
 
-    model_config = SettingsConfigDict(env_file=".env", secrets_dir="/run/secrets")
+    # Debug Tracing
+    enable_debug_trace: bool = False
+    trace_output_dir: str = "traces"
+
+    # Logging
+    log_level: str = "INFO"
 ```
 
 ---

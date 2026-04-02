@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from src.generation.nodes.generation_nodes import (
-    _node_answer_generation,
-    _compose_generation_chunks,
-)
 from src.generation.nodes.expansion_nodes import _node_context_distillation
+from src.generation.nodes.generation_nodes import (
+    _compose_generation_chunks,
+    _node_answer_generation,
+)
 from src.generation.query_graph import (
     _node_finalise,
-    _node_retrieve,  # Renamed from _node_hybrid_retrieval
     _node_rerank,  # Renamed from _node_reranking
     _node_retrieval_quality_gate,
+    _node_retrieve,  # Renamed from _node_hybrid_retrieval
 )
 from src.generation.routing import (
     _route_after_grader,

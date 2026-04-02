@@ -77,7 +77,7 @@ class AppConfig:
     few_shot_cypher_examples: int = 5
 
     # ── Ablation Flags ─────────────────────────────────────────────────────────
-    enable_schema_enrichment: bool = False
+    enable_schema_enrichment: bool = True
     retrieval_mode: str = "hybrid"
     enable_cypher_healing: bool = True
     enable_critic_validation: bool = True
