@@ -311,11 +311,11 @@ def get_graph_stats() -> GraphStatsResponse:
         node_total = "MATCH (n) RETURN count(n) AS total_nodes"
 
         with Neo4jClient() as client:
-            row = client.query(counts_query)[0]
-            total_nodes = client.query(node_total)[0]["total_nodes"]
-            total_rels = client.query(rel_query)[0]["total_relationships"]
-            mentions = client.query(rel_mentions)[0]["n"]
-            maps_to = client.query(rel_maps)[0]["n"]
+            row = client.execute_cypher(counts_query)[0]
+            total_nodes = client.execute_cypher(node_total)[0]["total_nodes"]
+            total_rels = client.execute_cypher(rel_query)[0]["total_relationships"]
+            mentions = client.execute_cypher(rel_mentions)[0]["n"]
+            maps_to = client.execute_cypher(rel_maps)[0]["n"]
 
         return GraphStatsResponse(
             business_concepts=int(row.get("business_concepts", 0) or 0),
