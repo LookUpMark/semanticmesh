@@ -222,10 +222,10 @@ def get_build_status(job_id: str) -> BuildResultResponse:
 async def post_build_upload(
     doc_files: list[UploadFile] = File(..., description="Documentation files"),
     ddl_files: list[UploadFile] = File(..., description="DDL SQL files"),
+    background_tasks: BackgroundTasks,
     clear_graph: bool = True,
     study_id: str = "demo",
     lazy_extraction: bool = False,
-    background_tasks: BackgroundTasks,
 ) -> BuildResultResponse:
     """Upload files and trigger async build. Returns job_id for polling."""
     try:
@@ -261,11 +261,11 @@ async def post_pipeline_upload(
     doc_files: list[UploadFile] = File(..., description="Documentation files"),
     ddl_files: list[UploadFile] = File(..., description="DDL SQL files"),
     questions: list[str] = Field(..., description="Questions to answer (JSON array as form field)"),
+    background_tasks: BackgroundTasks,
     clear_graph: bool = True,
     lazy_extraction: bool = False,
     run_ragas: bool = False,
     study_id: str = "demo",
-    background_tasks: BackgroundTasks,
 ) -> PipelineJobResponse:
     """Upload files + questions and trigger async E2E pipeline. Returns job_id for polling."""
     try:
