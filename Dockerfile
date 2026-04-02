@@ -24,6 +24,11 @@ FROM python:3.12-slim AS app
 
 WORKDIR /app
 
+# Disable output buffering (logs appear immediately in `docker logs`)
+# and prevent .pyc files from being written into the image layer
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
 # Runtime-only system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \

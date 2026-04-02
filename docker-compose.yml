@@ -8,7 +8,7 @@
 services:
   # ── Neo4j Graph Database ──────────────────────────────────────────────────
   neo4j:
-    image: neo4j:5
+    image: neo4j:5.26
     container_name: thesis-neo4j
     environment:
       NEO4J_AUTH: "${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-thesis_password}"
@@ -55,6 +55,7 @@ services:
       LLM_MAX_TOKENS_EXTRACTION: "${LLM_MAX_TOKENS_EXTRACTION:-8192}"
       # Offline mode for HuggingFace models (pre-downloaded in image)
       HF_HOME: "/app/.cache/huggingface"
+      HF_HUB_DISABLE_PROGRESS_BARS: "1"
       LOG_LEVEL: "${LOG_LEVEL:-INFO}"
     ports:
       - "${API_PORT:-8000}:8000"
