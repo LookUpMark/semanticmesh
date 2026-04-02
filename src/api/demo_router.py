@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
+from pydantic import Field
 
 from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running
 from src.api.models import (
     BuildRequest,
+    BuildRequestWithUpload,
     BuildResultResponse,
     GraphStatsResponse,
     PipelineJobResponse,
     PipelineRequest,
+    PipelineRequestWithUpload,
     PipelineResultResponse,
     QueryRequest,
     QueryResponse,
@@ -30,6 +34,21 @@ _ROOT = Path(__file__).parent.parent.parent  # repo root
 def _to_abs(path: str) -> str:
     p = Path(path)
     return str(p if p.is_absolute() else _ROOT / p)
+
+
+async def _save_uploads(files: list[UploadFile]) -> list[str]:
+    """Save uploaded files to temp directory and return their absolute paths."""
+    temp_dir = Path(tempfile.gettempdir()) / "thesis_uploads"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    
+    paths = []
+    for file in files:
+        temp_file = temp_dir / file.filename
+        content = await file.read()
+        temp_file.write_bytes(content)
+        paths.append(str(temp_file))
+    
+    return paths
 
 
 def _query_result_to_response(result: dict[str, Any]) -> QueryResponse:
@@ -187,6 +206,89 @@ def get_build_status(job_id: str) -> BuildResultResponse:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
     builder = (job.get("result") or {}).get("builder")
     return _build_state_to_response(job_id, job["status"], job.get("error"), builder)
+
+
+@router.post(
+    "/build/upload",
+    response_model=BuildResultResponse,
+    summary="Build KG from uploaded documentation and DDL files",
+    description=(
+        "Upload documentation (PDF, MD, TXT) and SQL DDL files directly. "
+        "Files are saved temporarily and processed like the path-based /build endpoint. "
+        "Returns `job_id` — poll GET /demo/build/{job_id} for results. "
+        "Useful for AWS and cloud deployments."
+    ),
+)
+async def post_build_upload(
+    doc_files: list[UploadFile] = File(..., description="Documentation files"),
+    ddl_files: list[UploadFile] = File(..., description="DDL SQL files"),
+    clear_graph: bool = True,
+    study_id: str = "demo",
+    lazy_extraction: bool = False,
+    background_tasks: BackgroundTasks,
+) -> BuildResultResponse:
+    """Upload files and trigger async build. Returns job_id for polling."""
+    try:
+        doc_paths = await _save_uploads(doc_files)
+        ddl_paths = await _save_uploads(ddl_files)
+        
+        req = BuildRequest(
+            doc_paths=doc_paths,
+            ddl_paths=ddl_paths,
+            clear_graph=clear_graph,
+            study_id=study_id,
+            lazy_extraction=lazy_extraction,
+        )
+        
+        job_id = create_job(meta={"type": "build", "study_id": study_id})
+        background_tasks.add_task(_run_build_task, job_id, req)
+        return BuildResultResponse(job_id=job_id, status="queued")  # type: ignore[arg-type]
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"Upload failed: {exc}") from exc
+
+
+@router.post(
+    "/pipeline/upload",
+    response_model=PipelineJobResponse,
+    summary="Run full E2E pipeline from uploaded files",
+    description=(
+        "Upload docs + DDL + questions, then run build + query. "
+        "Returns `job_id` — poll GET /demo/pipeline/{job_id} for results. "
+        "Best for AWS and production deployments."
+    ),
+)
+async def post_pipeline_upload(
+    doc_files: list[UploadFile] = File(..., description="Documentation files"),
+    ddl_files: list[UploadFile] = File(..., description="DDL SQL files"),
+    questions: list[str] = Field(..., description="Questions to answer (JSON array as form field)"),
+    clear_graph: bool = True,
+    lazy_extraction: bool = False,
+    run_ragas: bool = False,
+    study_id: str = "demo",
+    background_tasks: BackgroundTasks,
+) -> PipelineJobResponse:
+    """Upload files + questions and trigger async E2E pipeline. Returns job_id for polling."""
+    try:
+        doc_paths = await _save_uploads(doc_files)
+        ddl_paths = await _save_uploads(ddl_files)
+        
+        req = PipelineRequest(
+            doc_paths=doc_paths,
+            ddl_paths=ddl_paths,
+            questions=questions,
+            clear_graph=clear_graph,
+            lazy_extraction=lazy_extraction,
+            run_ragas=run_ragas,
+            study_id=study_id,
+        )
+        
+        job_id = create_job(
+            meta={"type": "pipeline", "study_id": study_id, "num_questions": len(questions)},
+        )
+        background_tasks.add_task(_run_pipeline_task, job_id, req)
+        return PipelineJobResponse(job_id=job_id, status="queued", num_questions=len(questions))
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"Upload failed: {exc}") from exc
 
 
 @router.post(
