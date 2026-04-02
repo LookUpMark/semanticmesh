@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 from pydantic import Field
 
 from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running
@@ -261,7 +261,7 @@ async def post_pipeline_upload(
     background_tasks: BackgroundTasks,
     doc_files: list[UploadFile] = File(..., description="Documentation files"),
     ddl_files: list[UploadFile] = File(..., description="DDL SQL files"),
-    questions: list[str] = Field(..., description="Questions to answer (JSON array as form field)"),
+    questions: list[str] = Form(..., description="Questions to answer (JSON array as form field)"),
     clear_graph: bool = True,
     lazy_extraction: bool = False,
     run_ragas: bool = False,
