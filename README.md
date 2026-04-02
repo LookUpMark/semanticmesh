@@ -13,6 +13,7 @@ Developed as a Master's thesis project at Politecnico di Torino, March 2026.
 - [Abstract](#abstract)
 - [Architecture](#architecture)
 - [Key Features](#key-features)
+- [Quick Start (Docker)](#quick-start-docker)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Configuration](#configuration)
@@ -132,6 +133,37 @@ Business Docs (PDF/TXT)         DDL Schemas (SQL)
 
 ---
 
+## Quick Start (Docker)
+
+The fastest way to run the entire system is via Docker Compose.
+A single command starts Neo4j, the FastAPI server (Swagger UI), and all required services.
+
+```bash
+# 1. Clone and configure
+git clone <repo-url>
+cd thesis
+cp .env.docker .env
+# Edit .env — add at least one LLM API key (OPENAI_API_KEY, OPENROUTER_API_KEY, etc.)
+
+# 2. Start everything
+docker compose up --build
+```
+
+Once running:
+
+| Service         | URL                          |
+|-----------------|------------------------------|
+| Swagger UI      | http://localhost:8000/docs   |
+| ReDoc           | http://localhost:8000/redoc  |
+| Health check    | http://localhost:8000/health |
+| Neo4j Browser   | http://localhost:7474        |
+
+To stop: `docker compose down`. Data is persisted in Docker volumes (`neo4j_data`, `hf_cache`).
+
+To reset the graph database: `docker compose down -v` (removes volumes).
+
+---
+
 ## Requirements
 
 - **Python** 3.11+
@@ -233,12 +265,6 @@ python -m scripts.serve_api --reload     # Auto-reload on code changes
 ```
 
 Swagger UI at `http://127.0.0.1:8000/docs`.
-
-### Interactive Demo
-
-```bash
-jupyter notebook notebooks/00_interactive_demo.ipynb
-```
 
 ### Neo4j Management
 
