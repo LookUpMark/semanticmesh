@@ -24,6 +24,11 @@ FROM python:3.12-slim AS app
 
 WORKDIR /app
 
+# Disable output buffering (logs appear immediately in `docker logs`)
+# and prevent .pyc files from being written into the image layer
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
 # Runtime-only system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
@@ -46,8 +51,11 @@ RUN pip install --no-cache-dir --no-deps -e .
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Create non-root user
+# Create non-root user; pre-create the HF cache directory owned by appuser.
+# With a bind mount (./data/hf_cache), the host directory is owned by the
+# current user so Docker will not override ownership on mount.
 RUN useradd --create-home --shell /bin/bash appuser \
+    && mkdir -p /app/.cache/huggingface \
     && chown -R appuser:appuser /app
 USER appuser
 

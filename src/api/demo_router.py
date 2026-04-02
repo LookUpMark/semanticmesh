@@ -6,18 +6,15 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
-from pydantic import Field
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 
 from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running
 from src.api.models import (
     BuildRequest,
-    BuildRequestWithUpload,
     BuildResultResponse,
     GraphStatsResponse,
     PipelineJobResponse,
     PipelineRequest,
-    PipelineRequestWithUpload,
     PipelineResultResponse,
     QueryRequest,
     QueryResponse,
@@ -183,7 +180,7 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
     description=(
         "Ingest documentation files and DDL schemas into Neo4j. "
         "Runs triplet extraction, entity resolution, mapping, and Cypher upsert asynchronously. "
-        "Returns a `job_id` — poll GET /demo/build/{job_id} for results."
+        "Returns a `job_id` — poll **GET /demo/build/{job_id}** for results."
     ),
 )
 def post_build(req: BuildRequest, background_tasks: BackgroundTasks) -> BuildResultResponse:
@@ -192,12 +189,49 @@ def post_build(req: BuildRequest, background_tasks: BackgroundTasks) -> BuildRes
     return BuildResultResponse(job_id=job_id, status="queued")  # type: ignore[arg-type]
 
 
+@router.post(
+    "/build/upload",
+    response_model=BuildResultResponse,
+    summary="Start KG build from uploaded files",
+    description=(
+        "Upload documentation (PDF, MD, TXT) and SQL DDL files directly — "
+        "no server-side paths required. "
+        "Files are saved to a temporary directory and processed identically to the path-based endpoint. "
+        "Returns a `job_id` — poll **GET /demo/build/{job_id}** for results."
+    ),
+)
+async def post_build_upload(
+    background_tasks: BackgroundTasks,
+    doc_files: list[UploadFile] = File(..., description="Business documentation files (PDF, MD, TXT)."),
+    ddl_files: list[UploadFile] = File(..., description="DDL SQL files to map onto the ontology."),
+    clear_graph: bool = True,
+    study_id: str = "demo",
+    lazy_extraction: bool = False,
+) -> BuildResultResponse:
+    try:
+        doc_paths = await _save_uploads(doc_files)
+        ddl_paths = await _save_uploads(ddl_files)
+        req = BuildRequest(
+            doc_paths=doc_paths,
+            ddl_paths=ddl_paths,
+            clear_graph=clear_graph,
+            study_id=study_id,
+            lazy_extraction=lazy_extraction,
+        )
+        job_id = create_job(meta={"type": "build", "study_id": study_id})
+        background_tasks.add_task(_run_build_task, job_id, req)
+        return BuildResultResponse(job_id=job_id, status="queued")  # type: ignore[arg-type]
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"Upload error: {exc}") from exc
+
+
 @router.get(
     "/build/{job_id}",
     response_model=BuildResultResponse,
-    summary="Get Knowledge Graph build status",
+    summary="Poll KG build status",
     description=(
-        "Poll the result of a build job. `status` transitions: queued → running → done | failed."
+        "Poll the result of a build job. "
+        "`status` transitions: `queued` → `running` → `done` | `failed`."
     ),
 )
 def get_build_status(job_id: str) -> BuildResultResponse:
@@ -209,95 +243,13 @@ def get_build_status(job_id: str) -> BuildResultResponse:
 
 
 @router.post(
-    "/build/upload",
-    response_model=BuildResultResponse,
-    summary="Build KG from uploaded documentation and DDL files",
-    description=(
-        "Upload documentation (PDF, MD, TXT) and SQL DDL files directly. "
-        "Files are saved temporarily and processed like the path-based /build endpoint. "
-        "Returns `job_id` — poll GET /demo/build/{job_id} for results. "
-        "Useful for AWS and cloud deployments."
-    ),
-)
-async def post_build_upload(
-    doc_files: list[UploadFile] = File(..., description="Documentation files"),
-    ddl_files: list[UploadFile] = File(..., description="DDL SQL files"),
-    clear_graph: bool = True,
-    study_id: str = "demo",
-    lazy_extraction: bool = False,
-    background_tasks: BackgroundTasks,
-) -> BuildResultResponse:
-    """Upload files and trigger async build. Returns job_id for polling."""
-    try:
-        doc_paths = await _save_uploads(doc_files)
-        ddl_paths = await _save_uploads(ddl_files)
-        
-        req = BuildRequest(
-            doc_paths=doc_paths,
-            ddl_paths=ddl_paths,
-            clear_graph=clear_graph,
-            study_id=study_id,
-            lazy_extraction=lazy_extraction,
-        )
-        
-        job_id = create_job(meta={"type": "build", "study_id": study_id})
-        background_tasks.add_task(_run_build_task, job_id, req)
-        return BuildResultResponse(job_id=job_id, status="queued")  # type: ignore[arg-type]
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=400, detail=f"Upload failed: {exc}") from exc
-
-
-@router.post(
-    "/pipeline/upload",
-    response_model=PipelineJobResponse,
-    summary="Run full E2E pipeline from uploaded files",
-    description=(
-        "Upload docs + DDL + questions, then run build + query. "
-        "Returns `job_id` — poll GET /demo/pipeline/{job_id} for results. "
-        "Best for AWS and production deployments."
-    ),
-)
-async def post_pipeline_upload(
-    doc_files: list[UploadFile] = File(..., description="Documentation files"),
-    ddl_files: list[UploadFile] = File(..., description="DDL SQL files"),
-    questions: list[str] = Field(..., description="Questions to answer (JSON array as form field)"),
-    clear_graph: bool = True,
-    lazy_extraction: bool = False,
-    run_ragas: bool = False,
-    study_id: str = "demo",
-    background_tasks: BackgroundTasks,
-) -> PipelineJobResponse:
-    """Upload files + questions and trigger async E2E pipeline. Returns job_id for polling."""
-    try:
-        doc_paths = await _save_uploads(doc_files)
-        ddl_paths = await _save_uploads(ddl_files)
-        
-        req = PipelineRequest(
-            doc_paths=doc_paths,
-            ddl_paths=ddl_paths,
-            questions=questions,
-            clear_graph=clear_graph,
-            lazy_extraction=lazy_extraction,
-            run_ragas=run_ragas,
-            study_id=study_id,
-        )
-        
-        job_id = create_job(
-            meta={"type": "pipeline", "study_id": study_id, "num_questions": len(questions)},
-        )
-        background_tasks.add_task(_run_pipeline_task, job_id, req)
-        return PipelineJobResponse(job_id=job_id, status="queued", num_questions=len(questions))
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=400, detail=f"Upload failed: {exc}") from exc
-
-
-@router.post(
     "/query",
     response_model=QueryResponse,
     summary="Answer a question from the Knowledge Graph",
     description=(
-        "Synchronous endpoint. Runs hybrid retrieval + reranking + LLM generation "
-        "on the currently loaded Neo4j Knowledge Graph and returns an answer."
+        "Synchronous endpoint. Runs hybrid retrieval + cross-encoder reranking + LLM generation "
+        "on the currently loaded Neo4j Knowledge Graph. "
+        "Requires the KG to be built first via **POST /demo/build**."
     ),
 )
 def post_query(req: QueryRequest) -> QueryResponse:
@@ -315,9 +267,9 @@ def post_query(req: QueryRequest) -> QueryResponse:
     response_model=PipelineJobResponse,
     summary="Run complete E2E pipeline (build + query)",
     description=(
-        "Starts a full end-to-end pipeline: builds the Knowledge Graph, "
-        "then answers all provided questions. "
-        "Returns a `job_id` — poll GET /demo/pipeline/{job_id}."
+        "Starts a full end-to-end pipeline: builds the Knowledge Graph from the provided files, "
+        "then answers all provided questions asynchronously. "
+        "Returns a `job_id` — poll **GET /demo/pipeline/{job_id}** for results."
     ),
 )
 def post_pipeline(req: PipelineRequest, background_tasks: BackgroundTasks) -> PipelineJobResponse:
@@ -328,13 +280,54 @@ def post_pipeline(req: PipelineRequest, background_tasks: BackgroundTasks) -> Pi
     return PipelineJobResponse(job_id=job_id, status="queued", num_questions=len(req.questions))
 
 
+@router.post(
+    "/pipeline/upload",
+    response_model=PipelineJobResponse,
+    summary="Run complete E2E pipeline from uploaded files",
+    description=(
+        "Upload docs + DDL files and provide questions as form fields. "
+        "Runs a full build + query pipeline asynchronously. "
+        "Returns a `job_id` — poll **GET /demo/pipeline/{job_id}** for results."
+    ),
+)
+async def post_pipeline_upload(
+    background_tasks: BackgroundTasks,
+    doc_files: list[UploadFile] = File(..., description="Business documentation files (PDF, MD, TXT)."),
+    ddl_files: list[UploadFile] = File(..., description="DDL SQL files to map onto the ontology."),
+    questions: list[str] = Form(..., description="One or more natural-language questions (send multiple 'questions' fields for a list)."),
+    clear_graph: bool = True,
+    lazy_extraction: bool = False,
+    run_ragas: bool = False,
+    study_id: str = "demo",
+) -> PipelineJobResponse:
+    try:
+        doc_paths = await _save_uploads(doc_files)
+        ddl_paths = await _save_uploads(ddl_files)
+        req = PipelineRequest(
+            doc_paths=doc_paths,
+            ddl_paths=ddl_paths,
+            questions=questions,
+            clear_graph=clear_graph,
+            lazy_extraction=lazy_extraction,
+            run_ragas=run_ragas,
+            study_id=study_id,
+        )
+        job_id = create_job(
+            meta={"type": "pipeline", "study_id": study_id, "num_questions": len(questions)},
+        )
+        background_tasks.add_task(_run_pipeline_task, job_id, req)
+        return PipelineJobResponse(job_id=job_id, status="queued", num_questions=len(questions))
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"Upload error: {exc}") from exc
+
+
 @router.get(
     "/pipeline/{job_id}",
     response_model=PipelineResultResponse,
-    summary="Get E2E pipeline status and results",
+    summary="Poll E2E pipeline status and results",
     description=(
-        "Poll a pipeline job. When `status='done'`, "
-        "includes builder metrics and per-question answers."
+        "Poll a pipeline job. "
+        "When `status='done'`, includes builder metrics and per-question answers."
     ),
 )
 def get_pipeline_status(job_id: str) -> PipelineResultResponse:
@@ -370,18 +363,19 @@ def get_pipeline_status(job_id: str) -> PipelineResultResponse:
 
 @router.get(
     "/jobs",
-    response_model=list[PipelineJobResponse],
-    summary="List all demo jobs (build + pipeline)",
-    description="Returns all submitted demo jobs.",
+    summary="List all demo jobs",
+    description="Returns all submitted build and pipeline jobs with their current status.",
 )
-def get_demo_jobs() -> list[PipelineJobResponse]:
+def get_demo_jobs() -> list[dict]:
     jobs = [j for j in list_jobs() if j["meta"].get("type") in {"build", "pipeline"}]
     return [
-        PipelineJobResponse(
-            job_id=j["job_id"],
-            status=j["status"],  # type: ignore[arg-type]
-            num_questions=j["meta"].get("num_questions", 0),
-        )
+        {
+            "job_id": j["job_id"],
+            "type": j["meta"].get("type", ""),
+            "status": j["status"],
+            "study_id": j["meta"].get("study_id", ""),
+            "num_questions": j["meta"].get("num_questions"),
+        }
         for j in jobs
     ]
 
@@ -389,9 +383,9 @@ def get_demo_jobs() -> list[PipelineJobResponse]:
 @router.get(
     "/graph/stats",
     response_model=GraphStatsResponse,
-    summary="Get current Knowledge Graph statistics",
+    summary="Current Knowledge Graph statistics",
     description=(
-        "Synchronous. Queries Neo4j for node and relationship counts "
+        "Queries Neo4j for live node and relationship counts "
         "across all label types: BusinessConcept, PhysicalTable, ParentChunk, Chunk."
     ),
 )
@@ -431,3 +425,4 @@ def get_graph_stats() -> GraphStatsResponse:
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+

@@ -17,11 +17,16 @@ htmlcov
 *.log
 *.bak
 .env
+.env.*
+!.env.docker
 .claude
 .vscode
 .idea
 
 # Large data not needed in container
+data/hf_cache/
+neo4j_data/
+notebooks/e2e/generated/
 notebooks/ablation/ablation_results/
 notebooks/results/
 docs/overleaf/
