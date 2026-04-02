@@ -1,0 +1,606 @@
+{
+  "study_id": "AB-01",
+  "dataset_id": "01_basics_ecommerce",
+  "run_tag": "v5",
+  "timestamp": "2026-03-30T21:15:57.683714+00:00",
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-2026-03-05",
+    "extraction_model": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "vector",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 12,
+    "er_similarity_threshold": 0.75
+  },
+  "builder": {
+    "triplets": 0,
+    "entities": 0,
+    "tables_parsed": 0,
+    "tables_completed": 0
+  },
+  "query": {
+    "total_questions": 15,
+    "grounded_count": 15,
+    "grounded_rate": 1.0,
+    "avg_gt_coverage": 0.6833333333333333,
+    "avg_top_score": 0.1877889304241368,
+    "avg_chunk_count": 5.0,
+    "abstained_count": 0
+  },
+  "per_question": [
+    {
+      "query_id": "Q001",
+      "question": "What information is stored for each customer?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "For each customer, the Customer Master stores the core customer identity attributes: full name, email, region, creation timestamp, and active status. It represents the master record for registered platform customers.",
+      "sources": [
+        "Shipment",
+        "Customer Master",
+        "Sales Order Header",
+        "Order Payment",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Each customer has a unique ID, full name, email address, geographic region code, creation date, and active status. The email must be unique across all customers.",
+      "expected_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.5624168515879584,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q002",
+      "question": "How are products categorized on the platform?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "Products are categorized through a hierarchical product category tree. The retrieved context does not provide further schema details such as the table name, category levels, parent-child columns, or how products link to categories, so only this high-level categorization approach is available.",
+      "sources": [
+        "Shipment",
+        "Customer Master",
+        "Hierarchical product category tree",
+        "Sales Order Header",
+        "Order Payment"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order."
+      ],
+      "expected_answer": "Products belong to categories which can have a parent category, forming a hierarchical tree structure. Each product references exactly one category through its CATEGORY_ID.",
+      "expected_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT",
+        "TB_CATEGORY"
+      ],
+      "covered_sources": [
+        "Product",
+        "Category"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.01155267033522081,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q003",
+      "question": "What is the relationship between customers and sales orders?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "The relationship is that customers are represented by Customer Master, and sales orders are represented by Sales Order Header. The Sales Order Header includes CUSTOMER_ID, which ties each order header to a customer master record.\n\nFrom the context, this means a sales order belongs to a customer via CUSTOMER_ID, with Customer Master holding the core customer identity attributes and Sales Order Header holding the header-level details for each customer sales order, such as order ID, order date, total amount, and status timestamps.\n\nThe context supports the join path at the schema level as Customer Master -> Sales Order Header using CUSTOMER_ID. The exact declared foreign key or cardinality is not stated explicitly, but the linkage through CUSTOMER_ID is.",
+      "sources": [
+        "Shipment",
+        "Sales Order Header",
+        "Order Payment",
+        "Customer Master",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Each sales order is placed by exactly one customer, referenced through the CUST_ID foreign key. A customer can place zero or more orders over time.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.06453547659922156,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q004",
+      "question": "What does an order line item contain?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "The retrieved context does not define an order line item or list any line-item columns.\n\nWhat it does provide is the related distinction that Sales Order Header is the header-level record for each customer sales order, with order ID, customer ID, order date, total amount, and status timestamps, and that this concept is explicitly described as being the header record rather than line items. The context also separately identifies Order Payment as the order-settlement record and Shipment as the logistics-side fulfillment record linked to SALES_ORDER_HDR.\n\nSo, from the available context, I can say that order line items are distinct from the Sales Order Header, but I cannot state what an order line item contains because no line-item table, business concept, or field list is present in the retrieved context.",
+      "sources": [
+        "Shipment",
+        "Sales Order Header",
+        "Order Payment",
+        "Customer Master",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "An order line item specifies a product, the quantity ordered, the unit price at time of purchase, and the calculated extended amount. Each line item belongs to exactly one sales order.",
+      "expected_sources": [
+        "OrderLineItem",
+        "ORDER_LINE_ITEM",
+        "Product",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "Product",
+        "SalesOrder"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.30715015650707383,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q005",
+      "question": "How are payments linked to orders?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "Payments are linked to orders through the Order Payment table\u2019s ORDER_ID. The retrieved context says Order Payment is explicitly scoped to a sales order through ORDER_ID and stores payment method, amount, status, and confirmation time. The corresponding order record is the Sales Order Header, which is the header-level record for each customer sales order and includes the order ID. So, at the schema level, the link is Order Payment.ORDER_ID to the order ID in Sales Order Header.",
+      "sources": [
+        "Shipment",
+        "Order Payment",
+        "Sales Order Header",
+        "Customer Master",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Each payment is associated with exactly one sales order through the ORDER_ID foreign key. Payments track the payment method, amount, status, and confirmation timestamp.",
+      "expected_sources": [
+        "Payment",
+        "PAYMENT",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "Payment",
+        "PAYMENT",
+        "SalesOrder"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.4720597765321218,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q006",
+      "question": "What statuses can an order have?",
+      "query_type": "attribute_lookup",
+      "difficulty": "easy",
+      "answer": "The retrieved context indicates that the Sales Order Header includes status-related timestamps, so an order does have status tracking at the header level. However, the specific order status values are not provided in the context.\n\nRelated status-bearing concepts in the context are:\nThe Sales Order Header, which has status timestamps.\nThe Order Payment, which captures a payment status.\nThe Shipment, which captures a shipment status.\n\nBut the knowledge provided does not enumerate what statuses an order can have.",
+      "sources": [
+        "Shipment",
+        "Sales Order Header",
+        "Order Payment",
+        "Customer Master",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Orders can have one of five statuses defined via CHECK constraint on SALES_ORDER_HDR.STATUS_CODE: PENDING (initial state when order is created), CONFIRMED (payment has been received), SHIPPED (dispatched to customer), DELIVERED (received by customer), or CANCELLED. The business glossary describes the same lifecycle under Sales Order.",
+      "expected_sources": [
+        "SalesOrder",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "SalesOrder"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.23545980614330655,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q007",
+      "question": "Which table stores the product SKU information?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "From the retrieved context, this cannot be determined. The context only identifies tables or concepts for Customer Master, Shipment, Sales Order Header, and Order Payment, plus a business concept for a hierarchical product category tree. It does not mention any table or column for product SKU information, so no supported table name can be given.",
+      "sources": [
+        "Customer Master",
+        "Hierarchical product category tree",
+        "Shipment",
+        "Sales Order Header",
+        "Order Payment"
+      ],
+      "contexts": [
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree",
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order."
+      ],
+      "expected_answer": "The TB_PRODUCT table stores the SKU (Stock Keeping Unit) code for each product, along with product name, category, price, and active status.",
+      "expected_sources": [
+        "Product",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.08555634995141925,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q008",
+      "question": "How can I find all orders placed by a specific customer?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "Use Sales Order Header. The retrieved context says this table is the header-level record for each customer sales order and includes order ID, customer ID, order date, total amount, and status timestamps. So to find all orders placed by a specific customer, filter Sales Order Header by the customer ID for that customer.\n\nIf you need customer-identifying attributes to determine which customer to look up, Customer Master contains full name, email, region, creation timestamp, and active status. However, the retrieved context does not explicitly state the join column between Customer Master and Sales Order Header, so the only fully evidenced trace is that Sales Order Header contains CUSTOMER_ID and represents the orders.",
+      "sources": [
+        "Shipment",
+        "Sales Order Header",
+        "Customer Master",
+        "Order Payment",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Query the SALES_ORDER_HDR table filtering by CUST_ID. Each order has a foreign key reference to CUSTOMER_MASTER.CUST_ID, so joining these tables on CUST_ID will show all orders for a customer along with their details.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.020606476135436008,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q009",
+      "question": "What products were included in a specific order?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "I cannot determine what products were included in a specific order from the retrieved context.\n\nThe context contains schema-level business concepts only, not operational order records. It identifies Sales Order Header as the header record for each customer sales order, with order ID, customer ID, order date, total amount, and status timestamps, and it identifies related concepts such as Order Payment and Shipment through ORDER_ID and the foreign key to SALES_ORDER_HDR. However, there is no retrieved table or concept for order line items, product-in-order details, or a relationship from an order to specific products.\n\nSo, from the available context, I can say that a specific order would be identified at the header level in Sales Order Header, but the products included in that order cannot be traced because no order-item or product mapping structure is present in the retrieved context.",
+      "sources": [
+        "Shipment",
+        "Order Payment",
+        "Sales Order Header",
+        "Customer Master",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Join ORDER_LINE_ITEM with TB_PRODUCT on PRODUCT_ID. For order ORDER_ID, the line items show which products were ordered, in what quantity, and at what price.",
+      "expected_sources": [
+        "SalesOrder",
+        "OrderLineItem",
+        "Product",
+        "SALES_ORDER_HDR",
+        "ORDER_LINE_ITEM",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "SalesOrder",
+        "Product"
+      ],
+      "gt_coverage": 0.3333333333333333,
+      "grounded": true,
+      "top_score": 0.01784873844998899,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q010",
+      "question": "Show me the order hierarchy from customer to line items.",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "From the retrieved context, I can only show the hierarchy partially.\n\nThe known customer-to-order portion is:\n\nCustomer Master \u2192 Sales Order Header\n\nThis is supported by the fact that Customer Master is the master record for registered customers, and Sales Order Header is the header-level record for each customer sales order and includes customer ID. So, at the schema/business-concept level, the order header belongs to a customer through the customer ID on Sales Order Header.\n\nI cannot extend that hierarchy to line items from the provided context, because no line item table, line item concept, or customer/order-to-line-item relationship appears in the retrieved context. The context also does not provide explicit join column names beyond stating that Sales Order Header includes customer ID.\n\nWhat is additionally known is that Sales Order Header connects to other order-level concepts: Order Payment is scoped to a sales order through ORDER_ID, and Shipment has a foreign key to SALES_ORDER_HDR. But those are payment and shipment relationships, not line items.\n\nSo the corrected answer is: the retrieved context supports Customer Master \u2192 Sales Order Header, but it does not contain enough information to show the hierarchy from customer all the way to line items.",
+      "sources": [
+        "Shipment",
+        "Sales Order Header",
+        "Customer Master",
+        "Order Payment",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "The hierarchy is: Customer (CUSTOMER_MASTER) \u2192 SalesOrder (SALES_ORDER_HDR) \u2192 OrderLineItem (ORDER_LINE_ITEM) \u2192 Product (TB_PRODUCT). Each customer has orders, each order has line items, and each line item references a product.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "OrderLineItem",
+        "Product"
+      ],
+      "covered_sources": [
+        "Customer",
+        "SalesOrder",
+        "Product"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.11879340050844574,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q011",
+      "question": "What happens when a payment is confirmed for an order?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "From the retrieved context, when a payment is confirmed for an order, the confirmation is recorded in the Order Payment business concept for that specific sales order via ORDER_ID. That record captures the payment method, amount, status, and confirmation time, so a confirmed payment means the order-level payment record has an updated status and a populated confirmation timestamp.\n\nThe payment is tied to the Sales Order Header through the order identifier, so the confirmation is associated with a particular customer sales order. The context also shows that Shipment is the logistics side of fulfilling an order and links to the sales order header, but it does not state any explicit rule that payment confirmation automatically changes the order header, creates a shipment, or triggers fulfillment. So the part that can be answered is: payment confirmation is stored as an order-scoped payment status with confirmation time; any further business action is not described in the provided context.",
+      "sources": [
+        "Shipment",
+        "Order Payment",
+        "Sales Order Header",
+        "Customer Master",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "When payment is confirmed, the PAYMENT record's STATUS_CODE becomes 'CONFIRMED', the CONFIRMED_AT timestamp is set, and the associated SALES_ORDER_HDR can progress from PENDING to CONFIRMED status.",
+      "expected_sources": [
+        "Payment",
+        "SalesOrder",
+        "PAYMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Payment",
+        "SalesOrder",
+        "PAYMENT"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.3259495159352553,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q012",
+      "question": "How are shipments related to orders and warehouses?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "Shipments are related to orders through the Shipment table\u2019s foreign key to SALES_ORDER_HDR, which indicates that a shipment represents the logistics side of fulfilling a sales order.\n\nFor warehouses, the retrieved context only supports that Shipment includes a warehouse code. It does not mention a Warehouse table or any explicit relationship from Shipment to a warehouse entity, so no stronger warehouse linkage can be stated from the available information.",
+      "sources": [
+        "Shipment",
+        "Sales Order Header",
+        "Order Payment",
+        "Customer Master",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Each shipment is for exactly one sales order (ORDER_ID in SHIPMENT references SALES_ORDER_HDR). The shipment also specifies the source warehouse code and includes tracking information and delivery status.",
+      "expected_sources": [
+        "Shipment",
+        "SalesOrder",
+        "SHIPMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Shipment",
+        "SalesOrder",
+        "SHIPMENT"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.5484921176736594,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q013",
+      "question": "Can a product belong to multiple categories?",
+      "query_type": "negative",
+      "difficulty": "easy",
+      "answer": "The retrieved context does not say whether a product can belong to multiple categories.\n\nIt only mentions the business concept \"Hierarchical product category tree,\" which indicates that categories are organized in a hierarchy, but it does not provide any rule or schema detail about product-to-category assignment cardinality, such as one product to one category or one product to many categories.",
+      "sources": [
+        "Hierarchical product category tree",
+        "Customer Master",
+        "Shipment",
+        "Sales Order Header",
+        "Order Payment"
+      ],
+      "contexts": [
+        "Hierarchical product category tree",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order."
+      ],
+      "expected_answer": "No, each product belongs to exactly one category. The TB_PRODUCT table has a CATEGORY_ID foreign key referencing TB_CATEGORY, which stores a single category value per product.",
+      "expected_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product",
+        "Category"
+      ],
+      "gt_coverage": 0.6666666666666666,
+      "grounded": true,
+      "top_score": 0.009340024385054083,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q014",
+      "question": "Is it possible for a customer to place an order without payment?",
+      "query_type": "negative",
+      "difficulty": "medium",
+      "answer": "The retrieved context does not provide enough information to determine whether a customer can place an order without payment.\n\nWhat is known from the context is that Sales Order Header is the header-level record for each customer sales order and includes order ID, customer ID, order date, total amount, and status timestamps. It also shows that Order Payment is a separate order-scoped record linked through ORDER_ID and stores payment method, amount, status, and confirmation time.\n\nFrom that, we can say the schema/business concepts distinguish an order from its payment record. However, the context does not state any rule about whether a payment record is required at order creation, whether orders can exist before payment, or whether unpaid orders are allowed. So this cannot be determined from the provided knowledge graph.",
+      "sources": [
+        "Shipment",
+        "Order Payment",
+        "Sales Order Header",
+        "Customer Master",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Yes, an order can exist without payment. SALES_ORDER_HDR has STATUS_CODE defaulting to PENDING and PAYMENT_CONFIRMED_AT is nullable (NULL when no payment yet). The PAYMENT table links via ORDER_ID foreign key but nothing prevents an order from existing without a payment row. However, the business glossary states that an order cannot be shipped until payment is confirmed, so orders are created first and require payment confirmation before fulfillment.",
+      "expected_sources": [
+        "SalesOrder",
+        "Payment",
+        "SALES_ORDER_HDR",
+        "PAYMENT"
+      ],
+      "covered_sources": [
+        "SalesOrder",
+        "Payment",
+        "PAYMENT"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.01342825474196852,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q015",
+      "question": "What is the total value of all orders placed by a customer?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "The retrieved context does not provide actual order records or customer-specific values, so the total value of all orders placed by a customer cannot be determined from this knowledge graph.\n\nWhat is known is the schema-level structure: the business concept Sales Order Header is the header-level record for each customer sales order and includes order ID, customer ID, order date, total amount, and status timestamps. The business concept Customer Master stores core customer identity attributes such as full name, email, region, creation timestamp, and active status. Based on that schema, the total value of all orders for a customer would be derived by using Sales Order Header and aggregating its total amount for all rows with the same customer ID, optionally linking to Customer Master through customer ID to identify the customer.\n\nHowever, the context contains only metadata and business concept descriptions, not the underlying transactional data, so no numeric total for any customer can be calculated here.",
+      "sources": [
+        "Shipment",
+        "Sales Order Header",
+        "Customer Master",
+        "Order Payment",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "Sum the TOTAL_AMT column from SALES_ORDER_HDR for all records where CUST_ID matches the customer's ID. This aggregates the monetary value of all orders placed by that customer.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.023644340875922026,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    }
+  ]
+}

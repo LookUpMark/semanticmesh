@@ -1,0 +1,187 @@
+DATA DICTIONARY - Enterprise Database
+Version: 2.1 (incomplete documentation)
+Last Updated: 2024-02-28
+
+==========================================
+CUSTOMERS
+==========================================
+
+Primary Key: customer_id (or is it CustomerID? check with DBA)
+
+| Column Name | Data Type | Constraints | Description |
+|-------------|-----------|-------------|-------------|
+| customer_id | INTEGER | PK | [missing documentation] |
+| CustomerID | INTEGER | ? | Possible duplicate of customer_id |
+| firstName | VARCHAR(50) | ? | Customer's first name |
+| first_name | VARCHAR(50) | ? | [appears to be duplicate] |
+| lastName | VARCHAR(50) | ? | Customer's last name |
+| last_name | VARCHAR(100) | ? | [appears to be duplicate] |
+| email | VARCHAR(255) | ? | Email address |
+| emailAddress | VARCHAR(255) | ? | [possible duplicate] |
+| phone | VARCHAR(20) | ? | Contact phone number |
+| phoneNumber | VARCHAR(20) | ? | [possible duplicate] |
+| created_at | TIMESTAMP | ? | [missing documentation] |
+| CreatedDate | DATETIME | ? | [unclear if different from created_at] |
+| account_status | VARCHAR(20) | ? | [missing values documentation] |
+| status | VARCHAR(20) | ? | [duplicate?] |
+| customer_type | VARCHAR(30) | ? | [missing documentation] |
+| customer_region | VARCHAR(50) | ? | Geographic region |
+
+Notes:
+- Naming convention inconsistency discovered during audit
+- Some columns may be legacy duplicates
+- Check with application team before cleanup
+
+==========================================
+ORDERS
+==========================================
+
+Primary Key: order_id (or OrderID - verify)
+
+| Column Name | Data Type | Constraints | Description |
+|-------------|-----------|-------------|-------------|
+| order_id | INTEGER | PK | Unique order identifier |
+| OrderID | INTEGER | ? | [possible duplicate] |
+| customer_id | INTEGER | FK | References customer (which table?) |
+| CustomerID | INTEGER | FK | [FK reference unclear] |
+| order_date | DATE | ? | Date order was created |
+| OrderDate | DATETIME | ? | [different precision?] |
+| order_status | VARCHAR(25) | ? | See valid values in... [missing reference] |
+| orderAmount | DECIMAL(10,2) | ? | Total order amount |
+| total_amount | DECIMAL(12,2) | ? | [duplicate?] |
+| shippingAmount | DECIMAL(10,2) | ? | Shipping cost |
+| tax_amount | DECIMAL(10,2) | ? | Tax amount |
+| TaxAmount | DECIMAL(10,2) | ? | [duplicate?] |
+| payment_status | VARCHAR(20) | ? | [missing documentation] |
+| payment_method | VARCHAR(30) | ? | [missing documentation] |
+| created_at | TIMESTAMP | ? | [missing documentation] |
+| updated_at | TIMESTAMP | ? | [missing documentation] |
+| notes | TEXT | ? | [missing documentation] |
+| Notes | TEXT | ? | [duplicate?] |
+
+Foreign Keys:
+- customer_id → CUSTOMERS(customer_id or CustomerID?)
+- [missing other FK definitions]
+
+==========================================
+ORDER_ITEMS (or ORDER_DETAILS?)
+==========================================
+
+Primary Key: [undocumented]
+
+| Column Name | Data Type | Constraints | Description |
+|-------------|-----------|-------------|-------------|
+| order_item_id | INTEGER | PK | [missing documentation] |
+| order_id | INTEGER | FK | References ORDERS |
+| product_id | INTEGER | FK | References PRODUCTS (or INVENTORY?) |
+| ProductID | INTEGER | FK | [inconsistent naming] |
+| quantity | INTEGER | ? | [missing validation rules] |
+| unit_price | DECIMAL(10,2) | ? | Price per unit |
+| UnitPrice | DECIMAL(10,2) | ? | [duplicate?] |
+| discount_percent | DECIMAL(5,2) | ? | Discount percentage |
+| discount_amount | DECIMAL(10,2) | ? | Calculated discount |
+| line_total | DECIMAL(12,2) | ? | Line item total |
+| LineTotal | DECIMAL(12,2) | ? | [duplicate?] |
+
+Notes:
+- Table name ambiguity: ORDER_ITEMS vs ORDER_DETAILS
+- FK to PRODUCTS or INVENTORY table not verified
+- Calculation logic for line_total not documented
+
+==========================================
+PRODUCTS (or INVENTORY_ITEMS?)
+==========================================
+
+Primary Key: [conflicting documentation]
+
+| Column Name | Data Type | Constraints | Description |
+|-------------|-----------|-------------|-------------|
+| product_id | INTEGER | PK | Unique product identifier |
+| ProductID | INTEGER | ? | [possible duplicate] |
+| product_name | VARCHAR(255) | ? | Product name |
+| ProductName | VARCHAR(255) | ? | [duplicate?] |
+| product_sku | VARCHAR(50) | ? | SKU code |
+| sku | VARCHAR(50) | UNIQUE? | [duplicate?] |
+| product_category | VARCHAR(100) | ? | Category classification |
+| category | VARCHAR(100) | ? | [duplicate?] |
+| unit_price | DECIMAL(10,2) | ? | Standard selling price |
+| current_price | DECIMAL(10,2) | ? | [different from unit_price?] |
+| cost_price | DECIMAL(10,2) | ? | [missing documentation] |
+| stock_quantity | INTEGER | ? | [missing documentation] |
+| quantity_in_stock | INTEGER | ? | [duplicate?] |
+| reorder_level | INTEGER | ? | [missing documentation] |
+| is_active | BOOLEAN | ? | [missing documentation] |
+| active_flag | CHAR(1) | ? | [duplicate?] |
+| created_at | TIMESTAMP | ? | [missing documentation] |
+| updated_at | TIMESTAMP | ? | [missing documentation] |
+| product_description | TEXT | ? | Product description |
+
+==========================================
+PAYMENTS
+==========================================
+
+Primary Key: payment_id (unverified)
+
+| Column Name | Data Type | Constraints | Description |
+|-------------|-----------|-------------|-------------|
+| payment_id | INTEGER | PK | [missing documentation] |
+| PaymentID | INTEGER | ? | [possible duplicate] |
+| order_id | INTEGER | FK | References ORDERS |
+| customer_id | INTEGER | FK | References CUSTOMERS |
+| payment_date | DATETIME | ? | [missing documentation] |
+| payment_amount | DECIMAL(10,2) | ? | [missing documentation] |
+| payment_method | VARCHAR(30) | ? | [missing valid values] |
+| payment_status | VARCHAR(20) | ? | [missing valid values] |
+| transaction_id | VARCHAR(100) | UNIQUE? | External transaction reference |
+| TransactionID | VARCHAR(100) | ? | [duplicate?] |
+| response_code | VARCHAR(50) | ? | Payment gateway response |
+| response_message | TEXT | ? | [missing documentation] |
+| created_at | TIMESTAMP | ? | [missing documentation] |
+
+Notes:
+- Multiple FK references (order_id, customer_id) - unclear relationship
+- payment_method valid values not documented (credit_card, debit, paypal?)
+- payment_status workflow not defined
+
+==========================================
+MISSING DOCUMENTATION
+==========================================
+
+The following constraints are not documented:
+- NOT NULL constraints (assumed, not verified)
+- CHECK constraints (unknown)
+- UNIQUE constraints (partially documented)
+- DEFAULT values (not documented)
+- TRIGGERs (may exist, not documented)
+- INDEX definitions (not documented)
+
+==========================================
+KNOWN ISSUES
+==========================================
+
+1. Naming convention: Mix of snake_case and camelCase
+2. Duplicate columns: Multiple naming conventions for same data
+3. FK references: Ambiguous or undocumented
+4. Data types: Inconsistent (VARCHAR vs TEXT, TIMESTAMP vs DATETIME)
+5. Missing constraints: NOT NULL not specified
+6. Documentation: Many descriptions incomplete
+7. Table naming: ORDER_ITEMS vs ORDER_PRODUCTS vs ORDER_DETAILS
+8. Status values: No enum documentation
+9. Relationships: Cardinality not clearly defined
+10. Circular definitions: Some concepts reference each other
+
+==========================================
+PENDING CLARIFICATION
+==========================================
+
+Questions for business team:
+- Difference between Customer, Client, Account Holder?
+- Order status workflow complete?
+- Payment method types?
+- Product vs Item vs Merchandise?
+- When is Invoice generated vs Payment processed?
+- Can one Order have multiple Payments?
+- Can one Payment cover multiple Orders?
+- Inventory tracking logic?
+
+Last review: Pending (scheduled for Q2 2024)

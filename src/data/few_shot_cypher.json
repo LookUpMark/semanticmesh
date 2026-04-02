@@ -1,0 +1,68 @@
+[
+  {
+    "id": "ex-001",
+    "description": "Customer master table mapping",
+    "ddl_snippet": "CREATE TABLE CUSTOMER_MASTER (CUST_ID INT PRIMARY KEY, FULL_NAME VARCHAR(200), EMAIL VARCHAR(150), REGION_CODE VARCHAR(10))",
+    "concept_name": "Customer",
+    "concept_definition": "An individual or organisation that has registered and made at least one purchase.",
+    "mapping_confidence": 0.97,
+    "cypher": "MERGE (bc:BusinessConcept {name: $concept_name})\nON CREATE SET bc.definition = $definition, bc.provenance_text = $provenance_text, bc.source_doc = $source_doc, bc.synonyms = $synonyms, bc.confidence_score = $confidence_score\nON MATCH SET bc.confidence_score = $confidence_score\n\nMERGE (pt:PhysicalTable {table_name: $table_name})\nON CREATE SET pt.schema_name = $schema_name, pt.column_names = $column_names, pt.column_types = $column_types, pt.ddl_source = $ddl_source\n\nMERGE (bc)-[:MAPPED_TO {confidence: $mapping_confidence, validated_by: $validated_by, created_at: datetime()}]->(pt)",
+    "validated_by": "human_hitl",
+    "tags": ["customer", "master_table", "identity"]
+  },
+  {
+    "id": "ex-002",
+    "description": "Product catalogue table mapping",
+    "ddl_snippet": "CREATE TABLE TB_PRODUCT (PRODUCT_ID INT PRIMARY KEY, SKU VARCHAR(50) UNIQUE, PRODUCT_NAME VARCHAR(300), UNIT_PRICE DECIMAL(10,2))",
+    "concept_name": "Product",
+    "concept_definition": "A tangible or digital item offered for sale, uniquely identified by SKU.",
+    "mapping_confidence": 0.95,
+    "cypher": "MERGE (bc:BusinessConcept {name: $concept_name})\nON CREATE SET bc.definition = $definition, bc.provenance_text = $provenance_text, bc.source_doc = $source_doc, bc.synonyms = $synonyms, bc.confidence_score = $confidence_score\nON MATCH SET bc.confidence_score = $confidence_score\n\nMERGE (pt:PhysicalTable {table_name: $table_name})\nON CREATE SET pt.schema_name = $schema_name, pt.column_names = $column_names, pt.column_types = $column_types, pt.ddl_source = $ddl_source\n\nMERGE (bc)-[:MAPPED_TO {confidence: $mapping_confidence, validated_by: $validated_by, created_at: datetime()}]->(pt)",
+    "validated_by": "auto_high_confidence",
+    "tags": ["product", "catalogue", "sku"]
+  },
+  {
+    "id": "ex-003",
+    "description": "Sales order header mapping with STATUS constraint",
+    "ddl_snippet": "CREATE TABLE SALES_ORDER_HDR (ORDER_ID BIGINT PRIMARY KEY, CUST_ID INT NOT NULL, ORDER_DATE DATE, STATUS_CODE VARCHAR(20))",
+    "concept_name": "SalesOrder",
+    "concept_definition": "A formal transactional document recording an agreement to supply Products to a Customer.",
+    "mapping_confidence": 0.93,
+    "cypher": "MERGE (bc:BusinessConcept {name: $concept_name})\nON CREATE SET bc.definition = $definition, bc.provenance_text = $provenance_text, bc.source_doc = $source_doc, bc.synonyms = $synonyms, bc.confidence_score = $confidence_score\nON MATCH SET bc.confidence_score = $confidence_score\n\nMERGE (pt:PhysicalTable {table_name: $table_name})\nON CREATE SET pt.schema_name = $schema_name, pt.column_names = $column_names, pt.column_types = $column_types, pt.ddl_source = $ddl_source\n\nMERGE (bc)-[:MAPPED_TO {confidence: $mapping_confidence, validated_by: $validated_by, created_at: datetime()}]->(pt)",
+    "validated_by": "auto_high_confidence",
+    "tags": ["order", "transaction", "fk_customer"]
+  },
+  {
+    "id": "ex-004",
+    "description": "Junction/line item table with two FK parents",
+    "ddl_snippet": "CREATE TABLE ORDER_LINE_ITEM (LINE_ID INT PRIMARY KEY, ORDER_ID BIGINT NOT NULL, PRODUCT_ID INT NOT NULL, QUANTITY INT, UNIT_PRICE DECIMAL(10,2))",
+    "concept_name": "OrderLineItem",
+    "concept_definition": "A single line within a SalesOrder specifying a Product, quantity, and agreed unit price.",
+    "mapping_confidence": 0.91,
+    "cypher": "MERGE (bc:BusinessConcept {name: $concept_name})\nON CREATE SET bc.definition = $definition, bc.provenance_text = $provenance_text, bc.source_doc = $source_doc, bc.synonyms = $synonyms, bc.confidence_score = $confidence_score\nON MATCH SET bc.confidence_score = $confidence_score\n\nMERGE (pt:PhysicalTable {table_name: $table_name})\nON CREATE SET pt.schema_name = $schema_name, pt.column_names = $column_names, pt.column_types = $column_types, pt.ddl_source = $ddl_source\n\nMERGE (bc)-[:MAPPED_TO {confidence: $mapping_confidence, validated_by: $validated_by, created_at: datetime()}]->(pt)",
+    "validated_by": "human_hitl",
+    "tags": ["line_item", "junction_table", "two_fk"]
+  },
+  {
+    "id": "ex-005",
+    "description": "System table — no mapping (null concept)",
+    "ddl_snippet": "CREATE TABLE SYS_AUDIT_LOG (LOG_ID BIGINT PRIMARY KEY AUTO_INCREMENT, ACTION_TYPE VARCHAR(50), TABLE_NAME VARCHAR(100), CHANGED_BY VARCHAR(100), CHANGED_AT DATETIME)",
+    "concept_name": null,
+    "concept_definition": null,
+    "mapping_confidence": 0.0,
+    "cypher": "-- No business concept mapping for system table SYS_AUDIT_LOG\nMERGE (pt:PhysicalTable {table_name: $table_name})\nON CREATE SET pt.schema_name = $schema_name, pt.column_names = $column_names, pt.column_types = $column_types, pt.ddl_source = $ddl_source, pt.unmapped = true, pt.unmapped_reason = 'System/technical table with no business concept counterpart'",
+    "validated_by": "auto_high_confidence",
+    "tags": ["system_table", "audit", "no_mapping"]
+  },
+  {
+    "id": "ex-006",
+    "description": "Self-referential table (category hierarchy)",
+    "ddl_snippet": "CREATE TABLE TB_CATEGORY (CATEGORY_ID INT PRIMARY KEY, CATEGORY_NAME VARCHAR(200), PARENT_CATEGORY_ID INT REFERENCES TB_CATEGORY(CATEGORY_ID))",
+    "concept_name": "Category",
+    "concept_definition": "A hierarchical classification grouping related Products. Categories can have parent Categories.",
+    "mapping_confidence": 0.88,
+    "cypher": "MERGE (bc:BusinessConcept {name: $concept_name})\nON CREATE SET bc.definition = $definition, bc.provenance_text = $provenance_text, bc.source_doc = $source_doc, bc.synonyms = $synonyms, bc.confidence_score = $confidence_score\nON MATCH SET bc.confidence_score = $confidence_score\n\nMERGE (pt:PhysicalTable {table_name: $table_name})\nON CREATE SET pt.schema_name = $schema_name, pt.column_names = $column_names, pt.column_types = $column_types, pt.ddl_source = $ddl_source\n\nMERGE (bc)-[:MAPPED_TO {confidence: $mapping_confidence, validated_by: $validated_by, created_at: datetime()}]->(pt)\n\nWITH pt\nMERGE (pt)-[:JOINS_WITH {join_column: 'PARENT_CATEGORY_ID', type: 'SELF_REF_FK'}]->(pt)",
+    "validated_by": "auto_high_confidence",
+    "tags": ["category", "hierarchy", "self_referential"]
+  }
+]

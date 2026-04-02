@@ -1,0 +1,4 @@
+{
+  "description": "Mock LLM response for triplet extraction — valid JSON.",
+  "triplets": []
+}

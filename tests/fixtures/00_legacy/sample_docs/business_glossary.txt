@@ -1,0 +1,255 @@
+BUSINESS GLOSSARY — E-COMMERCE DOMAIN
+==========================================
+
+This document defines the core business concepts and their relationships in the e-commerce platform. These concepts represent the shared understanding between business stakeholders and technical teams.
+
+────────────────────────────────────────────────────────────
+CUSTOMER
+────────────────────────────────────────────────────────────
+Definition: A Customer is any individual or legal entity that has registered an account on the platform and has made at least one purchase.
+
+Key Attributes:
+- Customers are identified by a unique Customer ID
+- Customers must provide a valid email address during registration
+- Customers may have one or more associated delivery addresses
+- Each customer has a geographic region code for tax purposes
+- Customers can be marked as active or inactive
+
+Business Rules:
+- A customer must place at least one order to remain in the active database
+- A customer may have multiple addresses but only one primary address
+- Customer data is retained for 7 years after last purchase for compliance
+
+Synonyms: client, buyer, account holder, user, registered user
+Related Concepts: CustomerAddress, SalesOrder
+
+────────────────────────────────────────────────────────────
+PRODUCT
+────────────────────────────────────────────────────────────
+Definition: A Product is a tangible or digital item offered for sale on the platform.
+
+Key Attributes:
+- Each Product is uniquely identified by a SKU (Stock Keeping Unit) code
+- Products have a human-readable product name
+- Products have a defined unit price in the company's base currency
+- Products have an active/inactive status flag
+- Each product belongs to exactly one Category
+- Products maintain inventory levels across multiple warehouse locations
+
+Business Rules:
+- A product must belong to a valid category before it can be sold
+- Product prices can change daily based on market conditions
+- Inactive products cannot be ordered but remain in the catalog for historical orders
+- Digital products have infinite inventory
+
+Synonyms: item, article, goods, merchandise, SKU
+Related Concepts: Category, Inventory, OrderLineItem
+
+────────────────────────────────────────────────────────────
+SALES ORDER
+────────────────────────────────────────────────────────────
+Definition: A Sales Order is a formal transactional document that records the agreement between the platform and a Customer to supply one or more Products at specified quantities and prices, on a specific date.
+
+Key Attributes:
+- Each Sales Order has a unique Order ID
+- Orders reference exactly one Customer who placed the order
+- Orders have an order date when the transaction was initiated
+- Orders have a total monetary value calculated as the sum of all line items
+- Orders have a status: PENDING, CONFIRMED, SHIPPED, DELIVERED, or CANCELLED
+- Orders must contain at least one Order Line Item
+
+Business Rules:
+- An order cannot be shipped until payment is confirmed
+- An order can only be cancelled if it has not yet been shipped
+- Order status changes are logged for audit purposes
+- Orders under €100 require manager approval for certain payment methods
+
+Synonyms: order, purchase order, transaction, customer order, sales transaction
+Related Concepts: Customer, OrderLineItem, Invoice
+
+────────────────────────────────────────────────────────────
+ORDER LINE ITEM
+────────────────────────────────────────────────────────────
+Definition: An Order Line Item is a single line within a Sales Order that specifies a particular Product, the quantity ordered, and the agreed unit price at time of purchase.
+
+Key Attributes:
+- Each line item has a unique line identifier
+- Line items reference exactly one Product
+- Line items specify the quantity of units ordered
+- Line items record the unit price at the time of order (not current price)
+- The extended amount equals quantity multiplied by unit price
+
+Business Rules:
+- A Sales Order must contain at least one line item
+- Line items cannot be modified after order confirmation
+- The unit price on the line item is fixed and does not change with future price updates
+- Line items for discontinued products show the product name at time of order
+
+Synonyms: line item, order detail, order row, sales line, order line
+Related Concepts: SalesOrder, Product, InvoiceLine
+
+────────────────────────────────────────────────────────────
+CATEGORY
+────────────────────────────────────────────────────────────
+Definition: A Category is a hierarchical classification grouping related Products.
+
+Key Attributes:
+- Each Category has a unique identifier
+- Categories have human-readable names
+- Categories can have parent Categories, forming a tree structure
+- Each Product belongs to exactly one leaf Category
+- Categories can be marked as visible or hidden in the storefront
+
+Business Rules:
+- The category tree has a maximum depth of 5 levels
+- Root categories represent major product divisions (e.g., Electronics, Clothing)
+- A category cannot be deleted if it contains products
+- Category changes affect product navigation and search filters
+
+Example Category Hierarchy:
+- Electronics (root)
+  - Computers
+    - Laptops
+    - Desktops
+  - Phones
+    - Smartphones
+    - Accessories
+
+Synonyms: product category, product type, product group, classification
+Related Concepts: Product
+
+────────────────────────────────────────────────────────────
+CUSTOMER ADDRESS
+────────────────────────────────────────────────────────────
+Definition: A Customer Address is a postal or geographic address associated with a Customer, used for delivery or billing purposes.
+
+Key Attributes:
+- Each address has a unique identifier
+- Addresses are associated with exactly one Customer
+- Addresses have a type: DELIVERY or BILLING
+- Addresses contain street, city, postal code, and country information
+- One address per customer can be marked as primary
+
+Business Rules:
+- A customer may have multiple addresses
+- Delivery and billing addresses can be different
+- International orders require valid country codes
+- Postal codes are validated against country-specific formats
+
+Synonyms: delivery address, shipping address, billing address, postal address
+Related Concepts: Customer, SalesOrder
+
+────────────────────────────────────────────────────────────
+INVENTORY
+────────────────────────────────────────────────────────────
+Definition: Inventory refers to the quantity of a Product currently available in a specific warehouse location.
+
+Key Attributes:
+- Each inventory record references one Product
+- Each inventory record references one Warehouse location
+- Inventory records track the quantity on hand
+- Inventory levels are timestamped with last update time
+
+Business Rules:
+- Inventory levels are updated in real-time with each Sales Order confirmation
+- Inventory levels increase when products are restocked
+- Low inventory triggers automatic reorder notifications
+- Products with zero inventory cannot be ordered
+- Warehouse transfers update inventory at both locations
+
+Business Importance:
+- Accurate inventory prevents overselling
+- Inventory data drives purchasing decisions
+- Inventory levels affect product availability on the website
+
+Synonyms: stock, available quantity, stock level, on-hand quantity
+Related Concepts: Product, Warehouse, SalesOrder
+
+────────────────────────────────────────────────────────────
+WAREHOUSE
+────────────────────────────────────────────────────────────
+Definition: A Warehouse is a physical storage location where Products are stored and from which they are shipped to Customers.
+
+Key Attributes:
+- Each warehouse has a unique code
+- Warehouses have a physical address
+- Warehouses are located in specific geographic regions
+- Warehouses have storage capacity limits
+
+Business Rules:
+- Each warehouse maintains inventory for multiple products
+- Orders are fulfilled from the warehouse closest to the customer
+- Warehouse transfers are used to balance inventory across locations
+- Warehouse capacity is monitored to prevent overstocking
+
+Synonyms: distribution center, fulfillment center, storage location, depot
+Related Concepts: Inventory, Product, CustomerAddress
+
+────────────────────────────────────────────────────────────
+KEY RELATIONSHIP SUMMARY
+────────────────────────────────────────────────────────────
+
+Customer Relationships:
+- A Customer places zero or more Sales Orders
+- A Customer has one or more Customer Addresses
+- A Customer is associated with exactly one geographic Region
+
+Product Relationships:
+- A Product belongs to exactly one Category
+- A Product has Inventory records in one or more Warehouses
+- A Product appears on zero or more Order Line Items
+
+Sales Order Relationships:
+- A Sales Order is placed by exactly one Customer
+- A Sales Order contains one or more Order Line Items
+- A Sales Order is delivered to exactly one Customer Address
+
+Order Line Item Relationships:
+- An Order Line Item is part of exactly one Sales Order
+- An Order Line Item references exactly one Product
+- An Order Line Item has a quantity and unit price
+
+Category Relationships:
+- A Category contains zero or more Products
+- A Category may have one parent Category
+- A Category may have zero or more child Categories
+
+Inventory Relationships:
+- An Inventory record tracks one Product in one Warehouse
+- A Product has Inventory records in one or more Warehouses
+- A Warehouse has Inventory records for zero or more Products
+
+Address Relationships:
+- A Customer Address belongs to exactly one Customer
+- A Customer has one or more Customer Addresses
+
+────────────────────────────────────────────────────────────
+BUSINESS PROCESSES
+────────────────────────────────────────────────────────────
+
+Order Fulfillment Process:
+1. Customer places an order through the web storefront
+2. System validates product availability in inventory
+3. Payment is processed and confirmed
+4. Order status changes from PENDING to CONFIRMED
+5. Warehouse receives picking instructions
+6. Products are picked and packed
+7. Order status changes to SHIPPED
+8. Customer receives delivery confirmation
+9. Order status changes to DELIVERED
+
+Inventory Management Process:
+1. Products are received from suppliers at warehouses
+2. Inventory records are updated to reflect new stock
+3. When orders are placed, inventory is reserved
+4. Upon order confirmation, inventory is decremented
+5. Low inventory triggers automatic reorder
+6. Warehouse transfers balance inventory across locations
+
+Customer Management Process:
+1. New customers register through the website
+2. Customer provides email and creates password
+3. Customer may add delivery and billing addresses
+4. Customer places first order to become active
+5. Customer activity is tracked for marketing purposes
+6. Inactive customers are identified for re-engagement campaigns

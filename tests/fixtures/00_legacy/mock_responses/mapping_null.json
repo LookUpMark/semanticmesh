@@ -1,0 +1,8 @@
+{
+  "description": "Mock mapping response — null mapping (system table).",
+  "table_name": "",
+  "mapped_concept": null,
+  "confidence": 0.1,
+  "reasoning": "",
+  "alternative_concepts": []
+}

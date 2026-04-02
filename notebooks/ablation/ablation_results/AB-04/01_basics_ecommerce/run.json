@@ -1,0 +1,607 @@
+{
+  "study_id": "AB-04",
+  "dataset_id": "01_basics_ecommerce",
+  "run_tag": "v5",
+  "timestamp": "2026-03-30T21:25:39.426861+00:00",
+  "config": {
+    "extraction_mode": "LLM (gpt-5.4-nano-2026-03-17)",
+    "embedding_model": "BAAI/bge-m3",
+    "reasoning_model": "gpt-5.4-2026-03-05",
+    "extraction_model": "gpt-5.4-nano-2026-03-17",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "reranker_top_k": 5,
+    "er_similarity_threshold": 0.75
+  },
+  "builder": {
+    "triplets": 0,
+    "entities": 0,
+    "tables_parsed": 0,
+    "tables_completed": 0
+  },
+  "query": {
+    "total_questions": 15,
+    "grounded_count": 15,
+    "grounded_rate": 1.0,
+    "avg_gt_coverage": 0.7277777777777777,
+    "avg_top_score": 0.4197462667782076,
+    "avg_chunk_count": 5.0,
+    "abstained_count": 0
+  },
+  "per_question": [
+    {
+      "query_id": "Q001",
+      "question": "What information is stored for each customer?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "For each customer, the Customer Master record is stored in the CUSTOMER_MASTER table. It contains:\n\nCUST_ID, the unique customer identifier; FULL_NAME, the customer\u2019s full name; EMAIL, the unique email address used for login; REGION_CODE, the customer\u2019s geographic region for tax; CREATED_AT, the account creation timestamp; and IS_ACTIVE, which indicates whether the customer can place orders.\n\nThe context describes this table as the master record for all registered platform customers and the core customer identity store.",
+      "sources": [
+        "Customer Master\u2192CUSTOMER_MASTER",
+        "Sales Order Header\u2192SALES_ORDER_HDR",
+        "parent_chunk_data_dictionary.txt_3",
+        "Customer Master",
+        "Sales Order Header"
+      ],
+      "contexts": [
+        "Business concept 'Customer Master' \u2014 The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "Business concept 'Sales Order Header' \u2014 The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | INT | Unique customer identifier | NO | | FULL_NAME | VARCHAR(200) | Customer's full name | NO | | EMAIL | VARCHAR(150) | Unique email address for login | NO | | REGION_CODE | VARCHAR(10) | Geographic region for tax | YES | | CREATED_AT | DATETIME | Account creation timestamp | NO | | IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO | **Business Concept Mapping**: Customer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 TB_PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **Description**: Master catalogue of all products available f",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records."
+      ],
+      "expected_answer": "Each customer has a unique ID, full name, email address, geographic region code, creation date, and active status. The email must be unique across all customers.",
+      "expected_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "covered_sources": [
+        "Customer",
+        "CUSTOMER_MASTER"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.5625370159587918,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q002",
+      "question": "How are products categorized on the platform?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "Products are categorized through a hierarchical product category tree. In the physical schema, this is implemented in the TB_PRODUCT table, which includes the CATEGORY_ID column. Based on the context, TB_PRODUCT is the master catalogue of products, so each product record is assigned a category through CATEGORY_ID. The retrieved context does not provide the separate category table or the detailed hierarchy structure beyond that.",
+      "sources": [
+        "parent_chunk_business_glossary.txt_0",
+        "parent_chunk_data_dictionary.txt_3",
+        "parent_chunk_business_glossary.txt_1",
+        "Customer Master",
+        "Hierarchical product category tree\u2192TB_PRODUCT"
+      ],
+      "contexts": [
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments. **Key Attributes**: - Unique Customer ID - Valid email address (required for login) - One or more delivery/billing addresses - Geographic region for tax calculation - Active/inactive status **Business Rules**: - Must place at least one order to remain active - Can have multiple addresses but only one primary per type - Data retained for 7 years after last purchase **Synonyms**: client, buyer, account holder, user **Related Concepts**: CustomerAddress, SalesOrder **Examples**: - A new user registers and places their first order - An existing customer updates their shi",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | INT | Unique customer identifier | NO | | FULL_NAME | VARCHAR(200) | Customer's full name | NO | | EMAIL | VARCHAR(150) | Unique email address for login | NO | | REGION_CODE | VARCHAR(10) | Geographic region for tax | YES | | CREATED_AT | DATETIME | Account creation timestamp | NO | | IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO | **Business Concept Mapping**: Customer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 TB_PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **Description**: Master catalogue of all products available f",
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "Business concept 'Hierarchical product category tree' is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE)."
+      ],
+      "expected_answer": "Products belong to categories which can have a parent category, forming a hierarchical tree structure. Each product references exactly one category through its CATEGORY_ID.",
+      "expected_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT",
+        "TB_CATEGORY"
+      ],
+      "covered_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 0.75,
+      "grounded": true,
+      "top_score": 0.1589561227143433,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q003",
+      "question": "What is the relationship between customers and sales orders?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "The retrieved context explicitly states that a Sales Order is placed by exactly one Customer. In the schema, this relationship is implemented by CUSTOMER_MASTER.CUST_ID linking to SALES_ORDER_HDR.CUST_ID.\n\nThe business glossary also connects these concepts by stating that customers place orders and listing SalesOrder as a related concept of Customer.\n\nWhat the context does not explicitly state is the reverse multiplicity from Customer to Sales Order, so I cannot claim from the provided material alone whether a customer has exactly one or multiple sales orders.",
+      "sources": [
+        "parent_chunk_business_glossary.txt_2",
+        "parent_chunk_business_glossary.txt_0",
+        "parent_chunk_business_glossary.txt_1",
+        "Sales Order Header",
+        "parent_chunk_data_dictionary.txt_5"
+      ],
+      "contexts": [
+        "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes from exactly one Warehouse - A Shipment goes to exactly one Customer Address",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments. **Key Attributes**: - Unique Customer ID - Valid email address (required for login) - One or more delivery/billing addresses - Geographic region for tax calculation - Active/inactive status **Business Rules**: - Must place at least one order to remain active - Can have multiple addresses but only one primary per type - Data retained for 7 years after last purchase **Synonyms**: client, buyer, account holder, user **Related Concepts**: CustomerAddress, SalesOrder **Examples**: - A new user registers and places their first order - An existing customer updates their shi",
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records.",
+        "CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT"
+      ],
+      "expected_answer": "Each sales order is placed by exactly one customer, referenced through the CUST_ID foreign key. A customer can place zero or more orders over time.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "SalesOrder"
+      ],
+      "gt_coverage": 0.25,
+      "grounded": true,
+      "top_score": 0.9846936454393053,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q004",
+      "question": "What does an order line item contain?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "An order line item breaks an order into an individual product purchase. From the business definition, it contains a unique line identifier, a reference to exactly one product, the quantity ordered, the unit price at the time of ordering, and the extended amount calculated as quantity \u00d7 unit price.\n\nIn the schema, this is implemented by the ORDER_LINE_ITEM table with columns LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, and LINE_AMT. It belongs to exactly one sales order through ORDER_ID -> SALES_ORDER_HDR.ORDER_ID, and it references exactly one product through PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID. The unit price is historical and fixed at order time, so it does not change if the product price changes later.",
+      "sources": [
+        "parent_chunk_business_glossary.txt_1",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "item\u2192ORDER_LINE_ITEM",
+        "ORDER_LINE_ITEM\u2192SALES_ORDER_HDR",
+        "parent_chunk_business_glossary.txt_2"
+      ],
+      "contexts": [
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Business concept 'item' is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes from exactly one Warehouse - A Shipment goes to exactly one Customer Address"
+      ],
+      "expected_answer": "An order line item specifies a product, the quantity ordered, the unit price at time of purchase, and the calculated extended amount. Each line item belongs to exactly one sales order.",
+      "expected_sources": [
+        "OrderLineItem",
+        "ORDER_LINE_ITEM",
+        "Product",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "OrderLineItem",
+        "ORDER_LINE_ITEM",
+        "Product",
+        "SalesOrder"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.8738621049648146,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q005",
+      "question": "How are payments linked to orders?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "Payments are linked to orders through the `PAYMENT` table\u2019s `ORDER_ID`, which is a foreign key to `SALES_ORDER_HDR.ORDER_ID`. In schema terms, you join `PAYMENT.ORDER_ID = SALES_ORDER_HDR.ORDER_ID`.\n\nThe context also defines the business relationship this way: a Sales Order has one or more Payments, and a Payment is for exactly one Sales Order. The `PAYMENT` table is explicitly scoped to a sales order through `ORDER_ID` and stores order-payment details such as payment method, amount, status, and confirmation time. The order itself is represented at the header level in `SALES_ORDER_HDR`.",
+      "sources": [
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "parent_chunk_business_glossary.txt_1",
+        "parent_chunk_business_glossary.txt_2",
+        "Order Payment",
+        "Sales Order Header"
+      ],
+      "contexts": [
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes from exactly one Warehouse - A Shipment goes to exactly one Customer Address",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records."
+      ],
+      "expected_answer": "Each payment is associated with exactly one sales order through the ORDER_ID foreign key. Payments track the payment method, amount, status, and confirmation timestamp.",
+      "expected_sources": [
+        "Payment",
+        "PAYMENT",
+        "SalesOrder"
+      ],
+      "covered_sources": [
+        "Payment",
+        "PAYMENT",
+        "SalesOrder"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.9231777955470523,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q006",
+      "question": "What statuses can an order have?",
+      "query_type": "attribute_lookup",
+      "difficulty": "easy",
+      "answer": "The retrieved context shows that order status is stored on the Sales Order Header business concept, implemented by table SALES_ORDER_HDR, in column STATUS_CODE. It also includes lifecycle-related timestamps PAYMENT_CONFIRMED_AT and DELIVERED_AT.\n\nHowever, the context does not provide the actual allowed order status values or a status code list, so I cannot say exactly which statuses an order can have from the knowledge provided.",
+      "sources": [
+        "Shipment",
+        "Sales Order Header\u2192SALES_ORDER_HDR",
+        "parent_chunk_business_glossary.txt_0",
+        "parent_chunk_business_glossary.txt_1",
+        "Sales Order Header"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Business concept 'Sales Order Header' \u2014 The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments. **Key Attributes**: - Unique Customer ID - Valid email address (required for login) - One or more delivery/billing addresses - Geographic region for tax calculation - Active/inactive status **Business Rules**: - Must place at least one order to remain active - Can have multiple addresses but only one primary per type - Data retained for 7 years after last purchase **Synonyms**: client, buyer, account holder, user **Related Concepts**: CustomerAddress, SalesOrder **Examples**: - A new user registers and places their first order - An existing customer updates their shi",
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records."
+      ],
+      "expected_answer": "Orders can have one of five statuses defined via CHECK constraint on SALES_ORDER_HDR.STATUS_CODE: PENDING (initial state when order is created), CONFIRMED (payment has been received), SHIPPED (dispatched to customer), DELIVERED (received by customer), or CANCELLED. The business glossary describes the same lifecycle under Sales Order.",
+      "expected_sources": [
+        "SalesOrder",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "SalesOrder",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.235284052258966,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q007",
+      "question": "Which table stores the product SKU information?",
+      "query_type": "direct_mapping",
+      "difficulty": "easy",
+      "answer": "The product SKU is stored in the TB_PRODUCT table, in the SKU column.",
+      "sources": [
+        "Hierarchical product category tree\u2192TB_PRODUCT",
+        "item\u2192ORDER_LINE_ITEM",
+        "parent_chunk_data_dictionary.txt_3",
+        "Customer Master",
+        "parent_chunk_data_dictionary.txt_5"
+      ],
+      "contexts": [
+        "Business concept 'Hierarchical product category tree' is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE).",
+        "Business concept 'item' is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | INT | Unique customer identifier | NO | | FULL_NAME | VARCHAR(200) | Customer's full name | NO | | EMAIL | VARCHAR(150) | Unique email address for login | NO | | REGION_CODE | VARCHAR(10) | Geographic region for tax | YES | | CREATED_AT | DATETIME | Account creation timestamp | NO | | IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO | **Business Concept Mapping**: Customer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 TB_PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **Description**: Master catalogue of all products available f",
+        "Customer Master: The table stores core customer identity attributes such as full name, email, region, creation timestamp, and active status, which aligns directly with the master record for registered platform customers. The table name and columns strongly indicate a customer master entity rather than an order, product, or other concept.",
+        "CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT"
+      ],
+      "expected_answer": "The TB_PRODUCT table stores the SKU (Stock Keeping Unit) code for each product, along with product name, category, price, and active status.",
+      "expected_sources": [
+        "Product",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.5995437562251882,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q008",
+      "question": "How can I find all orders placed by a specific customer?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "Use the Sales Order Header table, SALES_ORDER_HDR, because it is the header-level record for each customer sales order and includes ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, and CREATED_AT.\n\nThe key join path is CUSTOMER_MASTER.CUST_ID = SALES_ORDER_HDR.CUST_ID. This is supported by both the schema and the relationship rule that a Sales Order is placed by exactly one Customer.\n\nSo, to find all orders for a specific customer, you would:\n\n1. Identify the customer in CUSTOMER_MASTER using CUST_ID, or by a customer attribute such as EMAIL or FULL_NAME if that is how you know the customer.\n2. Join CUSTOMER_MASTER to SALES_ORDER_HDR on CUST_ID.\n3. Filter for that customer\u2019s CUST_ID.\n4. Return the order-level columns from SALES_ORDER_HDR, such as ORDER_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, and CREATED_AT.\n\nIf you already know the customer\u2019s CUST_ID, you can simply filter SALES_ORDER_HDR by CUST_ID without needing the join.",
+      "sources": [
+        "parent_chunk_data_dictionary.txt_3",
+        "parent_chunk_business_glossary.txt_2",
+        "Sales Order Header\u2192SALES_ORDER_HDR",
+        "parent_chunk_business_glossary.txt_0",
+        "Sales Order Header"
+      ],
+      "contexts": [
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | INT | Unique customer identifier | NO | | FULL_NAME | VARCHAR(200) | Customer's full name | NO | | EMAIL | VARCHAR(150) | Unique email address for login | NO | | REGION_CODE | VARCHAR(10) | Geographic region for tax | YES | | CREATED_AT | DATETIME | Account creation timestamp | NO | | IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO | **Business Concept Mapping**: Customer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 TB_PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **Description**: Master catalogue of all products available f",
+        "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes from exactly one Warehouse - A Shipment goes to exactly one Customer Address",
+        "Business concept 'Sales Order Header' \u2014 The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments. **Key Attributes**: - Unique Customer ID - Valid email address (required for login) - One or more delivery/billing addresses - Geographic region for tax calculation - Active/inactive status **Business Rules**: - Must place at least one order to remain active - Can have multiple addresses but only one primary per type - Data retained for 7 years after last purchase **Synonyms**: client, buyer, account holder, user **Related Concepts**: CustomerAddress, SalesOrder **Examples**: - A new user registers and places their first order - An existing customer updates their shi",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records."
+      ],
+      "expected_answer": "Query the SALES_ORDER_HDR table filtering by CUST_ID. Each order has a foreign key reference to CUSTOMER_MASTER.CUST_ID, so joining these tables on CUST_ID will show all orders for a customer along with their details.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "SalesOrder",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.14282864911055923,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q009",
+      "question": "What products were included in a specific order?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "The retrieved context does not contain actual order records, a specific ORDER_ID, or product values for any individual order, so it cannot determine which products were included in a specific order.\n\nWhat is known from the context is the schema-level relationship used to answer that question: SALES_ORDER_HDR.ORDER_ID links to ORDER_LINE_ITEM.ORDER_ID, and each ORDER_LINE_ITEM row identifies a product through PRODUCT_ID, which is a foreign key to TB_PRODUCT.PRODUCT_ID. ORDER_LINE_ITEM represents the individual product lines within a sales order and stores QUANTITY, UNIT_PRICE, and LINE_AMT. The context also states that a sales order must contain at least one line item.\n\nSo, from the knowledge graph, the relevant join path is SALES_ORDER_HDR.ORDER_ID \u2192 ORDER_LINE_ITEM.ORDER_ID \u2192 TB_PRODUCT.PRODUCT_ID. However, because the retrieved context provides only metadata and business definitions, not operational data, the actual products in a specific order cannot be determined.",
+      "sources": [
+        "parent_chunk_data_dictionary.txt_4",
+        "parent_chunk_business_glossary.txt_1",
+        "ORDER_LINE_ITEM\u2192TB_PRODUCT",
+        "Order Payment",
+        "parent_chunk_data_dictionary.txt_5"
+      ],
+      "contexts": [
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | | ORDER_ID | BIGINT | Parent order | NO | | PRODUCT_ID | INT | Product ordered | NO | | QUANTITY | INT | Number of units | NO | | UNIT_PRICE | DECIMAL(10,2) | Price at time of order | NO | | LINE_AMT | DECIMAL(12,2) | Extended amount (qty \u00d7 price) | NO | **Foreign Keys**: - ORDER_ID \u2192 SALES_ORDER_HDR(ORDER_ID) - PRODU",
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order.",
+        "CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT"
+      ],
+      "expected_answer": "Join ORDER_LINE_ITEM with TB_PRODUCT on PRODUCT_ID. For order ORDER_ID, the line items show which products were ordered, in what quantity, and at what price.",
+      "expected_sources": [
+        "SalesOrder",
+        "OrderLineItem",
+        "Product",
+        "SALES_ORDER_HDR",
+        "ORDER_LINE_ITEM",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "OrderLineItem",
+        "Product",
+        "ORDER_LINE_ITEM",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 0.6666666666666666,
+      "grounded": true,
+      "top_score": 0.07821887082692507,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q010",
+      "question": "Show me the order hierarchy from customer to line items.",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "The order hierarchy from customer to line items is:\n\nCustomer maps to CUSTOMER_MASTER. A customer is linked to sales orders through CUSTOMER_MASTER.CUST_ID \u2192 SALES_ORDER_HDR.CUST_ID, so each Sales Order in SALES_ORDER_HDR is placed by exactly one Customer.\n\nSalesOrder maps to SALES_ORDER_HDR. This is the header-level order record, with order ID, customer ID, order date, total amount, and status timestamps.\n\nOrderLineItem maps to ORDER_LINE_ITEM. Line items are linked to the order through SALES_ORDER_HDR.ORDER_ID \u2192 ORDER_LINE_ITEM.ORDER_ID. A Sales Order has one or more Order Line Items, and each Order Line Item is part of exactly one Sales Order.\n\nWithin ORDER_LINE_ITEM, the key columns are LINE_ID as the primary key, ORDER_ID as the parent order reference, PRODUCT_ID as the product ordered, QUANTITY, UNIT_PRICE, and LINE_AMT. The business meaning is that line items break an order into individual product purchases, with the unit price fixed at the time of ordering and LINE_AMT representing quantity \u00d7 unit price.\n\nSo the schema path is CUSTOMER_MASTER \u2192 SALES_ORDER_HDR \u2192 ORDER_LINE_ITEM, joined by CUST_ID and then ORDER_ID. If you want to continue one step further, each ORDER_LINE_ITEM also references exactly one product through ORDER_LINE_ITEM.PRODUCT_ID \u2192 TB_PRODUCT.PRODUCT_ID.",
+      "sources": [
+        "parent_chunk_business_glossary.txt_2",
+        "parent_chunk_data_dictionary.txt_4",
+        "parent_chunk_business_glossary.txt_1",
+        "parent_chunk_data_dictionary.txt_5",
+        "Sales Order Header"
+      ],
+      "contexts": [
+        "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes from exactly one Warehouse - A Shipment goes to exactly one Customer Address",
+        "**Foreign Keys**: - CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 ORDER_LINE_ITEM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | | ORDER_ID | BIGINT | Parent order | NO | | PRODUCT_ID | INT | Product ordered | NO | | QUANTITY | INT | Number of units | NO | | UNIT_PRICE | DECIMAL(10,2) | Price at time of order | NO | | LINE_AMT | DECIMAL(12,2) | Extended amount (qty \u00d7 price) | NO | **Foreign Keys**: - ORDER_ID \u2192 SALES_ORDER_HDR(ORDER_ID) - PRODU",
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records."
+      ],
+      "expected_answer": "The hierarchy is: Customer (CUSTOMER_MASTER) \u2192 SalesOrder (SALES_ORDER_HDR) \u2192 OrderLineItem (ORDER_LINE_ITEM) \u2192 Product (TB_PRODUCT). Each customer has orders, each order has line items, and each line item references a product.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "OrderLineItem",
+        "Product"
+      ],
+      "covered_sources": [
+        "SalesOrder"
+      ],
+      "gt_coverage": 0.25,
+      "grounded": true,
+      "top_score": 0.3719347138931014,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q011",
+      "question": "What happens when a payment is confirmed for an order?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "From the retrieved context, a confirmed payment is represented at the schema level in two places tied to the same order.\n\nThe payment itself is stored in the PAYMENT table as an Order Payment record, which is linked to the order by PAYMENT.ORDER_ID -> SALES_ORDER_HDR.ORDER_ID. That payment record captures the payment method, amount, status, and a confirmation timestamp in PAYMENT.CONFIRMED_AT.\n\nAt the order-header level, the related SALES_ORDER_HDR record also has a PAYMENT_CONFIRMED_AT column, indicating the order can store the time its payment was confirmed.\n\nSo, when a payment is confirmed for an order, the available context shows that the order-specific payment record can carry a confirmed status and confirmation time, and the corresponding sales order header has a field to record that payment confirmation timestamp. The context does not specify any further business action after confirmation, such as shipment release, status transitions, or downstream processing.",
+      "sources": [
+        "parent_chunk_business_glossary.txt_1",
+        "Order Payment\u2192PAYMENT",
+        "Sales Order Header\u2192SALES_ORDER_HDR",
+        "PAYMENT\u2192SALES_ORDER_HDR",
+        "Order Payment"
+      ],
+      "contexts": [
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Business concept 'Order Payment' \u2014 The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Business concept 'Sales Order Header' \u2014 The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Order Payment: The table is explicitly scoped to a sales order through ORDER_ID and captures payment method, amount, status, and confirmation time, which matches an order-settlement record. This is more specific than a generic payment or funds-transfer concept because the structure is centered on paying a particular order."
+      ],
+      "expected_answer": "When payment is confirmed, the PAYMENT record's STATUS_CODE becomes 'CONFIRMED', the CONFIRMED_AT timestamp is set, and the associated SALES_ORDER_HDR can progress from PENDING to CONFIRMED status.",
+      "expected_sources": [
+        "Payment",
+        "SalesOrder",
+        "PAYMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Payment",
+        "SalesOrder",
+        "PAYMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.3520903859453057,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q012",
+      "question": "How are shipments related to orders and warehouses?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "Shipments are tied to orders and warehouses in two ways.\n\nA Shipment is for exactly one Sales Order, and a Sales Order has one or more Shipments. In the physical schema, the business concept Shipment is implemented by the SHIPMENT table, where ORDER_ID links the shipment to the order. The retrieved context also states that the foreign key to SALES_ORDER_HDR shows Shipment represents the logistics side of fulfilling an order.\n\nA Shipment also comes from exactly one Warehouse. In the SHIPMENT table, this is represented by WAREHOUSE_CODE. The same table includes SHIPMENT_ID, SHIPPED_AT, TRACKING_NUMBER, and STATUS_CODE, which further identify and track the shipment.\n\nThe context also adds that a Shipment goes to exactly one Customer Address.",
+      "sources": [
+        "Shipment",
+        "Shipment\u2192SHIPMENT",
+        "parent_chunk_business_glossary.txt_2",
+        "parent_chunk_business_glossary.txt_0",
+        "parent_chunk_business_glossary.txt_1"
+      ],
+      "contexts": [
+        "Shipment: The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order.",
+        "Business concept 'Shipment' \u2014 The table name, primary key, shipped timestamp, tracking number, warehouse code, and shipment status all align directly with the business concept of a shipment. The foreign key to SALES_ORDER_HDR also indicates it represents the logistics side of fulfilling an order. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes from exactly one Warehouse - A Shipment goes to exactly one Customer Address",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments. **Key Attributes**: - Unique Customer ID - Valid email address (required for login) - One or more delivery/billing addresses - Geographic region for tax calculation - Active/inactive status **Business Rules**: - Must place at least one order to remain active - Can have multiple addresses but only one primary per type - Data retained for 7 years after last purchase **Synonyms**: client, buyer, account holder, user **Related Concepts**: CustomerAddress, SalesOrder **Examples**: - A new user registers and places their first order - An existing customer updates their shi",
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+      ],
+      "expected_answer": "Each shipment is for exactly one sales order (ORDER_ID in SHIPMENT references SALES_ORDER_HDR). The shipment also specifies the source warehouse code and includes tracking information and delivery status.",
+      "expected_sources": [
+        "Shipment",
+        "SalesOrder",
+        "SHIPMENT",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "Shipment",
+        "SHIPMENT"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.5487944050579585,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q013",
+      "question": "Can a product belong to multiple categories?",
+      "query_type": "negative",
+      "difficulty": "easy",
+      "answer": "Based on the retrieved context, a product is modeled as belonging to a single category, not multiple categories. The physical table TB_PRODUCT has one CATEGORY_ID column, and that column is a foreign key to TB_CATEGORY.CATEGORY_ID. The context does not show any separate mapping or junction table that would allow one product to be assigned to multiple categories.\n\nThe category structure itself is hierarchical, because TB_CATEGORY has a self-reference through PARENT_CATEGORY_ID, so a product can belong to one category within that category tree.",
+      "sources": [
+        "parent_chunk_business_glossary.txt_0",
+        "TB_PRODUCT\u2192TB_CATEGORY",
+        "Hierarchical product category tree\u2192TB_PRODUCT",
+        "parent_chunk_data_dictionary.txt_5",
+        "Hierarchical product category tree"
+      ],
+      "contexts": [
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments. **Key Attributes**: - Unique Customer ID - Valid email address (required for login) - One or more delivery/billing addresses - Geographic region for tax calculation - Active/inactive status **Business Rules**: - Must place at least one order to remain active - Can have multiple addresses but only one primary per type - Data retained for 7 years after last purchase **Synonyms**: client, buyer, account holder, user **Related Concepts**: CustomerAddress, SalesOrder **Examples**: - A new user registers and places their first order - An existing customer updates their shi",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "Business concept 'Hierarchical product category tree' is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE).",
+        "CUSTOMER_MASTER.CUST_ID \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID \u251c\u2500\u2500 PAYMENT.ORDER_ID \u2514\u2500\u2500 SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 Customer \u2192 CUSTOMER_MASTER Product \u2192 TB_PRODUCT SalesOrder \u2192 SALES_ORDER_HDR OrderLineItem \u2192 ORDER_LINE_ITEM Category \u2192 TB_CATEGORY Payment \u2192 PAYMENT Shipment \u2192 SHIPMENT",
+        "Hierarchical product category tree"
+      ],
+      "expected_answer": "No, each product belongs to exactly one category. The TB_PRODUCT table has a CATEGORY_ID foreign key referencing TB_CATEGORY, which stores a single category value per product.",
+      "expected_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT"
+      ],
+      "covered_sources": [
+        "Product",
+        "Category",
+        "TB_PRODUCT"
+      ],
+      "gt_coverage": 1.0,
+      "grounded": true,
+      "top_score": 0.3612773864465049,
+      "chunk_count": 5,
+      "gate_decision": "proceed",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q014",
+      "question": "Is it possible for a customer to place an order without payment?",
+      "query_type": "negative",
+      "difficulty": "medium",
+      "answer": "Based on the retrieved context, no: the model does not allow a Sales Order without payment.\n\nThe relevant facts are that a Sales Order is placed by exactly one Customer, and a Sales Order has one or more Payments. The Payment relationship also states that a Payment is for exactly one Sales Order. Together, this means any order a customer places is modeled as having at least one associated payment.\n\nAt the schema level, this is also reflected by the order header table SALES_ORDER_HDR, which includes ORDER_ID, CUST_ID, and PAYMENT_CONFIRMED_AT, indicating payment status is tracked on the order. The retrieved context does not provide operational records, so it cannot show whether any specific customer actually has an unpaid order; it only shows that the schema/business rules define Sales Orders as having one or more Payments.",
+      "sources": [
+        "parent_chunk_data_dictionary.txt_3",
+        "parent_chunk_business_glossary.txt_1",
+        "parent_chunk_business_glossary.txt_2",
+        "parent_chunk_business_glossary.txt_0",
+        "Sales Order Header\u2192SALES_ORDER_HDR"
+      ],
+      "contexts": [
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | INT | Unique customer identifier | NO | | FULL_NAME | VARCHAR(200) | Customer's full name | NO | | EMAIL | VARCHAR(150) | Unique email address for login | NO | | REGION_CODE | VARCHAR(10) | Geographic region for tax | YES | | CREATED_AT | DATETIME | Account creation timestamp | NO | | IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO | **Business Concept Mapping**: Customer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 TB_PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **Description**: Master catalogue of all products available f",
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes from exactly one Warehouse - A Shipment goes to exactly one Customer Address",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments. **Key Attributes**: - Unique Customer ID - Valid email address (required for login) - One or more delivery/billing addresses - Geographic region for tax calculation - Active/inactive status **Business Rules**: - Must place at least one order to remain active - Can have multiple addresses but only one primary per type - Data retained for 7 years after last purchase **Synonyms**: client, buyer, account holder, user **Related Concepts**: CustomerAddress, SalesOrder **Examples**: - A new user registers and places their first order - An existing customer updates their shi",
+        "Business concept 'Sales Order Header' \u2014 The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT)."
+      ],
+      "expected_answer": "Yes, an order can exist without payment. SALES_ORDER_HDR has STATUS_CODE defaulting to PENDING and PAYMENT_CONFIRMED_AT is nullable (NULL when no payment yet). The PAYMENT table links via ORDER_ID foreign key but nothing prevents an order from existing without a payment row. However, the business glossary states that an order cannot be shipped until payment is confirmed, so orders are created first and require payment confirmation before fulfillment.",
+      "expected_sources": [
+        "SalesOrder",
+        "Payment",
+        "SALES_ORDER_HDR",
+        "PAYMENT"
+      ],
+      "covered_sources": [
+        "SalesOrder",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.07185126674951936,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    },
+    {
+      "query_id": "Q015",
+      "question": "What is the total value of all orders placed by a customer?",
+      "query_type": "multi_hop",
+      "difficulty": "medium",
+      "answer": "From the retrieved context, this cannot be answered as an actual numeric value because the knowledge graph provides schema and business metadata only, not customer order records.\n\nWhat is known is the relevant structure:\nThe business concept \u201cSales Order Header\u201d is implemented by table SALES_ORDER_HDR, which contains ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, and CREATED_AT.\nThe customer master table is CUSTOMER_MASTER, keyed by CUST_ID.\n\nSo, at a schema level, the total value of all orders placed by a customer would be derived from SALES_ORDER_HDR by using the customer\u2019s CUST_ID and aggregating TOTAL_AMT across that customer\u2019s order rows. If customer attributes are needed, SALES_ORDER_HDR.CUST_ID links to CUSTOMER_MASTER.CUST_ID.\n\nWhat cannot be determined from the context is the actual total for any specific customer, because no order data values are provided.",
+      "sources": [
+        "parent_chunk_business_glossary.txt_1",
+        "Sales Order Header\u2192SALES_ORDER_HDR",
+        "parent_chunk_business_glossary.txt_0",
+        "parent_chunk_data_dictionary.txt_3",
+        "Sales Order Header"
+      ],
+      "contexts": [
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity \u00d7 unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change with future price updates **Synonyms**: line item, order detail, order row **Related Concepts**: SalesOrder, Product **Examples**: - Line 1: 2 units of Wireless Headphones at \u20ac79.99 each - Line 2: 1 unit of USB Cable at \u20ac12.50 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 PAYMENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "Business concept 'Sales Order Header' \u2014 The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments. **Key Attributes**: - Unique Customer ID - Valid email address (required for login) - One or more delivery/billing addresses - Geographic region for tax calculation - Active/inactive status **Business Rules**: - Must place at least one order to remain active - Can have multiple addresses but only one primary per type - Data retained for 7 years after last purchase **Synonyms**: client, buyer, account holder, user **Related Concepts**: CustomerAddress, SalesOrder **Examples**: - A new user registers and places their first order - An existing customer updates their shi",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | CUST_ID | INT | Unique customer identifier | NO | | FULL_NAME | VARCHAR(200) | Customer's full name | NO | | EMAIL | VARCHAR(150) | Unique email address for login | NO | | REGION_CODE | VARCHAR(10) | Geographic region for tax | YES | | CREATED_AT | DATETIME | Account creation timestamp | NO | | IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO | **Business Concept Mapping**: Customer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 TB_PRODUCT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 **Description**: Master catalogue of all products available f",
+        "Sales Order Header: The table name and structure indicate it is the header-level record for an order, with order ID, customer ID, order date, total amount, and status timestamps. This aligns most directly with the business concept described as the header record for each customer sales order rather than line items or payment/shipment records."
+      ],
+      "expected_answer": "Sum the TOTAL_AMT column from SALES_ORDER_HDR for all records where CUST_ID matches the customer's ID. This aggregates the monetary value of all orders placed by that customer.",
+      "expected_sources": [
+        "Customer",
+        "SalesOrder",
+        "CUSTOMER_MASTER",
+        "SALES_ORDER_HDR"
+      ],
+      "covered_sources": [
+        "SalesOrder",
+        "SALES_ORDER_HDR"
+      ],
+      "gt_coverage": 0.5,
+      "grounded": true,
+      "top_score": 0.03114383053477846,
+      "chunk_count": 5,
+      "gate_decision": "proceed_with_warning",
+      "context_sufficiency": "adequate"
+    }
+  ]
+}

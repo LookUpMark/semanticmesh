@@ -1,0 +1,146 @@
+[
+  {
+    "question": "What information is stored for each customer?",
+    "ground_truth": "Each customer has a unique ID, full name, email address, geographic region code, creation date, and active status. The email must be unique across all customers.",
+    "expected_sources": [
+      "Customer",
+      "CUSTOMER_MASTER"
+    ]
+  },
+  {
+    "question": "How are products categorized on the platform?",
+    "ground_truth": "Products belong to categories which can have a parent category, forming a hierarchical tree structure. Each product references exactly one category through its CATEGORY_ID.",
+    "expected_sources": [
+      "Product",
+      "Category",
+      "TB_PRODUCT",
+      "TB_CATEGORY"
+    ]
+  },
+  {
+    "question": "What is the relationship between customers and sales orders?",
+    "ground_truth": "Each sales order is placed by exactly one customer, referenced through the CUST_ID foreign key. A customer can place zero or more orders over time.",
+    "expected_sources": [
+      "Customer",
+      "SalesOrder",
+      "CUSTOMER_MASTER",
+      "SALES_ORDER_HDR"
+    ]
+  },
+  {
+    "question": "What does an order line item contain?",
+    "ground_truth": "An order line item specifies a product, the quantity ordered, the unit price at time of purchase, and the calculated extended amount. Each line item belongs to exactly one sales order.",
+    "expected_sources": [
+      "OrderLineItem",
+      "ORDER_LINE_ITEM",
+      "Product",
+      "SalesOrder"
+    ]
+  },
+  {
+    "question": "How are payments linked to orders?",
+    "ground_truth": "Each payment is associated with exactly one sales order through the ORDER_ID foreign key. Payments track the payment method, amount, status, and confirmation timestamp.",
+    "expected_sources": [
+      "Payment",
+      "PAYMENT",
+      "SalesOrder"
+    ]
+  },
+  {
+    "question": "What statuses can an order have?",
+    "ground_truth": "Orders can have one of five statuses: PENDING (initial state), CONFIRMED (payment received), SHIPPED (sent to customer), DELIVERED (received by customer), or CANCELLED.",
+    "expected_sources": [
+      "SalesOrder",
+      "SALES_ORDER_HDR"
+    ]
+  },
+  {
+    "question": "Which table stores the product SKU information?",
+    "ground_truth": "The TB_PRODUCT table stores the SKU (Stock Keeping Unit) code for each product, along with product name, category, price, and active status.",
+    "expected_sources": [
+      "Product",
+      "TB_PRODUCT"
+    ]
+  },
+  {
+    "question": "How can I find all orders placed by a specific customer?",
+    "ground_truth": "Query the SALES_ORDER_HDR table filtering by CUST_ID. Each order has a foreign key reference to CUSTOMER_MASTER.CUST_ID, so joining these tables on CUST_ID will show all orders for a customer along with their details.",
+    "expected_sources": [
+      "Customer",
+      "SalesOrder",
+      "CUSTOMER_MASTER",
+      "SALES_ORDER_HDR"
+    ]
+  },
+  {
+    "question": "What products were included in a specific order?",
+    "ground_truth": "Join ORDER_LINE_ITEM with TB_PRODUCT on PRODUCT_ID. For order ORDER_ID, the line items show which products were ordered, in what quantity, and at what price.",
+    "expected_sources": [
+      "SalesOrder",
+      "OrderLineItem",
+      "Product",
+      "SALES_ORDER_HDR",
+      "ORDER_LINE_ITEM",
+      "TB_PRODUCT"
+    ]
+  },
+  {
+    "question": "Show me the order hierarchy from customer to line items.",
+    "ground_truth": "The hierarchy is: Customer (CUSTOMER_MASTER) \u2192 SalesOrder (SALES_ORDER_HDR) \u2192 OrderLineItem (ORDER_LINE_ITEM) \u2192 Product (TB_PRODUCT). Each customer has orders, each order has line items, and each line item references a product.",
+    "expected_sources": [
+      "Customer",
+      "SalesOrder",
+      "OrderLineItem",
+      "Product"
+    ]
+  },
+  {
+    "question": "What happens when a payment is confirmed for an order?",
+    "ground_truth": "When payment is confirmed, the PAYMENT record's STATUS_CODE becomes 'CONFIRMED', the CONFIRMED_AT timestamp is set, and the associated SALES_ORDER_HDR can progress from PENDING to CONFIRMED status.",
+    "expected_sources": [
+      "Payment",
+      "SalesOrder",
+      "PAYMENT",
+      "SALES_ORDER_HDR"
+    ]
+  },
+  {
+    "question": "How are shipments related to orders and warehouses?",
+    "ground_truth": "Each shipment is for exactly one sales order (ORDER_ID in SHIPMENT references SALES_ORDER_HDR). The shipment also specifies the source warehouse code and includes tracking information and delivery status.",
+    "expected_sources": [
+      "Shipment",
+      "SalesOrder",
+      "SHIPMENT",
+      "SALES_ORDER_HDR"
+    ]
+  },
+  {
+    "question": "Can a product belong to multiple categories?",
+    "ground_truth": "No, each product belongs to exactly one category. The TB_PRODUCT table has a CATEGORY_ID foreign key referencing TB_CATEGORY, which stores a single category value per product.",
+    "expected_sources": [
+      "Product",
+      "Category",
+      "TB_PRODUCT"
+    ]
+  },
+  {
+    "question": "Is it possible for a customer to place an order without payment?",
+    "ground_truth": "Technically yes, an order can be created in PENDING status without immediate payment. However, the order cannot be shipped until payment is confirmed (PAYMENT_CONFIRMED_AT is set). The business workflow requires payment confirmation before fulfillment.",
+    "expected_sources": [
+      "SalesOrder",
+      "Payment",
+      "SALES_ORDER_HDR",
+      "PAYMENT"
+    ]
+  },
+  {
+    "question": "What is the total value of all orders placed by a customer?",
+    "ground_truth": "Sum the TOTAL_AMT column from SALES_ORDER_HDR for all records where CUST_ID matches the customer's ID. This aggregates the monetary value of all orders placed by that customer.",
+    "expected_sources": [
+      "Customer",
+      "SalesOrder",
+      "CUSTOMER_MASTER",
+      "SALES_ORDER_HDR"
+    ]
+  }
+]
