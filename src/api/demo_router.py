@@ -220,9 +220,9 @@ def get_build_status(job_id: str) -> BuildResultResponse:
     ),
 )
 async def post_build_upload(
+    background_tasks: BackgroundTasks,
     doc_files: list[UploadFile] = File(..., description="Documentation files"),
     ddl_files: list[UploadFile] = File(..., description="DDL SQL files"),
-    background_tasks: BackgroundTasks,
     clear_graph: bool = True,
     study_id: str = "demo",
     lazy_extraction: bool = False,
@@ -258,10 +258,10 @@ async def post_build_upload(
     ),
 )
 async def post_pipeline_upload(
+    background_tasks: BackgroundTasks,
     doc_files: list[UploadFile] = File(..., description="Documentation files"),
     ddl_files: list[UploadFile] = File(..., description="DDL SQL files"),
     questions: list[str] = Field(..., description="Questions to answer (JSON array as form field)"),
-    background_tasks: BackgroundTasks,
     clear_graph: bool = True,
     lazy_extraction: bool = False,
     run_ragas: bool = False,
