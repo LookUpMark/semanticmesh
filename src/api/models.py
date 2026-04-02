@@ -289,8 +289,8 @@ class BuildRequest(BaseModel):
         description="Paths to business documentation files (PDF, MD, TXT).",
         examples=[
             [
-                "tests/fixtures/01_basics_ecommerce/business_glossary.md",
-                "tests/fixtures/01_basics_ecommerce/data_dictionary.md",
+                "tests/fixtures/01_basics_ecommerce/business_glossary.txt",
+                "tests/fixtures/01_basics_ecommerce/data_dictionary.txt",
             ]
         ],
     )
@@ -353,7 +353,12 @@ class PipelineRequest(BaseModel):
 
     doc_paths: list[str] = Field(
         description="Paths to business documentation files.",
-        examples=[["tests/fixtures/01_basics_ecommerce/business_glossary.md"]],
+        examples=[
+            [
+                "tests/fixtures/01_basics_ecommerce/business_glossary.txt",
+                "tests/fixtures/01_basics_ecommerce/data_dictionary.txt",
+            ]
+        ],
     )
     ddl_paths: list[str] = Field(
         description="Paths to DDL SQL files.",
