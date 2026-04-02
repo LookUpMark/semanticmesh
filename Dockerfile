@@ -46,8 +46,11 @@ RUN pip install --no-cache-dir --no-deps -e .
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Create non-root user
+# Create non-root user; pre-create the HF cache directory owned by appuser.
+# With a bind mount (./data/hf_cache), the host directory is owned by the
+# current user so Docker will not override ownership on mount.
 RUN useradd --create-home --shell /bin/bash appuser \
+    && mkdir -p /app/.cache/huggingface \
     && chown -R appuser:appuser /app
 USER appuser
 

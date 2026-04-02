@@ -60,3 +60,5 @@ notebooks/ablation/ablation_results/campaign_*.json
 
 # Claude Code
 .claude/
+data/hf_cache/**
+!data/hf_cache/.gitkeep
