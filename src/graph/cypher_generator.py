@@ -15,6 +15,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src.config.logging import get_logger
 from src.models.schemas import CypherExample, Entity, MappingProposal, TableSchema
 from src.prompts.templates import CYPHER_SYSTEM, CYPHER_USER
+from src.utils.json_utils import extract_text_content
 
 if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
@@ -91,7 +92,7 @@ def generate_cypher(
         table_ddl=safe_ddl,
         concept_name=entity.name,
         concept_definition=safe_definition,
-        synonyms=", ".join(entity.synonyms) if entity.synonyms else "none",
+        synonyms=", ".join(entity.synonyms) if entity.synonyms else "",
         provenance_text=safe_provenance,
         source_doc=entity.source_doc or "",
         mapping_confidence=mapping.confidence,
@@ -110,7 +111,7 @@ def generate_cypher(
         )
     except Exception as exc:
         raise RuntimeError(f"LLM call failed for table '{table.table_name}': {exc}") from exc
-    raw: str = response.content
+    raw: str = extract_text_content(response.content)
     cypher = strip_cypher_fence(raw)
     logger.info(
         "Cypher generated for '%s' (%d chars).",

@@ -18,6 +18,7 @@ from pydantic import ValidationError
 from src.config.logging import get_logger
 from src.models.schemas import CriticDecision, Entity, MappingProposal, TableSchema
 from src.prompts.templates import CRITIC_SYSTEM, CRITIC_USER, REFLECTION_TEMPLATE
+from src.utils.json_utils import extract_text_content
 
 if TYPE_CHECKING:
     import logging
@@ -103,7 +104,7 @@ def critic_review(
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(llm.invoke, messages)
             response = future.result(timeout=_CRITIC_TIMEOUT_SECONDS)
-        raw_json: str = response.content.strip()
+        raw_json: str = extract_text_content(response.content).strip()
     except FutureTimeoutError:
         elapsed = time.perf_counter() - start
         logger.warning(

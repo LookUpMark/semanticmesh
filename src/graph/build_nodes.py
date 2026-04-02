@@ -24,6 +24,23 @@ from src.retrieval.embeddings import embed_text, get_embeddings
 logger: logging.Logger = get_logger(__name__)
 
 
+def _find_entity_for_concept(concept_name: str, entities: list[Entity]) -> Entity | None:
+    """Find the resolved Entity matching a mapped concept name.
+
+    Performs case-insensitive lookup, preferring exact match then substring.
+    """
+    if not concept_name or not entities:
+        return None
+    lower = concept_name.lower()
+    for ent in entities:
+        if ent.name.lower() == lower:
+            return ent
+    for ent in entities:
+        if lower in ent.name.lower() or ent.name.lower() in lower:
+            return ent
+    return None
+
+
 def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
     """Generate MERGE-based Cypher from mapping proposal."""
     settings = get_settings()
@@ -34,7 +51,10 @@ def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
     llm = get_reasoning_llm()
     proposal: MappingProposal = state["mapping_proposal"]
     table = state.get("current_table")
-    entity = Entity(
+    resolved = _find_entity_for_concept(
+        proposal.mapped_concept or "", state.get("current_entities") or []
+    )
+    entity = resolved or Entity(
         name=proposal.mapped_concept or "Unknown",
         definition=proposal.reasoning or "",
         synonyms=[],
@@ -110,11 +130,24 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             "LLM Cypher failed for '%s' — falling back to deterministic builder.",
             proposal.table_name,
         )
-        exec_cypher, exec_params = build_upsert_cypher(proposal, table)
+        resolved = _find_entity_for_concept(
+            proposal.mapped_concept or "", state.get("current_entities") or []
+        )
+        exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=resolved)
 
     with Neo4jClient() as client:
         client.execute_cypher(exec_cypher, exec_params)
         logger.info("Graph updated for table '%s'.", proposal.table_name)
+
+        # Normalize PhysicalTable.table_name to canonical UPPERCASE
+        # (LLM Cypher may use lowercase from DDL source text, while
+        # build_fk_cypher always uses the UPPERCASE name from the parser)
+        client.execute_cypher(
+            "MATCH (pt:PhysicalTable) "
+            "WHERE toLower(pt.table_name) = toLower($name) "
+            "SET pt.table_name = $canonical",
+            {"name": table.table_name, "canonical": table.table_name},
+        )
 
         fk_statements = build_fk_cypher(table)
         for fk_cypher, fk_params in fk_statements:
@@ -145,6 +178,38 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 logger.info("Embedding set for BusinessConcept '%s'.", proposal.mapped_concept)
             except Exception as exc:
                 logger.warning("Could not set embedding for '%s': %s", proposal.mapped_concept, exc)
+
+        # ── MENTIONS edges: link Chunk nodes to this BusinessConcept ──
+        if proposal.mapped_concept:
+            triplets = state.get("triplets") or []
+            concept_lower = proposal.mapped_concept.lower()
+            chunk_indexes: set[int] = set()
+            for t in triplets:
+                if t.source_chunk_index is not None and (
+                    concept_lower in t.subject.lower() or concept_lower in t.object.lower()
+                ):
+                    chunk_indexes.add(t.source_chunk_index)
+            for idx in chunk_indexes:
+                try:
+                    client.execute_cypher(
+                        "MATCH (ch:Chunk {chunk_index: $idx}) "
+                        "MATCH (bc:BusinessConcept {name: $concept}) "
+                        "MERGE (ch)-[:MENTIONS]->(bc)",
+                        {"idx": idx, "concept": proposal.mapped_concept},
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Could not create MENTIONS edge chunk %d → '%s': %s",
+                        idx,
+                        proposal.mapped_concept,
+                        exc,
+                    )
+            if chunk_indexes:
+                logger.info(
+                    "MENTIONS edges: %d chunks → '%s'.",
+                    len(chunk_indexes),
+                    proposal.mapped_concept,
+                )
 
     completed = list(state.get("completed_tables") or [])
     completed.append(proposal.table_name)

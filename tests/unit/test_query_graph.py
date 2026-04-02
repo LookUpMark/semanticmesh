@@ -4,17 +4,16 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from src.generation.nodes.generation_nodes import (
-    _node_answer_generation,
-    _compose_generation_chunks,
-)
 from src.generation.nodes.expansion_nodes import _node_context_distillation
+from src.generation.nodes.generation_nodes import (
+    _compose_generation_chunks,
+    _node_answer_generation,
+)
 from src.generation.query_graph import (
     _node_finalise,
-    _node_retrieve,  # Renamed from _node_hybrid_retrieval
     _node_rerank,  # Renamed from _node_reranking
     _node_retrieval_quality_gate,
-    _node_semantic_verification,
+    _node_retrieve,  # Renamed from _node_hybrid_retrieval
 )
 from src.generation.routing import (
     _route_after_grader,
@@ -244,30 +243,6 @@ class TestNodeRetrievalQualityGate:
         assert out["retrieval_gate_decision"] == "proceed_with_warning"
 
 
-class TestNodeSemanticVerification:
-    def test_relation_query_uses_lower_overlap_threshold(self) -> None:
-        settings = MagicMock(enable_semantic_verifier=True)
-        rel_chunk = RetrievedChunk(
-            node_id="SALES_ORDER_HDR→CUSTOMER_MASTER",
-            node_type="relationship",
-            text="SALES_ORDER_HDR references CUSTOMER_MASTER by foreign key CUST_ID.",
-            score=0.12,
-            source_type="graph",
-            metadata={},
-        )
-        state = {
-            "user_query": "How are customers and orders related?",
-            "current_answer": "The relationship SALES_ORDER_HDR→CUSTOMER_MASTER links orders to customers via CUST_ID foreign key.",
-            "reranked_chunks": [rel_chunk],
-        }
-
-        with patch("src.generation.query_graph.get_settings", return_value=settings):
-            out = _node_semantic_verification(state)
-
-        assert out["semantic_verification_passed"] is True
-        assert out["semantic_verification_warning"] is None
-
-
 class TestAnswerGenerationContextComposition:
     def _chunk(
         self, name: str, text: str, source: str = "graph", score: float = 0.4
@@ -316,7 +291,7 @@ class TestAnswerGenerationContextComposition:
             out = _node_answer_generation(state)
 
         used_chunks = mock_generate.call_args.args[1]
-        assert len(used_chunks) <= 10
+        assert len(used_chunks) <= 12
         assert any(c.node_id == "SALES_ORDER_HDR→CUSTOMER_MASTER" for c in used_chunks)
         assert out["generation_chunks"] == used_chunks
 

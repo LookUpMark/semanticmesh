@@ -57,7 +57,11 @@ def build_node_index(client: Neo4jClient) -> list[dict[str, Any]]:
         "[] AS synonyms, n.source_doc AS source_doc, "
         "n.column_names AS column_names"
     )
-    all_nodes = concept_records + table_records
+    chunk_records = client.execute_cypher(
+        "MATCH (pc:ParentChunk) RETURN pc.text AS text, "
+        "pc.parent_chunk_index AS chunk_index, pc.source_doc AS source_doc, 'ParentChunk' AS node_type"
+    )
+    all_nodes = concept_records + table_records + chunk_records
     logger.debug("build_node_index: %d nodes fetched.", len(all_nodes))
     return all_nodes
 
@@ -117,6 +121,72 @@ def vector_search(
             )
         )
     logger.debug("vector_search: %d results for query '%s'.", len(chunks), query[:60])
+    return chunks
+
+
+# ── Chunk Vector Search ────────────────────────────────────────────────────────
+
+
+def chunk_vector_search(
+    query: str,
+    client: Neo4jClient,
+    top_k: int | None = None,
+    model=None,
+) -> list[RetrievedChunk]:
+    """Embed the query and search the ``chunk_embedding`` vector index.
+
+    Returns original document chunks — the raw text that was ingested before
+    triplet extraction. These chunks carry richer context than the LLM-generated
+    BusinessConcept definitions.
+
+    Args:
+        query: Natural language query string.
+        client: Active ``Neo4jClient``.
+        top_k: Number of results; defaults to ``settings.retrieval_vector_top_k``.
+        model: Optional pre-loaded FlagModel; passed to ``embed_text``.
+
+    Returns:
+        Sorted list of ``RetrievedChunk`` with ``source_type="chunk_vector"``.
+    """
+    settings = get_settings()
+    n = top_k or settings.retrieval_vector_top_k
+    query_vector: list[float] = embed_text(query, model=model)
+
+    # Search children for precision, then expand to parents for context richness.
+    # Deduplicate by (source_doc, parent_chunk_index) so multiple children of the
+    # same parent collapse into one result carrying max(score). Including source_doc
+    # prevents cross-document collisions when two files share the same numeric index.
+    cypher = (
+        "CALL db.index.vector.queryNodes('chunk_embedding', $k, $embedding) "
+        "YIELD node AS child, score "
+        "OPTIONAL MATCH (child)-[:CHILD_OF]->(parent:ParentChunk) "
+        "WITH COALESCE(parent.parent_chunk_index, child.chunk_index) AS pid, "
+        "     COALESCE(parent.source_doc, child.source_doc) AS src, "
+        "     COALESCE(parent.text, child.text) AS text, "
+        "     max(score) AS max_score "
+        "RETURN pid AS chunk_index, src AS source_doc, text, max_score AS score "
+        "ORDER BY max_score DESC"
+    )
+    records = client.execute_cypher(cypher, {"k": n, "embedding": query_vector})
+
+    chunks: list[RetrievedChunk] = []
+    for rec in records:
+        text = (rec.get("text") or "").strip()
+        if not text:
+            continue
+        idx = rec.get("chunk_index", 0)
+        src = rec.get("source_doc") or ""
+        chunks.append(
+            RetrievedChunk(
+                node_id=f"parent_chunk_{src}_{idx}",
+                node_type="ParentChunk",
+                text=text,
+                score=float(rec.get("score", 0.0)),
+                source_type="parent_chunk",
+                metadata={"chunk_index": idx, "source_doc": src},
+            )
+        )
+    logger.debug("chunk_vector_search: %d parent results for query '%s'.", len(chunks), query[:60])
     return chunks
 
 
@@ -272,6 +342,57 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
             )
         )
     logger.debug("fetch_fk_relationships: %d FK edges fetched.", len(chunks))
+    return chunks
+
+
+def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
+    """Return all MAPPED_TO edges (BusinessConcept → PhysicalTable) as human-readable chunks.
+
+    Each edge is rendered as a sentence that names the business concept, the physical
+    table it maps to, and the table's columns.  This ensures that queries mentioning
+    a business concept name (e.g. "SalesOrder") will surface the corresponding
+    physical table even when the concept's vector embedding does not rank highly
+    for the query.
+
+    The baseline score (0.15) is above FK edges (0.1) so the reranker sees these
+    as slightly higher-priority hints, while still below real retrieval scores.
+
+    Args:
+        client: Active ``Neo4jClient``.
+
+    Returns:
+        One ``RetrievedChunk`` per ``[:MAPPED_TO]`` edge.
+    """
+    records = client.execute_cypher(
+        "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
+        "RETURN bc.name AS concept_name, bc.definition AS concept_def, "
+        "pt.table_name AS table_name, pt.column_names AS column_names"
+    )
+    chunks: list[RetrievedChunk] = []
+    for rec in records:
+        concept = (rec.get("concept_name") or "").strip()
+        table = (rec.get("table_name") or "").strip()
+        if not concept or not table:
+            continue
+        concept_def = (rec.get("concept_def") or "").strip()
+        columns = rec.get("column_names") or []
+        col_part = f" (columns: {', '.join(columns)})" if columns else ""
+        def_part = f" — {concept_def}" if concept_def else ""
+        text = (
+            f"Business concept '{concept}'{def_part} is implemented by "
+            f"physical table {table}{col_part}."
+        )
+        chunks.append(
+            RetrievedChunk(
+                node_id=f"{concept}→{table}",
+                node_type="ConceptTableMapping",
+                text=text,
+                score=0.15,
+                source_type="graph",
+                metadata={"concept_name": concept, "table_name": table},
+            )
+        )
+    logger.debug("fetch_concept_table_mappings: %d MAPPED_TO edges fetched.", len(chunks))
     return chunks
 
 

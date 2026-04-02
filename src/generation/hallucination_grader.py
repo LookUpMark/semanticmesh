@@ -19,6 +19,7 @@ from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.generation.answer_generator import format_context
 from src.prompts.templates import GRADER_SYSTEM, GRADER_USER, REFLECTION_TEMPLATE
+from src.utils.json_utils import extract_text_content
 
 if TYPE_CHECKING:
     import logging
@@ -95,7 +96,7 @@ def grade_answer(
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(llm.invoke, messages)
             response = future.result(timeout=timeout_seconds)
-        return str(response.content).strip()
+        return extract_text_content(response.content).strip()
 
     try:
         raw_json = _invoke_with_timeout(

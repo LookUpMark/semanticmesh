@@ -16,6 +16,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
+**Requirements:**
+- Python 3.11+
+- Neo4j 5.x
+
 ```bash
 # Environment setup
 source .venv/bin/activate          # Activate virtual environment
@@ -26,6 +30,8 @@ pytest tests/unit/ -v              # Run unit tests only
 pytest tests/integration/ -v       # Run integration tests (requires Neo4j)
 pytest tests/unit/test_settings.py -v  # Run a specific test file
 pytest -m "not integration" -v     # Run all tests except integration
+pytest -m "integration" -v         # Run only integration tests
+pytest -m "slow" -v                # Run slow tests (>10s)
 
 # Linting and type checking
 ruff check src/ tests/             # Lint code
@@ -40,8 +46,18 @@ docker run -d --name neo4j-thesis -p 7474:7474 -p 7687:7687 \
   -e NEO4J_AUTH=neo4j/your_password_here \
   neo4j:5
 
-# Run evaluation
-ragas-eval                          # CLI entry point for RAGAS evaluation
+# CLI entry points
+ragas-eval                          # Run RAGAS evaluation
+ablation-run                        # Run ablation experiments
+
+# Utility scripts (via python -m scripts)
+python -m scripts.neo4j_lifecycle --help     # Neo4j database management
+python -m scripts.pipeline_run --help        # Run builder/query pipeline
+
+# REST API server (FastAPI + uvicorn)
+python -m scripts.serve_api                  # Default: 127.0.0.1:8000
+python -m scripts.serve_api --reload         # Auto-reload on code changes
+# Swagger UI: http://127.0.0.1:8000/docs
 ```
 
 ---
@@ -51,29 +67,37 @@ ragas-eval                          # CLI entry point for RAGAS evaluation
 ```
 src/
 ├── config/           # EP-01: Infrastructure (config, settings, logging, LLM factory)
-│   ├── config.py     # Application configuration defaults (dataclass)
-│   ├── settings.py   # Pydantic settings with env var loading (uses config.py defaults)
-│   ├── logging.py    # Structured JSON logging (get_logger, log_node_event)
-│   ├── llm_factory.py # Factory: get_reasoning_llm(), get_extraction_llm(), get_generation_llm()
-│   └── llm_client.py # LLMProtocol + InstrumentedLLM wrapper (retry + logging)
+│   ├── config.py           # Application configuration defaults (dataclass)
+│   ├── settings.py         # Pydantic settings with env var loading (uses config.py defaults)
+│   ├── logging.py          # Structured JSON logging (get_logger, log_node_event)
+│   ├── llm_factory.py      # Factory: get_reasoning_llm(), get_extraction_llm(), get_generation_llm()
+│   ├── llm_client.py       # LLMProtocol + InstrumentedLLM wrapper (retry + logging)
+│   ├── model_builders.py   # Helper: make_llm() for building one-off LLM instances
+│   ├── provider_detection.py # Provider auto-detection from model names
+│   └── tracing.py          # LangSmith tracing configuration
 ├── models/           # Data models and LangGraph state schemas
 │   ├── schemas.py    # Pydantic v2 models: Triplet, Entity, TableSchema, MappingProposal, etc.
 │   └── state.py      # BuilderState and QueryState TypedDict for LangGraph
 ├── prompts/          # LLM prompt templates and few-shot loaders
 │   ├── templates.py  # All prompt constants (EXTRACTION_SYSTEM, MAPPING_USER, etc.)
 │   └── few_shot.py   # load_cypher_examples(), load_mapping_examples()
+├── utils/            # Shared utilities
+│   ├── json_utils.py # JSON parsing and cleaning helpers
+│   └── text_utils.py # Text processing utilities
 ├── ingestion/        # EP-02, EP-05: PDF and DDL processing
 │   ├── pdf_loader.py      # load_pdf(), chunk_documents()
 │   ├── ddl_parser.py      # parse_ddl() using sqlglot
 │   └── schema_enricher.py # enrich_schema() — acronym expansion via LLM
 ├── extraction/       # EP-03: Triplet extraction
-│   └── triplet_extractor.py  # extract_triplets() using SLM in JSON mode
+│   ├── triplet_extractor.py   # extract_triplets() using SLM in JSON mode
+│   └── heuristic_extractor.py # Fallback rule-based extraction
 ├── resolution/       # EP-04: Entity resolution (blocking + LLM judge)
 │   ├── blocking.py        # block_entities() — K-NN blocking with embeddings
 │   ├── llm_judge.py       # judge_cluster() — LLM decides merge/separate
 │   └── entity_resolver.py # resolve_entities() — orchestrator
 ├── mapping/          # EP-06, EP-07, EP-08: Schema-to-ontology mapping
 │   ├── rag_mapper.py  # RAG-augmented mapping node (Map-Reduce pattern)
+│   ├── retrieval.py   # RAG retrieval for mapping context
 │   ├── validator.py   # Two-phase validation (Pydantic + Actor-Critic)
 │   └── hitl.py        # Human-in-the-loop interrupt/resume logic
 ├── graph/            # EP-09, EP-10, EP-11: Neo4j and Cypher
@@ -81,25 +105,53 @@ src/
 │   ├── cypher_generator.py # generate_cypher() with few-shot examples
 │   ├── cypher_healer.py    # Cypher Healing loop (reflection prompt)
 │   ├── cypher_builder.py   # Deterministic parameterized MERGE builder (fallback)
-│   └── builder_graph.py    # Builder Graph wiring (StateGraph)
+│   ├── build_nodes.py      # Builder graph node implementations
+│   └── validation_nodes.py # Validation-related nodes
 ├── retrieval/        # EP-12, EP-13: Hybrid retrieval
 │   ├── embeddings.py       # BGE-M3 embedder (1024-dim dense vectors)
+│   ├── bm25_retriever.py   # BM25 keyword retriever
 │   ├── hybrid_retriever.py # Dense + BM25 + Graph traversal with RRF fusion
-│   └── reranker.py         # Cross-Encoder reranker (bge-reranker-large)
+│   ├── reranker.py         # Cross-Encoder reranker (bge-reranker-large)
+│   └── node_utils.py       # Neo4j traversal utilities
 ├── generation/       # EP-14, EP-15: Answer generation and query orchestration
 │   ├── answer_generator.py     # generate_answer() with critique injection
 │   ├── hallucination_grader.py # grade_answer() — Self-RAG paradigm
-│   └── query_graph.py          # Query Graph wiring (StateGraph)
+│   ├── context_distiller.py    # Context compression for generation
+│   ├── lazy_expander.py        # Lazy context expansion strategy
+│   ├── routing.py              # Query routing logic
+│   └── nodes/                  # Query graph node implementations
+│       ├── retrieval_nodes.py  # Retrieval nodes
+│       ├── generation_nodes.py # Generation nodes
+│       └── expansion_nodes.py  # Context expansion nodes
+├── api/              # REST API (FastAPI)
+│   ├── app.py               # FastAPI application factory + routers
+│   ├── demo_api.py          # Demo endpoints: build, query, pipeline (async with polling)
+│   └── ablation_api.py      # Ablation endpoints: run preset/custom, status, matrix
 └── evaluation/       # EP-16: Evaluation metrics
     ├── ragas_runner.py      # run_ragas_evaluation()
     ├── custom_metrics.py    # cypher_healing_rate, hitl_confidence_agreement
     └── ablation_runner.py   # run_ablation() — toggles settings flags
 
+scripts/                # Utility scripts for pipeline execution and analysis
+├── pipeline_run.py          # Run the builder/query pipeline
+├── run_ablation_full.py     # Run full ablation campaign (CLI: ablation-run)
+├── run_all_ablations.py     # Run all ablation combinations
+├── neo4j_lifecycle.py       # Neo4j database management (clear, schema setup)
+├── analyze_ab00_trace.py    # Analyze ablation trace logs
+├── manual_analysis.py       # Manual query testing and analysis
+└── run_ab00_*.py           # Various ablation experiment runners
+
 tests/
 ├── conftest.py       # Shared fixtures (test_settings, mock_llm, neo4j_container)
 ├── fixtures/         # Test data (sample_docs, sample_ddl, mock_responses)
+│   └── gold_standard.json # QA pairs for RAGAS evaluation
 ├── unit/             # Unit tests (no external services)
 └── integration/      # Integration tests (Neo4j required)
+
+notebooks/
+├── 00_interactive_demo.ipynb  # End-to-end interactive demonstration
+└── ablation/                   # Ablation study analysis notebooks
+    └── diagnostics/
 ```
 
 ---
@@ -112,16 +164,25 @@ tests/
 - Controlled via `settings.llm_model_temperature_*`
 
 ### LLM Usage Patterns
-- Always import from `src.config.llm_factory`: `get_reasoning_llm()`, `get_extraction_llm()`, `get_generation_llm()`
+- Always import from `src.config.llm_factory`: `get_reasoning_llm()`, `get_extraction_llm()`, `get_generation_llm()`, `get_lightweight_llm()`, `get_midtier_llm()`
 - Never construct LLM instances directly in pipeline nodes
 - Type annotate as `llm: LLMProtocol` (provider-agnostic)
 - The factory returns `InstrumentedLLM` wrappers with retry and logging
-- **Provider auto-detection:** `llm_factory.detect_provider(model)` selects the provider from the model name:
+- **Factory tiers:** `get_reasoning_llm()` (main reasoning), `get_extraction_llm()` (JSON extraction), `get_generation_llm()` (answer generation, T=0.3), `get_lightweight_llm()` (nano model, entity resolution judge, schema enrichment), `get_midtier_llm()` (mini model, RAG mapping, Actor-Critic, hallucination grading)
+- **Provider auto-detection:** `llm_factory.detect_provider(model)` in `provider_detection.py` selects the provider from the model name:
   - `"provider/model"` (contains `/`) → **OpenRouter** (e.g. `openai/gpt-oss-120b`, `anthropic/claude-3.5-sonnet`, `meta-llama/llama-3.3-70b-instruct:free`)
-  - `gpt-*`, `o1-*`, `o3-*` (no slash) → **OpenAI** direct (requires `OPENAI_API_KEY`)
+  - `ollama/<model>` → **Ollama** (graceful fallback to OpenAI-compat endpoint)
+  - `google/<model>`, `vertex_ai/<model>` → **Google Gemini/Vertex AI**
+  - `bedrock/<model>` → **AWS Bedrock**
+  - `azure/<model>`, `azure_openai/<model>` → **Azure OpenAI**
+  - `mistral/<model>`, `cohere/<model>`, `hf/<model>` → respective providers
+  - `groq/`, `together/`, `nvidia/`, `deepseek/`, `xai/` → OpenAI-compatible providers
+  - `gpt-*`, `o1-*`, `o3-*`, `o4-*` (no slash) → **OpenAI** direct (requires `OPENAI_API_KEY`)
   - `claude-*` (no slash) → **Anthropic** direct (requires `ANTHROPIC_API_KEY`, `langchain-anthropic`)
   - Anything else → **LM Studio** local (`LMSTUDIO_BASE_URL`, default `http://localhost:1234/v1`)
-- Use `make_llm(model, temperature, max_tokens, role)` to build one-off LLM instances from any provider
+- **Free→Paid fallback:** Models ending in `:free` get automatic fallback to paid version on HTTP 429 via `FallbackLLM` wrapper
+- **OpenAI reasoning models** (`o1-*`, `o3-*`, `o4-*`, `gpt-5*`): special handling with `reasoning_effort` parameter
+- Use `make_llm(model, temperature, max_tokens, role)` from `model_builders.py` to build one-off LLM instances from any provider
 - Call `reconfigure_from_env()` after changing `os.environ` in notebooks — clears both the settings cache (`reload_settings()`) and the LLM `lru_cache`
 
 ### Neo4j Cypher Conventions
@@ -141,6 +202,13 @@ tests/
 - LangGraph state is `TypedDict` (`BuilderState`, `QueryState`) defined in `src/models/state.py`
 - Nodes receive full state, return fields to update: `return {"triplets": new_triplets}`
 - Use `NodeTimer` context manager for timing node execution
+
+### Tracing and Debugging
+- **LangSmith tracing**: Configure via `LANGCHAIN_TRACING_V2` and `LANGCHAIN_API_KEY` env vars
+- **Debug trace system**: Enable via `settings.enable_debug_trace` — writes per-query traces to `settings.trace_output_dir` with configurable field compression and truncation
+- **Trace analysis**: `scripts/analyze_ab00_trace.py` — analyzes LangSmith traces for ablation experiments
+- **Debug runners**: `scripts/run_ab00_debug.py`, `scripts/run_ab00_logged.py` — pipeline runs with enhanced logging
+- **Manual testing**: `scripts/manual_analysis.py` — interactive query testing and analysis
 
 ### Actor-Critic Best-Proposal Tracking
 - `BuilderState` carries a `best_proposal: MappingProposal | None` field alongside `mapping_proposal`
@@ -166,6 +234,11 @@ Settings boolean flags to disable pipeline components:
 - `enable_critic_validation` — Skip Actor-Critic validation
 - `enable_reranker` — Skip cross-encoder reranking
 - `enable_hallucination_grader` — Skip hallucination grading
+- `enable_retrieval_quality_gate` — Skip retrieval quality gating
+- `enable_grader_consistency_validator` — Skip grader consistency checks
+- `enable_spacy_heuristics` — Skip spaCy-based heuristic extraction
+- `enable_lazy_expansion` — Skip lazy context expansion
+- `use_lazy_extraction` — Enable lazy extraction mode
 - `retrieval_mode` — "hybrid" | "vector" | "bm25"
 
 > **Note:** `er_similarity_threshold` default is now `0.75` (previously `0.85`).
@@ -187,18 +260,18 @@ Settings boolean flags to disable pipeline components:
 - Called from `_node_build_graph` after the main table upsert — creates stub `PhysicalTable` nodes for referenced tables not yet processed
 - All MERGE-based, idempotent — safe to re-run
 
-### Embeddings & Reranker (GPU considerations)
-- BGE-M3 (`get_embeddings()`): `FlagModel(model_name, use_fp16=False, devices=["cpu"])` — must run on CPU when GPU is shared with LM Studio
-- bge-reranker-large (`get_reranker()`): `FlagReranker(model_name, use_fp16=False, device="cpu")` — same reason
-- Reranker CUDA guard: `get_reranker()` temporarily sets `CUDA_VISIBLE_DEVICES=""` during `FlagReranker.__init__` to prevent OOM on shared GPUs; the env var is restored after init
+### Embeddings & Reranker (GPU auto-detection)
+- BGE-M3 (`get_embeddings()`): auto-detects GPU via `torch.cuda.is_available()` — uses `devices=["cuda:0"]` + `use_fp16=True` if available, else falls back to CPU
+- bge-reranker-v2-m3 (`get_reranker()`): same auto-detection — uses `device="cuda:0"` + `use_fp16=True` if available, else CPU
+- The old CUDA_VISIBLE_DEVICES="" guard was removed — it was only needed when sharing GPU with LM Studio; since pipeline LLMs now use OpenAI API, there is no GPU contention
 - Do NOT pass `show_progress_bar` to `model.encode()` — FlagEmbedding propagates kwargs to tokenizer which rejects it
 
 ### Hybrid Retrieval with RRF
-- Three channels: Dense vector (BGE-M3), BM25 keyword, Graph traversal (Neo4j)
+- Three channels: Dense vector (BGE-M3), BM25 keyword (`bm25_retriever.py`), Graph traversal (Neo4j)
 - Reciprocal Rank Fusion merges results without tuning weights
 - Final reranking with cross-encoder (bge-reranker-large)
 
-### Self-Reflection Loops
+### Self-Reflection Loops (JSON Nodes)
 All JSON-producing LLM nodes implement self-reflection on parse/validation failure using `REFLECTION_TEMPLATE` (PT-05). Retries are bounded by `settings.max_reflection_attempts` (default 3). Nodes with self-reflection:
 - `triplet_extractor.py` — via `_reflect_on_json()` helper; when `raw_json==""` (token cap hit) uses `truncated=True` variant that instructs "extract at most 10 triplets, be concise"
 - `rag_mapper.py` — inline `_clean_json()` + REFLECTION_TEMPLATE retry; markdown fences stripped before `json.loads`
@@ -207,12 +280,34 @@ All JSON-producing LLM nodes implement self-reflection on parse/validation failu
 - `validator.py` (Actor-Critic) — explicit reflection loop (pre-existing)
 - `cypher_healer.py` — Cypher-specific reflection loop (pre-existing)
 
+### Fallback Extraction
+- **`heuristic_extractor.py`**: Rule-based triplet extraction using spaCy NLP — serves as fallback when LLM extraction fails
+
 ### LLM Routing Architecture
 - `detect_provider(model)` infers provider from model name — no manual routing config needed
 - `make_llm(model, temperature, max_tokens, role)` builds the correct `ChatOpenAI`/`ChatAnthropic` instance
 - `reconfigure_from_env()` clears all LRU caches; call it after changing `os.environ` in notebooks
 - All pipeline nodes use `LLMProtocol` structural type — no code changes needed when switching providers
 - Default split: reasoning/generation → OpenRouter; extraction → auto-detected from model name
+
+### Utility Functions
+Common utilities in `src/utils/`:
+- **`json_utils.py`**: `clean_json()` — strips markdown fences, fixes trailing commas; `safe_json_loads()` — with error logging
+- **`text_utils.py`**: Text normalization, chunking helpers
+
+### Scripts and Notebooks
+- **`scripts/neo4j_lifecycle.py`**: Database management — clear database, setup constraints/indexes
+- **`scripts/pipeline_run.py`**: Run builder/query pipeline from command line
+- **`scripts/run_ablation_full.py`**: Full ablation campaign runner (CLI: `ablation-run`)
+- **`notebooks/00_interactive_demo.ipynb`**: End-to-end interactive demonstration
+- **`notebooks/ablation/`**: Analysis notebooks for ablation study results
+
+### REST API (FastAPI)
+- **`src/api/app.py`**: Application factory with two routers
+- **Demo API** (`/api/v1/demo/`): Async E2E pipeline — `POST /demo/build` starts Knowledge Graph build, poll via `GET /demo/build/{job_id}`; `POST /demo/query` for synchronous Q&A; `POST /demo/pipeline` for full async E2E with polling
+- **Ablation API** (`/api/v1/ablation/`): `POST /ablation/run/preset` for predefined AB-XX studies, `POST /ablation/run/custom` for custom runs, `GET /ablation/matrix` to browse 21 predefined conditions
+- Jobs run in background threads, status polled via job ID
+- Swagger UI at `/docs`, ReDoc at `/redoc`
 
 ---
 
@@ -227,6 +322,13 @@ All JSON-producing LLM nodes implement self-reflection on parse/validation failu
 - Marked with `@pytest.mark.integration` — require Neo4j
 - Use `neo4j_container` fixture (testcontainers, session-scoped)
 - Use `neo4j_client` fixture (connected to test container)
+
+### Test Markers
+Use pytest markers to select test categories:
+- `integration`: Tests requiring external services (Neo4j)
+- `slow`: Tests that take > 10s to run
+
+Example: `pytest -m "not integration" -v` runs all non-integration tests
 
 ### Test Fixtures
 - Sample docs: `tests/fixtures/sample_docs/` (business glossary, data dictionary)
@@ -277,7 +379,7 @@ Sensitive values in `.env`:
 | Category | Key Variables |
 |----------|---------------|
 | **Neo4j** | `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` |
-| **LLM (cloud)** | `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
+| **LLM (cloud)** | `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `MISTRAL_API_KEY`, `COHERE_API_KEY`, `GROQ_API_KEY` |
 | **LLM (local)** | `LMSTUDIO_BASE_URL` (default: `http://localhost:1234/v1`) |
 
 Non-sensitive defaults (in `config.py`, overrideable via env):

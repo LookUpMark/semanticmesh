@@ -111,88 +111,22 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
     if sufficiency == "adequate" and top_score >= 0.2:
         return {"retrieval_gate_decision": "proceed"}
 
-    if top_score < 0.015 and chunk_count <= 1 and not has_structural_evidence:
+    if top_score < 0.02 and not has_structural_evidence and chunk_count <= 2:
         logger.info(
-            "Retrieval gate: very low-score context without structural evidence and sparse evidence; abstaining early."
+            "Retrieval gate: near-zero score (%.4f) without structural evidence (chunks=%d); abstaining early.",
+            top_score,
+            chunk_count,
         )
         return {"retrieval_gate_decision": "abstain_early"}
 
-    if top_score < 0.015 and chunk_count >= 2:
+    if top_score < 0.05 and has_structural_evidence:
         logger.info(
-            "Retrieval gate: very low-score but multi-chunk evidence available (chunks=%d); proceeding with warning.",
+            "Retrieval gate: low-score but structural evidence present (chunks=%d); proceeding with warning.",
             chunk_count,
         )
         return {"retrieval_gate_decision": "proceed_with_warning"}
 
     return {"retrieval_gate_decision": "proceed_with_warning"}
-
-
-def _node_semantic_verification(state: QueryState) -> dict[str, Any]:
-    """Verify semantic overlap between answer and retrieved entities.
-
-    Checks if the answer mentions the entities/concepts found in retrieved chunks.
-    Low overlap may indicate hallucination or irrelevant answer.
-    """
-
-    settings = get_settings()
-    if not getattr(settings, "enable_semantic_verifier", True):
-        return {
-            "semantic_verification_overlap": 1.0,
-            "semantic_verification_passed": True,
-            "semantic_verification_warning": None,
-        }
-
-    answer = (state.get("current_answer") or "").lower()
-    chunks: list[RetrievedChunk] = _active_chunks(state)
-    query = str(state.get("user_query", ""))
-    if not chunks:
-        return {
-            "semantic_verification_overlap": 0.0,
-            "semantic_verification_passed": True,
-            "semantic_verification_warning": None,
-        }
-
-    entity_names: set[str] = set()
-    for chunk in chunks:
-        head = chunk.text.split(":", 1)[0].strip().lower()
-        if head:
-            entity_names.add(head)
-        if chunk.node_id.strip():
-            entity_names.add(chunk.node_id.strip().lower())
-
-    if not entity_names:
-        return {
-            "semantic_verification_overlap": 1.0,
-            "semantic_verification_passed": True,
-            "semantic_verification_warning": None,
-        }
-
-    overlap_hits = sum(1 for name in entity_names if name in answer)
-    overlap = overlap_hits / len(entity_names)
-    has_structural_evidence = _has_structural_relationship_evidence(chunks)
-    relation_query = any(k in query.lower() for k in ("related", "relationship", "linked", "link"))
-    min_overlap = 0.2
-    if relation_query or has_structural_evidence:
-        # Relationship-focused answers often paraphrase entity labels.
-        min_overlap = 0.1
-
-    passed = overlap >= min_overlap
-    warning = None
-    if not passed:
-        warning = "Low lexical overlap between answer and retrieved entities."
-        logger.warning(
-            "Semantic verifier warning: overlap=%.3f (%d/%d, min=%.2f).",
-            overlap,
-            overlap_hits,
-            len(entity_names),
-            min_overlap,
-        )
-
-    return {
-        "semantic_verification_overlap": overlap,
-        "semantic_verification_passed": passed,
-        "semantic_verification_warning": warning,
-    }
 
 
 def _node_grader_consistency_validator(state: QueryState) -> dict[str, Any]:
@@ -247,9 +181,7 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
         ),
         "context_sufficiency": state.get("context_sufficiency", "insufficient"),
         "retrieval_gate_decision": gate_decision,
-        "semantic_verification_overlap": float(state.get("semantic_verification_overlap", 1.0)),
-        "semantic_verification_passed": bool(state.get("semantic_verification_passed", True)),
-        "semantic_verification_warning": state.get("semantic_verification_warning"),
+        "grader_grounded": bool(getattr(state.get("grader_decision"), "grounded", True)),
         "grader_consistency_valid": bool(state.get("grader_consistency_valid", True)),
         "grader_rejection_count": int(state.get("grader_rejection_count", 0)),
     }
@@ -269,7 +201,6 @@ def build_query_graph():
     - Retrieval quality gate
     - Context distillation
     - Answer generation with critique loop
-    - Semantic verification
     - Hallucination grading (Self-RAG)
     - Consistency validation
 
@@ -284,10 +215,10 @@ def build_query_graph():
     graph.add_node("retrieval_quality_gate", _node_retrieval_quality_gate)
     graph.add_node("context_distillation", _node_context_distillation)
     graph.add_node("answer_generation", _node_answer_generation)
-    graph.add_node("semantic_verification", _node_semantic_verification)
     graph.add_node("hallucination_grader", _node_grade_hallucination)
     graph.add_node("grader_consistency_validator", _node_grader_consistency_validator)
     graph.add_node("finalise", _node_finalise)
+    graph.add_node("save_query_trace", _node_save_query_trace)
 
     # Set entry point
     graph.set_entry_point("hybrid_retrieval")
@@ -296,10 +227,10 @@ def build_query_graph():
     graph.add_edge("hybrid_retrieval", "reranking")
     graph.add_edge("reranking", "retrieval_quality_gate")
     graph.add_edge("context_distillation", "answer_generation")
-    graph.add_edge("answer_generation", "semantic_verification")
-    graph.add_edge("semantic_verification", "hallucination_grader")
+    graph.add_edge("answer_generation", "hallucination_grader")
     graph.add_edge("hallucination_grader", "grader_consistency_validator")
-    graph.add_edge("finalise", END)
+    graph.add_edge("finalise", "save_query_trace")
+    graph.add_edge("save_query_trace", END)
 
     # Add conditional edges
     graph.add_conditional_edges(
@@ -323,11 +254,36 @@ def build_query_graph():
     return graph.compile(checkpointer=MemorySaver())
 
 
-def run_query(user_query: str) -> dict[str, Any]:
+# ─────────────────────────────────────────────────────────────────────────────
+# Debug Tracing
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _node_save_query_trace(state: QueryState) -> dict[str, Any]:
+    """No-op graph node — query trace is saved AFTER graph.invoke() in run_query().
+
+    This node exists only as a terminal graph node before END.
+    The actual trace save happens after the trace has been fully populated.
+    """
+    return {}
+
+
+def run_query(
+    user_query: str,
+    *,
+    trace_enabled: bool = False,
+    query_index: int = 0,
+    builder_trace_id: str = "",
+    study_id: str = "manual",
+) -> dict[str, Any]:
     """Convenience entry point: builds and runs the query graph for a single query.
 
     Args:
         user_query: Natural-language question.
+        trace_enabled: If True, enable detailed debug tracing of the query pipeline.
+        query_index: Index of this query in the batch (for trace naming).
+        builder_trace_id: ID of the builder trace to link with.
+        study_id: Study ID for trace naming (e.g., "AB-00").
 
     Returns:
         ``{
@@ -346,8 +302,24 @@ def run_query(user_query: str) -> dict[str, Any]:
             "grader_rejection_count": int,
         }``
     """
+    from src.config.settings import get_settings
+    from src.config.tracing import QueryTrace
+
+    settings = get_settings()
+
+    # Initialize query trace if enabled
+    query_trace: QueryTrace | None = None
+    if trace_enabled:
+        query_trace = QueryTrace.create(
+            study_id=study_id,
+            question=user_query,
+            query_index=query_index,
+            builder_trace_id=builder_trace_id,
+        )
+        logger.info(f"Query tracing enabled for query {query_index}")
+
     graph = build_query_graph()
-    config = {"configurable": {"thread_id": "query-run-1"}}
+    config = {"configurable": {"thread_id": f"query-run-{query_index}"}}
     # Ensure schema (vector index) exists before querying.
     with Neo4jClient() as client:
         setup_schema(client)
@@ -373,8 +345,69 @@ def run_query(user_query: str) -> dict[str, Any]:
         "semantic_verification_warning": None,
         "grader_consistency_valid": True,
         "grader_rejection_count": 0,
+        "query_trace_enabled": trace_enabled,
+        "query_trace": query_trace,
+        "query_index": query_index,
+        "builder_trace_id": builder_trace_id,
+        "trace_output_dir": settings.trace_output_dir if trace_enabled else "",
     }
     result = graph.invoke(initial, config=config)
+
+    # Populate trace with final state data and save
+    if trace_enabled and query_trace:
+        from pathlib import Path
+
+        # Record retrieval details from final state
+        retrieved = result.get("retrieved_chunks", [])
+        query_trace.record_retrieval(
+            rrf_fused=[
+                {"node": r.node_id, "rrf_score": r.score, "sources": [r.source_type]}
+                for r in retrieved
+            ],
+        )
+
+        # Record reranking
+        reranked = result.get("reranked_chunks", [])
+        query_trace.record_reranking(
+            pre_rerank=[{"node": r.node_id, "score": r.score} for r in retrieved],
+            post_rerank=[{"node": r.node_id, "score": r.score} for r in reranked],
+            model=settings.reranker_model if settings.enable_reranker else "disabled",
+        )
+
+        # Record context preparation
+        generation_chunks = result.get("generation_chunks", reranked)
+        query_trace.record_context_preparation(
+            contexts=[
+                {"node": c.node_id, "text": c.text, "source": c.source_type}
+                for c in generation_chunks
+            ],
+            context_limit=None,
+        )
+
+        # Record generation attempts
+        query_trace.record_generation_attempt(
+            answer=result.get("current_answer", result.get("final_answer", "")),
+            critique=result.get("last_critique", ""),
+            grader_decision=str(result.get("grader_decision", "")),
+            attempt_number=result.get("iteration_count", 0) + 1,
+        )
+        query_trace.record_generation_summary()
+
+        # Record final output
+        query_trace.record_output(
+            answer=result.get("final_answer", ""),
+            grounded=result.get("semantic_verification_passed", True),
+            verification_score=result.get("semantic_verification_overlap", 0.0),
+            grader_decision=str(result.get("grader_decision", "")),
+            sources=result.get("sources", []),
+        )
+
+        # Save trace to JSONL
+        output_dir = Path(settings.trace_output_dir)
+        trace_file = output_dir / f"query_traces_{study_id}.jsonl"
+        query_trace.save(trace_file)
+        logger.info("Query trace saved to %s", trace_file)
+
     return {
         "final_answer": result.get("final_answer", ""),
         "sources": result.get("sources", []),

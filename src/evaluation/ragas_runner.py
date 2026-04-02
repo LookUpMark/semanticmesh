@@ -35,7 +35,7 @@ _DEFAULT_DATASET: Path = (
     Path(__file__).parent.parent.parent / "tests" / "fixtures" / "00_legacy" / "gold_standard.json"
 )
 
-_DEFAULT_EVALUATOR_MODEL: str = "openai/gpt-4o-mini"
+_DEFAULT_EVALUATOR_MODEL: str = "gpt-4.1-mini"
 _OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 _TRACE_PREVIEW_CHARS: int = 240
 
@@ -266,26 +266,38 @@ _ZERO_METRICS: dict[str, float] = {
 
 
 def _build_openrouter_ragas_llm(evaluator_model: str) -> Any:
-    """Build a RAGAS-compatible InstructorLLM backed by OpenRouter.
+    """Build a RAGAS-compatible InstructorLLM.
 
-    Uses the RAGAS 0.4.x ``llm_factory`` with an ``openai.AsyncOpenAI`` client
-    pointed at the OpenRouter base URL.  Requires OPENROUTER_API_KEY in env.
+    Routes to OpenAI direct when model has no ``/`` prefix, otherwise uses
+    OpenRouter.  Requires OPENAI_API_KEY or OPENROUTER_API_KEY in env.
     """
     from openai import AsyncOpenAI  # noqa: PLC0415
     from ragas.llms import llm_factory  # noqa: PLC0415
 
-    api_key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not api_key:
-        raise OSError("OPENROUTER_API_KEY not set — cannot run RAGAS evaluation")
-
-    client = AsyncOpenAI(base_url=_OPENROUTER_BASE_URL, api_key=api_key)
+    if "/" not in evaluator_model:
+        # OpenAI direct API
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        if not api_key:
+            raise OSError("OPENAI_API_KEY not set — cannot run RAGAS evaluation")
+        client = AsyncOpenAI(api_key=api_key)
+    else:
+        # OpenRouter
+        api_key = os.environ.get("OPENROUTER_API_KEY", "")
+        if not api_key:
+            raise OSError("OPENROUTER_API_KEY not set — cannot run RAGAS evaluation")
+        client = AsyncOpenAI(base_url=_OPENROUTER_BASE_URL, api_key=api_key)
     return llm_factory(evaluator_model, provider="openai", client=client)
 
 
 def _build_openrouter_ragas_embeddings() -> Any:
-    """Build RAGAS embeddings backed by OpenRouter (text-embedding-3-small)."""
+    """Build RAGAS embeddings — uses OpenAI direct API if key is available."""
     from openai import AsyncOpenAI  # noqa: PLC0415
     from ragas.embeddings import OpenAIEmbeddings  # noqa: PLC0415
+
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
+    if openai_key:
+        client = AsyncOpenAI(api_key=openai_key)
+        return OpenAIEmbeddings(model="text-embedding-3-large", client=client)
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     client = AsyncOpenAI(base_url=_OPENROUTER_BASE_URL, api_key=api_key)

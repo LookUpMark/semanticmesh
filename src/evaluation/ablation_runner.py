@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -214,6 +215,7 @@ def run_ablation(
     run_ragas: bool | None = None,
     doc_paths: list[Path] | None = None,
     ddl_paths: list[Path] | None = None,
+    debug_trace: bool = False,
 ) -> dict[str, float]:
     """Run a single ablation experiment and return the measured metrics.
 
@@ -230,6 +232,7 @@ def run_ablation(
             from ABLATION_MATRIX[experiment_id]["run_ragas"].
         doc_paths:    Paths to PDF/chunk documents. If None, uses default fixtures.
         ddl_paths:    Paths to DDL files. If None, uses default fixtures.
+        debug_trace:  If True, enable detailed debug tracing of the pipeline.
 
     Returns:
         Dict of metric name → float, as returned by run_ragas_evaluation.
@@ -260,15 +263,15 @@ def run_ablation(
         # Use default fixtures if not provided
         if doc_paths is None:
             root = Path(__file__).parent.parent.parent
-            fixture_dir = root / "tests" / "fixtures"
+            fixture_dir = root / "tests" / "fixtures" / "01_basics_ecommerce"
             doc_paths = [
-                fixture_dir / "00_legacy" / "sample_docs" / "business_glossary.txt",
-                fixture_dir / "00_legacy" / "sample_docs" / "data_dictionary.txt",
+                fixture_dir / "business_glossary.txt",
+                fixture_dir / "data_dictionary.txt",
             ]
         if ddl_paths is None:
             root = Path(__file__).parent.parent.parent
-            fixture_dir = root / "tests" / "fixtures"
-            ddl_paths = [fixture_dir / "00_legacy" / "sample_ddl" / "complex_schema.sql"]
+            fixture_dir = root / "tests" / "fixtures" / "01_basics_ecommerce"
+            ddl_paths = [fixture_dir / "schema.sql"]
 
         # Run the builder graph
         logger.info("Running builder graph...")
@@ -277,6 +280,8 @@ def run_ablation(
             ddl_paths=ddl_paths,
             production=False,
             clear_graph=True,
+            trace_enabled=debug_trace,
+            study_id=experiment_id,
         )
 
         # Log builder results
@@ -296,6 +301,52 @@ def run_ablation(
         metrics["tables_parsed"] = len(builder_state.get("tables", []))
         metrics["tables_completed"] = len(builder_state.get("completed_tables", []))
         metrics["cypher_failed"] = builder_state.get("cypher_failed", False)
+
+        # Generate comparison report if debug tracing is enabled
+        if debug_trace:
+            from src.config.settings import get_settings
+            from src.config.tracing import ComparisonReport
+
+            settings = get_settings()
+            trace_dir = Path(settings.trace_output_dir) / experiment_id
+
+            # Load query traces if they exist
+            query_trace_file = trace_dir / f"query_traces_{experiment_id}.jsonl"
+            query_traces = []
+            if query_trace_file.exists():
+                from src.config.tracing import load_query_traces
+
+                query_traces = load_query_traces(query_trace_file)
+
+            # Load ground truth dataset
+            gt_path = dataset_path or Path("tests/fixtures/gold_standard.json")
+            ground_truth = []
+            if gt_path.exists():
+                import json
+
+                with open(gt_path) as f:
+                    gt_data = json.load(f)
+                    # Handle both formats: dict with "pairs" field or simple list
+                    if isinstance(gt_data, dict):
+                        ground_truth = gt_data.get("pairs", [])
+                    elif isinstance(gt_data, list):
+                        ground_truth = gt_data
+
+            # Generate comparison report
+            if query_traces and ground_truth:
+                report = ComparisonReport(
+                    study_id=experiment_id,
+                    timestamp=datetime.now(UTC).isoformat(),
+                    dataset_path=str(gt_path),
+                )
+                report.generate_per_question_analysis(query_traces, ground_truth)
+                report.generate_aggregate_metrics()
+                report.identify_bottlenecks()
+                report.generate_recommendations()
+
+                report_path = trace_dir / f"comparison_report_{experiment_id}.md"
+                report.save(trace_dir)
+                logger.info(f"Comparison report saved to {report_path}")
 
     logger.info("Ablation %s complete: %s", experiment_id, metrics)
     return metrics

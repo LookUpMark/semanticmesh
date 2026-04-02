@@ -1,4 +1,4 @@
-"""Cross-encoder reranker — BAAI/bge-reranker-large.
+"""Cross-encoder reranker — BAAI/bge-reranker-v2-m3.
 
 EP-13 / US-13-01: Jointly scores (query, chunk) pairs and returns the
 top_k most relevant chunks for the answer generator.
@@ -25,7 +25,7 @@ def get_reranker():
     """Return the singleton FlagReranker instance.
 
     The model is loaded from ``settings.reranker_model`` (default
-    ``"BAAI/bge-reranker-large"``).  Runs on CPU if no GPU is available.
+    ``"BAAI/bge-reranker-v2-m3"``).  Runs on CPU if no GPU is available.
 
     Returns:
         A ``FlagEmbedding.FlagReranker`` instance ready for ``.compute_score()``.
@@ -38,21 +38,16 @@ def get_reranker():
     except ImportError as exc:
         raise ImportError("FlagEmbedding is not installed. Run: pip install FlagEmbedding") from exc
 
+    import torch  # noqa: PLC0415
+
     settings = get_settings()
     model_name: str = settings.reranker_model
-    logger.info("Loading reranker model '%s'...", model_name)
-    import os as _os
-
-    _saved = _os.environ.get("CUDA_VISIBLE_DEVICES")
-    _os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    try:
-        reranker = FlagReranker(model_name, use_fp16=False, device="cpu")
-        reranker.target_devices = ["cpu"]
-    finally:
-        if _saved is None:
-            _os.environ.pop("CUDA_VISIBLE_DEVICES", None)
-        else:
-            _os.environ["CUDA_VISIBLE_DEVICES"] = _saved
+    _cuda = torch.cuda.is_available()
+    _device = "cuda:0" if _cuda else "cpu"
+    _fp16 = _cuda
+    logger.info("Loading reranker model '%s' on %s...", model_name, _device.upper())
+    reranker = FlagReranker(model_name, use_fp16=_fp16, device=_device)
+    reranker.target_devices = [_device]
     logger.info("Reranker model loaded.")
     return reranker
 
@@ -65,7 +60,7 @@ def rerank(
 ) -> list[RetrievedChunk]:
     """Score and rerank retrieved chunks using the cross-encoder.
 
-    Each ``(query, chunk.text)`` pair is scored jointly by ``bge-reranker-large``.
+    Each ``(query, chunk.text)`` pair is scored jointly by ``bge-reranker-v2-m3``.
     Scores are stored in ``chunk.metadata["reranker_score"]`` and the chunk
     ``.score`` field is updated. The list is sorted descending and sliced to
     ``top_k``.

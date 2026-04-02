@@ -65,10 +65,10 @@ def _distill_text(chunk: RetrievedChunk) -> str:
     if any(marker in lower for marker in _NOISE_MARKERS):
         return f"Entity hint: {chunk.node_id}."
 
-    if ":" in text and len(text) > 220:
+    if ":" in text and len(text) > 800:
         head, body = text.split(":", 1)
         compact = " ".join(body.split())
-        return f"{head.strip()}: {compact[:220].rstrip()}"
+        return f"{head.strip()}: {compact[:800].rstrip()}"
 
     return " ".join(text.split())
 

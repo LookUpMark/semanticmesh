@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from src.config.llm_factory import get_reasoning_llm
+from src.config.llm_factory import get_midtier_llm
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.mapping.validator import build_reflection_prompt, critic_review, validate_schema
@@ -23,7 +23,7 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
     """Two-layer validation: Pydantic schema + LLM Critic."""
     settings = get_settings()
     use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
-    llm = get_reasoning_llm()
+    llm = get_midtier_llm()
     proposal: MappingProposal | None = state.get("mapping_proposal")
     table = state.get("current_table")
     entities: list[Entity] = state.get("current_entities") or []

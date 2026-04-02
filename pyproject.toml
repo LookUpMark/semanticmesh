@@ -30,6 +30,9 @@ dependencies = [
     "langchain-tavily>=0.1",
     "tenacity>=8.0",
     "spacy>=3.7,<4.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]

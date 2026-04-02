@@ -522,3 +522,25 @@ def distill_chunk_text(text: str, node_id: str) -> str:
 
     # Default: normalize whitespace
     return normalize_whitespace(text)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CamelCase Normalization
+# ─────────────────────────────────────────────────────────────────────────────
+
+#: Splits on CamelCase boundaries: "SalesOrder" → "Sales Order"
+_CAMEL_BOUNDARY_RE: re.Pattern[str] = re.compile(r"(?<=[a-z])(?=[A-Z])")
+
+
+def normalize_source_name(name: str) -> str:
+    """Normalize a source name for substring matching.
+
+    Handles CamelCase → space-separated, underscores → spaces, then lowercases.
+    Examples:
+        "SalesOrder"      → "sales order"
+        "OrderLineItem"   → "order line item"
+        "CUSTOMER_MASTER" → "customer master"
+        "Customer"        → "customer"
+    """
+    spaced = _CAMEL_BOUNDARY_RE.sub(" ", name)
+    return spaced.replace("_", " ").lower().strip()

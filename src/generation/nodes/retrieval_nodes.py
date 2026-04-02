@@ -19,7 +19,9 @@ from src.retrieval.embeddings import get_embeddings
 from src.retrieval.hybrid_retriever import (
     bm25_search,
     build_node_index,
+    chunk_vector_search,
     fetch_all_concepts,
+    fetch_concept_table_mappings,
     fetch_fk_relationships,
     graph_traversal,
     merge_results,
@@ -82,6 +84,10 @@ def _query_terms(query: str) -> set[str]:
         "with",
         "into",
         "from",
+        "each",
+        "for",
+        "and",
+        "are",
         "table",
         "database",
         "business",
@@ -126,8 +132,10 @@ def _pre_filter_rerank_pool(
         nid_l = chunk.node_id.lower()
         has_structure = int("→" in chunk.node_id or _has_priority_structure_tokens(text_l))
         keyword_hits = int(any(term in text_l or term in nid_l for term in terms))
+        # source_rank before has_structure: ensures high-quality vector/BM25 entity hits
+        # are not displaced by FK-edge graph chunks when keyword relevance is equal.
         source_rank = 2 if chunk.source_type in {"vector", "bm25"} else 1
-        return (has_structure, keyword_hits, source_rank, float(chunk.score))
+        return (keyword_hits, source_rank, has_structure, float(chunk.score))
 
     selected: list[RetrievedChunk] = []
     dropped_noise = 0
@@ -184,6 +192,9 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
             vec_results = vector_search(
                 query, client, top_k=settings.retrieval_vector_top_k, model=model
             )
+            chunk_vec_results = chunk_vector_search(
+                query, client, top_k=settings.retrieval_vector_top_k, model=model
+            )
             trav_results = graph_traversal(
                 seed_names=[c.node_id for c in vec_results[:5]],
                 client=client,
@@ -191,9 +202,12 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
             )
             all_concepts = fetch_all_concepts(client)
             fk_chunks = fetch_fk_relationships(client)
+            mapping_chunks = fetch_concept_table_mappings(client)
             bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
             merged = merge_results(
-                vec_results, bm25_results, trav_results + all_concepts + fk_chunks
+                vec_results + chunk_vec_results,
+                bm25_results,
+                trav_results + all_concepts + fk_chunks + mapping_chunks,
             )
 
             if getattr(settings, "enable_lazy_expansion", False):
@@ -215,8 +229,18 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                         depth=max(1, settings.retrieval_graph_depth + 1),
                     )
                     merged = merge_results(
-                        vec_results, bm25_results, trav_results + extra + all_concepts + fk_chunks
+                        vec_results + chunk_vec_results,
+                        bm25_results,
+                        trav_results + extra + all_concepts + fk_chunks,
                     )
+    logger.info(
+        "Retrieval complete: %d merged chunks (mode=%s).",
+        len(merged),
+        retrieval_mode,
+    )
+    if not merged:
+        logger.warning("Retrieval returned 0 chunks for query: %.80s", query)
+
     return {"retrieved_chunks": merged}
 
 
@@ -239,6 +263,12 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
 
     valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
     if not valid:
+        logger.warning(
+            "Rerank produced 0 valid chunks (pool=%d, candidates=%d) for query: %.80s",
+            len(pool),
+            len(candidates),
+            query,
+        )
         return {
             "reranked_chunks": [],
             "retrieval_quality_score": 0.0,
@@ -248,10 +278,12 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         }
 
     top_score = float(valid[0].score)
-    if len(valid) == 1:
+    if len(valid) == 1 and top_score < 0.15:
         sufficiency = "sparse"
-    else:
+    elif len(valid) >= 2 or top_score >= 0.15:
         sufficiency = "adequate"
+    else:
+        sufficiency = "sparse"
 
     return {
         "reranked_chunks": valid,

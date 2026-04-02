@@ -37,8 +37,10 @@ class Settings(BaseSettings):
     lmstudio_base_url: str = DEFAULT_CONFIG.lmstudio_base_url
     openrouter_base_url: str = DEFAULT_CONFIG.openrouter_base_url
     openrouter_api_key: SecretStr = SecretStr("")
+    openai_api_key: SecretStr = SecretStr("")
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
+    llm_model_midtier: str = DEFAULT_CONFIG.llm_model_midtier
     llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
     llm_temperature_reasoning: float = DEFAULT_CONFIG.llm_temperature_reasoning
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
@@ -47,6 +49,7 @@ class Settings(BaseSettings):
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = DEFAULT_CONFIG.embedding_model
+    embedding_dimensions: int = DEFAULT_CONFIG.embedding_dimensions
     reranker_model: str = DEFAULT_CONFIG.reranker_model
     reranker_top_k: int = DEFAULT_CONFIG.reranker_top_k
 
@@ -62,6 +65,8 @@ class Settings(BaseSettings):
     max_llm_retries: int = DEFAULT_CONFIG.max_llm_retries
 
     # ── Chunking ───────────────────────────────────────────────────────────────
+    parent_chunk_size: int = DEFAULT_CONFIG.parent_chunk_size
+    parent_chunk_overlap: int = DEFAULT_CONFIG.parent_chunk_overlap
     chunk_size: int = DEFAULT_CONFIG.chunk_size
     chunk_overlap: int = DEFAULT_CONFIG.chunk_overlap
     extraction_concurrency: int = DEFAULT_CONFIG.extraction_concurrency
@@ -85,7 +90,6 @@ class Settings(BaseSettings):
     enable_reranker: bool = DEFAULT_CONFIG.enable_reranker
     enable_hallucination_grader: bool = DEFAULT_CONFIG.enable_hallucination_grader
     enable_retrieval_quality_gate: bool = DEFAULT_CONFIG.enable_retrieval_quality_gate
-    enable_semantic_verifier: bool = DEFAULT_CONFIG.enable_semantic_verifier
     enable_grader_consistency_validator: bool = DEFAULT_CONFIG.enable_grader_consistency_validator
     grader_timeout_seconds: float = DEFAULT_CONFIG.grader_timeout_seconds
     use_lazy_extraction: bool = DEFAULT_CONFIG.use_lazy_extraction
@@ -100,6 +104,13 @@ class Settings(BaseSettings):
 
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = DEFAULT_CONFIG.log_level
+
+    # ── Debug Tracing ───────────────────────────────────────────────────────────
+    enable_debug_trace: bool = DEFAULT_CONFIG.enable_debug_trace
+    trace_output_dir: str = DEFAULT_CONFIG.trace_output_dir
+    trace_compress_large_fields: bool = DEFAULT_CONFIG.trace_compress_large_fields
+    trace_truncate_length: int = DEFAULT_CONFIG.trace_truncate_length
+    trace_max_items: int = DEFAULT_CONFIG.trace_max_items
 
 
 @lru_cache(maxsize=1)

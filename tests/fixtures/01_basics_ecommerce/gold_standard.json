@@ -56,7 +56,7 @@
       "question": "What statuses can an order have?",
       "query_type": "attribute_lookup",
       "difficulty": "easy",
-      "expected_answer": "Orders can have one of five statuses: PENDING (initial state), CONFIRMED (payment received), SHIPPED (sent to customer), DELIVERED (received by customer), or CANCELLED.",
+      "expected_answer": "Orders can have one of five statuses defined via CHECK constraint on SALES_ORDER_HDR.STATUS_CODE: PENDING (initial state when order is created), CONFIRMED (payment has been received), SHIPPED (dispatched to customer), DELIVERED (received by customer), or CANCELLED. The business glossary describes the same lifecycle under Sales Order.",
       "expected_sources": ["SalesOrder", "SALES_ORDER_HDR"],
       "reference_mappings": ["SalesOrder → SALES_ORDER_HDR"]
     },
@@ -128,7 +128,7 @@
       "question": "Is it possible for a customer to place an order without payment?",
       "query_type": "negative",
       "difficulty": "medium",
-      "expected_answer": "Technically yes, an order can be created in PENDING status without immediate payment. However, the order cannot be shipped until payment is confirmed (PAYMENT_CONFIRMED_AT is set). The business workflow requires payment confirmation before fulfillment.",
+      "expected_answer": "Yes, an order can exist without payment. SALES_ORDER_HDR has STATUS_CODE defaulting to PENDING and PAYMENT_CONFIRMED_AT is nullable (NULL when no payment yet). The PAYMENT table links via ORDER_ID foreign key but nothing prevents an order from existing without a payment row. However, the business glossary states that an order cannot be shipped until payment is confirmed, so orders are created first and require payment confirmation before fulfillment.",
       "expected_sources": ["SalesOrder", "Payment", "SALES_ORDER_HDR", "PAYMENT"],
       "reference_mappings": ["SalesOrder → SALES_ORDER_HDR", "Payment → PAYMENT"]
     },

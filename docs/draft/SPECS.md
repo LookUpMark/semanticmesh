@@ -1,6 +1,6 @@
 # Thesis Project: Multi-Agent Framework for Semantic Discovery & GraphRAG
 
-> **Status:** In development — March 2026
+> **Status:** Complete — March 2026
 > **Author:** Marc'Antonio Lopez
 > **Scope:** Generative AI system for automated Data Governance via LangGraph-orchestrated multi-agent architecture.
 
@@ -11,13 +11,14 @@
 1. [Abstract](#1-abstract)
 2. [Architectural Vision](#2-architectural-vision)
 3. [Tech Stack](#3-tech-stack)
-4. [Flow 1 — Builder Graph (Ontology Construction)](#4-flow-1--builder-graph-ontology-construction)
-5. [Flow 2 — Query Graph (Advanced Agentic RAG)](#5-flow-2--query-graph-advanced-agentic-rag)
-6. [Prompting Strategies & Context Management](#6-prompting-strategies--context-management)
-7. [Evaluation Framework (RAGAS)](#7-evaluation-framework-ragas)
-8. [Development Roadmap](#8-development-roadmap)
-9. [State-of-the-Art References](#9-state-of-the-art-references)
-10. [Known Limits & Future Work](#10-known-limits--future-work)
+4. [LangGraph State Schemas](#4-langgraph-state-schemas)
+5. [Flow 1 — Builder Graph (Ontology Construction)](#5-flow-1--builder-graph-ontology-construction)
+6. [Flow 2 — Query Graph (Advanced Agentic RAG)](#6-flow-2--query-graph-advanced-agentic-rag)
+7. [Prompting Strategies & Context Management](#7-prompting-strategies--context-management)
+8. [Self-Reflection Loops](#8-self-reflection-loops)
+9. [Evaluation Framework](#9-evaluation-framework)
+10. [REST API](#10-rest-api)
+11. [Known Limits & Future Work](#11-known-limits--future-work)
 
 ---
 
@@ -29,12 +30,13 @@ This thesis designs and implements a **Generative AI framework for Data Governan
 
 | Innovation | Description |
 |---|---|
-| **Hybrid Ensemble** | SLM for structured extraction + frontier LLM for reasoning |
-| **Self-Reflection Loops** | Actor-Critic validation + Cypher Healing (error injection → auto-fix) |
-| **Advanced GraphRAG** | Critique-driven hallucination grading, no naive retry |
-| **RIGOR paradigm** | Retrieval-Augmented Generation of Ontologies |
+| **Two-Graph Architecture** | Builder Graph for ontology construction + Query Graph for agentic RAG |
+| **Multi-Tier LLM Factory** | 5-tier model routing: nano, extraction, midtier, generation, reasoning |
+| **Self-Reflection Loops** | Actor-Critic validation + Cypher Healing (error injection to auto-fix) |
+| **Advanced GraphRAG** | Hybrid retrieval (Vector + BM25 + Graph) with cross-encoder reranking |
+| **Provider-Agnostic Design** | `LLMProtocol` structural type — works with OpenRouter, OpenAI, Anthropic, Ollama, LM Studio |
 
-**Problem solved:** Feeding an entire SQL schema to a monolithic LLM causes Context Window Overload and hallucinations. This system decomposes the reasoning task into a **cognitive graph pipeline** with isolated, specialized nodes.
+**Problem solved:** Feeding an entire SQL schema to a monolithic LLM causes context window overload and hallucinations. This system decomposes the reasoning task into a **cognitive graph pipeline** with isolated, specialised nodes.
 
 ---
 
@@ -44,111 +46,106 @@ This thesis designs and implements a **Generative AI framework for Data Governan
 
 ```
 Zero-Shot Monolithic Prompting  →  Agentic Workflow (LangGraph DAG)
-Single LLM call on full schema  →  Specialized nodes, isolated context windows
+Single LLM call on full schema  →  Specialised nodes, isolated context windows
 No validation                   →  Self-reflection loops (Actor-Critic + Cypher Healing)
 Static retrieval                →  Hybrid GraphRAG (Vector + BM25 + Graph Traversal)
+Single LLM provider             →  Provider-agnostic multi-tier factory
 ```
 
 ### 2.2 High-Level System Architecture
 
-```mermaid
-graph TB
-    subgraph INPUT["📥 Inputs"]
-        PDF["Unstructured Docs\n(PDF, text)"]
-        DDL["Structured Schema\n(DDL / SQL)"]
-    end
-
-    subgraph BUILDER["🏗️ Builder Graph — Ontology Generation"]
-        direction TB
-        B1["Extract Triplets\n(SLM)"]
-        B2["Entity Resolution\n(2-stage)"]
-        B3["Parse Technical Schema"]
-        B3a["LLM Schema Enrichment\n(Acronym Expansion)"]
-        B4["RAG Mapping\n(LLM)"]
-        B5["Validate Mapping\n(Pydantic + Actor-Critic)"]
-        B6{{"Confidence\n> 90%?"}}
-        B7["HITL Breakpoint"]
-        B8["Generate Cypher\n(LLM + Few-Shot)"]
-        B9["Test Cypher\nExecution"]
-        B10["Fix Cypher\n(Reflection Prompt)"]
-    end
-
-    subgraph NEO4J["🗄️ Neo4j Knowledge Graph"]
-        KG[":BusinessConcept nodes\n:PhysicalTable nodes\n[:MAPPED_TO] edges"]
-    end
-
-    subgraph QUERY["🔍 Query Graph — Advanced Agentic RAG"]
-        direction TB
-        Q1["Hybrid Retrieval\n(Vector + BM25 + Graph)"]
-        Q2["Cross-Encoder Reranking\n(bge-reranker-large)"]
-        Q3["Answer Generation\n(LLM)"]
-        Q4["Hallucination Grader\n(Critique Generation)"]
-        Q5["Web Search Fallback"]
-    end
-
-    OUTPUT["📤 Final Grounded Answer"]
-
-    PDF --> B1
-    DDL --> B3
-    B1 --> B2 --> B4
-    B3 --> B3a --> B4
-    B4 --> B5
-    B5 -- "Structural Error" --> B4
-    B5 -- "Pass" --> B6
-    B6 -- "Low Confidence" --> B7
-    B6 -- "High Certainty" --> B8
-    B7 --> B8
-    B8 --> B9
-    B9 -- "CypherSyntaxError" --> B10 --> B9
-    B9 -- "Success" --> KG
-
-    KG --> Q1
-    Q1 --> Q2 --> Q3 --> Q4
-    Q4 -- "Hallucination Detected\n(Critique injected)" --> Q3
-    Q4 -- "No Relevant Context" --> Q5 --> Q3
-    Q4 -- "Grounded & Faithful" --> OUTPUT
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        INPUTS                                       │
+│  PDF Documents (business glossaries, data dictionaries)             │
+│  DDL Schemas (SQL CREATE TABLE statements)                          │
+└──────────┬──────────────────────────────────────┬───────────────────┘
+           │                                      │
+           ▼                                      ▼
+┌──────────────────────┐              ┌───────────────────────┐
+│  BUILDER GRAPH       │              │  DDL PIPELINE         │
+│  Extract Triplets    │              │  Parse DDL            │
+│  Entity Resolution   │              │  Schema Enrichment    │
+│  (blocking + judge)  │              │  (LLM acronym expand) │
+└──────────┬───────────┘              └───────────┬───────────┘
+           │                                      │
+           └──────────────┬───────────────────────┘
+                          ▼
+              ┌───────────────────────┐
+              │  RAG Mapping          │
+              │  (Map-Reduce per      │
+              │   table)              │
+              └───────────┬───────────┘
+                          ▼
+              ┌───────────────────────┐
+              │  Validate (Pydantic   │    ◄── Actor-Critic Loop
+              │   + LLM Critic)       │
+              └───────────┬───────────┘
+                          ▼
+              ┌───────────────────────┐
+              │  HITL Breakpoint      │    ◄── confidence < threshold
+              └───────────┬───────────┘
+                          ▼
+              ┌───────────────────────┐
+              │  Generate Cypher      │    ◄── Cypher Healing Loop
+              │  + Build Graph (Neo4j)│
+              └───────────┬───────────┘
+                          ▼
+              ┌───────────────────────┐
+              │  NEO4J KNOWLEDGE      │
+              │  GRAPH                │
+              │  BusinessConcept      │
+              │  PhysicalTable        │
+              │  MAPPED_TO edges      │
+              │  REFERENCES edges     │
+              └───────────┬───────────┘
+                          ▼
+              ┌───────────────────────┐
+              │  QUERY GRAPH          │
+              │  Hybrid Retrieval     │
+              │  Cross-Encoder Rerank │
+              │  Answer Generation    │
+              │  Hallucination Grader │
+              └───────────┬───────────┘
+                          ▼
+              ┌───────────────────────┐
+              │  Final Grounded       │
+              │  Answer               │
+              └───────────────────────┘
 ```
 
 ### 2.3 Neo4j Ontology Meta-Model
 
-```mermaid
-erDiagram
-    BusinessConcept {
-        string name PK
-        string definition
-        string source_doc
-        string[] synonyms
-        float confidence_score
-        string provenance_text
-    }
-    PhysicalTable {
-        string table_name PK
-        string schema_name
-        string[] column_names
-        string[] column_types
-        string ddl_source
-    }
-    BusinessConcept ||--o{ PhysicalTable : "MAPPED_TO"
-    BusinessConcept ||--o{ BusinessConcept : "RELATED_TO"
-    PhysicalTable ||--o{ PhysicalTable : "JOINS_WITH"
+```
+(:BusinessConcept {name, definition, source_doc, synonyms, confidence_score, provenance_text})
+(:PhysicalTable {table_name, schema_name, column_names, column_types, ddl_source})
+
+(:BusinessConcept)-[:MAPPED_TO {confidence, validated_by, created_at}]->(:PhysicalTable)
+(:BusinessConcept)-[:RELATED_TO]->(:BusinessConcept)
+(:PhysicalTable)-[:REFERENCES {fk_column, ref_column}]->(:PhysicalTable)
 ```
 
-**Key Cypher patterns (Upsert / MERGE strategy):**
+**Key Cypher patterns (MERGE upsert strategy):**
 
 ```cypher
-// Upsert a BusinessConcept
+-- Upsert a BusinessConcept
 MERGE (bc:BusinessConcept {name: $name})
 ON CREATE SET bc.definition = $definition, bc.provenance_text = $provenance
-ON MATCH SET  bc.confidence_score = $confidence
+ON MATCH SET bc.confidence_score = $confidence
 
-// Upsert a PhysicalTable
+-- Upsert a PhysicalTable
 MERGE (pt:PhysicalTable {table_name: $table_name})
 ON CREATE SET pt.schema_name = $schema, pt.column_names = $columns
 
-// Create semantic alignment
+-- Create semantic alignment
 MATCH (bc:BusinessConcept {name: $concept})
 MATCH (pt:PhysicalTable {table_name: $table})
 MERGE (bc)-[:MAPPED_TO {confidence: $score, validated_by: $validator}]->(pt)
+
+-- FK edge upsert (cypher_builder.py)
+MERGE (child:PhysicalTable {table_name: $child_table})
+MERGE (parent:PhysicalTable {table_name: $parent_table})
+MERGE (child)-[:REFERENCES {fk_column: $fk_col, ref_column: $ref_col}]->(parent)
 ```
 
 ---
@@ -160,31 +157,56 @@ MERGE (bc)-[:MAPPED_TO {confidence: $score, validated_by: $validator}]->(pt)
 | Layer | Component | Role |
 |---|---|---|
 | **Orchestration** | LangGraph | DAG state machine, conditional routing, checkpointing |
-| **Chain Management** | LangChain | Prompt templates, chain composition, tool calling |
-| **SLM Extraction** | `qwen/qwen3-next-80b-a3b-instruct:free` (OpenRouter) | Structured triplet extraction (JSON Mode only) |
-| **LLM Reasoning** | `qwen/qwen3-coder:free` (OpenRouter) | Canonicalization, mapping, text-to-Cypher |
-| **Dense Embeddings** | `BGE-M3` | Multilingual semantic embedding |
-| **Reranking** | `bge-reranker-large` | Cross-Encoder scoring (query × chunk joint attention) |
-| **Graph + Vector DB** | Neo4j | Hybrid: graph topology + vector index + BM25 |
+| **Chain Management** | LangChain | Prompt templates, chain composition |
+| **LLM Factory** | `src/config/llm_factory.py` | 5-tier model routing, provider auto-detection |
+| **Dense Embeddings** | BGE-M3 (BAAI) | 1024-dim multilingual semantic embeddings |
+| **Reranking** | bge-reranker-v2-m3 (BAAI) | Cross-encoder scoring (query x chunk) |
+| **Graph + Vector DB** | Neo4j 5.x | Graph topology + vector index + fulltext BM25 |
 | **Validation** | Pydantic v2 | Schema enforcement on LLM outputs |
-| **Evaluation** | RAGAS | RAG quality metrics (faithfulness, recall, precision) |
+| **Evaluation** | RAGAS + AI Judge | RAG quality metrics + LLM-as-a-judge |
+| **API** | FastAPI + uvicorn | REST endpoints for demo and ablation |
 
-### 3.2 Model Selection Rationale
+### 3.2 LLM Factory Tiers
 
-| Model Role | Model | Why |
-|---|---|---|
-| Extraction (SLM) | `qwen/qwen3-next-80b-a3b-instruct:free` | Decoder-only, constrained JSON output, no reasoning overhead, bypasses NER taxonomy lock-in |
-| Reasoning (LLM) | `qwen/qwen3-coder:free` | Strong instruction following, In-Context Learning, Cypher generation fidelity |
-| Embeddings | `BGE-M3` | Multilingual, state-of-the-art dense retrieval, handles domain-specific vocabulary |
-| Reranker | `bge-reranker-large` | Cross-Encoder: joint query+chunk attention → highest precision scoring |
+The LLM factory (`src/config/llm_factory.py`) provides five tiers of model access, each optimised for a specific task class:
 
-### 3.3 LangGraph State Schema (conceptual)
+| Tier | Function | Default Model | Role | Temperature |
+|---|---|---|---|---|
+| **Nano** | `get_lightweight_llm()` | gpt-5.4-nano | ER judge, schema enrichment | 0.0 |
+| **Extraction** | `get_extraction_llm()` | gpt-5.4-nano | Triplet extraction (JSON Mode) | 0.0 |
+| **Midtier** | `get_midtier_llm()` | gpt-5.4-mini | RAG mapping, Actor-Critic, hallucination grading | 0.0 |
+| **Generation** | `get_generation_llm()` | (same as reasoning) | Answer generation | 0.3 |
+| **Reasoning** | `get_reasoning_llm()` | gpt-5.4 | Cypher generation, complex reasoning | 0.0 |
+
+**Provider auto-detection** (`src/config/provider_detection.py`):
+- `"provider/model"` (contains `/`) → OpenRouter
+- `"gpt-*"`, `"o1-*"`, `"o3-*"`, `"o4-*"`, `"gpt-5*"` → OpenAI direct
+- `"claude-*"` → Anthropic direct
+- `"ollama/*"` → Ollama
+- `"google/*"`, `"vertex_ai/*"` → Google Gemini/Vertex AI
+- Anything else → LM Studio local
+
+All node functions type-annotate LLMs as `llm: LLMProtocol` (structural type) for provider agnosticism.
+
+### 3.3 Embeddings & Reranker (GPU Auto-Detection)
+
+- **BGE-M3** (`get_embeddings()`): auto-detects GPU via `torch.cuda.is_available()` — uses `devices=["cuda:0"]` + `use_fp16=True` if available, else CPU
+- **bge-reranker-v2-m3** (`get_reranker()`): same auto-detection — uses `device="cuda:0"` + `use_fp16=True` if available, else CPU
+
+---
+
+## 4. LangGraph State Schemas
+
+Defined in `src/models/state.py` as `TypedDict` with `total=False` (all fields optional).
+
+### 4.1 BuilderState
 
 ```python
 class BuilderState(TypedDict, total=False):
     # Entry-point inputs
     ddl_paths: list[str]
     source_doc: str
+    use_lazy_extraction: bool
 
     # Ingestion
     documents: list[Document]
@@ -192,10 +214,10 @@ class BuilderState(TypedDict, total=False):
 
     # Extraction + Entity Resolution
     triplets: list[Triplet]
-    entities: list[Entity]            # canonical, post-ER
+    entities: list[Entity]
 
     # Schema parsing
-    tables: list[TableSchema]         # raw DDL output
+    tables: list[TableSchema]
     enriched_tables: list[EnrichedTableSchema]
 
     # Mapping (queue-based, one table at a time)
@@ -203,6 +225,7 @@ class BuilderState(TypedDict, total=False):
     current_table: EnrichedTableSchema | None
     current_entities: list[Entity]
     mapping_proposal: MappingProposal | None
+    best_proposal: MappingProposal | None          # Actor-Critic best-seen tracking
     reflection_prompt: str | None
     reflection_attempts: int
 
@@ -212,394 +235,269 @@ class BuilderState(TypedDict, total=False):
     cypher_failed: bool
 
     # Control
-    hitl_flag: bool                   # triggers Human-in-the-Loop breakpoint
-    completed_tables: list[str]       # tables successfully written to Neo4j
+    hitl_flag: bool
+    skip_hitl: bool
     failed_mappings: list[str]
     ingestion_errors: list[str]
+    completed_tables: list[str]
 
+    # Debug tracing
+    trace_enabled: bool
+    builder_trace: Any                              # BuilderTrace | None at runtime
+    trace_output_dir: str
+```
+
+### 4.2 QueryState
+
+```python
 class QueryState(TypedDict, total=False):
     user_query: str
+
+    # Retrieval
     retrieved_chunks: list[RetrievedChunk]
     reranked_chunks: list[RetrievedChunk]
+    generation_chunks: list[RetrievedChunk]
+
+    # Retrieval quality assessment
+    retrieval_quality_score: float
+    retrieval_chunk_count: int
+    retrieval_filtered_by_threshold: bool
+    context_sufficiency: str                        # "adequate" | "sparse" | "insufficient"
+    retrieval_gate_decision: str
+
+    # Generation
     current_answer: str
     last_critique: str | None
     grader_decision: GraderDecision | None
     final_answer: str
     sources: list[str]
-    iteration_count: int              # loop guard
+    retrieved_contexts: list[str]
+
+    # Grader state
+    grader_consistency_valid: bool
+    grader_rejection_count: int
+    iteration_count: int
+
+    # Debug tracing
+    query_trace_enabled: bool
+    query_trace: Any                                # QueryTrace | None at runtime
+    query_index: int
+    builder_trace_id: str
 ```
 
 ---
 
-## 4. Flow 1 — Builder Graph (Ontology Construction)
+## 5. Flow 1 — Builder Graph (Ontology Construction)
 
-### 4.1 Agentic Workflow Diagram
+### 5.1 Node Specifications
 
-```mermaid
-graph TD
-    Start(["📥 Ingest: PDF docs + DDL schemas"]) --> Extract
-    Start --> Parse
+| Node | Module | Model Tier | T | Input | Output | Key Pattern |
+|---|---|---|---|---|---|---|
+| `_node_ingest_pdf` | `ingestion/pdf_loader.py` | — | — | PDF paths | documents, chunks | RecursiveCharacterTextSplitter |
+| `_node_extract_triplets` | `extraction/triplet_extractor.py` | Extraction | 0.0 | chunks | triplets | JSON Mode + self-reflection |
+| `_node_heuristic_extract` | `extraction/heuristic_extractor.py` | — | — | chunks | triplets | spaCy NLP fallback |
+| `_node_resolve_entities` | `resolution/entity_resolver.py` | Nano | 0.0 | triplets | entities | Two-stage: K-NN blocking + LLM judge |
+| `_node_parse_ddl` | `ingestion/ddl_parser.py` | — | — | DDL paths | tables | sqlglot deterministic parsing |
+| `_node_enrich_schema` | `ingestion/schema_enricher.py` | Nano | 0.0 | tables | enriched_tables | Zero-Shot acronym expansion |
+| `_node_init_mapping_queue` | `graph/build_nodes.py` | — | — | enriched_tables | pending_tables | Queue initialisation |
+| `_node_pop_next_table` | `graph/build_nodes.py` | — | — | pending_tables | current_table | Pop from queue |
+| `_node_rag_mapping` | `mapping/rag_mapper.py` | Midtier | 0.0 | current_table + entities | mapping_proposal | Map-Reduce per table + few-shot |
+| `_node_validate_mapping` | `mapping/validator.py` | Midtier | 0.0 | mapping_proposal | approved/rejected | Pydantic + Actor-Critic |
+| `_node_hitl_review` | `mapping/hitl.py` | — | — | proposal | approved mapping | LangGraph interrupt() |
+| `_node_generate_cypher` | `graph/cypher_generator.py` | Reasoning | 0.0 | mapping + table | current_cypher | LLM + few-shot |
+| `_node_test_cypher` | `graph/cypher_healer.py` | — | — | current_cypher | pass/fail | EXPLAIN dry-run on Neo4j |
+| `_node_fix_cypher` | `graph/cypher_healer.py` | Reasoning | 0.0 | cypher + error | corrected_cypher | Error injection reflection |
+| `_node_build_graph` | `graph/build_nodes.py` | — | — | cypher | Neo4j commit | MERGE upsert + FK edges |
 
-    Extract["<b>Extract_Triplets_SLM</b><br/>SLM · JSON Mode · T=0.0<br/>Output: triplets + provenance"]
-    Extract --> ER
+### 5.2 Self-Reflection Details
 
-    ER["<b>Agentic_Entity_Resolution</b><br/>Stage 1: K-NN vector blocking<br/>Stage 2: LLM canonicalization judge"]
-    ER --> Map
+**Actor-Critic Loop:**
+1. LLM Actor generates `MappingProposal`
+2. Pydantic validates structure
+3. LLM Critic reviews semantic correctness
+4. If rejected → inject critique into `REFLECTION_TEMPLATE` → retry
+5. After `max_reflection_attempts` → use `best_proposal` (highest confidence seen across all retries)
 
-    Parse["<b>Parse_Technical_Schema</b><br/>DDL parser → structured table metadata"]
-    Parse --> Enrich
+**Cypher Healing Loop:**
+1. LLM generates Cypher from mapping
+2. `EXPLAIN` dry-run against Neo4j
+3. If `CypherSyntaxError` → inject error into `CYPHER_FIX_USER` → retry
+4. After `max_cypher_healing_attempts` → fall back to `cypher_builder.build_upsert_cypher()` (deterministic, parameterless)
 
-    Enrich["<b>LLM_Schema_Enrichment</b><br/>Zero-Shot Acronym Expansion<br/>TB_CST → 'Customer Table'<br/>Lexical Gap Mitigation pre-embedding"]
-    Enrich --> Map
+### 5.3 Incremental Graph Update (Upsert Strategy)
 
-    Map["<b>Retrieval_Augmented_Mapping_LLM</b><br/>Map-Reduce: 1 table × relevant chunks<br/>LLM · T=0.0 · Few-Shot Cypher examples"]
-    Map --> Validate
+The graph is **never rebuilt from scratch**. Every write uses `MERGE` (upsert semantics). The LLM only processes the **delta** (new/changed documents or tables), not the full corpus.
 
-    Validate["<b>Validate_Mapping_Logic</b><br/>Pydantic schema check<br/>+ LLM Actor-Critic review"]
-    Validate -- "❌ Structural / Logical Error\n(exception injected as Reflection Prompt)" --> Map
+---
 
-    Validate -- "✅ Pydantic Pass" --> Confidence
+## 6. Flow 2 — Query Graph (Advanced Agentic RAG)
 
-    Confidence{{"<b>LLM Confidence</b><br/>> 90%?"}}
-    Confidence -- "❌ No\n(Semantic Ambiguity)" --> HITL
-    Confidence -- "✅ Yes\n(High Certainty)" --> Cypher
+### 6.1 Node Specifications
 
-    HITL[["<b>Human-in-the-Loop</b><br/>Breakpoint: human reviews\nand approves / corrects mapping"]]
-    HITL -- "✅ Approved / Corrected" --> Cypher
-
-    Cypher["<b>Generate_Cypher</b><br/>LLM · T=0.0<br/>MERGE-based upsert statements<br/>Dynamic Few-Shot: 3–5 validated SQL→Cypher"]
-    Cypher --> TestExec
-
-    TestExec["<b>Test_Cypher_Execution</b><br/>Dry-run against Neo4j sandbox"]
-    TestExec -- "❌ CypherSyntaxError\n(error injected as Reflection Prompt)" --> FixCypher
-
-    FixCypher["<b>Fix_Cypher_LLM</b><br/>Zero-shot self-correction\nfrom native exception message"]
-    FixCypher --> TestExec
-
-    TestExec -- "✅ Success" --> Build
-
-    Build["<b>Build_Knowledge_Graph</b><br/>MERGE statements committed to Neo4j<br/>Incremental delta update"]
-    Build --> End(["✅ Knowledge Graph Ready"])
-
-    classDef loop fill:#f9d0c4,stroke:#e06666,stroke-width:2px,color:#000
-    classDef hitl fill:#ffe599,stroke:#f6b26b,stroke-width:2px,color:#000
-    classDef condition fill:#d9ead3,stroke:#93c47d,stroke-width:2px,color:#000
-    classDef node_ fill:#cfe2f3,stroke:#6fa8dc,stroke-width:2px,color:#000
-    class Validate,TestExec loop
-    class HITL hitl
-    class Confidence condition
-    class Extract,ER,Parse,Enrich,Map,Cypher,FixCypher,Build node_
-```
-
-### 4.2 Node Specifications
-
-| Node | Model | T | Input | Output | Key Pattern |
+| Node | Module | Model Tier | T | Input | Output |
 |---|---|---|---|---|---|
-| `Extract_Triplets_SLM` | `qwen/qwen3-next-80b-a3b-instruct:free` | 0.0 | PDF chunks | `(subject, predicate, object, provenance_text)` | JSON Mode + Data Provenance retention |
-| `Agentic_Entity_Resolution` | BGE-M3 + LLM judge | — | raw triplets | canonical entities | Two-stage: K-NN blocking → LLM matching |
-| `Parse_Technical_Schema` | deterministic parser | — | DDL SQL | structured table metadata | No LLM; pure parsing |
-| `LLM_Schema_Enrichment` | `qwen/qwen3-coder:free` | 0.0 | raw table/column identifiers | enriched metadata (natural-language names + descriptions) | Zero-Shot Acronym Expansion; resolves Lexical Gap before embedding |
-| `Retrieval_Augmented_Mapping_LLM` | `qwen/qwen3-coder:free` | 0.0 | 1 table + top-K chunks | `Mapping(concept, table, confidence)` | Map-Reduce per table, focused attention |
-| `Validate_Mapping_Logic` | Pydantic v2 + LLM critic | 0.0 | mapping proposal | pass / error string | Actor-Critic: exception → Reflection Prompt |
-| `Generate_Cypher` | `qwen/qwen3-coder:free` | 0.0 | validated mapping | MERGE Cypher string | Few-Shot (3–5 SQL→Cypher examples) |
-| `Fix_Cypher_LLM` | `qwen/qwen3-coder:free` | 0.0 | Cypher + error | corrected Cypher | Zero-shot from native Neo4j exception |
-| `Build_Knowledge_Graph` | — (Neo4j driver) | — | valid Cypher | graph commit | Upsert/MERGE strategy |
+| `_node_hybrid_retrieval` | `retrieval/hybrid_retriever.py` | — | — | user_query | retrieved_chunks |
+| `_node_retrieval_quality_gate` | `generation/nodes/retrieval_nodes.py` | — | — | retrieved_chunks | gate_decision |
+| `_node_rerank` | `retrieval/reranker.py` | — | — | retrieved_chunks | reranked_chunks |
+| `_node_context_distill` | `generation/context_distiller.py` | — | — | reranked_chunks | generation_chunks |
+| `_node_lazy_expand` | `generation/lazy_expander.py` | — | — | generation_chunks | expanded_chunks |
+| `_node_generate_answer` | `generation/answer_generator.py` | Generation | 0.3 | chunks + query | current_answer |
+| `_node_grade_answer` | `generation/hallucination_grader.py` | Midtier | 0.0 | answer + context | grader_decision |
+| `_node_grader_consistency` | `generation/nodes/generation_nodes.py` | — | — | grader_decision | consistency check |
 
-### 4.3 Self-Reflection Loop Detail
-
-```mermaid
-sequenceDiagram
-    participant Actor as LLM Actor (Mapping / Cypher Gen)
-    participant Validator as Critic / DB
-    participant State as LangGraph State
-
-    LLM Actor->>Critic / DB: Generated output (mapping / Cypher)
-    Critic / DB-->>LangGraph State: ❌ Error / Critique message
-
-    Note over State: Exception string appended to state.validation_errors
-    LangGraph State->>LLM Actor: Reflection Prompt:\n"Previous attempt failed with: {error}.\nFix and regenerate."
-
-    LLM Actor->>Critic / DB: Corrected output
-    Critic / DB-->>LangGraph State: ✅ Pass
-    LangGraph State->>LangGraph State: Clear error buffer, advance node
-```
-
-**Reflection Prompt Template:**
-
-```
-System: You are a strict {role}. Return only valid {format}. No explanations.
-
-Previous attempt produced this error:
-<error>
-{native_exception_message}
-</error>
-
-Original input:
-<input>
-{original_input}
-</input>
-
-Regenerate a corrected {format} that resolves the error above.
-```
-
-### 4.4 Incremental Graph Update (Upsert Strategy)
-
-> **Key design decision:** The graph is **never rebuilt from scratch**. Every write uses `MERGE` (upsert semantics). The LLM only processes the **delta** (new/changed documents or tables), not the full corpus.
-
-**Benefits:**
-- Drastically reduces inference cost on updates
-- Enables Continuous Learning / live schema evolution
-- Prevents duplicate nodes on re-ingestion
-
----
-
-## 5. Flow 2 — Query Graph (Advanced Agentic RAG)
-
-### 5.1 Workflow Diagram
-
-```mermaid
-graph TD
-    Start(["👤 User Natural Language Query"]) --> Hybrid
-
-    Hybrid["<b>Hybrid_Retrieval</b><br/>① Vector similarity (BGE-M3) — semantic gap<br/>② BM25 keyword search — exact identifiers<br/>③ Graph traversal — topological context expansion"]
-    Hybrid --> Rerank
-
-    Rerank["<b>Cross_Encoder_Reranking</b><br/>bge-reranker-large<br/>Joint (query × chunk) attention → precision score<br/>Output: Top-K high-density chunks only"]
-    Rerank --> Generate
-
-    Generate["<b>Answer_Generation_LLM</b><br/>qwen/qwen3-coder:free · T=0.3<br/>Grounded on Top-K chunks only"]
-    Generate --> Grade
-
-    Grade["<b>Hallucination_Grader</b><br/>Self-RAG paradigm<br/>Generates explicit natural-language Critique<br/>if answer not grounded in context"]
-
-    Grade -- "❌ Hallucination Detected\nCritique: 'Table TB_X not in context.\nReformulate omitting TB_X.'" --> Generate
-    Grade -- "❌ No Relevant Context\nFound in Graph" --> Fallback
-
-    Fallback["<b>Web_Search_Fallback</b><br/>External knowledge retrieval"]
-    Fallback --> Generate
-
-    Grade -- "✅ Grounded & Faithful" --> Output
-
-    Output(["📤 Final Verified Answer"])
-
-    classDef loop fill:#f9d0c4,stroke:#e06666,stroke-width:2px,color:#000
-    classDef node_ fill:#cfe2f3,stroke:#6fa8dc,stroke-width:2px,color:#000
-    classDef fallback fill:#ead1dc,stroke:#c27ba0,stroke-width:2px,color:#000
-    class Grade loop
-    class Hybrid,Rerank,Generate node_
-    class Fallback fallback
-```
-
-### 5.2 Hybrid Retrieval — Mechanism Breakdown
+### 6.2 Hybrid Retrieval — Mechanism Breakdown
 
 | Retrieval Method | What It Captures | Failure Mode Addressed |
 |---|---|---|
-| **Dense Vector** (BGE-M3) | Semantic similarity, paraphrases | Lexical Gap (synonym mismatch) |
+| **Dense Vector** (BGE-M3) | Semantic similarity, paraphrases | Lexical gap (synonym mismatch) |
 | **BM25 Keyword** | Exact string matches (table IDs, codes) | Embedding dilution on rare tokens |
 | **Graph Traversal** | Topological neighbours, related concepts | Isolated chunk missing relational context |
 
-> All three results are merged → fed to **Cross-Encoder** which jointly scores each `(query, chunk)` pair through full transformer attention layers → only **Top-K** chunks pass to generation.
+All three results are merged via **Reciprocal Rank Fusion (RRF)** — no weight tuning required. The merged pool is then fed to the cross-encoder reranker which jointly scores each `(query, chunk)` pair. Only **Top-K** chunks pass to generation.
 
-### 5.3 Hallucination Grader — Critique Protocol
+### 6.3 Context Sufficiency Assessment
 
-```
-Grader System Prompt:
-You are a strict factual auditor. Given a context and a generated answer,
-identify any claims in the answer NOT supported by the context.
+The retrieval quality gate evaluates retrieved chunks and sets `context_sufficiency` to one of three levels:
 
-If hallucinations are found, output a Critique in this exact JSON format:
-{
-  "grounded": false,
-  "critique": "<natural-language explanation of what is unsupported, naming specific entities>",
-  "action": "regenerate"  // or "web_search" if context is entirely irrelevant
-}
-
-If the answer is fully grounded:
-{
-  "grounded": true,
-  "critique": null,
-  "action": "pass"
-}
-```
-
-**Loop guard:** `iteration_count` in state caps regeneration attempts (default: 3) before forcing a fallback.
-
----
-
-## 6. Prompting Strategies & Context Management
-
-### 6.1 Per-Node Prompt Configuration
-
-| Node | Persona (System Prompt) | Technique | Temperature |
-|---|---|---|---|
-| `Extract_Triplets_SLM` | "Strict information extractor. Output only valid JSON." | JSON Mode + Pydantic schema | 0.0 |
-| `Agentic_Entity_Resolution` | "Semantic judge. Determine canonical entity identity." | Few-Shot + provenance injection | 0.0 |
-| `LLM_Schema_Enrichment` | "You are a database naming expert. Expand abbreviated table and column identifiers into precise, human-readable English names." | Zero-Shot, structured JSON output | 0.0 |
-| `Retrieval_Augmented_Mapping_LLM` | "Data governance expert mapping business concepts to tables." | Map-Reduce, RAG context, Few-Shot | 0.0 |
-| `Validate_Mapping_Logic` | "Strict Cypher validator. Return only code. No explanations." | Reflection Prompt on failure | 0.0 |
-| `Generate_Cypher` | "Neo4j Cypher expert. Use MERGE for all writes." | Dynamic Few-Shot (3–5 examples) | 0.0 |
-| `Fix_Cypher_LLM` | "Debug and fix the Cypher error. Return only corrected code." | Exception injection | 0.0 |
-| `Answer_Generation_LLM` | "Precise data analyst. Answer only from provided context." | Grounding constraint + Critique injection | 0.3 |
-| `Hallucination_Grader` | "Strict factual auditor. Identify unsupported claims." | Self-RAG critique JSON output | 0.0 |
-
-### 6.2 Few-Shot Example Template (Cypher Generation Node)
-
-```
-Here are {n} validated mapping examples:
-
-Example 1:
-SQL Table: CUSTOMER (CUST_ID INT, NAME VARCHAR, REGION_CODE VARCHAR)
-Business Concept: "Customer" — an entity that purchases goods or services
-Cypher:
-MERGE (bc:BusinessConcept {name: "Customer"})
-MERGE (pt:PhysicalTable {table_name: "CUSTOMER"})
-MERGE (bc)-[:MAPPED_TO {confidence: 0.97}]->(pt)
-
-Example 2:
-...
-
-Now generate Cypher for the following:
-SQL Table: {table_ddl}
-Business Concept: {concept_name} — {concept_definition}
-```
-
-### 6.3 Temperature Strategy Summary
-
-$$
-T_{extraction} = 0.0 \quad \text{(deterministic, structured output)}
-$$
-$$
-T_{reasoning} = 0.0 \quad \text{(precise mapping and code generation)}
-$$
-$$
-T_{generation} = 0.3 \quad \text{(natural language fluency for user-facing answers)}
-$$
-
----
-
-## 7. Evaluation Framework (RAGAS)
-
-### 7.1 Metrics Overview
-
-```mermaid
-mindmap
-  root((RAGAS Evaluation))
-    Retrieval Quality
-      Context Precision
-        Signal-to-Noise ratio of chunks passed to generator
-        Penalizes irrelevant chunk inclusion
-      Context Recall
-        Were all necessary entities retrieved?
-        Coverage of gold-standard entities
-    Generation Quality
-      Faithfulness
-        Answer grounded in context only
-        Measures hallucination absence
-      Answer Relevance
-        Does answer address the user query?
-    System-Specific
-      Cypher Healing Rate
-        failed queries auto-fixed / total failed queries
-      HITL Confidence Agreement
-        auto-approved mappings accuracy vs gold standard
-```
-
-### 7.2 Metric Definitions
-
-| Metric | Formula / Definition | Target | Validates |
-|---|---|---|---|
-| **Context Precision** | $\frac{\|\text{relevant chunks in Top-K}\|}{\|\text{Top-K}\|}$ | > 0.85 | Reranker quality |
-| **Context Recall** | $\frac{\|\text{retrieved gold entities}\|}{\|\text{all gold entities}\|}$ | > 0.90 | Hybrid Retrieval coverage |
-| **Faithfulness** | $\frac{\|\text{claims supported by context}\|}{\|\text{total claims in answer}\|}$ | > 0.95 | Hallucination Grader effectiveness |
-| **Cypher Healing Rate** | $\frac{\|\text{queries self-fixed by LLM}\|}{\|\text{total failed queries}\|}$ | > 0.80 | Self-reflection loop (Cypher) |
-| **HITL Confidence Agreement** | $\text{corr}(\text{auto-approved}, \text{gold accuracy})$ | > 0.90 | Confidence threshold calibration |
-
-### 7.3 Evaluation Dataset Strategy
-
-- **Synthetic ground truth:** Generate `(question, expected_answer, gold_context_chunks)` triples from known schema+doc pairs
-- **Benchmark splits:** Extraction F1, Mapping accuracy (concept↔table), Cypher correctness, Answer faithfulness
-- **Automated RAGAS pipeline:** Runs after each development milestone (months 1–5)
-
----
-
-## 8. Development Roadmap
-
-```mermaid
-gantt
-    title Thesis Development Roadmap
-    dateFormat  YYYY-MM
-    section Month 1 — SLM & Extraction
-    SLM prompt tuning (Pydantic JSON schemas)     :m1a, 2026-03, 4w
-    Triplet extraction F1 benchmarking            :m1b, after m1a, 2w
-    section Month 2 — Semantic Mapping & ER
-    RIGOR framework implementation                :m2a, 2026-04, 3w
-    Vector blocking + LLM matching tuning         :m2b, after m2a, 3w
-    section Month 3 — LangGraph & Self-Reflection
-    DAG wiring (LangGraph state machine)          :m3a, 2026-05, 3w
-    Actor-Critic + Cypher Healing loops           :m3b, after m3a, 3w
-    section Month 4 — GraphRAG Pipeline
-    Query Graph with hybrid retrieval             :m4a, 2026-06, 3w
-    Cross-Encoder integration + Hallucination Grader :m4b, after m4a, 3w
-    section Month 5 — Evaluation
-    RAGAS automated benchmarking                  :m5a, 2026-07, 4w
-    Faithfulness, Precision, Healing Rate report  :m5b, after m5a, 2w
-    section Month 6 — Thesis Writing
-    Academic paper authoring                      :m6a, 2026-08, 6w
-```
-
-### 8.1 Milestone Summary
-
-| Month | Focus | Key Deliverable | Success Metric |
-|---|---|---|---|
-| 1 | SLM Setup & Extraction | Triplet extractor with Pydantic schemas | F1-Score on triplet extraction |
-| 2 | Semantic Mapping & ER | RIGOR framework + Entity Resolution | ER precision/recall on business corpus |
-| 3 | LangGraph Orchestration | Full Builder Graph DAG | Cypher Healing Rate > 80% |
-| 4 | Advanced GraphRAG | Query Graph with Hallucination Grader | Faithfulness > 95% |
-| 5 | RAGAS Evaluation | Full benchmark report | All metrics above target |
-| 6 | Thesis Writing | Academic paper | Submission |
-
----
-
-## 9. State-of-the-Art References
-
-| Reference | Topic | Source |
+| Level | Description | System Prompt Used |
 |---|---|---|
-| **RIGOR** | Retrieval-Augmented Generation of Ontologies for relational schemas | arXiv:2506.01232 |
-| **SLM Structured Extraction** | Decoder-only SLMs for constrained JSON generation, bypassing NER taxonomy lock-in | 2025 SOTA literature |
-| **Self-RAG** | Models capable of self-evaluation and explicit critique generation | Self-RAG paper + extensions |
-| **BGE-M3** | Multilingual dense retrieval, multi-granularity | BAAI/BGE-M3 |
-| **bge-reranker-large** | Cross-Encoder joint attention reranking | BAAI |
-| **Agentic Entity Resolution** | Two-phase: vector blocking (K-NN) + LLM matching judge | 2025 SOTA |
-| **RAGAS** | Automated RAG evaluation framework | ragas.io |
+| `adequate` | Strong relevant context | `ANSWER_SYSTEM_ADEQUATE` |
+| `sparse` | Partial but potentially useful evidence | `ANSWER_SYSTEM_SPARSE` |
+| `insufficient` | Minimal or no relevant context | `ANSWER_SYSTEM_INSUFFICIENT` |
+
+The answer generator selects the appropriate system prompt based on context sufficiency, with each variant calibrating the LLM's behaviour to the available evidence level.
+
+### 6.4 Hallucination Grader — Critique Protocol
+
+The grader emits a structured JSON with `grounded`, `critique`, and `action` fields. Actions drive LangGraph routing:
+
+- `"pass"` → final output (answer is fully grounded)
+- `"regenerate"` → back to answer generation with critique injected
+
+After `max_hallucination_retries`, the grader forces `action="pass"` (accepts current answer).
 
 ---
 
-## 10. Known Limits & Future Work
+## 7. Prompting Strategies & Context Management
 
-### 10.1 Current Limitations
+### 7.1 Per-Node Prompt Configuration
 
-| Limitation | Description | Impact |
+| Node | System Prompt Constant | Temperature |
 |---|---|---|
-| **Multi-Hop Reasoning** | Global graph reasoning over 1000+ tables exceeds output token limits and reasoning depth | Cannot summarize full DB topology in one pass |
-| **Wide Tables** | Denormalized tables with >100 columns push LLM attention mechanisms past effective range | Mapping quality degrades on dense schemas |
-| **Self-Correction Ceiling** | Reflection loops may fail to fix semantically ambiguous errors (not just syntactic) | Requires HITL fallback for complex cases |
-| **Embedding Drift** | BGE-M3 embeddings may degrade on highly domain-specific jargon not in training corpus | Semantic retrieval may miss niche terminology |
+| `_node_extract_triplets` | `EXTRACTION_SYSTEM` | 0.0 |
+| `_node_resolve_entities` (LLM judge) | `ER_JUDGE_SYSTEM` | 0.0 |
+| `_node_enrich_schema` | `ENRICHMENT_SYSTEM` | 0.0 |
+| `_node_rag_mapping` | `MAPPING_SYSTEM` | 0.0 |
+| `_node_validate_mapping` (critic) | `CRITIC_SYSTEM` | 0.0 |
+| All reflection retries | `REFLECTION_TEMPLATE` | inherits |
+| `_node_generate_cypher` | `CYPHER_SYSTEM` | 0.0 |
+| `_node_fix_cypher` | `CYPHER_SYSTEM` + `CYPHER_FIX_USER` | 0.0 |
+| `_node_generate_answer` | `ANSWER_SYSTEM_ADEQUATE/SPARSE/INSUFFICIENT` | 0.3 |
+| `_node_generate_answer` (retry) | `ANSWER_SYSTEM` + `ANSWER_WITH_CRITIQUE_USER` | 0.3 |
+| `_node_grade_answer` | `GRADER_SYSTEM` | 0.0 |
 
-### 10.2 Future Research Directions
+All prompts are defined in `src/prompts/templates.py`. See [PROMPTS.md](./PROMPTS.md) for full template catalogue.
 
-```mermaid
-graph LR
-    A["Current System"] --> B["Community Detection\non large graphs\n(Graph-level reasoning)"]
-    A --> C["Hierarchical Map-Reduce\nover graph topology"]
-    A --> D["Semantic Intra-Table\nChunking for Wide Tables\n(>100 columns)"]
-    A --> E["Fine-tuned Domain\nSLM on corporate corpora"]
-    A --> F["Continuous Active Learning\nfrom HITL feedback signal"]
-```
+### 7.2 Temperature Strategy
 
-| Research Direction | Addresses | Approach |
+$$
+T_{extraction} = T_{mapping} = T_{enrichment} = T_{grading} = 0.0 \quad \text{(deterministic JSON)}
+$$
+$$
+T_{generation} = 0.3 \quad \text{(natural language fluency)}
+$$
+
+---
+
+## 8. Self-Reflection Loops
+
+### 8.1 Universal Reflection Template
+
+All JSON-producing LLM nodes implement self-reflection on parse/validation failure using `REFLECTION_TEMPLATE` (PT-05). Retries are bounded by `settings.max_reflection_attempts` (default 3).
+
+**Nodes with self-reflection:**
+- `triplet_extractor.py` — via `_reflect_on_json()` helper; truncated variant for token-cap hits
+- `rag_mapper.py` — inline retry with markdown fence stripping
+- `llm_judge.py` — inline retry with markdown fence stripping
+- `hallucination_grader.py` — inline retry; emits only `pass | regenerate`
+- `validator.py` (Actor-Critic) — explicit reflection loop
+- `cypher_healer.py` — Cypher-specific reflection loop
+
+### 8.2 Actor-Critic Best-Proposal Tracking
+
+`BuilderState` carries a `best_proposal` field alongside `mapping_proposal`. The validation node updates `best_proposal` whenever a Pydantic-valid proposal with higher confidence is seen. On critic exhaustion (attempts >= max), the node returns `best_proposal` instead of the last rejected proposal.
+
+### 8.3 Critic Entity Context Ordering
+
+`critic_review()` in `validator.py` sorts entities by name length ascending before slicing to `[:20]`. Shorter names (concept-level, e.g. "Customer") appear first; longer names (attribute-level) are cut off. This prevents false rejections when the critic cannot find the concept name in its context window.
+
+---
+
+## 9. Evaluation Framework
+
+### 9.1 RAGAS Metrics
+
+| Metric | Target | Validates |
 |---|---|---|
-| **Community Detection** | Multi-Hop global reasoning | Graph algorithms (Louvain, etc.) to partition and summarise sub-graphs |
-| **Hierarchical Map-Reduce** | Large schema summarization | Recursive LLM passes over graph communities |
-| **Semantic Intra-Table Chunking** | Wide tables (>100 cols) | Column clustering by semantic similarity before LLM attention |
-| **Domain SLM Fine-Tuning** | Embedding drift on jargon | LoRA fine-tune on corporate documentation |
-| **Active HITL Learning** | Model calibration | Use human corrections as few-shot examples in subsequent runs |
+| **Faithfulness** | > 0.95 | Hallucination grader effectiveness |
+| **Context Precision** | > 0.85 | Reranker quality |
+| **Context Recall** | > 0.90 | Hybrid retrieval coverage |
+
+### 9.2 Custom Metrics
+
+| Metric | Definition |
+|---|---|
+| `cypher_healing_rate` | healed queries / total failed queries |
+| `hitl_confidence_agreement` | correlation between auto-approved mappings and gold accuracy |
+
+### 9.3 Ablation Studies
+
+21 ablation experiments across 6 datasets (126 total runs). See [ABLATION.md](./ABLATION.md) for full matrix and results.
+
+---
+
+## 10. REST API
+
+FastAPI application factory in `src/api/app.py` with two router groups:
+
+### 10.1 Demo API (`/api/v1/demo/`)
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/demo/build` | POST | Start Knowledge Graph build (async with polling) |
+| `/demo/build/{job_id}` | GET | Poll build status |
+| `/demo/query` | POST | Synchronous Q&A |
+| `/demo/pipeline` | POST | Full async E2E pipeline with polling |
+
+### 10.2 Ablation API (`/api/v1/ablation/`)
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/ablation/run/preset` | POST | Run predefined AB-XX study |
+| `/ablation/run/custom` | POST | Run custom configuration |
+| `/ablation/matrix` | GET | Browse 21 predefined conditions |
+
+Swagger UI at `/docs`, ReDoc at `/redoc`.
+
+---
+
+## 11. Known Limits & Future Work
+
+### 11.1 Current Limitations
+
+| Limitation | Impact |
+|---|---|
+| **Multi-Hop Reasoning** | Global graph reasoning over 1000+ tables exceeds output token limits |
+| **Wide Tables** | Denormalized tables with >100 columns degrade mapping quality |
+| **Self-Correction Ceiling** | Reflection loops may fail on semantically ambiguous errors |
+| **Embedding Drift** | BGE-M3 may degrade on highly domain-specific jargon |
+
+### 11.2 Future Research Directions
+
+| Direction | Addresses | Approach |
+|---|---|---|
+| **Community Detection** | Multi-hop global reasoning | Graph algorithms (Louvain) to partition sub-graphs |
+| **Hierarchical Map-Reduce** | Large schema summarisation | Recursive LLM passes over graph communities |
+| **Semantic Intra-Table Chunking** | Wide tables (>100 cols) | Column clustering by semantic similarity |
+| **Domain SLM Fine-Tuning** | Embedding drift on jargon | LoRA fine-tune on corporate docs |
+| **Continuous Active Learning** | HITL feedback utilisation | Feed HITL corrections back to improve future mappings |

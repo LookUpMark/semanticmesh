@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
-from src.config.llm_factory import get_reasoning_llm
+from src.config.llm_factory import get_midtier_llm, get_reasoning_llm
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.generation.answer_generator import generate_answer
@@ -63,8 +63,8 @@ def _has_priority_structure_tokens(text: str) -> bool:
 def _compose_generation_chunks(
     query: str,
     chunks: list[RetrievedChunk],
-    max_core: int = 6,
-    max_support: int = 4,
+    max_core: int = 7,
+    max_support: int = 5,
 ) -> list[RetrievedChunk]:
     """Build a balanced context window for answer generation.
 
@@ -92,9 +92,9 @@ def _compose_generation_chunks(
     target = max_core + max_support
 
     source_caps: dict[str, int] = {
-        "vector": min(4, target),
+        "vector": min(5, target),
         "bm25": min(4, target),
-        "graph": min(5, target),
+        "graph": min(6, target),
     }
 
     selected: list[RetrievedChunk] = []
@@ -179,7 +179,7 @@ def _node_grade_hallucination(state: QueryState) -> dict[str, Any]:
     settings = get_settings()
     if not settings.enable_hallucination_grader:
         return {"grader_decision": GraderDecision(grounded=True, critique=None, action="pass")}
-    llm = get_reasoning_llm()
+    llm = get_midtier_llm()
     query: str = state["user_query"]
     answer: str = state.get("current_answer") or ""
     chunks: list[RetrievedChunk] = (

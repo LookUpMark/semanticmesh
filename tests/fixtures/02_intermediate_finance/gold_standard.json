@@ -3,15 +3,16 @@
     "name": "02_intermediate_finance",
     "domain": "Banking & Finance",
     "complexity": "Intermediate",
-    "version": "1.0",
+    "version": "2.0",
     "created": "2025-01-15",
-    "description": "Retail banking operations with 8 core concepts (Account, Customer, Transaction, Loan, Interest, Branch, ATM, Card), 6 tables, junction tables, account hierarchies, and calculated columns."
+    "updated": "2026-03-27",
+    "description": "Retail banking operations with 8 core concepts (Account, Customer, Transaction, Loan, Interest, Branch, ATM, Card), 8 tables, junction tables, account hierarchies, and calculated columns. Schema-level questions about structure, business rules, and entity relationships."
   },
   "qa_pairs": [
     {
       "id": 1,
       "question": "What is a checking account?",
-      "answer": "A checking account is a transactional deposit account designed for day-to-day spending. Key features include unlimited transactions, debit card access, bill pay, and check writing. Standard checking has a minimum balance requirement of $100 with a $12 monthly maintenance fee that can be waived with $500 in direct deposits. Interest checking requires a $2,500 minimum balance.",
+      "answer": "A checking account is one of five account types (Checking, Savings, MoneyMarket, CD, Investment) defined by the CHECK constraint on the accounts table. According to the business glossary, accounts are financial arrangements for deposit, withdrawal, and management of funds. The schema tracks current_balance, available_balance, minimum_balance, monthly_fee, and interest_rate (nullable for non-interest accounts). Checking accounts can have subtypes like Premium or Standard via the account_subtype column. Debit cards can be linked to checking accounts for direct spending, as noted in the Card business rules.",
       "category": "Direct Mapping",
       "entities": ["Account"],
       "hops": 1,
@@ -20,7 +21,7 @@
     {
       "id": 2,
       "question": "What is the difference between a savings account and a money market account?",
-      "answer": "A savings account is an interest-bearing account for accumulating funds with Federal Regulation D limiting withdrawals to 6 per month. It has tiered interest rates from 0.01% to 0.50% APY based on balance. A money market account is a hybrid savings/checking account with higher interest rates (0.15% to 0.75% APY tiered), a $2,500 minimum balance, and limited check writing (6 checks per month) but unlimited debit card transactions.",
+      "answer": "Both savings and money market are account types defined in the accounts table CHECK constraint. The business glossary Interest section provides example rates: Standard Savings earns 0.25% APY (with monthly compounding), Premium Savings earns 0.50% APY (with daily compounding), while Money Market earns 0.75% APY tiered by balance. Both account types have interest_rate, minimum_balance, and monthly_fee columns in the schema. The glossary examples show savings accounts with varying balances and subtypes (Standard, Premium), while money market accounts are listed alongside checking and savings as deposit products.",
       "category": "Direct Mapping",
       "entities": ["Account"],
       "hops": 1,
@@ -38,7 +39,7 @@
     {
       "id": 4,
       "question": "What is KYC Level 2?",
-      "answer": "KYC Level 2 is enhanced due diligence requiring occupation verification and source of funds documentation beyond the basic identity verification (SSN, ID, address) required for Level 1. Level 2 is required for premium products and large transactions. Level 3 is for high-net-worth individuals requiring additional documentation.",
+      "answer": "The customers table has a kyc_status column with a CHECK constraint allowing Level1, Level2, and Level3. The business glossary states that Level1 is the minimum requirement for account opening, Level3 is required for high-value accounts and international transfers, and risk_profile determines eligibility for products. KYC levels represent increasing verification requirements for regulatory compliance. Level2 falls between basic identity verification (Level1) and high-value account access (Level3), though the specific documentation requirements for each level are not detailed in the source documents.",
       "category": "Direct Mapping",
       "entities": ["Customer"],
       "hops": 1,
@@ -46,8 +47,8 @@
     },
     {
       "id": 5,
-      "question": "What is the minimum balance requirement for a premium checking account?",
-      "answer": "Premium checking accounts require a minimum balance of $2,500. This minimum must be maintained to avoid the monthly maintenance fee and qualify for premium benefits including waived fees, preferred interest rates, and higher transaction limits.",
+      "question": "How does the schema support different account subtypes and their varying requirements?",
+      "answer": "The accounts table has an account_subtype column (VARCHAR 30, nullable) that stores values like Premium or Standard to differentiate within each account_type. Combined with the minimum_balance and monthly_fee columns, each account can have different requirements configured per subtype. The account_type CHECK constraint defines the broad categories (Checking, Savings, MoneyMarket, CD, Investment) while account_subtype provides finer differentiation. The business glossary confirms that minimum balance requirements may trigger monthly fees if not met.",
       "category": "Direct Mapping",
       "entities": ["Account"],
       "hops": 1,
@@ -56,7 +57,7 @@
     {
       "id": 6,
       "question": "What types of loan products does the bank offer?",
-      "answer": "The bank offers five types of loan products: (1) Mortgage - secured real estate loans with 15-30 year terms at 5.5%-7.5% APR; (2) Personal Loan - unsecured loans for $1,000-$40,000 with 12-60 month terms at 7.0%-18.0% APR; (3) Auto Loan - secured vehicle loans for $5,000-$75,000 with 24-72 month terms at 4.0%-12.0% APR; (4) HELOC - revolving home equity credit lines with variable rates at Prime + margin; (5) Credit Card - revolving credit with 15%-25% APR based on creditworthiness.",
+      "answer": "The bank offers five loan types defined by the CHECK constraint on loans.loan_type: (1) Mortgage — secured by real estate, glossary example shows $350,000 at 5.50% APR for 360 months; (2) Personal Loan — unsecured, example $15,000 at 8.50% APR for 48 months; (3) Auto Loan — secured by vehicle, example $35,000 at 6.50% APR for 60 months; (4) HELOC — revolving home equity credit line at variable rates, example $50,000 at 8.50% APR; (5) Credit Card — revolving credit, example $10,000 limit at 18.50% APR. The glossary notes that rates vary by type and creditworthiness, mortgages require collateral, and defaulted loans trigger collections.",
       "category": "Direct Mapping",
       "entities": ["Loan"],
       "hops": 1,
@@ -65,7 +66,7 @@
     {
       "id": 7,
       "question": "What is the daily ATM withdrawal limit for standard customers?",
-      "answer": "The daily ATM withdrawal limit for standard customers is $500. Premium customers have a higher limit of $2,000 per day. Out-of-network ATM withdrawals incur a $3.00 fee plus any fee charged by the ATM owner.",
+      "answer": "The cards table has an atm_daily_limit column with a default value of $500. The business glossary Card Examples confirm this: a standard Debit Card has a $500 ATM limit, while a Premium Debit card has a $2,000 ATM limit. The daily_limit column (default $3,000) controls POS spending separately. These limits are per-card, not per-customer, so different card types can have different limits. The glossary states that daily limits prevent fraud and control exposure.",
       "category": "Direct Mapping",
       "entities": ["ATM", "Card"],
       "hops": 1,
@@ -74,7 +75,7 @@
     {
       "id": 8,
       "question": "What is the difference between a parent account and a child account?",
-      "answer": "A parent account is a primary account that aggregates sub-accounts for portfolio management and reporting. Parent accounts do not hold balances directly; they summarize child account totals. A child account is a sub-account linked to a parent account for organizational purposes, such as in portfolio management or household relationship views. All transactions occur at the child account level, while the parent provides roll-up reporting and consolidated statements.",
+      "answer": "The accounts table supports parent-child hierarchies through the parent_account_id self-referencing foreign key, with a CHECK constraint preventing circular references (parent_account_id != account_id). The data dictionary describes this as supporting portfolio aggregation where parent accounts (typically Investment type) contain child accounts. The business glossary states accounts may be organized into hierarchical portfolio structures for relationship management purposes. Child accounts set parent_account_id to reference their parent, while top-level accounts have parent_account_id as NULL.",
       "category": "Direct Mapping",
       "entities": ["Account"],
       "hops": 1,
@@ -83,7 +84,7 @@
     {
       "id": 9,
       "question": "What does the status 'Frozen' mean for a card?",
-      "answer": "A 'Frozen' card status means the card is temporarily suspended due to suspected fraudulent activity detected by monitoring, customer request (lost card, traveling), or negative account status. Frozen cards cannot process transactions. The freeze can be reversed after identity verification to reactivate the card. This differs from 'Blocked' status which is permanent and requires a replacement card.",
+      "answer": "The cards table has a status column with four states defined by CHECK constraint: Active, Frozen, Blocked, and Expired. The business glossary states that lost or stolen cards must be immediately blocked to prevent fraud, and that expired cards are automatically renewed. The glossary distinguishes Frozen from Blocked as separate statuses, suggesting Frozen is a temporary or reversible suspension. The Account concept also supports a Frozen status alongside Active, Dormant, and Closed, indicating the bank uses Frozen consistently to mean a temporary restriction on the entity.",
       "category": "Direct Mapping",
       "entities": ["Card"],
       "hops": 1,
@@ -91,125 +92,125 @@
     },
     {
       "id": 10,
-      "question": "What is the overdraft fee?",
-      "answer": "The overdraft fee is $35 per overdraft transaction, with a maximum of 4 overdraft fees per day ($140 total). An overdraft protection transfer from savings to cover the overdraft costs $12. No overdraft fee is charged if the account balance is within $10 at the end of the business day. The fee applies when a transaction exceeds the available balance.",
+      "question": "How does the transactions table track the impact of each transaction on account balances?",
+      "answer": "The transactions table includes a balance_after column (DECIMAL 15,2) that records the account balance after each transaction is applied. Combined with the amount column, transaction_type (Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee), and status (Pending/Posted/Failed/Cancelled/OnHold), this allows tracking how each transaction affects the account. The business glossary states that debit transactions reduce account balance, credit transactions increase it, posted transactions are final and cannot be modified (only reversed with a new transaction), and failed transactions are logged for audit but do not affect the balance.",
       "category": "Direct Mapping",
-      "entities": ["Account", "Transaction"],
+      "entities": ["Transaction", "Account"],
       "hops": 1,
       "difficulty": "Easy"
     },
     {
       "id": 11,
-      "question": "What accounts does James Wilson have?",
-      "answer": "James Wilson has a portfolio of three accounts: (1) Checking account CHK-001001 with a current balance of $5,240.35, (2) Savings account SAV-001001 with a current balance of $15,250.75, and (3) 12-month Certificate of Deposit CD-001001 with a current balance of $50,000.00 earning 4.50% APY. His accounts are held at the Downtown Headquarters branch (0001) in New York.",
-      "category": "Multi-hop",
+      "question": "How does the customer_account junction table support multiple ownership types?",
+      "answer": "The customer_account table implements a many-to-many relationship between customers and accounts with a composite primary key (customer_id, account_id). It supports four relationship types via CHECK constraint: Owner, JointOwner, AuthorizedSigner, and Custodian. The is_primary flag designates the primary owner for billing and legal purposes, while ownership_percentage (DECIMAL 0-100, default 100) tracks proportional ownership. This allows a single account to have multiple customers with different roles, and a single customer to own multiple accounts.",
+      "category": "Direct Mapping",
       "entities": ["Customer", "Account"],
-      "hops": 2,
+      "hops": 1,
       "difficulty": "Medium"
     },
     {
       "id": 12,
-      "question": "What is the current balance of Mary Johnson's savings account?",
-      "answer": "Mary Johnson's savings account SAV-003001 has a current balance of $48,750.50. This is a premium savings account earning 5.00% APY with a $2,500 minimum balance requirement. The account has earned $243.75 in year-to-date interest and has no monthly maintenance fee. Her account is held at the Downtown Headquarters branch.",
+      "question": "What is the difference between current_balance and available_balance in the accounts table?",
+      "answer": "The accounts table tracks two separate balance fields: current_balance includes all transactions including pending ones, while available_balance excludes holds and pending transactions and represents what the customer can actually withdraw. The business glossary confirms this distinction, stating that available balance may be less than current balance due to holds or pending transactions. Both are DECIMAL(15,2) fields with a default of 0.00.",
+      "category": "Direct Mapping",
+      "entities": ["Account"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 13,
+      "question": "How are loans linked to both customers and accounts in the schema?",
+      "answer": "The loans table has a customer_id foreign key referencing the customers table (the borrower) and an optional account_id foreign key referencing the accounts table (for linked payment accounts). Each loan belongs to exactly one customer, and can optionally be connected to an account for automatic payment drafting. The loan tracks principal_amount, interest_rate (APR), term_months, monthly_payment, balance_due, origination_date, maturity_date, and status. The loan_type CHECK constraint defines the product types: Mortgage, Personal, Auto, HELOC, and CreditCard.",
+      "category": "Multi-hop",
+      "entities": ["Loan", "Customer", "Account"],
+      "hops": 2,
+      "difficulty": "Medium"
+    },
+    {
+      "id": 14,
+      "question": "What types of transactions does the system support and how does their status lifecycle work?",
+      "answer": "The transactions table supports seven transaction types via CHECK constraint: Debit, Credit, Transfer, Payment, Withdrawal, Deposit, and Fee. Each transaction also has a status lifecycle with five states: Pending (initial default), Posted (final), Failed, Cancelled, and OnHold. The business glossary explains that debit transactions reduce account balance, credit transactions increase it, posted transactions are final and cannot be modified (only reversed with a new transaction), and failed transactions are logged for audit but do not affect balance. POS transactions include location data for fraud detection.",
+      "category": "Direct Mapping",
+      "entities": ["Transaction"],
+      "hops": 1,
+      "difficulty": "Easy"
+    },
+    {
+      "id": 15,
+      "question": "How does the schema support joint account ownership between multiple customers?",
+      "answer": "Joint ownership is implemented through the customer_account junction table, which creates a many-to-many relationship between customers and accounts. Each row has a relationship_type CHECK constraint allowing Owner, JointOwner, AuthorizedSigner, or Custodian. The ownership_percentage field (DECIMAL 5,2) tracks each customer's share of the account, and the is_primary flag designates the primary account holder. Multiple customers can be linked to the same account with different roles and ownership percentages, and each link tracks linked_date and optional unlinked_date.",
       "category": "Multi-hop",
       "entities": ["Customer", "Account"],
       "hops": 2,
       "difficulty": "Medium"
     },
     {
-      "id": 13,
-      "question": "What loans does Michael Rodriguez have?",
-      "answer": "Michael Rodriguez has two active loans: (1) An auto loan for $35,000 at 6.50% APR with a 60-month term, monthly payment of $684.57, and current balance due of $28,000.00; (2) He is also a joint owner on a mortgage with Elizabeth Clark for $425,000 at 6.00% APR with a 360-month term, monthly payment of $2,547.72, and current balance due of $418,750.00. Both loans link to his checking account CHK-005001 for automatic payments.",
-      "category": "Multi-hop",
-      "entities": ["Customer", "Loan", "Account"],
-      "hops": 3,
-      "difficulty": "Medium"
-    },
-    {
-      "id": 14,
-      "question": "What transactions occurred in Patricia Davis's checking account in February 2024?",
-      "answer": "Patricia Davis's checking account CHK-004001 had two transactions in February 2024: (1) A debit of $75.50 on February 13 for a point-of-sale purchase at Target Store #4567 in Chicago, IL, reducing her balance to $1,675.75; (2) A credit of $1,500.00 on February 12 from a mobile check deposit, bringing her balance to $1,751.25. The mobile check deposit has reference number MOB-987654321.",
-      "category": "Multi-hop",
-      "entities": ["Customer", "Account", "Transaction"],
-      "hops": 3,
-      "difficulty": "Medium"
-    },
-    {
-      "id": 15,
-      "question": "Which customers are joint owners on Robert Chen's accounts?",
-      "answer": "Linda Thompson is a joint owner on both of Robert Chen's accounts with 50% ownership each: checking account CHK-002001 and savings account SAV-002001. Robert Chen also has joint ownership (50%) on William Harris's savings account SAV-006001. All three customers have Level 2 or Level 3 KYC status and their accounts are held at the Westside Branch in Los Angeles.",
-      "category": "Multi-hop",
-      "entities": ["Customer", "Account", "Customer"],
-      "hops": 3,
-      "difficulty": "Medium"
-    },
-    {
       "id": 16,
-      "question": "What cards does Mary Johnson have?",
-      "answer": "Mary Johnson has three cards: (1) A Visa debit card ending in 0366 linked to her checking account CHK-003001 with a $5,000 daily limit and $1,000 ATM limit, chip and contactless enabled, active status; (2) A Visa credit card ending in 0840 with a $25,000 credit limit, $5,000 daily limit, chip and contactless enabled, active status; (3) David Anderson also has a Mastercard debit card ending in 1011 as a joint owner on her checking account.",
-      "category": "Multi-hop",
-      "entities": ["Customer", "Account", "Card"],
-      "hops": 3,
+      "question": "What information does the cards table track and how are cards linked to customers and accounts?",
+      "answer": "The cards table links to both accounts (account_id FK) and customers (customer_id FK), tracking card_type (Debit/Credit/ATM), card_network (Visa/Mastercard/Discover/AmericanExpress), card_number, cardholder name, expiration_date, and CVV. For spending controls it stores credit_limit (nullable, for credit cards), daily_limit (default $3,000 for POS), and atm_daily_limit (default $500). Security features include has_chip (EMV), contactless_enabled (tap-to-pay), and pin_set. Card status follows a lifecycle: Active, Frozen, Blocked, or Expired. The glossary states that debit cards deduct from linked checking accounts and ATM cards only work at ATMs.",
+      "category": "Direct Mapping",
+      "entities": ["Card", "Account", "Customer"],
+      "hops": 1,
       "difficulty": "Medium"
     },
     {
       "id": 17,
-      "question": "What is the interest rate on James Wilson's CD?",
-      "answer": "James Wilson's 12-month Certificate of Deposit CD-001001 has an interest rate of 4.50% APY. The CD has a principal amount of $50,000.00, was opened on February 15, 2023, matures on February 15, 2024, and has earned $2,250.00 in interest to date. This promotional rate is higher than the standard 12-month CD rate of 1.50% APY.",
+      "question": "How does the schema handle interest rates across deposit and loan products?",
+      "answer": "Interest rates are stored differently for deposits and loans. The accounts table has an interest_rate column (nullable DECIMAL 5,4) and interest_earned for year-to-date tracking. The loans table has its own interest_rate column representing APR. The business glossary explains that APR (Annual Percentage Rate) applies to loans and includes fees, while APY (Annual Percentage Yield) applies to deposits and accounts for compounding. Deposit interest is credited monthly, loan interest is amortized. Promotional rates may be temporary such as CD bonus rates, and penalty rates may apply for early withdrawal.",
       "category": "Multi-hop",
-      "entities": ["Customer", "Account", "Interest"],
-      "hops": 3,
-      "difficulty": "Medium"
+      "entities": ["Interest", "Account", "Loan"],
+      "hops": 2,
+      "difficulty": "Hard"
     },
     {
       "id": 18,
-      "question": "What branch does Robert Chen bank at and what are its services?",
-      "answer": "Robert Chen banks at the Westside Branch (branch code 0002) at 456 Oak Avenue, Los Angeles, CA 90001. This is a full-service branch with 2 tellers, 3 ATMs, and managed by Sarah Mitchell. Services include Monday-Friday 9AM-6PM and Saturday 9AM-2PM hours, loan officers, financial advisors, safe deposit boxes, and notary services. The branch opened March 20, 2015 and has active status.",
-      "category": "Multi-hop",
-      "entities": ["Customer", "Account", "Branch"],
-      "hops": 3,
-      "difficulty": "Medium"
+      "question": "What types of branches does the bank operate and how do they differ in capabilities?",
+      "answer": "The branches table supports three types via CHECK constraint: FullService, Satellite, and ATMOnly. The business glossary details each: FullService branches offer complete banking services including loan origination, financial advisors, and safe deposit boxes; Satellite branches have limited hours and staff with no loan officers; ATMOnly locations have no staff, only cash machines with 24/7 access. Each branch tracks branch_code (unique 4-digit identifier), physical address, operating hours, teller_count, atm_count, manager_name, and status (Active/TemporarilyClosed/PermanentlyClosed).",
+      "category": "Direct Mapping",
+      "entities": ["Branch"],
+      "hops": 1,
+      "difficulty": "Easy"
     },
     {
       "id": 19,
-      "question": "What ATMs are available at the Downtown Headquarters branch?",
-      "answer": "The Downtown Headquarters branch has 4 ATMs: (1) ATM-0001 is a branch ATM at 123 Main Street, operational with $85,000 cash balance, supports deposits and cardless transactions; (2) ATM-0002 is a drive-through ATM at the same address, operational with $45,000 cash balance, supports deposits and cardless transactions. Both ATMs were installed January 15, 2010 and were last replenished February 15, 2024 at 2:30 AM.",
+      "question": "How are ATMs related to branches in the schema and what types of ATMs exist?",
+      "answer": "The atms table has an optional branch_id foreign key referencing branches. When branch_id is NULL, the ATM is standalone and not affiliated with any branch. ATM types are defined by CHECK constraint: Branch (on-premises), DriveThrough (vehicle-accessible), and Standalone (independent locations). Each ATM tracks atm_code (unique), operational status (Operational/OutOfService/OutOfCash), cash_balance, last_replenished timestamp, and feature flags for deposit support and cardless withdrawal. The glossary states that cash replenishment is triggered when balance falls below a threshold, and OutOfCash ATMs may still allow balance inquiries.",
       "category": "Multi-hop",
-      "entities": ["Branch", "ATM"],
+      "entities": ["ATM", "Branch"],
       "hops": 2,
       "difficulty": "Medium"
     },
     {
       "id": 20,
-      "question": "What is the status of Jennifer Martinez's personal loan application?",
-      "answer": "Jennifer Martinez has an active personal loan (loan ID 70010) for $5,000 at 12.00% APR with a 24-month term. The monthly payment is $235.37 and the current balance due is $4,200.00. The loan was originated January 5, 2024 and matures January 5, 2026. Payments are automatically drafted from her checking account CHK-006001.",
-      "category": "Multi-hop",
-      "entities": ["Customer", "Loan", "Account"],
-      "hops": 3,
+      "question": "What is the lifecycle of a loan from application to completion?",
+      "answer": "The loans table tracks loan status through five states defined by CHECK constraint: Pending (application submitted, default), Approved (credit approved but not yet funded), Active (loan funded and being repaid), PaidOff (fully repaid), and Defaulted (borrower failed to repay). Each loan records origination_date, maturity_date, term_months, monthly_payment, and balance_due for progress tracking. The business glossary adds that defaulted loans trigger collections and credit reporting, early payoff may incur prepayment penalties, and HELOC allows revolving access to equity with no fixed payoff schedule.",
+      "category": "Direct Mapping",
+      "entities": ["Loan"],
+      "hops": 1,
       "difficulty": "Medium"
     },
     {
       "id": 21,
-      "question": "Which customers have preferred status and why?",
-      "answer": "Four customers have preferred status: (1) James Wilson - combined deposit balance of $70,491.10 and 5+ years tenure; (2) Mary Johnson - combined deposit balance of $151,000.50 and 8+ years tenure; (3) Michael Rodriguez - active loan relationship and combined deposit balance of $20,850.75; (4) Elizabeth Clark - 10+ years tenure and joint ownership on $425,000 mortgage. Preferred customers receive waived fees, preferred rates, and dedicated relationship managers.",
-      "category": "Multi-hop",
-      "entities": ["Customer", "Account"],
-      "hops": 3,
-      "difficulty": "Hard"
+      "question": "What does preferred customer status mean and how is it tracked in the schema?",
+      "answer": "Preferred status is tracked via the is_preferred boolean flag in the customers table (default: false). The business glossary states that preferred customers receive waived fees, preferred interest rates, and priority service. The glossary examples show preferred customers with longer tenure and higher balances. Additionally, the customer risk_profile (Conservative/Moderate/Aggressive) determines eligibility for investment products and credit limits, while kyc_status (Level1/Level2/Level3) determines which products and services a customer can access.",
+      "category": "Direct Mapping",
+      "entities": ["Customer"],
+      "hops": 1,
+      "difficulty": "Medium"
     },
     {
       "id": 22,
-      "question": "What is the total interest earned across all savings accounts this year?",
-      "answer": "Based on the year-to-date interest earned field, the total interest credited across all savings accounts in January 2024 was $365.37. This includes interest from: SAV-001001 ($38.12), SAV-002001 ($3.50), SAV-003001 ($243.75), SAV-004001 ($7.80), SAV-005001 ($16.70), SAV-006001 ($55.50), and MM-003001 ($187.50). Money market accounts and CDs with higher balances earned the most interest.",
-      "category": "Multi-hop",
+      "question": "How does the accounts table support interest tracking and what business rules govern interest?",
+      "answer": "The accounts table has interest_rate (nullable DECIMAL for the annual rate) and interest_earned (DECIMAL for year-to-date interest credited). The business glossary states that deposit interest is credited monthly (typically the first day of the month) and that APY accounts for compounding effects. Promotional rates may be temporary (e.g., 12-month CD bonus rates), and penalty rates may apply for rule violations such as early CD withdrawal. The interest_rate column is nullable because not all account types earn interest — non-interest-bearing checking accounts would have NULL for this field.",
+      "category": "Direct Mapping",
       "entities": ["Account", "Interest"],
-      "hops": 2,
-      "difficulty": "Hard"
+      "hops": 1,
+      "difficulty": "Medium"
     },
     {
       "id": 23,
-      "question": "What accounts have no customers linked to them?",
-      "answer": "All accounts in the system have at least one customer linked. The customer_account junction table ensures that every account has at least one Owner relationship. This is enforced by the business rule that accounts cannot exist without customer ownership. Joint accounts have multiple customers linked, while individual accounts have a single customer with 100% ownership.",
+      "question": "Can an account exist without any customer linked to it?",
+      "answer": "Looking at the schema, there is no database-level constraint that forces every account to have a customer_account row. The accounts table has no direct foreign key to customers — the relationship is through the customer_account junction table with a composite primary key (customer_id, account_id). However, the business glossary states that accounts cannot exist without customer ownership, so this is a business rule enforced at the application level rather than a schema constraint. The junction table's relationship_type defaults to Owner, and the business rule ensures at least one Owner relationship exists per account.",
       "category": "Negative",
       "entities": ["Account", "Customer"],
       "hops": 2,
@@ -217,53 +218,53 @@
     },
     {
       "id": 24,
-      "question": "What transactions failed to post and why?",
-      "answer": "One transaction failed to post: Transaction ID 900015, a $25.00 point-of-sale debit at a gas station on Jennifer Martinez's checking account CHK-006001 on February 13, 2024. The transaction failed due to insufficient funds in the account. The transaction status is 'Failed' and no funds were moved. The account balance remained at $525.50. This type of transaction does not incur an overdraft fee because the system rejected it before posting.",
+      "question": "How does the schema handle failed or cancelled transactions?",
+      "answer": "The transactions table has a status column with CHECK constraint allowing Pending, Posted, Failed, Cancelled, and OnHold states. The business glossary explains that failed transactions are logged for audit but do not affect the account balance — the balance_after field would reflect no change. Posted transactions are final and cannot be modified, only reversed with a new transaction. The transaction record preserves all fields (description, reference_number, location, amount) regardless of status, maintaining a complete audit trail for regulatory compliance.",
       "category": "Negative",
       "entities": ["Transaction", "Account"],
-      "hops": 2,
+      "hops": 1,
       "difficulty": "Medium"
     },
     {
       "id": 25,
-      "question": "Which ATMs are currently out of service or out of cash?",
-      "answer": "Two ATMs have issues: (1) ATM-0004 at 456 Oak Avenue (Westside Branch) is 'OutOfCash' with $0.00 balance - it was last replenished February 14, 2024 at 8:00 AM but deposits may still work; (2) STANDALONE-002 at 987 Birch Road in the Grocery Store is 'OutOfService' with $15,000 cash balance - this is a technical issue preventing all transactions. ATM-0004 supports deposits and cardless, while STANDALONE-002 does not support deposits and has no cardless capability.",
-      "category": "Negative",
+      "question": "What operational states can an ATM have and what do they mean for available services?",
+      "answer": "ATMs have three operational states defined by CHECK constraint: Operational (fully functional for all supported transactions), OutOfService (technical issue preventing all transactions), and OutOfCash (cash depleted, preventing withdrawals). The business glossary explains that cash replenishment is triggered when balance falls below a threshold, OutOfCash ATMs may still allow deposit transactions if supports_deposit is true, and cardless transactions require mobile app authentication. The atms table tracks cash_balance and last_replenished timestamp for operational management.",
+      "category": "Direct Mapping",
       "entities": ["ATM"],
       "hops": 1,
-      "difficulty": "Medium"
+      "difficulty": "Easy"
     }
   ],
   "categories": {
-    "Direct Mapping": 10,
-    "Multi-hop": 12,
+    "Direct Mapping": 15,
+    "Multi-hop": 7,
     "Negative": 3
   },
   "difficulty_distribution": {
-    "Easy": 10,
-    "Medium": 13,
-    "Hard": 2
+    "Easy": 9,
+    "Medium": 15,
+    "Hard": 1
   },
   "entity_coverage": {
-    "Account": 10,
-    "Customer": 10,
-    "Transaction": 8,
-    "Loan": 6,
-    "Interest": 6,
-    "Branch": 4,
-    "ATM": 5,
-    "Card": 5
+    "Account": 14,
+    "Customer": 8,
+    "Transaction": 5,
+    "Loan": 4,
+    "Interest": 5,
+    "Branch": 3,
+    "ATM": 4,
+    "Card": 3
   },
   "testing_capabilities": [
     "Many-to-many relationship navigation via junction table",
-    "Account hierarchy traversal (parent-child accounts)",
-    "Multi-hop queries across customer-account-transaction chains",
-    "Financial terminology understanding (APR vs APY, overdraft, KYC)",
-    "Status-based filtering (Active, Frozen, OutOfService, Failed)",
-    "Calculated field interpretation (interest earned, balance after)",
-    "Joint ownership and percentage splitting",
-    "Temporal queries (transaction history, maturity dates)",
-    "Negative case handling (no accounts linked, failed transactions)",
-    "Aggregation capabilities (total interest, customer counts)"
+    "Account hierarchy traversal (parent-child self-reference)",
+    "Schema constraint interpretation (CHECK, UNIQUE, FK, DEFAULT)",
+    "Business rule verification from glossary documentation",
+    "Financial terminology understanding (APR vs APY, KYC levels)",
+    "Status lifecycle comprehension across entities",
+    "Cross-entity relationship traversal (customer-account-loan-card)",
+    "Negative case reasoning (missing constraints, business vs schema rules)",
+    "Schema design pattern recognition (junction tables, self-references, nullable FKs)",
+    "Attribute-level detail recall (column types, defaults, constraints)"
   ]
 }
