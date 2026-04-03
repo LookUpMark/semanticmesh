@@ -62,3 +62,6 @@ notebooks/ablation/ablation_results/campaign_*.json
 .claude/
 data/hf_cache/**
 !data/hf_cache/.gitkeep
+
+# Study guide
+docs/study-guide/
