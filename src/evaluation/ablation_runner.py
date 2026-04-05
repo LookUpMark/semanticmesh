@@ -19,6 +19,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from src.config.llm_factory import reconfigure_from_env
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.evaluation.ragas_runner import run_ragas_evaluation
@@ -194,6 +195,7 @@ def _settings_override(
     try:
         os.environ.update(env_overrides)
         get_settings.cache_clear()
+        reconfigure_from_env()
         yield
     finally:
         for k, v in saved.items():
@@ -202,6 +204,7 @@ def _settings_override(
             else:
                 os.environ[k] = v
         get_settings.cache_clear()
+        reconfigure_from_env()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
