@@ -25,6 +25,11 @@ class AppConfig:
     # ── LLM Providers ──────────────────────────────────────────────────────────
     lmstudio_base_url: str = "http://localhost:1234/v1"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # Global provider routing override: "auto" = infer from model name prefix.
+    # Other values: "openrouter", "openai", "anthropic", "lmstudio", "ollama",
+    # "google", "bedrock", "azure", "groq", "mistral", "together", "deepseek",
+    # "xai", "nvidia", "huggingface".
+    llm_provider: str = "auto"
 
     # ── LLM Models ─────────────────────────────────────────────────────────────
     llm_model_reasoning: str = "gpt-5.4-2026-03-05"

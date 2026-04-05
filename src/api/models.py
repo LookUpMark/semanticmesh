@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from typing import Any, Literal, TypeAlias
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 # ── Shared LLM override fields ────────────────────────────────────────────────
 
 _LLM_REASONING_DESC = (
     "Reasoning / generation model. Provider auto-detected from prefix:\n"
-    "  - `openai/gpt-4.1` (OpenRouter) | `gpt-4.1` (OpenAI direct)\n"
+    "  - `lmstudio/google/gemma-4-26b-a4b` (LM Studio local)\n"
+    "  - `openrouter/openai/gpt-4.1:free` (OpenRouter)\n"
+    "  - `gpt-4.1` (OpenAI direct)\n"
     "  - `claude-3-5-sonnet-20241022` (Anthropic direct)\n"
     "  - `ollama/llama3.1` (Ollama — needs langchain-ollama or compat mode)\n"
     "  - `google/gemini-2.0-flash` or `gemini-2.0-flash` (Google Gemini)\n"
@@ -27,11 +29,293 @@ _LLM_EXTRACTION_DESC = (
     "Extraction model for triplet extraction. Same prefix conventions as reasoning_model. "
     "Sets env var LLM_MODEL_EXTRACTION."
 )
+_LLM_MIDTIER_DESC = (
+    "Mid-tier model for RAG mapping, Actor-Critic, hallucination grading. Same prefix conventions. "
+    "Sets env var LLM_MODEL_MIDTIER."
+)
 _LLM_BASE_URL_DESC = (
     "Override base URL for local / custom OpenAI-compatible endpoints "
     "(Ollama, LMStudio, self-hosted Groq proxy, etc.). "
-    "Sets env var PROVIDER_BASE_URL."
+    "Sets env var LMSTUDIO_BASE_URL."
 )
+
+_LLM_PROVIDER_DESC = (
+    "Global LLM provider routing override. When set, all model names without an explicit "
+    "provider prefix are routed through this provider. "
+    "Possible values:\n"
+    "  - `auto` — provider inferred from each model name prefix (default)\n"
+    "  - `openrouter` — all models via OpenRouter (needs OPENROUTER_API_KEY)\n"
+    "  - `openai` — all models via OpenAI API direct (needs OPENAI_API_KEY)\n"
+    "  - `anthropic` — all models via Anthropic API (needs ANTHROPIC_API_KEY)\n"
+    "  - `lmstudio` — all models via LM Studio local endpoint\n"
+    "  - `ollama` — all models via Ollama local endpoint\n"
+    "  - `groq` — all models via Groq (needs GROQ_API_KEY)\n"
+    "  - `google` — all models via Google Gemini (needs GOOGLE_API_KEY)\n"
+    "  - `mistral` — all models via Mistral AI (needs MISTRAL_API_KEY)\n"
+    "  - `together` — all models via Together AI (needs TOGETHER_API_KEY)\n"
+    "  - `bedrock` — all models via AWS Bedrock (needs AWS credentials)\n"
+    "Sets env var LLM_PROVIDER."
+)
+
+
+class PipelineConfig(BaseModel):
+    """Optional per-run configuration overrides.
+
+    All fields are optional. When provided, they temporarily override the
+    corresponding environment variable for the duration of the pipeline run
+    (build + query). When omitted, the server's current settings are used.
+
+    These overrides apply to Demo endpoints (build, query, pipeline) only.
+    Ablation studies use their own matrix-driven configuration.
+    """
+
+    # ── LLM Provider Selection ──────────────────────────────────────────────
+    provider: Literal[
+        "auto", "openrouter", "openai", "anthropic", "lmstudio", "ollama",
+        "groq", "google", "bedrock", "azure", "mistral", "together",
+        "deepseek", "xai", "nvidia", "huggingface",
+    ] | None = Field(
+        default=None,
+        description=_LLM_PROVIDER_DESC,
+        examples=["openrouter", "openai", "lmstudio"],
+    )
+
+    # ── LLM Model Selection ─────────────────────────────────────────────────
+    reasoning_model: str | None = Field(
+        default=None,
+        description=_LLM_REASONING_DESC,
+        examples=["lmstudio/google/gemma-4-26b-a4b", "gpt-4.1-mini", "groq/llama3-70b-8192"],
+    )
+    extraction_model: str | None = Field(
+        default=None,
+        description=_LLM_EXTRACTION_DESC,
+        examples=["lmstudio/google/gemma-4-26b-a4b", "gpt-4.1-nano"],
+    )
+    midtier_model: str | None = Field(
+        default=None,
+        description=_LLM_MIDTIER_DESC,
+        examples=["lmstudio/google/gemma-4-26b-a4b", "gpt-4.1-mini"],
+    )
+    lmstudio_base_url: str | None = Field(
+        default=None,
+        description=_LLM_BASE_URL_DESC,
+        examples=["http://localhost:1234/v1", "http://192.168.1.50:1234/v1"],
+    )
+
+    # ── LLM Parameters ──────────────────────────────────────────────────────
+    temperature_extraction: float | None = Field(
+        default=None, ge=0.0, le=2.0,
+        description="Temperature for extraction LLM (default 0.0 for deterministic JSON).",
+    )
+    temperature_reasoning: float | None = Field(
+        default=None, ge=0.0, le=2.0,
+        description="Temperature for reasoning LLM (default 0.0).",
+    )
+    temperature_generation: float | None = Field(
+        default=None, ge=0.0, le=2.0,
+        description="Temperature for generation LLM (default 0.3 for fluency).",
+    )
+    max_tokens_extraction: int | None = Field(
+        default=None, ge=256, le=32768,
+        description="Max output tokens for extraction LLM (default 8192).",
+    )
+    max_tokens_reasoning: int | None = Field(
+        default=None, ge=256, le=32768,
+        description="Max output tokens for reasoning LLM (default 4096).",
+    )
+
+    # ── Chunking ────────────────────────────────────────────────────────────
+    chunk_size: int | None = Field(
+        default=None, ge=64, le=2048,
+        description=(
+            "Child chunk token size (default 256). "
+            "Must be greater than chunk_overlap."
+        ),
+    )
+    chunk_overlap: int | None = Field(
+        default=None, ge=0, le=1024,
+        description=(
+            "Child chunk overlap in tokens (default 32). "
+            "Must be strictly less than chunk_size."
+        ),
+    )
+    parent_chunk_size: int | None = Field(
+        default=None, ge=128, le=4096,
+        description=(
+            "Parent chunk token size (default 800). "
+            "Must be greater than parent_chunk_overlap and greater than chunk_size."
+        ),
+    )
+    parent_chunk_overlap: int | None = Field(
+        default=None, ge=0, le=2048,
+        description=(
+            "Parent chunk overlap in tokens (default 96). "
+            "Must be strictly less than parent_chunk_size."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _validate_chunk_constraints(self) -> PipelineConfig:
+        """Enforce overlap < size for both child and parent chunks."""
+        if (
+            self.chunk_size is not None
+            and self.chunk_overlap is not None
+            and self.chunk_overlap >= self.chunk_size
+        ):
+            raise ValueError(
+                f"chunk_overlap ({self.chunk_overlap}) must be less than "
+                f"chunk_size ({self.chunk_size})."
+            )
+        if (
+            self.parent_chunk_size is not None
+            and self.parent_chunk_overlap is not None
+            and self.parent_chunk_overlap >= self.parent_chunk_size
+        ):
+            raise ValueError(
+                f"parent_chunk_overlap ({self.parent_chunk_overlap}) must be less than "
+                f"parent_chunk_size ({self.parent_chunk_size})."
+            )
+        if (
+            self.chunk_size is not None
+            and self.parent_chunk_size is not None
+            and self.parent_chunk_size <= self.chunk_size
+        ):
+            raise ValueError(
+                f"parent_chunk_size ({self.parent_chunk_size}) must be greater than "
+                f"chunk_size ({self.chunk_size})."
+            )
+        return self
+
+    # ── Retrieval ───────────────────────────────────────────────────────────
+    retrieval_mode: Literal["hybrid", "vector", "bm25"] | None = Field(
+        default=None,
+        description="Retrieval channel combination (default hybrid).",
+    )
+    retrieval_vector_top_k: int | None = Field(
+        default=None, ge=1, le=100,
+        description="Vector search candidates (default 20).",
+    )
+    retrieval_bm25_top_k: int | None = Field(
+        default=None, ge=1, le=100,
+        description="BM25 keyword candidates (default 10).",
+    )
+    enable_reranker: bool | None = Field(
+        default=None,
+        description="Enable cross-encoder reranking (default true).",
+    )
+    reranker_top_k: int | None = Field(
+        default=None, ge=1, le=50,
+        description="Candidates kept after reranking (default 12).",
+    )
+
+    # ── Entity Resolution ───────────────────────────────────────────────────
+    er_similarity_threshold: float | None = Field(
+        default=None, ge=0.0, le=1.0,
+        description="Cosine similarity threshold for entity blocking (default 0.75).",
+    )
+    er_blocking_top_k: int | None = Field(
+        default=None, ge=1, le=50,
+        description="K-NN candidates per entity in blocking (default 10).",
+    )
+
+    # ── Mapping & Validation ────────────────────────────────────────────────
+    confidence_threshold: float | None = Field(
+        default=None, ge=0.0, le=1.0,
+        description="Mapping confidence threshold for HITL (default 0.90).",
+    )
+    max_reflection_attempts: int | None = Field(
+        default=None, ge=1, le=10,
+        description="Max Actor-Critic reflection retries (default 3).",
+    )
+    max_cypher_healing_attempts: int | None = Field(
+        default=None, ge=0, le=10,
+        description="Max Cypher healing retries before fallback (default 3).",
+    )
+    max_hallucination_retries: int | None = Field(
+        default=None, ge=0, le=10,
+        description="Max hallucination regeneration retries (default 3).",
+    )
+
+    # ── Feature Flags ───────────────────────────────────────────────────────
+    enable_schema_enrichment: bool | None = Field(
+        default=None,
+        description="LLM acronym expansion during schema enrichment (default true).",
+    )
+    enable_cypher_healing: bool | None = Field(
+        default=None,
+        description="Auto-fix Cypher syntax errors via LLM reflection (default true).",
+    )
+    enable_critic_validation: bool | None = Field(
+        default=None,
+        description="Actor-Critic mapping validation loop (default true).",
+    )
+    enable_hallucination_grader: bool | None = Field(
+        default=None,
+        description="Self-RAG hallucination grading (default true).",
+    )
+    enable_retrieval_quality_gate: bool | None = Field(
+        default=None,
+        description="Retrieval quality gate before generation (default true).",
+    )
+    enable_grader_consistency_validator: bool | None = Field(
+        default=None,
+        description="Grader consistency check across iterations (default true).",
+    )
+    enable_spacy_heuristics: bool | None = Field(
+        default=None,
+        description="spaCy-based heuristic extraction as fallback (default true).",
+    )
+    enable_lazy_expansion: bool | None = Field(
+        default=None,
+        description="Lazy context expansion strategy (default true).",
+    )
+
+    def to_env_overrides(self) -> dict[str, str]:
+        """Convert non-None fields to env var overrides."""
+        mapping: dict[str, Any] = {
+            "LLM_PROVIDER": self.provider,
+            "LLM_MODEL_REASONING": self.reasoning_model,
+            "LLM_MODEL_EXTRACTION": self.extraction_model,
+            "LLM_MODEL_MIDTIER": self.midtier_model,
+            "LMSTUDIO_BASE_URL": self.lmstudio_base_url,
+            "LLM_TEMPERATURE_EXTRACTION": self.temperature_extraction,
+            "LLM_TEMPERATURE_REASONING": self.temperature_reasoning,
+            "LLM_TEMPERATURE_GENERATION": self.temperature_generation,
+            "LLM_MAX_TOKENS_EXTRACTION": self.max_tokens_extraction,
+            "LLM_MAX_TOKENS_REASONING": self.max_tokens_reasoning,
+            "CHUNK_SIZE": self.chunk_size,
+            "CHUNK_OVERLAP": self.chunk_overlap,
+            "PARENT_CHUNK_SIZE": self.parent_chunk_size,
+            "PARENT_CHUNK_OVERLAP": self.parent_chunk_overlap,
+            "RETRIEVAL_MODE": self.retrieval_mode,
+            "RETRIEVAL_VECTOR_TOP_K": self.retrieval_vector_top_k,
+            "RETRIEVAL_BM25_TOP_K": self.retrieval_bm25_top_k,
+            "ENABLE_RERANKER": self.enable_reranker,
+            "RERANKER_TOP_K": self.reranker_top_k,
+            "ER_SIMILARITY_THRESHOLD": self.er_similarity_threshold,
+            "ER_BLOCKING_TOP_K": self.er_blocking_top_k,
+            "CONFIDENCE_THRESHOLD": self.confidence_threshold,
+            "MAX_REFLECTION_ATTEMPTS": self.max_reflection_attempts,
+            "MAX_CYPHER_HEALING_ATTEMPTS": self.max_cypher_healing_attempts,
+            "MAX_HALLUCINATION_RETRIES": self.max_hallucination_retries,
+            "ENABLE_SCHEMA_ENRICHMENT": self.enable_schema_enrichment,
+            "ENABLE_CYPHER_HEALING": self.enable_cypher_healing,
+            "ENABLE_CRITIC_VALIDATION": self.enable_critic_validation,
+            "ENABLE_HALLUCINATION_GRADER": self.enable_hallucination_grader,
+            "ENABLE_RETRIEVAL_QUALITY_GATE": self.enable_retrieval_quality_gate,
+            "ENABLE_GRADER_CONSISTENCY_VALIDATOR": self.enable_grader_consistency_validator,
+            "ENABLE_SPACY_HEURISTICS": self.enable_spacy_heuristics,
+            "ENABLE_LAZY_EXPANSION": self.enable_lazy_expansion,
+        }
+        result: dict[str, str] = {}
+        for env_key, value in mapping.items():
+            if value is None:
+                continue
+            if isinstance(value, bool):
+                result[env_key] = "true" if value else "false"
+            else:
+                result[env_key] = str(value)
+        return result
 
 
 # ── Ablation API ──────────────────────────────────────────────────────────────
@@ -310,6 +594,10 @@ class BuildRequest(BaseModel):
         default=False,
         description="Use heuristic rule-based extraction instead of LLM (faster, less accurate).",
     )
+    config: PipelineConfig | None = Field(
+        default=None,
+        description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
+    )
 
 
 class BuildResultResponse(BaseModel):
@@ -334,6 +622,10 @@ class QueryRequest(BaseModel):
             "How are products and orders related?",
         ],
     )
+    config: PipelineConfig | None = Field(
+        default=None,
+        description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
+    )
 
 
 class QueryResponse(BaseModel):
@@ -349,7 +641,7 @@ class QueryResponse(BaseModel):
 
 
 class PipelineRequest(BaseModel):
-    """Run the complete E2E pipeline: build KG then answer questions."""
+    """Run a complete E2E pipeline: build KG then answer questions."""
 
     doc_paths: list[str] = Field(
         description="Paths to business documentation files.",
@@ -389,6 +681,10 @@ class PipelineRequest(BaseModel):
     study_id: str = Field(
         default="demo",
         description="Run identifier used for logging and trace output.",
+    )
+    config: PipelineConfig | None = Field(
+        default=None,
+        description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
     )
 
 

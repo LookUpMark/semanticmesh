@@ -310,8 +310,8 @@ class TestResolveEntities:
         result = resolve_entities([], emb, llm)
         assert result == []
 
-    def test_all_singletons_no_llm_call(self) -> None:
-        """Orthogonal embeddings → no clusters → no LLM calls."""
+    def test_all_singletons_llm_called_for_definitions(self) -> None:
+        """Orthogonal embeddings → no clusters → LLM called for singleton definition synthesis."""
         triplets = [
             _make_triplet_full("Customer", "Product"),
             _make_triplet_full("Order", "Invoice"),
@@ -319,8 +319,11 @@ class TestResolveEntities:
         entities = ["Customer", "Product", "Order", "Invoice"]
         emb = _make_embeddings_orthogonal(entities)
         llm = MagicMock()
+        # Simulate LLM returning a valid definition JSON for each singleton
+        llm.invoke.return_value = MagicMock(content='{"definition": "A business entity."}')
         result = resolve_entities(triplets, emb, llm)
-        llm.invoke.assert_not_called()
+        # LLM is called once per singleton that has provenance texts
+        assert llm.invoke.call_count >= 1
         assert len(result) == 4
 
     def test_cluster_resolved_to_single_entity(self) -> None:

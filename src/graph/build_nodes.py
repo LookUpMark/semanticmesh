@@ -56,7 +56,7 @@ def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
     )
     entity = resolved or Entity(
         name=proposal.mapped_concept or "Unknown",
-        definition=proposal.reasoning or "",
+        definition="",
         synonyms=[],
         provenance_text="",
         source_doc="",

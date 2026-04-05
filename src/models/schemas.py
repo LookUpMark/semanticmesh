@@ -55,6 +55,7 @@ class CanonicalEntityDecision(BaseModel):
     merge: bool
     canonical_name: str
     reasoning: str
+    definition: str | None = None
 
 
 class Entity(BaseModel):

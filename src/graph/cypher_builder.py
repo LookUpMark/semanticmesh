@@ -18,13 +18,16 @@ from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
 
 _UPSERT_CYPHER = """\
 MERGE (bc:BusinessConcept {name: $concept_name})
-ON CREATE SET bc.definition = $concept_definition,
+ON CREATE SET bc.definition = $definition,
+              bc.mapping_reasoning = $mapping_reasoning,
               bc.provenance_text = $provenance_text,
               bc.source_doc = $source_doc,
               bc.synonyms = $synonyms,
               bc.confidence_score = $confidence_score,
               bc.created_at = datetime()
-ON MATCH SET  bc.confidence_score = $confidence_score,
+ON MATCH SET  bc.definition = $definition,
+              bc.mapping_reasoning = $mapping_reasoning,
+              bc.confidence_score = $confidence_score,
               bc.updated_at = datetime()
 
 MERGE (pt:PhysicalTable {table_name: $table_name})
@@ -57,8 +60,9 @@ def build_upsert_cypher(
         table:    The :class:`~src.models.schemas.EnrichedTableSchema` for the
                   table being mapped.
         entity:   Optional resolved :class:`~src.models.schemas.Entity` — when
-                  provided its ``provenance_text``, ``source_doc`` and
-                  ``synonyms`` are propagated to the graph node.
+                  provided its ``definition``, ``provenance_text``,
+                  ``source_doc`` and ``synonyms`` are propagated to the graph
+                  node.
 
     Returns:
         A ``(cypher_template, params)`` tuple ready for
@@ -69,7 +73,8 @@ def build_upsert_cypher(
 
     params: dict = {
         "concept_name": proposal.mapped_concept or "Unknown",
-        "concept_definition": proposal.reasoning or "",
+        "definition": entity.definition if entity else "",
+        "mapping_reasoning": proposal.reasoning or "",
         "provenance_text": entity.provenance_text if entity else "",
         "source_doc": entity.source_doc if entity else "",
         "synonyms": entity.synonyms if entity else [],

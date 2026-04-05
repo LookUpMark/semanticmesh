@@ -154,7 +154,10 @@ def judge_cluster(
     _no_merge = _no_merge_decision(cluster, "Conservative no-merge default.")
 
     max_attempts: int = settings.max_reflection_attempts
-    _fmt = '{"merge": <bool>, "canonical_name": "<str>", "reasoning": "<str>"}'
+    _fmt = (
+        '{"merge": <bool>, "canonical_name": "<str>",'
+        ' "reasoning": "<str>", "definition": "<str>"}'
+    )
 
     for attempt in range(1, max_attempts + 1):
         try:
@@ -229,9 +232,15 @@ def cluster_to_entity(
         all_provenance.extend(provenance_map.get(variant, []))
     provenance_text = " | ".join(dict.fromkeys(all_provenance))
 
+    # Prefer LLM-generated definition; fall back to first provenance sentence when
+    # definition is None or empty (e.g. model ignored the prompt despite instructions).
+    definition = decision.definition or ""
+    if not definition and all_provenance:
+        definition = next(iter(dict.fromkeys(all_provenance)))
+
     return Entity(
         name=canonical,
-        definition="",
+        definition=definition,
         synonyms=synonyms,
         provenance_text=provenance_text[:1000],
         source_doc="",

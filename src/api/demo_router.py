@@ -9,10 +9,12 @@ from typing import Any
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 
 from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running
+from src.evaluation.ablation_runner import _settings_override as _settings_override
 from src.api.models import (
     BuildRequest,
     BuildResultResponse,
     GraphStatsResponse,
+    PipelineConfig,
     PipelineJobResponse,
     PipelineRequest,
     PipelineResultResponse,
@@ -94,14 +96,16 @@ def _run_build_task(job_id: str, req: BuildRequest) -> None:
         doc_paths = [_to_abs(p) for p in req.doc_paths]
         ddl_paths = [_to_abs(p) for p in req.ddl_paths]
 
-        builder_state = run_builder(
-            raw_documents=doc_paths,
-            ddl_paths=ddl_paths,
-            production=False,
-            clear_graph=req.clear_graph,
-            use_lazy_extraction=req.lazy_extraction if req.lazy_extraction else None,
-            study_id=req.study_id,
-        )
+        env_overrides = req.config.to_env_overrides() if req.config else {}
+        with _settings_override(env_overrides):
+            builder_state = run_builder(
+                raw_documents=doc_paths,
+                ddl_paths=ddl_paths,
+                production=False,
+                clear_graph=req.clear_graph,
+                use_lazy_extraction=req.lazy_extraction if req.lazy_extraction else None,
+                study_id=req.study_id,
+            )
         result = {
             "builder": {
                 "triplets_extracted": len(builder_state.get("triplets", [])),
@@ -126,29 +130,31 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
         doc_paths = [_to_abs(p) for p in req.doc_paths]
         ddl_paths = [_to_abs(p) for p in req.ddl_paths]
 
-        # 1. Build the Knowledge Graph
-        builder_state = run_builder(
-            raw_documents=doc_paths,
-            ddl_paths=ddl_paths,
-            production=False,
-            clear_graph=req.clear_graph,
-            use_lazy_extraction=req.lazy_extraction if req.lazy_extraction else None,
-            study_id=req.study_id,
-        )
-        builder_summary = {
-            "triplets_extracted": len(builder_state.get("triplets", [])),
-            "entities_resolved": len(builder_state.get("entities", [])),
-            "tables_parsed": len(builder_state.get("tables", [])),
-            "tables_completed": len(builder_state.get("completed_tables", [])),
-            "parent_chunks": len(builder_state.get("parent_chunks", [])),
-            "child_chunks": len(builder_state.get("chunks", [])),
-        }
+        env_overrides = req.config.to_env_overrides() if req.config else {}
+        with _settings_override(env_overrides):
+            # 1. Build the Knowledge Graph
+            builder_state = run_builder(
+                raw_documents=doc_paths,
+                ddl_paths=ddl_paths,
+                production=False,
+                clear_graph=req.clear_graph,
+                use_lazy_extraction=req.lazy_extraction if req.lazy_extraction else None,
+                study_id=req.study_id,
+            )
+            builder_summary = {
+                "triplets_extracted": len(builder_state.get("triplets", [])),
+                "entities_resolved": len(builder_state.get("entities", [])),
+                "tables_parsed": len(builder_state.get("tables", [])),
+                "tables_completed": len(builder_state.get("completed_tables", [])),
+                "parent_chunks": len(builder_state.get("parent_chunks", [])),
+                "child_chunks": len(builder_state.get("chunks", [])),
+            }
 
-        # 2. Answer each question
-        raw_answers: list[dict[str, Any]] = []
-        for idx, question in enumerate(req.questions):
-            qr = run_query(question, query_index=idx, study_id=req.study_id)
-            raw_answers.append(qr)
+            # 2. Answer each question
+            raw_answers: list[dict[str, Any]] = []
+            for idx, question in enumerate(req.questions):
+                qr = run_query(question, query_index=idx, study_id=req.study_id)
+                raw_answers.append(qr)
 
         result: dict[str, Any] = {
             "builder": builder_summary,
@@ -256,7 +262,9 @@ def post_query(req: QueryRequest) -> QueryResponse:
     try:
         from src.generation.query_graph import run_query
 
-        result = run_query(req.question)
+        env_overrides = req.config.to_env_overrides() if req.config else {}
+        with _settings_override(env_overrides):
+            result = run_query(req.question)
         return _query_result_to_response(result)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(exc)) from exc

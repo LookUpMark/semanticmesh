@@ -242,9 +242,13 @@ def make_llm(
         )
 
     # Default: LM Studio local endpoint
+    # Strip explicit "lmstudio/" prefix so the model name matches what LM Studio serves
+    effective_model = model
+    if model.lower().startswith("lmstudio/"):
+        effective_model = model[len("lmstudio/"):]
     effective_base_url = provider_base_url or lmstudio_base_url
     chat = _build_lmstudio_chat(
-        model,
+        effective_model,
         temperature=temperature,
         max_tokens=max_tokens,
         lmstudio_base_url=effective_base_url,
