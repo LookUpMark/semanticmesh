@@ -1,14 +1,17 @@
 """Embedding model singleton — shared encoder for entity blocking and retrieval.
 
-Supports two backends:
+Supports three backends:
 - **OpenAI** (``text-embedding-3-large``, ``text-embedding-3-small``): cloud API,
   uses ``settings.openai_api_key``.  Dimension is controlled by
   ``settings.embedding_dimensions`` (default 1024, matches Neo4j vector index).
+- **LM Studio** (``lmstudio/<model>``): OpenAI-compatible local server,
+  uses ``settings.lmstudio_base_url``.
 - **BGE-M3** (``BAAI/bge-m3``): local FlagEmbedding model. Uses GPU (``cuda:0``)
   if available, falls back to CPU automatically.
 
 The active backend is auto-detected from ``settings.embedding_model``:
-- starts with ``text-`` → OpenAI
+- starts with ``text-embedding-`` → OpenAI
+- starts with ``lmstudio/`` → LM Studio (OpenAI-compatible)
 - anything else → BGE-M3 (FlagEmbedding)
 """
 
@@ -53,6 +56,26 @@ class _OpenAIEmbedder:
         return np.array(results, dtype=np.float32)
 
 
+class _LMStudioEmbedder:
+    """OpenAI-compatible embedder forwarding requests to a local LM Studio server."""
+
+    def __init__(self, model_name: str) -> None:
+        from openai import OpenAI  # noqa: PLC0415
+
+        base_url: str = get_settings().lmstudio_base_url
+        self._client = OpenAI(api_key="lm-studio", base_url=base_url)
+        self._model = model_name
+
+    def encode(self, texts: list[str], batch_size: int = 32, **_kwargs) -> np.ndarray:
+        """Embed *texts* in batches via LM Studio; returns (N, dim) float32 ndarray."""
+        results: list[list[float]] = []
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i : i + batch_size]
+            resp = self._client.embeddings.create(input=batch, model=self._model)
+            results.extend([e.embedding for e in resp.data])
+        return np.array(results, dtype=np.float32)
+
+
 @lru_cache(maxsize=1)
 def get_embeddings():
     """Return the singleton embedder instance.
@@ -71,6 +94,11 @@ def get_embeddings():
         dims: int = getattr(settings, "embedding_dimensions", 1024)
         logger.info("Using OpenAI embedding model '%s' (dimensions=%d).", model_name, dims)
         return _OpenAIEmbedder(model_name, dimensions=dims)
+
+    if model_name.startswith("lmstudio/"):
+        bare = model_name[len("lmstudio/"):]
+        logger.info("Using LM Studio embedding model '%s'.", bare)
+        return _LMStudioEmbedder(bare)
 
     # Fallback: local BGE-M3
     try:
