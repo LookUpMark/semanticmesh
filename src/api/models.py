@@ -9,28 +9,21 @@ from pydantic import BaseModel, Field, model_validator
 # ── Shared LLM override fields ────────────────────────────────────────────────
 
 _LLM_REASONING_DESC = (
-    "Reasoning / generation model. Provider auto-detected from prefix:\n"
-    "  - `lmstudio/google/gemma-4-26b-a4b` (LM Studio local)\n"
-    "  - `openrouter/openai/gpt-4.1:free` (OpenRouter)\n"
-    "  - `gpt-4.1` (OpenAI direct)\n"
+    "Reasoning / generation model name. When `provider` is set, the model name is passed\n"
+    "directly to that provider — no prefix needed. With `provider=null` (auto-detect),\n"
+    "the prefix determines the provider:\n"
+    "  - `openai/gpt-oss-120b` (OpenRouter — any `/` without named prefix)\n"
+    "  - `gpt-4.1` (OpenAI direct — bare gpt-* prefix)\n"
     "  - `claude-3-5-sonnet-20241022` (Anthropic direct)\n"
-    "  - `ollama/llama3.1` (Ollama — needs langchain-ollama or compat mode)\n"
-    "  - `google/gemini-2.0-flash` or `gemini-2.0-flash` (Google Gemini)\n"
-    "  - `bedrock/anthropic.claude-3-sonnet-20240229-v1:0` (AWS Bedrock)\n"
-    "  - `groq/llama3-70b-8192` (Groq — OpenAI-compat, no extra package)\n"
-    "  - `mistral/mistral-large-latest` (Mistral AI)\n"
-    "  - `together/meta-llama/Llama-3-70b` (Together AI — OpenAI-compat)\n"
-    "  - `deepseek/deepseek-chat` or `deepseek-chat` (DeepSeek)\n"
-    "  - `xai/grok-2` or `grok-2` (xAI Grok — OpenAI-compat)\n"
-    "  - `nvidia/meta/llama-3.1-70b-instruct` (Nvidia NIM — OpenAI-compat)\n"
-    "Sets env var LLM_MODEL_REASONING for the pipeline run."
+    "  - `ollama/llama3.1`, `groq/llama3-70b-8192`, etc. (named-prefix providers)\n"
+    "Sets env var LLM_MODEL_REASONING."
 )
 _LLM_EXTRACTION_DESC = (
-    "Extraction model for triplet extraction. Same prefix conventions as reasoning_model. "
+    "Extraction model for triplet extraction. Same name conventions as reasoning_model.\n"
     "Sets env var LLM_MODEL_EXTRACTION."
 )
 _LLM_MIDTIER_DESC = (
-    "Mid-tier model for RAG mapping, Actor-Critic, hallucination grading. Same prefix conventions. "
+    "Mid-tier model for RAG mapping, Actor-Critic, hallucination grading.\n"
     "Sets env var LLM_MODEL_MIDTIER."
 )
 _LLM_BASE_URL_DESC = (
@@ -75,26 +68,26 @@ class PipelineConfig(BaseModel):
         "groq", "google", "bedrock", "azure", "mistral", "together",
         "deepseek", "xai", "nvidia", "huggingface",
     ] | None = Field(
-        default=None,
+        default="openrouter",
         description=_LLM_PROVIDER_DESC,
         examples=["openrouter", "openai", "lmstudio"],
     )
 
     # ── LLM Model Selection ─────────────────────────────────────────────────
     reasoning_model: str | None = Field(
-        default=None,
+        default="openai/gpt-oss-120b",
         description=_LLM_REASONING_DESC,
-        examples=["lmstudio/google/gemma-4-26b-a4b", "gpt-4.1-mini", "groq/llama3-70b-8192"],
+        examples=["openai/gpt-oss-120b", "gpt-4.1", "groq/llama3-70b-8192"],
     )
     extraction_model: str | None = Field(
-        default=None,
+        default="openai/gpt-4.1-nano",
         description=_LLM_EXTRACTION_DESC,
-        examples=["lmstudio/google/gemma-4-26b-a4b", "gpt-4.1-nano"],
+        examples=["openai/gpt-4.1-nano", "gpt-4.1-nano"],
     )
     midtier_model: str | None = Field(
-        default=None,
+        default="openai/gpt-4.1-nano",
         description=_LLM_MIDTIER_DESC,
-        examples=["lmstudio/google/gemma-4-26b-a4b", "gpt-4.1-mini"],
+        examples=["openai/gpt-4.1-nano", "gpt-4.1-mini"],
     )
     lmstudio_base_url: str | None = Field(
         default=None,
@@ -104,53 +97,50 @@ class PipelineConfig(BaseModel):
 
     # ── LLM Parameters ──────────────────────────────────────────────────────
     temperature_extraction: float | None = Field(
-        default=None, ge=0.0, le=2.0,
-        description="Temperature for extraction LLM (default 0.0 for deterministic JSON).",
+        default=0.0, ge=0.0, le=2.0,
+        description="Temperature for extraction LLM (0.0 = deterministic JSON).",
     )
     temperature_reasoning: float | None = Field(
-        default=None, ge=0.0, le=2.0,
-        description="Temperature for reasoning LLM (default 0.0).",
+        default=0.0, ge=0.0, le=2.0,
+        description="Temperature for reasoning/mapping LLM (0.0 = deterministic).",
     )
     temperature_generation: float | None = Field(
-        default=None, ge=0.0, le=2.0,
-        description="Temperature for generation LLM (default 0.3 for fluency).",
+        default=0.3, ge=0.0, le=2.0,
+        description="Temperature for answer generation LLM (0.3 for fluency).",
     )
     max_tokens_extraction: int | None = Field(
-        default=None, ge=256, le=32768,
-        description="Max output tokens for extraction LLM (default 8192).",
+        default=8192, ge=256, le=32768,
+        description="Max output tokens for extraction LLM.",
     )
     max_tokens_reasoning: int | None = Field(
-        default=None, ge=256, le=32768,
-        description="Max output tokens for reasoning LLM (default 4096).",
+        default=4096, ge=256, le=32768,
+        description="Max output tokens for reasoning LLM.",
     )
 
     # ── Chunking ────────────────────────────────────────────────────────────
     chunk_size: int | None = Field(
-        default=None, ge=64, le=2048,
+        default=256, ge=64, le=2048,
         description=(
-            "Child chunk token size (default 256). "
-            "Must be greater than chunk_overlap."
+            "Child chunk token size. Must be greater than chunk_overlap."
         ),
     )
     chunk_overlap: int | None = Field(
-        default=None, ge=0, le=1024,
+        default=32, ge=0, le=1024,
         description=(
-            "Child chunk overlap in tokens (default 32). "
-            "Must be strictly less than chunk_size."
+            "Child chunk overlap in tokens. Must be strictly less than chunk_size."
         ),
     )
     parent_chunk_size: int | None = Field(
-        default=None, ge=128, le=4096,
+        default=800, ge=128, le=4096,
         description=(
-            "Parent chunk token size (default 800). "
+            "Parent chunk token size. "
             "Must be greater than parent_chunk_overlap and greater than chunk_size."
         ),
     )
     parent_chunk_overlap: int | None = Field(
-        default=None, ge=0, le=2048,
+        default=96, ge=0, le=2048,
         description=(
-            "Parent chunk overlap in tokens (default 96). "
-            "Must be strictly less than parent_chunk_size."
+            "Parent chunk overlap in tokens. Must be strictly less than parent_chunk_size."
         ),
     )
 
@@ -188,86 +178,86 @@ class PipelineConfig(BaseModel):
 
     # ── Retrieval ───────────────────────────────────────────────────────────
     retrieval_mode: Literal["hybrid", "vector", "bm25"] | None = Field(
-        default=None,
-        description="Retrieval channel combination (default hybrid).",
+        default="hybrid",
+        description="Retrieval channel combination.",
     )
     retrieval_vector_top_k: int | None = Field(
-        default=None, ge=1, le=100,
-        description="Vector search candidates (default 20).",
+        default=20, ge=1, le=100,
+        description="Vector search candidates.",
     )
     retrieval_bm25_top_k: int | None = Field(
-        default=None, ge=1, le=100,
-        description="BM25 keyword candidates (default 10).",
+        default=10, ge=1, le=100,
+        description="BM25 keyword candidates.",
     )
     enable_reranker: bool | None = Field(
-        default=None,
-        description="Enable cross-encoder reranking (default true).",
+        default=True,
+        description="Enable cross-encoder reranking (bge-reranker-v2-m3).",
     )
     reranker_top_k: int | None = Field(
-        default=None, ge=1, le=50,
-        description="Candidates kept after reranking (default 12).",
+        default=12, ge=1, le=50,
+        description="Candidates kept after reranking.",
     )
 
     # ── Entity Resolution ───────────────────────────────────────────────────
     er_similarity_threshold: float | None = Field(
-        default=None, ge=0.0, le=1.0,
-        description="Cosine similarity threshold for entity blocking (default 0.75).",
+        default=0.75, ge=0.0, le=1.0,
+        description="Cosine similarity threshold for entity blocking.",
     )
     er_blocking_top_k: int | None = Field(
-        default=None, ge=1, le=50,
-        description="K-NN candidates per entity in blocking (default 10).",
+        default=10, ge=1, le=50,
+        description="K-NN candidates per entity in blocking.",
     )
 
     # ── Mapping & Validation ────────────────────────────────────────────────
     confidence_threshold: float | None = Field(
-        default=None, ge=0.0, le=1.0,
-        description="Mapping confidence threshold for HITL (default 0.90).",
+        default=0.90, ge=0.0, le=1.0,
+        description="Mapping confidence threshold for HITL interrupt.",
     )
     max_reflection_attempts: int | None = Field(
-        default=None, ge=1, le=10,
-        description="Max Actor-Critic reflection retries (default 3).",
+        default=3, ge=1, le=10,
+        description="Max Actor-Critic reflection retries.",
     )
     max_cypher_healing_attempts: int | None = Field(
-        default=None, ge=0, le=10,
-        description="Max Cypher healing retries before fallback (default 3).",
+        default=3, ge=0, le=10,
+        description="Max Cypher healing retries before deterministic fallback.",
     )
     max_hallucination_retries: int | None = Field(
-        default=None, ge=0, le=10,
-        description="Max hallucination regeneration retries (default 3).",
+        default=3, ge=0, le=10,
+        description="Max hallucination regeneration retries.",
     )
 
     # ── Feature Flags ───────────────────────────────────────────────────────
     enable_schema_enrichment: bool | None = Field(
-        default=None,
-        description="LLM acronym expansion during schema enrichment (default true).",
+        default=True,
+        description="LLM acronym expansion during schema enrichment.",
     )
     enable_cypher_healing: bool | None = Field(
-        default=None,
-        description="Auto-fix Cypher syntax errors via LLM reflection (default true).",
+        default=True,
+        description="Auto-fix Cypher syntax errors via LLM reflection.",
     )
     enable_critic_validation: bool | None = Field(
-        default=None,
-        description="Actor-Critic mapping validation loop (default true).",
+        default=True,
+        description="Actor-Critic mapping validation loop.",
     )
     enable_hallucination_grader: bool | None = Field(
-        default=None,
-        description="Self-RAG hallucination grading (default true).",
+        default=True,
+        description="Self-RAG hallucination grading.",
     )
     enable_retrieval_quality_gate: bool | None = Field(
-        default=None,
-        description="Retrieval quality gate before generation (default true).",
+        default=True,
+        description="Retrieval quality gate before generation.",
     )
     enable_grader_consistency_validator: bool | None = Field(
-        default=None,
-        description="Grader consistency check across iterations (default true).",
+        default=True,
+        description="Grader consistency check across iterations.",
     )
     enable_spacy_heuristics: bool | None = Field(
-        default=None,
-        description="spaCy-based heuristic extraction as fallback (default true).",
+        default=True,
+        description="spaCy-based heuristic extraction as fallback.",
     )
     enable_lazy_expansion: bool | None = Field(
-        default=None,
-        description="Lazy context expansion strategy (default true).",
+        default=True,
+        description="Lazy context expansion strategy.",
     )
 
     def to_env_overrides(self) -> dict[str, str]:

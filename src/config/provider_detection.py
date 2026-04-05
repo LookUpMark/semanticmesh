@@ -132,8 +132,13 @@ def detect_provider(model: str) -> str:
 
     Rules (applied in order, first match wins):
 
+    0. **Global override** via ``LLM_PROVIDER`` env var (value != ``"auto"``) →
+       the specified provider is returned immediately for *any* model name.
+       This lets you point ``reasoning_model: "gpt-4.1"`` at OpenRouter simply
+       by setting ``LLM_PROVIDER=openrouter``, without prefixing every model name.
     1. Named-provider slash prefix (e.g. ``ollama/``, ``groq/``, ``bedrock/``) →
-       the named provider (see ``_NAMED_PREFIX_MAP``).
+       the named provider (see ``_NAMED_PREFIX_MAP``).  These explicit prefixes
+       always win over the global override.
     2. Any remaining ``/`` → **openrouter**
        (e.g. ``openai/gpt-4.1:free``, ``meta-llama/llama-3.3-70b-instruct:free``)
     3. Bare OpenAI prefixes (``gpt-``, ``o1-``, etc.) → **openai** (direct)
@@ -159,21 +164,23 @@ def detect_provider(model: str) -> str:
     """
     m = model.lower()
 
-    # Rule 1: named provider slash prefix
+    # Rule 0: global provider override via LLM_PROVIDER env var.
+    # Named-slash prefixes (Rule 1) still take priority — e.g. "ollama/llama3"
+    # with LLM_PROVIDER=openrouter still routes to Ollama.
+    _global = os.environ.get("LLM_PROVIDER", "auto").strip().lower()
+
+    # Rule 1: named provider slash prefix (wins even over global override)
     for prefix, provider in _NAMED_PREFIX_MAP.items():
         if m.startswith(prefix):
             return provider
 
+    # Apply global override for all model names without a named-slash prefix.
+    if _global and _global != "auto":
+        return _global
+
     # Rule 2: any remaining slash → OpenRouter
     if "/" in m:
         return "openrouter"
-
-    # Rule 2.5: global provider override via LLM_PROVIDER env var.
-    # Applied after explicit prefix checks so that a named prefix (e.g. ollama/)
-    # always takes priority over the global override.
-    _global = os.environ.get("LLM_PROVIDER", "auto").strip().lower()
-    if _global and _global != "auto":
-        return _global
 
     # Rule 3: bare OpenAI prefixes
     if m.startswith(_OPENAI_PREFIXES):
