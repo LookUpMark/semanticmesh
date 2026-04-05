@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     openrouter_base_url: str = DEFAULT_CONFIG.openrouter_base_url
     openrouter_api_key: SecretStr = SecretStr("")
     openai_api_key: SecretStr = SecretStr("")
+    llm_provider: str = DEFAULT_CONFIG.llm_provider
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
     llm_model_midtier: str = DEFAULT_CONFIG.llm_model_midtier

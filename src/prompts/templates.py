@@ -42,7 +42,8 @@ Output format:
 {
   "merge": <true | false>,
   "canonical_name": "<the single best name for this entity if merge=true, else the most specific variant>",
-  "reasoning": "<one sentence explaining your decision>"
+  "reasoning": "<one sentence explaining your decision>",
+  "definition": "<a concise, self-contained sentence defining what this entity represents in the business domain>"
 }
 
 Rules:
@@ -50,7 +51,8 @@ Rules:
 - Keep "reasoning" to ONE sentence maximum. Do not write essays.
 - Base your decision SOLELY on the provenance_text context, not on the names alone.
 - If variants appear in completely different contexts, merge=false.
-- "canonical_name" should be the most precise, unambiguous form of the entity name."""
+- "canonical_name" should be the most precise, unambiguous form of the entity name.
+- "definition" is REQUIRED and must never be null. Always provide a concise definition based on provenance text. If merge=false, define the surviving canonical variant. If context is minimal, derive a definition from the entity name itself."""
 
 
 ER_JUDGE_USER = """Evaluate the following entity name variants and their original context passages.
@@ -63,7 +65,31 @@ ER_JUDGE_USER = """Evaluate the following entity name variants and their origina
 {provenance_json}
 </provenance_contexts>
 
-Do all these variants refer to the same real-world concept? Return the JSON decision."""
+Do all these variants refer to the same real-world concept? Return the JSON decision. Remember: "definition" is required — do not set it to null."""
+
+
+# ── PT-02b: Singleton Entity Definition Synthesis ─────────────────────────────
+
+ENTITY_DEFINITION_SYSTEM = """You are a data governance expert. Your task is to write a single concise sentence that defines a named entity based on its context in a business document.
+
+Output format:
+{
+  "definition": "<one sentence, maximum 30 words, defining the entity>"
+}
+
+Rules:
+- Output ONLY valid JSON. No markdown. No preamble.
+- The definition must be exactly ONE sentence.
+- Base the definition on the provided context. Do not invent facts not present in the context.
+- If context is minimal, derive the definition from the entity name alone.
+- Do NOT start the sentence with the entity name."""
+
+ENTITY_DEFINITION_USER = """Entity name: {entity_name}
+
+Context sentences from business documents:
+{provenance_text}
+
+Write a one-sentence definition for this entity."""
 
 
 # ── PT-03: RAG Semantic Mapping ────────────────────────────────────────────────

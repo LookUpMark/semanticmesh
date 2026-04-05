@@ -32,6 +32,8 @@ _is_free_model(model: str) -> bool: Check if model name has :free suffix
 
 from __future__ import annotations
 
+import os
+
 __all__ = [
     "detect_provider",
     "is_openai_reasoning_model",
@@ -93,6 +95,7 @@ _PROVIDER_ENV_KEY_MAP: dict[str, str] = {
 # Order matters — more specific entries must come before generic ones.
 # The value is the provider string returned by detect_provider().
 _NAMED_PREFIX_MAP: dict[str, str] = {
+    "lmstudio/": "lmstudio",
     "ollama/": "ollama",
     "google/": "google",
     "vertex_ai/": "google",
@@ -108,6 +111,7 @@ _NAMED_PREFIX_MAP: dict[str, str] = {
     "nvidia/": "nvidia",
     "deepseek/": "deepseek",
     "xai/": "xai",
+    "openrouter/": "openrouter",
 }
 
 # Bare (no-slash) model name prefixes that identify a provider without a slash prefix.
@@ -163,6 +167,13 @@ def detect_provider(model: str) -> str:
     # Rule 2: any remaining slash → OpenRouter
     if "/" in m:
         return "openrouter"
+
+    # Rule 2.5: global provider override via LLM_PROVIDER env var.
+    # Applied after explicit prefix checks so that a named prefix (e.g. ollama/)
+    # always takes priority over the global override.
+    _global = os.environ.get("LLM_PROVIDER", "auto").strip().lower()
+    if _global and _global != "auto":
+        return _global
 
     # Rule 3: bare OpenAI prefixes
     if m.startswith(_OPENAI_PREFIXES):
