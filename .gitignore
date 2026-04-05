@@ -65,3 +65,7 @@ data/hf_cache/**
 
 # Study guide
 docs/study-guide/
+
+# Vite build artifacts
+.vite
+node_modules/
