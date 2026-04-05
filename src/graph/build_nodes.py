@@ -6,6 +6,7 @@ healing, and execution with fallback strategies.
 
 from __future__ import annotations
 
+import json as _json
 import logging
 from typing import Any
 
@@ -98,6 +99,39 @@ def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
     return {"current_cypher": healed, "cypher_failed": False}
 
 
+def _build_llm_cypher_params(
+    proposal: MappingProposal,
+    table: EnrichedTableSchema,
+    entity: Entity | None,
+) -> dict[str, Any]:
+    """Build a safety-net parameter dict for LLM-generated Cypher.
+
+    The system prompt instructs the LLM to inline all values, but it sometimes
+    emits ``$parameter``-style Cypher copied from few-shot examples.  Providing
+    the full parameter set prevents ``Neo.ClientError.Statement.ParameterMissing``
+    at execution time — unused parameters are silently ignored by the driver.
+    """
+    column_names = [c.name for c in table.columns]
+    column_types = _json.dumps({c.name: c.data_type for c in table.columns})
+    return {
+        "concept_name": proposal.mapped_concept or "Unknown",
+        "definition": entity.definition if entity else "",
+        "mapping_reasoning": proposal.reasoning or "",
+        "provenance_text": entity.provenance_text if entity else "",
+        "source_doc": entity.source_doc if entity else "",
+        "synonyms": entity.synonyms if entity else [],
+        "confidence_score": proposal.confidence,
+        "table_name": table.table_name,
+        "schema_name": table.schema_name,
+        "column_names": column_names,
+        "column_types": column_types,
+        "ddl_source": table.ddl_source or "",
+        "confidence": proposal.confidence,
+        "mapping_confidence": proposal.confidence,
+        "validated_by": "llm_judge",
+    }
+
+
 def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     """Execute the best available Cypher to upsert data into Neo4j.
 
@@ -122,16 +156,22 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     cypher_failed: bool = state.get("cypher_failed", False)
     lazy_mode: bool = bool(state.get("use_lazy_extraction", get_settings().use_lazy_extraction))
 
+    # Resolve entity early — needed for both LLM and fallback paths.
+    resolved = _find_entity_for_concept(
+        proposal.mapped_concept or "", state.get("current_entities") or []
+    )
+
     if llm_cypher and not cypher_failed and not lazy_mode:
         logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
-        exec_cypher, exec_params = llm_cypher, {}
+        exec_cypher = llm_cypher
+        # Safety-net params: the system prompt tells the LLM to inline values,
+        # but it sometimes copies parameterised style from few-shot examples.
+        # Providing the params avoids ParameterMissing errors at runtime.
+        exec_params = _build_llm_cypher_params(proposal, table, resolved)
     else:
         logger.info(
             "LLM Cypher failed for '%s' — falling back to deterministic builder.",
             proposal.table_name,
-        )
-        resolved = _find_entity_for_concept(
-            proposal.mapped_concept or "", state.get("current_entities") or []
         )
         exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=resolved)
 
