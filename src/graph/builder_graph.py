@@ -364,6 +364,13 @@ def run_builder(
                 if status == "unchanged":
                     logger.info("Skipping unchanged DDL: %s", ddl_path)
                     skipped_files.append(ddl_path)
+                elif status == "modified":
+                    logger.info(
+                        "DDL modified — purging stale tables and re-processing: %s",
+                        ddl_path,
+                    )
+                    purge_file_data(reg_client, canonical)
+                    filtered_ddl.append(ddl_path)
                 else:
                     filtered_ddl.append(ddl_path)
             ddl_to_ingest = filtered_ddl

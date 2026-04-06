@@ -152,11 +152,12 @@ def purge_file_data(client: "Neo4jClient", source_doc: str) -> int:
     Removes, in order:
     1. ``Chunk`` nodes (with all relationships, including CHILD_OF and MENTIONS).
     2. ``ParentChunk`` nodes (with remaining relationships).
-    3. The ``SourceFile`` registry node itself.
-
-    ``BusinessConcept`` and ``PhysicalTable`` nodes are **not** deleted — they
-    may be shared across multiple source files.  Stale MENTIONS edges are
-    cleaned up by removing the Chunk nodes above.
+    3. ``PhysicalTable`` nodes whose ``source_file`` matches (DDL-derived;
+       cascades MAPPED_TO + REFERENCES edges).
+    4. The ``SourceFile`` registry node itself.
+    5. Orphan ``BusinessConcept`` cleanup — concepts with no remaining
+       MENTIONS edges and no MAPPED_TO edges are deleted since they are
+       no longer grounded in any source material.
 
     Args:
         client:     Open Neo4jClient context.
@@ -172,6 +173,15 @@ def purge_file_data(client: "Neo4jClient", source_doc: str) -> int:
     )
     n_chunks = (rows_c[0].get("n") or 0) if rows_c else 0
 
+    # Also match by basename (Chunk.source_doc often stores only the filename)
+    basename = source_doc.rsplit("/", 1)[-1] if "/" in source_doc else source_doc
+    if basename != source_doc:
+        rows_c2 = client.execute_cypher(
+            "MATCH (c:Chunk {source_doc: $src}) DETACH DELETE c RETURN count(c) AS n",
+            {"src": basename},
+        )
+        n_chunks += (rows_c2[0].get("n") or 0) if rows_c2 else 0
+
     # 2. Delete parent ParentChunk nodes
     rows_p = client.execute_cypher(
         "MATCH (pc:ParentChunk {source_doc: $src}) DETACH DELETE pc RETURN count(pc) AS n",
@@ -179,17 +189,52 @@ def purge_file_data(client: "Neo4jClient", source_doc: str) -> int:
     )
     n_parents = (rows_p[0].get("n") or 0) if rows_p else 0
 
-    # 3. Remove the SourceFile registry node
+    if basename != source_doc:
+        rows_p2 = client.execute_cypher(
+            "MATCH (pc:ParentChunk {source_doc: $src}) DETACH DELETE pc RETURN count(pc) AS n",
+            {"src": basename},
+        )
+        n_parents += (rows_p2[0].get("n") or 0) if rows_p2 else 0
+
+    # 3. Delete PhysicalTable nodes whose source_file matches this DDL path
+    #    (cascades MAPPED_TO and REFERENCES edges)
+    rows_t = client.execute_cypher(
+        "MATCH (pt:PhysicalTable {source_file: $src}) DETACH DELETE pt RETURN count(pt) AS n",
+        {"src": source_doc},
+    )
+    n_tables = (rows_t[0].get("n") or 0) if rows_t else 0
+
+    if basename != source_doc:
+        rows_t2 = client.execute_cypher(
+            "MATCH (pt:PhysicalTable {source_file: $src}) DETACH DELETE pt RETURN count(pt) AS n",
+            {"src": basename},
+        )
+        n_tables += (rows_t2[0].get("n") or 0) if rows_t2 else 0
+
+    # 4. Remove the SourceFile registry node
     client.execute_cypher(
         "MATCH (sf:SourceFile {path: $src}) DELETE sf",
         {"src": source_doc},
     )
 
-    total = n_chunks + n_parents
+    # 5. Clean up orphan BusinessConcepts — nodes with no remaining edges
+    #    A concept is orphaned when all its MENTIONS edges (from deleted Chunks)
+    #    and all its MAPPED_TO edges (from deleted PhysicalTables) are gone.
+    rows_bc = client.execute_cypher(
+        "MATCH (bc:BusinessConcept) "
+        "WHERE NOT (bc)<-[:MENTIONS]-() AND NOT (bc)-[:MAPPED_TO]->() "
+        "DETACH DELETE bc RETURN count(bc) AS n"
+    )
+    n_orphan_bc = (rows_bc[0].get("n") or 0) if rows_bc else 0
+
+    total = n_chunks + n_parents + n_tables + n_orphan_bc
     logger.info(
-        "Purged source_doc='%s': %d Chunk(s) + %d ParentChunk(s) deleted.",
+        "Purged source_doc='%s': %d Chunk(s), %d ParentChunk(s), "
+        "%d PhysicalTable(s), %d orphan BusinessConcept(s) deleted.",
         source_doc,
         n_chunks,
         n_parents,
+        n_tables,
+        n_orphan_bc,
     )
     return total
