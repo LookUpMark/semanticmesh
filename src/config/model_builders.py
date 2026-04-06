@@ -80,15 +80,22 @@ def _build_openrouter_chat(
     openrouter_base_url: str | None,
     extra_model_kwargs: dict | None,
 ) -> ChatOpenAI:
-    """Build a ChatOpenAI instance configured for OpenRouter."""
+    """Build a ChatOpenAI instance pointing at the OpenRouter base URL.
+
+    Always uses ChatOpenAI with OpenRouter's base_url — the native
+    ChatOpenRouter client suffers from SSL handshake timeouts in
+    containerised environments.
+    """
     api_key = openrouter_api_key or get_settings().openrouter_api_key.get_secret_value()
     base_url = openrouter_base_url or get_settings().openrouter_base_url
+
     return ChatOpenAI(
         model=model_name,
         temperature=temperature,
         max_tokens=max_tokens,
         base_url=base_url,
         api_key=api_key,
+        request_timeout=120,
         **_optional_model_kwargs(extra_model_kwargs),
     )
 
@@ -121,6 +128,7 @@ def _build_openai_chat(
         "temperature": temperature,
         "max_tokens": max_tokens,
         "api_key": api_key,
+        "request_timeout": 120,
     }
     if mkwargs:
         chat_kwargs["model_kwargs"] = mkwargs
@@ -176,6 +184,7 @@ def _build_lmstudio_chat(
         max_tokens=max_tokens,
         base_url=base_url,
         api_key="lm-studio",
+        request_timeout=120,
         model_kwargs={"extra_body": kwargs},
     )
 
@@ -232,6 +241,7 @@ def _build_openai_compatible_chat(
         max_tokens=max_tokens,
         base_url=base_url,
         api_key=api_key,
+        request_timeout=120,
         **_optional_model_kwargs(extra_model_kwargs),
     )
 

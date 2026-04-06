@@ -80,10 +80,10 @@
     },
     {
       "query_id": "Q009",
-      "question": "What products were included in a specific order?",
+      "question": "How does the schema link orders to their individual product line items?",
       "query_type": "multi_hop",
       "difficulty": "medium",
-      "expected_answer": "Join ORDER_LINE_ITEM with TB_PRODUCT on PRODUCT_ID. For order ORDER_ID, the line items show which products were ordered, in what quantity, and at what price.",
+      "expected_answer": "The ORDER_LINE_ITEM table is the junction entity between SALES_ORDER_HDR and TB_PRODUCT. It contains ORDER_ID (foreign key to SALES_ORDER_HDR) and PRODUCT_ID (foreign key to TB_PRODUCT), allowing a single order to have multiple line items. Each line item also records QUANTITY (constrained to be > 0), UNIT_PRICE, and LINE_AMT.",
       "expected_sources": ["SalesOrder", "OrderLineItem", "Product", "SALES_ORDER_HDR", "ORDER_LINE_ITEM", "TB_PRODUCT"],
       "reference_mappings": ["SalesOrder → SALES_ORDER_HDR", "OrderLineItem → ORDER_LINE_ITEM", "Product → TB_PRODUCT"]
     },
@@ -98,10 +98,10 @@
     },
     {
       "query_id": "Q011",
-      "question": "What happens when a payment is confirmed for an order?",
+      "question": "How does the schema model the confirmation state of a payment and its relationship to the order?",
       "query_type": "multi_hop",
       "difficulty": "medium",
-      "expected_answer": "When payment is confirmed, the PAYMENT record's STATUS_CODE becomes 'CONFIRMED', the CONFIRMED_AT timestamp is set, and the associated SALES_ORDER_HDR can progress from PENDING to CONFIRMED status.",
+      "expected_answer": "Payment confirmation is tracked through two schema fields: PAYMENT.CONFIRMED_AT (nullable DATETIME — NULL means not yet confirmed) and PAYMENT.STATUS_CODE constrained to PENDING, CONFIRMED, FAILED, or REFUNDED. At the order level, SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT is a nullable datetime that mirrors this event. The order STATUS_CODE defaults to PENDING and its lifecycle is defined by the CHECK constraint: PENDING, CONFIRMED, SHIPPED, DELIVERED, or CANCELLED.",
       "expected_sources": ["Payment", "SalesOrder", "PAYMENT", "SALES_ORDER_HDR"],
       "reference_mappings": ["Payment → PAYMENT", "SalesOrder → SALES_ORDER_HDR"]
     },
@@ -134,12 +134,12 @@
     },
     {
       "query_id": "Q015",
-      "question": "What is the total value of all orders placed by a customer?",
+      "question": "What schema fields support monetary value tracking across orders and their line items?",
       "query_type": "multi_hop",
-      "difficulty": "medium",
-      "expected_answer": "Sum the TOTAL_AMT column from SALES_ORDER_HDR for all records where CUST_ID matches the customer's ID. This aggregates the monetary value of all orders placed by that customer.",
-      "expected_sources": ["Customer", "SalesOrder", "CUSTOMER_MASTER", "SALES_ORDER_HDR"],
-      "reference_mappings": ["Customer → CUSTOMER_MASTER", "SalesOrder → SALES_ORDER_HDR"]
+      "difficulty": "easy",
+      "expected_answer": "SALES_ORDER_HDR stores the header-level order amount in TOTAL_AMT (DECIMAL(12,2) NOT NULL). ORDER_LINE_ITEM provides the per-product breakdown: UNIT_PRICE (price locked at time of order, not updated with future changes), QUANTITY (constrained to > 0), and LINE_AMT (= QUANTITY × UNIT_PRICE). Both tables are linked via the ORDER_ID foreign key, enabling reconciliation between header totals and line-level amounts.",
+      "expected_sources": ["SalesOrder", "OrderLineItem", "SALES_ORDER_HDR", "ORDER_LINE_ITEM"],
+      "reference_mappings": ["SalesOrder → SALES_ORDER_HDR", "OrderLineItem → ORDER_LINE_ITEM"]
     }
   ]
 }
