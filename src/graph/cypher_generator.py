@@ -25,6 +25,59 @@ logger: logging.Logger = get_logger(__name__)
 _FENCE_RE = re.compile(r"^```[a-zA-Z]*\n?|```$", re.MULTILINE)
 
 
+def _fix_apostrophes_in_cypher(cypher: str) -> str:
+    """Convert SQL-style ``''`` apostrophe escaping to double-quoted strings.
+
+    Neo4j Cypher does not support ``''`` as an escape for apostrophes inside
+    single-quoted string literals (unlike SQL).  LLMs often produce this error
+    when synonyms or descriptions contain possessive forms (e.g. "Customer's").
+
+    Scans the Cypher character-by-character. For each single-quoted literal
+    that contains one or more ``''`` sequences, rewrites it as a double-quoted
+    string with ``''`` normalised to ``'``.  Literals without ``''`` are left
+    untouched.
+
+    Example::
+
+        'Customer''s full name'  →  "Customer's full name"
+
+    Args:
+        cypher: Raw Cypher string (fences already stripped).
+
+    Returns:
+        Cypher string with problematic single-quoted literals rewritten.
+    """
+    result: list[str] = []
+    i = 0
+    n = len(cypher)
+    while i < n:
+        if cypher[i] == "'":
+            j = i + 1
+            has_double_apostrophe = False
+            while j < n:
+                if cypher[j] == "'":
+                    if j + 1 < n and cypher[j + 1] == "'":
+                        has_double_apostrophe = True
+                        j += 2
+                    else:
+                        j += 1
+                        break
+                else:
+                    j += 1
+            if has_double_apostrophe:
+                content = cypher[i + 1 : j - 1]
+                content = content.replace("''", "'")
+                content = content.replace('"', '\\"')
+                result.append(f'"{content}"')
+            else:
+                result.append(cypher[i:j])
+            i = j
+        else:
+            result.append(cypher[i])
+            i += 1
+    return "".join(result)
+
+
 def strip_cypher_fence(raw: str) -> str:
     """Remove accidental markdown code fences from LLM-generated Cypher.
 
@@ -112,7 +165,7 @@ def generate_cypher(
     except Exception as exc:
         raise RuntimeError(f"LLM call failed for table '{table.table_name}': {exc}") from exc
     raw: str = extract_text_content(response.content)
-    cypher = strip_cypher_fence(raw)
+    cypher = _fix_apostrophes_in_cypher(strip_cypher_fence(raw))
     logger.info(
         "Cypher generated for '%s' (%d chars).",
         table.table_name,

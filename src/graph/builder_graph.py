@@ -315,7 +315,9 @@ def run_builder(
 
     if not clear_graph and not force_rebuild and raw_documents:
         with Neo4jClient() as reg_client:
-            current_paths: set[str] = set()
+            # current_paths includes both doc files AND DDL files so that
+            # DDL entries in the SourceFile registry are never mistaken for orphans.
+            current_paths: set[str] = {str(Path(p).resolve()) for p in ddl_paths}
             filtered_docs: list[str] = []
             for doc_path in raw_documents:
                 canonical = str(Path(doc_path).resolve())
@@ -346,7 +348,27 @@ def run_builder(
 
             docs_to_ingest = filtered_docs
 
-    if not docs_to_ingest and not ddl_paths:
+    # ── DDL SHA check — skip unchanged schema files too ──────────────────────
+    ddl_to_ingest: list[str] = list(ddl_paths)
+    if not clear_graph and not force_rebuild and ddl_paths:
+        with Neo4jClient() as reg_client:
+            filtered_ddl: list[str] = []
+            for ddl_path in ddl_paths:
+                canonical = str(Path(ddl_path).resolve())
+                try:
+                    sha = compute_file_sha(ddl_path)
+                    status = check_file_status(reg_client, canonical, sha)
+                except FileNotFoundError:
+                    logger.warning("DDL file not found, skipping: %s", ddl_path)
+                    continue
+                if status == "unchanged":
+                    logger.info("Skipping unchanged DDL: %s", ddl_path)
+                    skipped_files.append(ddl_path)
+                else:
+                    filtered_ddl.append(ddl_path)
+            ddl_to_ingest = filtered_ddl
+
+    if not docs_to_ingest and not ddl_to_ingest:
         logger.info(
             "All %d file(s) unchanged — nothing to re-ingest. "
             "Skipped: %s",
@@ -464,7 +486,10 @@ def run_builder(
         logger.info("Created CHILD_OF edges for %d children.", len(all_children))
 
         # ── Register ingested files in the SourceFile registry ────────────────
-        if not clear_graph and not force_rebuild:
+        # Always register after a successful ingestion so that subsequent
+        # incremental runs (clear_graph=False) can skip unchanged files.
+        # Only skip when force_rebuild=True (explicit bypass of change detection).
+        if not force_rebuild:
             # Group child chunks by source_doc to get per-file child count
             from collections import Counter as _Counter  # local import
             child_counts: dict[str, int] = _Counter(
@@ -480,12 +505,20 @@ def run_builder(
                     register_file(client, canonical, sha, count)
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Could not register file '%s': %s", doc_path, exc)
+            # Also register DDL files (chunk_count=0 — they produce nodes, not chunks)
+            for ddl_path in ddl_to_ingest:
+                canonical = str(Path(ddl_path).resolve())
+                try:
+                    sha = compute_file_sha(ddl_path)
+                    register_file(client, canonical, sha, 0)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not register DDL '%s': %s", ddl_path, exc)
 
     graph = build_builder_graph(production=production)
     lazy_mode = settings.use_lazy_extraction if use_lazy_extraction is None else use_lazy_extraction
     initial: BuilderState = {
         "chunks": chunks,
-        "ddl_paths": ddl_paths,
+        "ddl_paths": ddl_to_ingest,
         "source_doc": str(docs_to_ingest[0]) if docs_to_ingest else "unknown",
         "use_lazy_extraction": lazy_mode,
         "triplets": [],
