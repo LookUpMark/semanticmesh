@@ -116,6 +116,7 @@ def _build_state_to_response(
         tables_completed=builder.get("tables_completed"),
         parent_chunks=builder.get("parent_chunks"),
         child_chunks=builder.get("child_chunks"),
+        skipped_files=builder.get("skipped_files") or None,
     )
 
 
@@ -137,6 +138,7 @@ def _run_build_task(job_id: str, req: BuildRequest) -> None:
                 ddl_paths=ddl_paths,
                 production=False,
                 clear_graph=req.clear_graph,
+                force_rebuild=req.force_rebuild,
                 use_lazy_extraction=req.lazy_extraction if req.lazy_extraction else None,
                 study_id=req.study_id,
             )
@@ -148,6 +150,7 @@ def _run_build_task(job_id: str, req: BuildRequest) -> None:
                 "tables_completed": len(builder_state.get("completed_tables", [])),
                 "parent_chunks": len(builder_state.get("parent_chunks", [])),
                 "child_chunks": len(builder_state.get("chunks", [])),
+                "skipped_files": builder_state.get("skipped_files", []),
             }
         }
         set_done(job_id, result)
@@ -173,6 +176,7 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
                 ddl_paths=ddl_paths,
                 production=False,
                 clear_graph=req.clear_graph,
+                force_rebuild=getattr(req, "force_rebuild", False),
                 use_lazy_extraction=req.lazy_extraction if req.lazy_extraction else None,
                 study_id=req.study_id,
             )
@@ -183,6 +187,7 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
                 "tables_completed": len(builder_state.get("completed_tables", [])),
                 "parent_chunks": len(builder_state.get("parent_chunks", [])),
                 "child_chunks": len(builder_state.get("chunks", [])),
+                "skipped_files": builder_state.get("skipped_files", []),
             }
 
             # 2. Answer each question

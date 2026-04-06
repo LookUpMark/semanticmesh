@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import re
 
+import tiktoken
+
 from src.models.schemas import RetrievedChunk
 
 _TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
@@ -23,6 +25,9 @@ _NOISE_MARKERS = (
     "adjusted_confidence=",
     "best_candidate=",
 )
+
+# Shared tokenizer — same encoding used throughout the project (cl100k_base)
+_TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
 
 def _query_terms(query: str) -> set[str]:
@@ -77,8 +82,25 @@ def distill_context_chunks(
     query: str,
     chunks: list[RetrievedChunk],
     max_chunks: int = 10,
+    token_budget: int = 3000,
 ) -> list[RetrievedChunk]:
-    """Return cleaned and de-duplicated chunk list for answer generation."""
+    """Return cleaned and de-duplicated chunk list for answer generation.
+
+    Chunks are ranked by query-term overlap and structural importance, then
+    added until either *max_chunks* or *token_budget* (measured in cl100k_base
+    tokens) is reached.  The token budget prevents context windows from
+    overflowing when individual chunks are very large (e.g. raw ParentChunks).
+
+    Args:
+        query:        Natural-language query string.
+        chunks:       Retrieved and optionally reranked chunks.
+        max_chunks:   Hard upper bound on number of chunks returned (default 10).
+                      Pass ``0`` or a very large number to rely solely on the
+                      token budget.
+        token_budget: Soft upper bound on total context tokens (default 3 000).
+                      A chunk that would push the total over budget is skipped
+                      rather than truncated so every included chunk is verbatim.
+    """
     if not chunks:
         return []
 
@@ -94,11 +116,16 @@ def distill_context_chunks(
     ranked = sorted(chunks, key=_priority, reverse=True)
     out: list[RetrievedChunk] = []
     seen_text: set[str] = set()
+    used_tokens: int = 0
+    effective_max = max_chunks if max_chunks > 0 else len(ranked)
     for chunk in ranked:
         distilled_text = _distill_text(chunk)
         key = distilled_text.lower()
         if key in seen_text:
             continue
+        chunk_tokens = len(_TOKENIZER.encode(distilled_text))
+        if used_tokens + chunk_tokens > token_budget:
+            continue  # skip oversized chunks rather than truncating
         seen_text.add(key)
         out.append(
             chunk.model_copy(
@@ -108,6 +135,7 @@ def distill_context_chunks(
                 }
             )
         )
-        if len(out) >= max_chunks:
+        used_tokens += chunk_tokens
+        if len(out) >= effective_max:
             break
     return out

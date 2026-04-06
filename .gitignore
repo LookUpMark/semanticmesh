@@ -67,8 +67,11 @@ data/hf_cache/**
 docs/study-guide/
 
 # Vite build artifacts
-.vite
+.vite/
 node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/node_modules/
 
-# Frontend (lives on feat/ui branch only)
-frontend/
+# Frontend duplicate (empty scaffold — safe to delete)
+# frontend/frontend/
