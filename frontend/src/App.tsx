@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { KGBuilderPage } from "@/pages/KGBuilderPage";
 import { QueryPage } from "@/pages/QueryPage";
@@ -38,12 +39,12 @@ export default function App() {
           <BrowserRouter>
             <Routes>
               <Route element={<AppLayout />}>
-                <Route index element={<DashboardPage />} />
-                <Route path="/build" element={<KGBuilderPage />} />
-                <Route path="/query" element={<QueryPage />} />
-                <Route path="/graph" element={<GraphVisualizationPage />} />
-                <Route path="/ablation" element={<AblationPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
+                <Route index element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
+                <Route path="/build" element={<ErrorBoundary><KGBuilderPage /></ErrorBoundary>} />
+                <Route path="/query" element={<ErrorBoundary><QueryPage /></ErrorBoundary>} />
+                <Route path="/graph" element={<ErrorBoundary><GraphVisualizationPage /></ErrorBoundary>} />
+                <Route path="/ablation" element={<ErrorBoundary><AblationPage /></ErrorBoundary>} />
+                <Route path="/settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
               </Route>
             </Routes>
           </BrowserRouter>

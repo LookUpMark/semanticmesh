@@ -281,11 +281,11 @@ export function GraphVisualizationPage() {
       const visEdgesArr = filteredEdges.map(toVisEdge);
 
       // Dynamic import then create
-      import("vis-network").then((vis) => {
+      Promise.all([import("vis-network"), import("vis-data")]).then(([vis, { DataSet }]) => {
         if (!containerRef.current) return;
 
-        const visNodes = new vis.DataSet(visNodesArr);
-        const visEdges = new vis.DataSet(visEdgesArr);
+        const visNodes = new DataSet(visNodesArr);
+        const visEdges = new DataSet(visEdgesArr);
 
         visNodesRef.current = visNodes;
         visEdgesRef.current = visEdges;

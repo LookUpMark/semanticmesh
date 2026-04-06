@@ -5,22 +5,40 @@ import {
   ChevronDown,
   ChevronRight,
   Sparkles,
-  Shield,
   ShieldCheck,
   ShieldAlert,
   MessageSquare,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { useSubmitQuery } from "@/hooks/useJobs";
 import type { QueryResponse } from "@/types/api";
+
+function renderMarkdown(text: string): React.ReactNode {
+  return text.split("\n").map((line, i, arr) => {
+    const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
+      part.startsWith("**") && part.endsWith("**")
+        ? <strong key={j}>{part.slice(2, -2)}</strong>
+        : part
+    );
+    const isBullet = line.startsWith("- ") || line.startsWith("• ");
+    if (isBullet) {
+      return (
+        <span key={i} className="block pl-4 before:content-['•'] before:mr-2 before:text-muted-foreground">
+          {parts.map((p, j) => typeof p === "string" ? (isBullet && j === 0 ? p.replace(/^[•-]\s/, "") : p) : p)}
+        </span>
+      );
+    }
+    return (
+      <span key={i}>
+        {parts}{i < arr.length - 1 && "\n"}
+      </span>
+    );
+  });
+}
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -57,11 +75,17 @@ function AnswerMetadata({ data }: { data: QueryResponse }) {
       {expanded && (
         <div className="mt-2 space-y-2 rounded-md border border-border bg-muted/30 p-3">
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs text-muted-foreground">Quality Score</p>
-              <p className="text-sm font-medium">
-                {(data.retrieval_quality_score * 100).toFixed(1)}%
-              </p>
+            <div className="col-span-2">
+              <p className="text-xs text-muted-foreground mb-1">Quality Score</p>
+              <div className="flex items-center gap-2">
+                <Progress
+                  value={data.retrieval_quality_score * 100}
+                  className="h-1.5 flex-1"
+                />
+                <span className="text-xs font-medium tabular-nums w-10 text-right">
+                  {(data.retrieval_quality_score * 100).toFixed(1)}%
+                </span>
+              </div>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Chunks Retrieved</p>
@@ -255,7 +279,7 @@ export function QueryPage() {
                         {msg.role === "assistant" && (
                           <MessageSquare className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                         )}
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        <div className="text-sm whitespace-pre-wrap leading-relaxed">{renderMarkdown(msg.content)}</div>
                       </div>
                       {msg.metadata && <AnswerMetadata data={msg.metadata} />}
                     </>

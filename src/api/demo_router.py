@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -35,18 +36,51 @@ def _to_abs(path: str) -> str:
     return str(p if p.is_absolute() else _ROOT / p)
 
 
+_MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB per file
+_ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".sql", ".ddl"}
+
+
+def _sanitize_filename(raw: str | None) -> str:
+    """Strip path components and reject dangerous characters."""
+    basename = Path(raw or "upload").name
+    # Keep only alphanumerics, dots, dashes, underscores
+    safe = re.sub(r"[^\w.\-]", "_", basename)
+    return safe or "upload"
+
+
 async def _save_uploads(files: list[UploadFile]) -> list[str]:
-    """Save uploaded files to temp directory and return their absolute paths."""
+    """Save uploaded files to temp directory and return their absolute paths.
+
+    Enforces:
+    - Filename sanitisation (no path traversal)
+    - 100 MB per-file size limit
+    - Allowed extension whitelist
+    """
     temp_dir = Path(tempfile.gettempdir()) / "thesis_uploads"
     temp_dir.mkdir(parents=True, exist_ok=True)
-    
+
     paths = []
     for file in files:
-        temp_file = temp_dir / file.filename
         content = await file.read()
+
+        if len(content) > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File '{file.filename}' exceeds 100 MB limit.",
+            )
+
+        safe_name = _sanitize_filename(file.filename)
+        ext = Path(safe_name).suffix.lower()
+        if ext not in _ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=415,
+                detail=f"Unsupported file type '{ext}'. Allowed: {sorted(_ALLOWED_EXTENSIONS)}",
+            )
+
+        temp_file = temp_dir / safe_name
         temp_file.write_bytes(content)
         paths.append(str(temp_file))
-    
+
     return paths
 
 
@@ -118,7 +152,8 @@ def _run_build_task(job_id: str, req: BuildRequest) -> None:
         }
         set_done(job_id, result)
     except Exception as exc:  # noqa: BLE001
-        set_failed(job_id, str(exc))
+        error_summary = f"{type(exc).__name__}: {str(exc)[:300]}"
+        set_failed(job_id, error_summary)
 
 
 def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
@@ -173,7 +208,8 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
 
         set_done(job_id, result)
     except Exception as exc:  # noqa: BLE001
-        set_failed(job_id, str(exc))
+        error_summary = f"{type(exc).__name__}: {str(exc)[:300]}"
+        set_failed(job_id, error_summary)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -401,22 +437,23 @@ def get_graph_stats() -> GraphStatsResponse:
     try:
         from src.graph.neo4j_client import Neo4jClient
 
-        cypher_nodes = """
-        RETURN
+        counts_query = """
+        MATCH (n)
+        OPTIONAL MATCH ()-[r]->()
+        WITH
           sum(CASE WHEN 'BusinessConcept' IN labels(n) THEN 1 ELSE 0 END) AS business_concepts,
           sum(CASE WHEN 'PhysicalTable'   IN labels(n) THEN 1 ELSE 0 END) AS physical_tables,
           sum(CASE WHEN 'ParentChunk'     IN labels(n) THEN 1 ELSE 0 END) AS parent_chunks,
-          sum(CASE WHEN 'Chunk'           IN labels(n) THEN 1 ELSE 0 END) AS child_chunks
+          sum(CASE WHEN 'Chunk'           IN labels(n) THEN 1 ELSE 0 END) AS child_chunks,
+          count(distinct n) AS total_nodes
+        RETURN business_concepts, physical_tables, parent_chunks, child_chunks, total_nodes
         """
-        counts_query = "MATCH (n) " + cypher_nodes
         rel_query = "MATCH ()-[r]->() RETURN count(r) AS total_relationships"
         rel_mentions = "MATCH ()-[r:MENTIONS]->() RETURN count(r) AS n"
         rel_maps = "MATCH ()-[r:MAPPED_TO]->() RETURN count(r) AS n"
-        node_total = "MATCH (n) RETURN count(n) AS total_nodes"
 
         with Neo4jClient() as client:
             row = client.execute_cypher(counts_query)[0]
-            total_nodes = client.execute_cypher(node_total)[0]["total_nodes"]
             total_rels = client.execute_cypher(rel_query)[0]["total_relationships"]
             mentions = client.execute_cypher(rel_mentions)[0]["n"]
             maps_to = client.execute_cypher(rel_maps)[0]["n"]
@@ -428,7 +465,7 @@ def get_graph_stats() -> GraphStatsResponse:
             child_chunks=int(row.get("child_chunks", 0) or 0),
             mentions_edges=int(mentions or 0),
             maps_to_edges=int(maps_to or 0),
-            total_nodes=int(total_nodes or 0),
+            total_nodes=int(row.get("total_nodes", 0) or 0),
             total_relationships=int(total_rels or 0),
         )
     except Exception as exc:  # noqa: BLE001

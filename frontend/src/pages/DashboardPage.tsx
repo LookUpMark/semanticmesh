@@ -8,7 +8,7 @@ import {
   Hammer,
   MessageSquare,
   FlaskConical,
-  AlertTriangle,
+  Inbox,
 } from "lucide-react";
 import {
   Card,
@@ -18,7 +18,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -76,12 +77,14 @@ function StatCard({
   icon: Icon,
   description,
   loading,
+  accentClass,
 }: {
   title: string;
   value: React.ReactNode;
   icon: React.ElementType;
   description?: string;
   loading?: boolean;
+  accentClass?: string;
 }) {
   return (
     <Card>
@@ -89,14 +92,14 @@ function StatCard({
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <Icon className="size-4 text-muted-foreground" />
+        <Icon className={`size-4 ${accentClass ?? "text-muted-foreground"}`} />
       </CardHeader>
       <CardContent>
         {loading ? (
           <Skeleton className="h-8 w-20" />
         ) : (
           <>
-            <div className="text-2xl font-bold">{value}</div>
+            <div className={`text-2xl font-bold ${accentClass ?? ""}`}>{value}</div>
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
@@ -121,9 +124,9 @@ function RecentJobsTable({ jobs, loading }: { jobs: DemoJob[]; loading: boolean 
   if (jobs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <AlertTriangle className="mb-2 size-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">No jobs yet</p>
-        <p className="text-xs text-muted-foreground">
+        <Inbox className="mb-2 size-8 text-muted-foreground/50" />
+        <p className="text-sm font-medium text-muted-foreground">No jobs yet</p>
+        <p className="text-xs text-muted-foreground/60">
           Start a build or pipeline to see jobs here.
         </p>
       </div>
@@ -222,6 +225,7 @@ export function DashboardPage() {
           icon={Network}
           description="All Neo4j nodes"
           loading={statsLoading}
+          accentClass={(graphStats?.total_nodes ?? 0) > 0 ? "text-primary" : undefined}
         />
         <StatCard
           title="Relationships"
@@ -229,6 +233,7 @@ export function DashboardPage() {
           icon={ArrowLeftRight}
           description="All Neo4j edges"
           loading={statsLoading}
+          accentClass={(graphStats?.total_relationships ?? 0) > 0 ? "text-primary" : undefined}
         />
         <StatCard
           title="Active Jobs"
@@ -240,6 +245,11 @@ export function DashboardPage() {
           icon={Loader2}
           description="Running + queued"
           loading={jobsLoading}
+          accentClass={
+            (jobs ?? []).filter((j) => j.status === "running" || j.status === "queued").length > 0
+              ? "text-amber-400"
+              : undefined
+          }
         />
         <StatCard
           title="System Status"
@@ -301,24 +311,18 @@ export function DashboardPage() {
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-3">
-          <Button asChild>
-            <Link to="/build">
-              <Hammer className="mr-1.5 size-4" />
-              Build Knowledge Graph
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/query">
-              <MessageSquare className="mr-1.5 size-4" />
-              Query KG
-            </Link>
-          </Button>
-          <Button asChild variant="secondary">
-            <Link to="/ablation">
-              <FlaskConical className="mr-1.5 size-4" />
-              Run Ablation
-            </Link>
-          </Button>
+          <Link to="/build" className={cn(buttonVariants({ variant: "default" }))}>
+            <Hammer className="mr-1.5 size-4" />
+            Build Knowledge Graph
+          </Link>
+          <Link to="/query" className={cn(buttonVariants({ variant: "outline" }))}>
+            <MessageSquare className="mr-1.5 size-4" />
+            Query KG
+          </Link>
+          <Link to="/ablation" className={cn(buttonVariants({ variant: "secondary" }))}>
+            <FlaskConical className="mr-1.5 size-4" />
+            Run Ablation
+          </Link>
         </CardContent>
       </Card>
     </div>

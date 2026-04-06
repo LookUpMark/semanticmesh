@@ -155,6 +155,51 @@ function FileUploadZone({
   );
 }
 
+function BuildSteps({ data }: { data: { status: string; triplets_extracted?: number | null; entities_resolved?: number | null; tables_parsed?: number | null; tables_completed?: number | null } }) {
+  const steps = [
+    { label: "Queued", done: true },
+    { label: "Parse & Extract", done: (data.triplets_extracted ?? 0) > 0 },
+    { label: "Entity Resolution", done: (data.entities_resolved ?? 0) > 0 },
+    { label: "Schema Mapping", done: (data.tables_completed ?? 0) > 0 },
+    { label: "Graph Build", done: data.status === "done" },
+  ];
+
+  const currentStep = [...steps].reverse().findIndex((s) => s.done);
+  const activeIdx = currentStep === -1 ? 0 : steps.length - 1 - currentStep + 1;
+
+  return (
+    <ol className="flex items-center gap-0">
+      {steps.map((step, i) => {
+        const isActive = i === activeIdx && data.status !== "done";
+        const isDone = step.done;
+        return (
+          <li key={step.label} className="flex flex-1 items-center">
+            <div className="flex flex-col items-center gap-1 min-w-0">
+              <div
+                className={`flex size-6 items-center justify-center rounded-full border text-[10px] font-semibold shrink-0 ${
+                  isDone
+                    ? "border-emerald-500 bg-emerald-500/15 text-emerald-400"
+                    : isActive
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border text-muted-foreground"
+                }`}
+              >
+                {isDone ? "✓" : i + 1}
+              </div>
+              <span className={`text-[10px] text-center truncate px-0.5 ${isDone ? "text-emerald-400" : isActive ? "text-primary" : "text-muted-foreground"}`}>
+                {step.label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className={`h-px flex-1 mx-1 mb-3 ${isDone ? "bg-emerald-500/50" : "bg-border"}`} />
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function BuildMetricsCard({ jobId }: { jobId: string }) {
   const { data, isLoading } = useBuildStatus(jobId);
 
@@ -233,11 +278,8 @@ function BuildMetricsCard({ jobId }: { jobId: string }) {
         )}
 
         {(data.status === "running" || data.status === "queued") && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            {data.status === "queued"
-              ? "Waiting in queue..."
-              : "Building Knowledge Graph..."}
+          <div className="space-y-3">
+            <BuildSteps data={data} />
           </div>
         )}
       </CardContent>
@@ -367,7 +409,7 @@ export function KGBuilderPage() {
           <Separator />
 
           {/* Advanced config */}
-          <Accordion type="single" collapsible>
+          <Accordion openMultiple={false}>
             <AccordionItem value="advanced" className="border-none">
               <AccordionTrigger className="py-2 text-sm text-muted-foreground hover:no-underline">
                 <span className="flex items-center gap-2">
