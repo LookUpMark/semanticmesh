@@ -584,6 +584,13 @@ class BuildRequest(BaseModel):
         default=False,
         description="Use heuristic rule-based extraction instead of LLM (faster, less accurate).",
     )
+    force_rebuild: bool = Field(
+        default=False,
+        description=(
+            "Bypass the SHA-256 incremental check — re-ingest all files even if unchanged. "
+            "Has no effect when clear_graph=True (full wipe always re-ingests everything)."
+        ),
+    )
     config: PipelineConfig | None = Field(
         default=None,
         description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
@@ -600,6 +607,10 @@ class BuildResultResponse(BaseModel):
     tables_completed: int | None = None
     parent_chunks: int | None = None
     child_chunks: int | None = None
+    skipped_files: list[str] | None = Field(
+        default=None,
+        description="Files skipped because their SHA-256 hash was unchanged since last build.",
+    )
 
 
 class QueryRequest(BaseModel):

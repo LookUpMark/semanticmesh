@@ -1,9 +1,11 @@
 # Multi-Agent Framework — Docker Compose
-# Usage: docker compose up          (API + Neo4j)
+# Usage: docker compose up          (Neo4j + API + Frontend)
 #        docker compose up --build   (rebuild after code changes)
 #
-# Swagger UI: http://localhost:8000/docs
-# Neo4j Browser: http://localhost:7474
+# Frontend (React):  http://localhost:3000
+# API (Swagger UI):  http://localhost:3000/docs  (via Nginx proxy)
+# API (direct):      http://localhost:8000/docs
+# Neo4j Browser:     http://localhost:7474
 
 services:
   # ── Neo4j Graph Database ──────────────────────────────────────────────────
@@ -61,9 +63,21 @@ services:
       HF_HUB_DISABLE_PROGRESS_BARS: "1"
       LOG_LEVEL: "${LOG_LEVEL:-INFO}"
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "${API_PORT:-8000}:8000"    # Direct API access (dev / curl)
     volumes:
       - ./data/hf_cache:/app/.cache/huggingface
+    restart: unless-stopped
+
+  # ── React Frontend (Nginx) ────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: thesis-frontend
+    depends_on:
+      - api
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
 
 volumes:

@@ -24,6 +24,10 @@ _SCHEMA_STATEMENTS: list[str] = [
     "FOR (n:BusinessConcept) REQUIRE n.name IS UNIQUE",
     "CREATE CONSTRAINT physicaltable_name_unique IF NOT EXISTS "
     "FOR (n:PhysicalTable) REQUIRE n.table_name IS UNIQUE",
+    # SourceFile registry — one node per ingested file, keyed by canonical path.
+    # Stores SHA-256 of file contents to enable incremental re-ingestion.
+    "CREATE CONSTRAINT sourcefile_path_unique IF NOT EXISTS "
+    "FOR (n:SourceFile) REQUIRE n.path IS UNIQUE",
     "CREATE INDEX chunk_source_doc IF NOT EXISTS FOR (c:Chunk) ON (c.source_doc)",
     "CREATE INDEX parentchunk_source_doc IF NOT EXISTS FOR (pc:ParentChunk) ON (pc.source_doc)",
     (

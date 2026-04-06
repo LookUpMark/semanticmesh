@@ -33,6 +33,13 @@ from src.graph.build_nodes import (
 from src.graph.neo4j_client import Neo4jClient, setup_schema
 from src.graph.validation_nodes import _node_validate_mapping, _route_after_validate
 from src.ingestion.ddl_parser import parse_ddl_file
+from src.ingestion.file_registry import (
+    check_file_status,
+    compute_file_sha,
+    get_orphaned_files,
+    purge_file_data,
+    register_file,
+)
 from src.ingestion.pdf_loader import chunk_documents_hierarchical, load_pdf
 from src.ingestion.schema_enricher import enrich_all
 from src.mapping.hitl import hitl_node
@@ -275,6 +282,7 @@ def run_builder(
     *,
     production: bool = False,
     clear_graph: bool = False,
+    force_rebuild: bool = False,
     use_lazy_extraction: bool | None = None,
     trace_enabled: bool = False,
     study_id: str = "manual",
@@ -282,22 +290,88 @@ def run_builder(
     """Convenience wrapper: compile graph and invoke with document paths.
 
     Args:
-        raw_documents: List of file paths to PDF documents.
-        ddl_paths:     List of file paths to DDL SQL files.
-        production:    Compile with ``SqliteSaver`` if True.
-        clear_graph:   If True, delete all nodes and relationships before running.
-                       Use in development/demo to avoid stale data from prior runs.
-        trace_enabled: If True, enable detailed debug tracing of the pipeline.
-        study_id:      Study ID for trace naming (e.g., "AB-00").
+        raw_documents:  List of file paths to PDF documents.
+        ddl_paths:      List of file paths to DDL SQL files.
+        production:     Compile with ``SqliteSaver`` if True.
+        clear_graph:    If True, delete all nodes and relationships before running.
+                        Use in development/demo to avoid stale data from prior runs.
+        force_rebuild:  If True, bypass SHA-256 change detection and re-ingest all
+                        files regardless of whether their content has changed.
+        trace_enabled:  If True, enable detailed debug tracing of the pipeline.
+        study_id:       Study ID for trace naming (e.g., "AB-00").
 
     Returns:
         Final ``BuilderState`` after graph completion.
     """
+    from src.retrieval.bm25_retriever import invalidate_bm25_cache  # local import avoids cycle
+
     settings = get_settings()
+
+    # ── Incremental ingestion: SHA-based change detection ────────────────────
+    # When clear_graph=True the whole graph is wiped, so all files are new.
+    # When force_rebuild=True we skip the SHA check and re-ingest everything.
+    skipped_files: list[str] = []
+    docs_to_ingest: list[str] = list(raw_documents)
+
+    if not clear_graph and not force_rebuild and raw_documents:
+        with Neo4jClient() as reg_client:
+            current_paths: set[str] = set()
+            filtered_docs: list[str] = []
+            for doc_path in raw_documents:
+                canonical = str(Path(doc_path).resolve())
+                current_paths.add(canonical)
+                try:
+                    sha = compute_file_sha(doc_path)
+                    status = check_file_status(reg_client, canonical, sha)
+                except FileNotFoundError:
+                    logger.warning("File not found, skipping: %s", doc_path)
+                    continue
+
+                if status == "unchanged":
+                    logger.info("Skipping unchanged file: %s", doc_path)
+                    skipped_files.append(doc_path)
+                else:
+                    if status == "modified":
+                        logger.info(
+                            "File modified — purging stale data and re-ingesting: %s", doc_path
+                        )
+                        purge_file_data(reg_client, canonical)
+                    filtered_docs.append(doc_path)
+
+            # Purge files that existed in a previous run but are absent now
+            orphans = get_orphaned_files(reg_client, current_paths)
+            for orphan_path in orphans:
+                logger.info("Purging orphaned file data: %s", orphan_path)
+                purge_file_data(reg_client, orphan_path)
+
+            docs_to_ingest = filtered_docs
+
+    if not docs_to_ingest and not ddl_paths:
+        logger.info(
+            "All %d file(s) unchanged — nothing to re-ingest. "
+            "Skipped: %s",
+            len(skipped_files),
+            skipped_files,
+        )
+        # Return a minimal state so callers can observe skipped_files count
+        return BuilderState(  # type: ignore[call-arg]
+            chunks=[],
+            ddl_paths=[],
+            source_doc="",
+            triplets=[],
+            entities=[],
+            tables=[],
+            enriched_tables=[],
+            pending_tables=[],
+            completed_tables=[],
+            skipped_files=skipped_files,
+        )
+
+    # ── Load and chunk only the files that need (re-)ingestion ───────────────
     # Load all documents first, then chunk in one pass so parent_chunk_index is
     # globally unique across all source files (avoids index collisions in Neo4j).
     all_docs = []
-    for doc_path in raw_documents:
+    for doc_path in docs_to_ingest:
         all_docs.extend(load_pdf(Path(doc_path)))
     all_parents, all_children = chunk_documents_hierarchical(all_docs)
 
@@ -389,12 +463,30 @@ def run_builder(
                 )
         logger.info("Created CHILD_OF edges for %d children.", len(all_children))
 
+        # ── Register ingested files in the SourceFile registry ────────────────
+        if not clear_graph and not force_rebuild:
+            # Group child chunks by source_doc to get per-file child count
+            from collections import Counter as _Counter  # local import
+            child_counts: dict[str, int] = _Counter(
+                c.metadata.get("source", "") for c in all_children
+            )
+            for doc_path in docs_to_ingest:
+                canonical = str(Path(doc_path).resolve())
+                try:
+                    sha = compute_file_sha(doc_path)
+                    # Use canonical path as source_doc key (matches what load_pdf stores)
+                    src_key = Path(doc_path).name  # basename only, as stored in metadata
+                    count = child_counts.get(src_key, child_counts.get(canonical, 0))
+                    register_file(client, canonical, sha, count)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not register file '%s': %s", doc_path, exc)
+
     graph = build_builder_graph(production=production)
     lazy_mode = settings.use_lazy_extraction if use_lazy_extraction is None else use_lazy_extraction
     initial: BuilderState = {
         "chunks": chunks,
         "ddl_paths": ddl_paths,
-        "source_doc": str(raw_documents[0]) if raw_documents else "unknown",
+        "source_doc": str(docs_to_ingest[0]) if docs_to_ingest else "unknown",
         "use_lazy_extraction": lazy_mode,
         "triplets": [],
         "entities": [],
@@ -402,6 +494,7 @@ def run_builder(
         "enriched_tables": [],
         "pending_tables": [],
         "completed_tables": [],
+        "skipped_files": skipped_files,
         "skip_hitl": not production,  # bypass interrupt() in non-production runs
         "trace_enabled": trace_enabled,
         "builder_trace": builder_trace,
@@ -409,6 +502,12 @@ def run_builder(
     }
     config = {"configurable": {"thread_id": f"builder-{uuid.uuid4().hex[:8]}"}}
     final_state: BuilderState = graph.invoke(initial, config=config)
+
+    # Invalidate BM25 cache — graph contents may have changed
+    try:
+        invalidate_bm25_cache()
+    except Exception:  # noqa: BLE001
+        pass
 
     # Populate trace with final state data
     if trace_enabled and builder_trace:

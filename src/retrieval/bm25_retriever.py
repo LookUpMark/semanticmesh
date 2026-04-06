@@ -19,6 +19,19 @@ if TYPE_CHECKING:
 logger: logging.Logger = get_logger(__name__)
 
 
+def invalidate_bm25_cache() -> None:
+    """Invalidate the in-memory BM25 node-index cache.
+
+    Delegates to :func:`src.retrieval.hybrid_retriever.invalidate_bm25_cache`.
+    This thin wrapper is imported by ``builder_graph`` to avoid a circular import
+    (hybrid_retriever imports bm25_retriever; builder_graph imports bm25_retriever).
+    """
+    from src.retrieval.hybrid_retriever import (  # local import breaks cycle
+        invalidate_bm25_cache as _invalidate,
+    )
+    _invalidate()
+
+
 def bm25_search(
     query: str,
     all_nodes: list[dict[str, Any]],
