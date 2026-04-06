@@ -17,7 +17,8 @@ from neo4j import Driver
 from src.config.llm_client import LLMProtocol
 from src.config.logging import get_logger
 from src.config.settings import get_settings
-from src.graph.cypher_generator import strip_cypher_fence
+from src.graph.cypher_generator import _fix_apostrophes_in_cypher, strip_cypher_fence
+from src.utils.json_utils import extract_text_content
 from src.models.schemas import MappingProposal
 from src.prompts.templates import CYPHER_FIX_USER, CYPHER_SYSTEM
 
@@ -90,7 +91,7 @@ def fix_cypher(
             HumanMessage(content=user_prompt),
         ]
     )
-    fixed = strip_cypher_fence(response.content)
+    fixed = _fix_apostrophes_in_cypher(strip_cypher_fence(extract_text_content(response.content)))
     logger.debug("fix_cypher: LLM returned %d-char fix.", len(fixed))
     return fixed
 
