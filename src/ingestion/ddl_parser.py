@@ -145,16 +145,30 @@ _CHECK_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Matches single-quoted string literals inside CHECK values: 'PENDING' → PENDING
+_CHECK_QUOTE_RE = re.compile(r"'([^']*)'")
+
 
 def _strip_check_constraints(ddl_source: str) -> str:
-    """Remove CHECK constraint clauses from a CREATE TABLE DDL string.
+    """Sanitise CHECK constraint clauses in a CREATE TABLE DDL string.
 
-    CHECK constraints contain string literals with single quotes that cause
-    Cypher syntax errors when the LLM copies them into generated Cypher.
-    Since CHECK constraints are not structurally relevant for KG construction,
-    stripping them is safe.
+    Single quotes inside CHECK values (e.g. STATUS_CODE IN ('PENDING','DONE'))
+    cause Cypher syntax errors if the LLM inlines the ddl_source as a string
+    literal.  Instead of removing the constraints entirely (which would lose
+    valuable schema semantics like allowed status values), we preserve them
+    but strip all single quotes from the enum values:
+
+        CHECK (STATUS_CODE IN ('PENDING','CONFIRMED'))
+        → CHECK (STATUS_CODE IN (PENDING,CONFIRMED))
+
+    The unquoted form is safe for Cypher inlining and still lets the KG
+    answer questions about allowed column values (e.g. order statuses).
     """
-    return _CHECK_RE.sub("", ddl_source)
+
+    def _remove_value_quotes(m: re.Match) -> str:
+        return _CHECK_QUOTE_RE.sub(r"\1", m.group(0))
+
+    return _CHECK_RE.sub(_remove_value_quotes, ddl_source)
 
 
 def _normalise_type(data_type: str) -> str:
