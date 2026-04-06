@@ -35,8 +35,10 @@ ON CREATE SET pt.schema_name = $schema_name,
               pt.column_names = $column_names,
               pt.column_types = $column_types,
               pt.ddl_source = $ddl_source,
+              pt.source_file = $source_file,
               pt.created_at = datetime()
 ON MATCH SET  pt.ddl_source = $ddl_source,
+              pt.source_file = $source_file,
               pt.updated_at = datetime()
 
 MERGE (bc)-[r:MAPPED_TO]->(pt)
@@ -84,6 +86,7 @@ def build_upsert_cypher(
         "column_names": column_names,
         "column_types": column_types,
         "ddl_source": table.ddl_source or "",
+        "source_file": table.source_file or "",
         "confidence": proposal.confidence,
     }
     return _UPSERT_CYPHER, params

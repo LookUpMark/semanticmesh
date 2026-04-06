@@ -87,6 +87,7 @@ class TableSchema(BaseModel):
     schema_name: str | None = None
     columns: list[ColumnSchema]
     ddl_source: str
+    source_file: str = ""
     comment: str | None = None
 
 

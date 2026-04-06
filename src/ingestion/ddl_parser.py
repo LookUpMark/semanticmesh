@@ -331,4 +331,9 @@ def parse_ddl_file(path: Path, dialect: str = "mysql") -> list[TableSchema]:
     if not path.exists():
         raise FileNotFoundError(f"DDL file not found: {path}")
     ddl_text = path.read_text(encoding="utf-8")
-    return parse_ddl(ddl_text, dialect=dialect)
+    tables = parse_ddl(ddl_text, dialect=dialect)
+    # Tag every table with the source DDL file path for incremental purge
+    canonical = str(path.resolve())
+    for t in tables:
+        t.source_file = canonical
+    return tables
