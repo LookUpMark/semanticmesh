@@ -191,3 +191,9 @@ Shipment Relationships:
 - A Shipment is for exactly one Sales Order
 - A Shipment comes from exactly one Warehouse
 - A Shipment goes to exactly one Customer Address
+
+## MODIFIED FOR TEST A
+Refund: A reimbursement issued to a customer when an order is cancelled.
+
+## SECOND MODIFICATION — extra term
+Return Policy: Products can be returned within 30 days of purchase for a full refund.

@@ -246,6 +246,7 @@ def build_builder_graph(*, production: bool = False):
             "rag_mapping": "rag_mapping",
             "generate_cypher": "generate_cypher",
             "build_graph": "build_graph",
+            "save_trace": "save_trace",
         },
     )
     graph.add_conditional_edges(
@@ -374,6 +375,7 @@ def run_builder(
                 else:
                     filtered_ddl.append(ddl_path)
             ddl_to_ingest = filtered_ddl
+
 
     if not docs_to_ingest and not ddl_to_ingest:
         logger.info(
@@ -542,6 +544,56 @@ def run_builder(
     }
     config = {"configurable": {"thread_id": f"builder-{uuid.uuid4().hex[:8]}"}}
     final_state: BuilderState = graph.invoke(initial, config=config)
+
+    # ── MENTIONS edge repair for PDF-only incremental updates ─────────────────
+    # When PDFs changed but DDL was unchanged (ddl_to_ingest=[]), the graph exits
+    # early after triplet extraction without running the per-table mapping loop,
+    # so MENTIONS edges are not created for the new chunks.  Repair them here by
+    # matching triplet subject/object against ALL existing BusinessConcepts.
+    if docs_to_ingest and not ddl_to_ingest:
+        triplets_for_repair = final_state.get("triplets") or []
+        new_basenames = {Path(p).name for p in docs_to_ingest}
+        logger.info(
+            "PDF-only change: repairing MENTIONS edges for %d triplet(s) "
+            "against existing BusinessConcepts (sources: %s).",
+            len(triplets_for_repair),
+            new_basenames,
+        )
+        with Neo4jClient() as repair_client:
+            bc_rows = repair_client.execute_cypher(
+                "MATCH (bc:BusinessConcept) RETURN bc.name AS name"
+            )
+            bc_names: list[str] = [r["name"] for r in bc_rows if r.get("name")]
+            mentions_count = 0
+            for bc_name in bc_names:
+                concept_lower = bc_name.lower()
+                chunk_indexes: set[int] = set()
+                for t in triplets_for_repair:
+                    if t.source_chunk_index is not None and (
+                        concept_lower in t.subject.lower()
+                        or concept_lower in t.object.lower()
+                    ):
+                        chunk_indexes.add(t.source_chunk_index)
+                for idx in chunk_indexes:
+                    try:
+                        repair_client.execute_cypher(
+                            "MATCH (ch:Chunk {chunk_index: $idx}) "
+                            "WHERE ch.source_doc IN $srcs "
+                            "MATCH (bc:BusinessConcept {name: $concept}) "
+                            "MERGE (ch)-[:MENTIONS]->(bc)",
+                            {
+                                "idx": idx,
+                                "concept": bc_name,
+                                "srcs": list(new_basenames),
+                            },
+                        )
+                        mentions_count += 1
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning(
+                            "MENTIONS repair: could not link chunk %d → '%s': %s",
+                            idx, bc_name, exc,
+                        )
+            logger.info("MENTIONS repair: created %d edge(s).", mentions_count)
 
     # Invalidate BM25 cache — graph contents may have changed
     try:

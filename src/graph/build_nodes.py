@@ -145,7 +145,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     In both cases the BusinessConcept embedding is populated afterwards so the
     vector index can serve Query Graph requests.
     """
-    proposal: MappingProposal = state["mapping_proposal"]
+    proposal: MappingProposal | None = state.get("mapping_proposal")
     table: EnrichedTableSchema | None = state.get("current_table")
 
     if not proposal or not table:
@@ -188,6 +188,16 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             "SET pt.table_name = $canonical",
             {"name": table.table_name, "canonical": table.table_name},
         )
+
+        # Always stamp source_file regardless of which Cypher path was used
+        # (LLM-generated Cypher doesn't know about this property)
+        if table.source_file:
+            client.execute_cypher(
+                "MATCH (pt:PhysicalTable) "
+                "WHERE toLower(pt.table_name) = toLower($name) "
+                "SET pt.source_file = $source_file",
+                {"name": table.table_name, "source_file": table.source_file},
+            )
 
         fk_statements = build_fk_cypher(table)
         for fk_cypher, fk_params in fk_statements:

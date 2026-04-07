@@ -105,6 +105,10 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
 
 
 def _route_after_validate(state: BuilderState) -> str:
+    # No table currently being processed → nothing left to do
+    if state.get("current_table") is None and state.get("mapping_proposal") is None:
+        return "save_trace"
+
     if state.get("use_lazy_extraction"):
         if state.get("hitl_flag") and not state.get("skip_hitl"):
             return "hitl"
