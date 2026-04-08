@@ -131,7 +131,7 @@ def propose_mapping(
 
     # Parse and validate — with self-reflection on failure
     settings = get_settings()
-    max_attempts: int = settings.max_reflection_attempts
+    max_attempts: int = settings.max_reflection_attempts_reasoning
 
     for attempt in range(1, max_attempts + 1):
         try:

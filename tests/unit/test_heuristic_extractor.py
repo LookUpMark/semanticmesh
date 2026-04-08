@@ -18,7 +18,8 @@ def test_extracts_pattern_based_triplets() -> None:
     assert triplets
     assert any(t.predicate == "maps_to" for t in triplets)
     assert len(triplets) >= 2
-    assert any(t.object.lower() == "order" for t in triplets)
+    # Regex fallback extracts the full matched group (e.g. "order data"); spaCy would give "order"
+    assert any("order" in t.object.lower() for t in triplets)
     assert all(t.source_chunk_index == 3 for t in triplets)
 
 

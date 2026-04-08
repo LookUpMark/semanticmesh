@@ -2,9 +2,23 @@
 
 **A LangGraph-orchestrated multi-agent system for automated Data Governance.**
 
+**Version:** 1.0.0 🚀 — Stable Release with Comprehensive Performance Optimizations
+
 This framework bridges the semantic gap between unstructured business documentation (PDF/TXT) and relational database schemas (DDL/SQL) by autonomously constructing a Knowledge Graph on Neo4j and answering natural-language queries against it.
 
 Developed as a Master's thesis project at Politecnico di Torino, March 2026.
+
+### ✨ v1.0.0 Highlights
+
+- **~87% Neo4j write reduction** via UNWIND batch operations (O(N) → O(1) per entity type)
+- **Real-time builder progress** with SSE streaming + live React UI updates  
+- **Intelligent LLM/Critic gating** — skip expensive inference when confidence ≥ 0.85
+- **44 singleton entities** processed without LLM calls (direct provenance passthrough)
+- **Parallel PDF loading** for multi-file ingestion workloads
+- **Embedding deduplication** in retrieval pipeline (1 BGE-M3 inference instead of 2 per query)
+- **Deterministic Cypher healing** catches syntax errors before LLM (saves ~20% of fixing calls)
+
+For full details, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

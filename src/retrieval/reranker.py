@@ -9,6 +9,8 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 
@@ -20,19 +22,65 @@ if TYPE_CHECKING:
 logger: logging.Logger = get_logger(__name__)
 
 
+class _LMStudioReranker:
+    """Cosine-similarity reranker that uses LM Studio's embedding endpoint.
+
+    Scores each (query, doc) pair by computing the cosine similarity between
+    their dense embeddings produced by the embedding model loaded in LM Studio.
+    This is a bi-encoder approximation of cross-encoder reranking, suitable when
+    the FlagReranker local model is unavailable.
+    """
+
+    def __init__(self, client, model: str) -> None:
+        self._client = client
+        self._model = model
+
+    def _embed(self, texts: list[str], batch_size: int = 32) -> np.ndarray:
+        results: list[list[float]] = []
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i : i + batch_size]
+            resp = self._client.embeddings.create(input=batch, model=self._model)
+            results.extend([e.embedding for e in resp.data])
+        return np.array(results, dtype=np.float32)
+
+    def compute_score(self, pairs: list[tuple[str, str]], **_kwargs) -> list[float]:
+        queries = [p[0] for p in pairs]
+        docs = [p[1] for p in pairs]
+        q_embs = self._embed(queries)
+        d_embs = self._embed(docs)
+        q_norm = q_embs / (np.linalg.norm(q_embs, axis=1, keepdims=True) + 1e-9)
+        d_norm = d_embs / (np.linalg.norm(d_embs, axis=1, keepdims=True) + 1e-9)
+        return (q_norm * d_norm).sum(axis=1).tolist()
+
+
 @lru_cache(maxsize=1)
 def get_reranker():
-    """Return the singleton FlagReranker instance.
+    """Return the singleton reranker instance.
 
-    The model is loaded from ``settings.reranker_model`` (default
-    ``"BAAI/bge-reranker-v2-m3"``).  Runs on CPU if no GPU is available.
+    Backend is determined by ``settings.reranker_model``:
+    - ``lmstudio/<model>`` → :class:`_LMStudioReranker` (cosine-similarity via LM Studio)
+    - everything else → ``FlagEmbedding.FlagReranker`` (cross-encoder, local PyTorch)
 
     Returns:
-        A ``FlagEmbedding.FlagReranker`` instance ready for ``.compute_score()``.
+        An object with a ``.compute_score(pairs, ...)`` → list[float] interface.
 
     Raises:
-        ImportError: If ``FlagEmbedding`` is not installed.
+        ImportError: If ``FlagEmbedding`` is not installed (local path only).
     """
+    settings = get_settings()
+    model_name: str = settings.reranker_model
+
+    if model_name.startswith("lmstudio/"):
+        from openai import OpenAI  # noqa: PLC0415
+
+        # Use the embedding model name from settings (already stripped by _LMStudioEmbedder logic)
+        emb_model = settings.embedding_model
+        if emb_model.startswith("lmstudio/"):
+            emb_model = emb_model[len("lmstudio/"):]
+        base_url: str = settings.lmstudio_base_url
+        logger.info("Using LM Studio reranker (cosine similarity via '%s').", emb_model)
+        return _LMStudioReranker(client=OpenAI(api_key="lm-studio", base_url=base_url), model=emb_model)
+
     try:
         from FlagEmbedding import FlagReranker
     except ImportError as exc:
@@ -40,8 +88,6 @@ def get_reranker():
 
     import torch  # noqa: PLC0415
 
-    settings = get_settings()
-    model_name: str = settings.reranker_model
     _cuda = torch.cuda.is_available()
     _device = "cuda:0" if _cuda else "cpu"
     _fp16 = _cuda

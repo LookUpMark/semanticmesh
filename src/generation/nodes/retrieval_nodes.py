@@ -189,11 +189,16 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
             bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
             merged = bm25_results
         else:
+            # Compute embedding once; reuse for both vector indices.
+            from src.retrieval.embeddings import embed_text as _embed
+            shared_qv = _embed(query, model=model)
             vec_results = vector_search(
-                query, client, top_k=settings.retrieval_vector_top_k, model=model
+                query, client, top_k=settings.retrieval_vector_top_k, model=model,
+                query_vector=shared_qv,
             )
             chunk_vec_results = chunk_vector_search(
-                query, client, top_k=settings.retrieval_vector_top_k, model=model
+                query, client, top_k=settings.retrieval_vector_top_k, model=model,
+                query_vector=shared_qv,
             )
             trav_results = graph_traversal(
                 seed_names=[c.node_id for c in vec_results[:5]],

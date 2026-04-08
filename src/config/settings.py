@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     openrouter_base_url: str = DEFAULT_CONFIG.openrouter_base_url
     openrouter_api_key: SecretStr = SecretStr("")
     openai_api_key: SecretStr = SecretStr("")
+    llm_provider: str = DEFAULT_CONFIG.llm_provider
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
     llm_model_midtier: str = DEFAULT_CONFIG.llm_model_midtier
@@ -101,7 +102,10 @@ class Settings(BaseSettings):
     )
     enable_lazy_expansion: bool = DEFAULT_CONFIG.enable_lazy_expansion
     lazy_expansion_confidence_threshold: float = DEFAULT_CONFIG.lazy_expansion_confidence_threshold
-
+    # ── Performance / Cost Optimisation ────────────────────────────────────────
+    enable_singleton_llm_definitions: bool = DEFAULT_CONFIG.enable_singleton_llm_definitions
+    critic_confidence_gate: float = DEFAULT_CONFIG.critic_confidence_gate
+    max_reflection_attempts_reasoning: int = DEFAULT_CONFIG.max_reflection_attempts_reasoning
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = DEFAULT_CONFIG.log_level
 

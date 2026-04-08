@@ -25,6 +25,7 @@ import logging
 import os
 import sys
 from datetime import datetime, timezone
+import time as _time
 from pathlib import Path
 
 # Add project root to path
@@ -397,6 +398,7 @@ def main() -> None:
     # ── STAGE 1: Builder Graph ──
     builder_state = None
     builder_trace_id = ""
+    builder_elapsed: float = 0.0
     if not args.no_builder:
         run_logger.info("")
         run_logger.info("=" * 50)
@@ -420,6 +422,7 @@ def main() -> None:
         run_logger.info("Doc files: %s", doc_paths)
         run_logger.info("DDL files: %s", ddl_paths)
 
+        builder_t0 = _time.perf_counter()
         builder_state = run_builder(
             raw_documents=doc_paths,
             ddl_paths=ddl_paths,
@@ -428,6 +431,7 @@ def main() -> None:
             trace_enabled=True,
             study_id=args.study_id,
         )
+        builder_elapsed = _time.perf_counter() - builder_t0
 
         triplets = builder_state.get("triplets", [])
         entities = builder_state.get("entities", [])
@@ -440,6 +444,7 @@ def main() -> None:
         run_logger.info("  Entities resolved:   %d", len(entities))
         run_logger.info("  Tables parsed:       %d", len(tables))
         run_logger.info("  Tables completed:    %d", len(completed))
+        run_logger.info("  Builder elapsed:     %.1f s", builder_elapsed)
         run_logger.info("  Cypher failed:       %s", builder_state.get("cypher_failed", False))
 
         trace = builder_state.get("builder_trace")
@@ -630,6 +635,7 @@ def main() -> None:
             "entities": len(builder_state.get("entities", [])) if builder_state else 0,
             "tables_parsed": len(builder_state.get("tables", [])) if builder_state else 0,
             "tables_completed": len(builder_state.get("completed_tables", [])) if builder_state else 0,
+            "elapsed_s": round(builder_elapsed, 1) if builder_state else None,
         },
         "query": {
             "total_questions": len(results),

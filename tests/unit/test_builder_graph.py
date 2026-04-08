@@ -20,20 +20,24 @@ from src.models.schemas import Chunk
 
 class TestRouteAfterValidate:
     def test_routes_to_hitl_when_flag(self) -> None:
-        state = {"hitl_flag": True, "reflection_prompt": None}
+        state = {"hitl_flag": True, "reflection_prompt": None, "current_table": MagicMock()}
         assert _route_after_validate(state) == "hitl"
 
     def test_routes_to_rag_mapping_for_reflection(self) -> None:
-        state = {"hitl_flag": False, "reflection_prompt": "Please fix..."}
+        state = {"hitl_flag": False, "reflection_prompt": "Please fix...", "current_table": MagicMock(), "mapping_proposal": MagicMock()}
         assert _route_after_validate(state) == "rag_mapping"
 
     def test_routes_to_generate_cypher_on_success(self) -> None:
-        state = {"hitl_flag": False, "reflection_prompt": None}
+        state = {"hitl_flag": False, "reflection_prompt": None, "current_table": MagicMock(), "mapping_proposal": MagicMock()}
         assert _route_after_validate(state) == "generate_cypher"
 
     def test_hitl_takes_precedence_over_reflection(self) -> None:
-        state = {"hitl_flag": True, "reflection_prompt": "Please fix..."}
+        state = {"hitl_flag": True, "reflection_prompt": "Please fix...", "current_table": MagicMock()}
         assert _route_after_validate(state) == "hitl"
+
+    def test_routes_to_save_trace_when_no_table(self) -> None:
+        state = {"hitl_flag": False, "reflection_prompt": None}
+        assert _route_after_validate(state) == "save_trace"
 
 
 class TestRouteAfterHeal:
@@ -63,12 +67,13 @@ class TestRouteAfterBuild:
 
     def test_routes_to_end_when_empty(self) -> None:
         state = {"pending_tables": []}
-        assert _route_after_build(state) == END
+        # Routes through save_trace (a no-op node) before END
+        assert _route_after_build(state) == "save_trace"
 
     def test_handles_missing_key_gracefully(self) -> None:
         state = {}
-        # Missing pending_tables key should route to END
-        assert _route_after_build(state) == END
+        # Missing pending_tables key should route through save_trace before END
+        assert _route_after_build(state) == "save_trace"
 
 
 # ── build_builder_graph ────────────────────────────────────────────────────────
@@ -77,10 +82,8 @@ class TestRouteAfterBuild:
 class TestBuildBuilderGraph:
     @patch("src.graph.builder_graph.get_settings")
     @patch("src.graph.builder_graph.get_extraction_llm")
-    @patch("src.graph.builder_graph.get_reasoning_llm")
     def test_graph_compiles_without_error(
         self,
-        mock_reasoning_llm,
         mock_extraction_llm,
         mock_settings,
     ) -> None:
@@ -93,17 +96,14 @@ class TestBuildBuilderGraph:
             sqlite_checkpoint_path=":memory:",
         )
         mock_extraction_llm.return_value = MagicMock()
-        mock_reasoning_llm.return_value = MagicMock()
 
         graph = build_builder_graph(production=False)
         assert graph is not None
 
     @patch("src.graph.builder_graph.get_settings")
     @patch("src.graph.builder_graph.get_extraction_llm")
-    @patch("src.graph.builder_graph.get_reasoning_llm")
     def test_interrupt_before_hitl(
         self,
-        mock_reasoning_llm,
         mock_extraction_llm,
         mock_settings,
     ) -> None:
@@ -116,7 +116,6 @@ class TestBuildBuilderGraph:
             sqlite_checkpoint_path=":memory:",
         )
         mock_extraction_llm.return_value = MagicMock()
-        mock_reasoning_llm.return_value = MagicMock()
 
         graph = build_builder_graph(production=False)
         # Check that the graph is compiled with interrupt_before

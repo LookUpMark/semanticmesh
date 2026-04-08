@@ -44,6 +44,7 @@ class BuilderState(TypedDict, total=False):
     failed_mappings: list[str]
     ingestion_errors: list[str]
     completed_tables: list[str]
+    skipped_files: list[str]
 
     # Debug tracing fields (use Any to avoid circular imports)
     trace_enabled: bool
