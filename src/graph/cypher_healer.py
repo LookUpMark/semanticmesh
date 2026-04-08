@@ -8,6 +8,7 @@ EP-09 / US-09-02 and US-09-03:
 
 from __future__ import annotations
 
+import re
 import logging
 
 import neo4j.exceptions
@@ -23,6 +24,33 @@ from src.models.schemas import MappingProposal
 from src.prompts.templates import CYPHER_FIX_USER, CYPHER_SYSTEM
 
 logger: logging.Logger = get_logger(__name__)
+
+
+def _deterministic_prefix_fix(cypher: str, error: str) -> str | None:
+    """Apply cheap, deterministic fixes before spending an LLM call.
+
+    Handles the most common Cypher errors that don't require semantic understanding:
+    - Backtick-wrapped label/property names that Neo4j rejects (e.g. ``name``)
+    - Double-escaped backslashes in string literals
+    - Leading/trailing whitespace or stray semicolons
+
+    Returns the fixed Cypher string, or None if no deterministic fix applies.
+    """
+    fixed = cypher.strip().rstrip(";")
+
+    # Remove backticks around simple alphanumeric identifiers (LLM often copies
+    # from few-shot examples that use backticks; Neo4j rejects them in some positions)
+    candidate = re.sub(r"`([A-Za-z_][A-Za-z0-9_]*)`", r"\1", fixed)
+
+    # Fix double-escaped backslashes inside string literals (\\\\ → \\)
+    candidate = candidate.replace("\\\\", "\\")
+
+    changed = candidate != cypher.strip().rstrip(";")
+    if not changed:
+        return None
+
+    logger.debug("deterministic_prefix_fix: applied heuristic Cypher correction.")
+    return candidate
 
 
 def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
@@ -152,6 +180,18 @@ def heal_cypher(
                 mapping.table_name,
             )
             return None
+
+        # Try a cheap deterministic fix first; only call LLM if that doesn't help
+        det_fix = _deterministic_prefix_fix(current, error)
+        if det_fix is not None:
+            ok2, _ = validate_cypher(det_fix, driver)
+            if ok2:
+                logger.info(
+                    "Cypher healed via deterministic fix for '%s' (no LLM call).",
+                    mapping.table_name,
+                )
+                return det_fix
+            current = det_fix  # use as starting point for LLM repair
 
         try:
             current = fix_cypher(current, error, mapping, llm)
