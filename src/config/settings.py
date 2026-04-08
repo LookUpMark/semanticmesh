@@ -102,7 +102,10 @@ class Settings(BaseSettings):
     )
     enable_lazy_expansion: bool = DEFAULT_CONFIG.enable_lazy_expansion
     lazy_expansion_confidence_threshold: float = DEFAULT_CONFIG.lazy_expansion_confidence_threshold
-
+    # ── Performance / Cost Optimisation ────────────────────────────────────────
+    enable_singleton_llm_definitions: bool = DEFAULT_CONFIG.enable_singleton_llm_definitions
+    critic_confidence_gate: float = DEFAULT_CONFIG.critic_confidence_gate
+    max_reflection_attempts_reasoning: int = DEFAULT_CONFIG.max_reflection_attempts_reasoning
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = DEFAULT_CONFIG.log_level
 

@@ -80,6 +80,7 @@ export interface BuildResultResponse {
   tables_completed?: number | null;
   parent_chunks?: number | null;
   child_chunks?: number | null;
+  current_step?: string | null;
 }
 
 export interface QueryRequest {

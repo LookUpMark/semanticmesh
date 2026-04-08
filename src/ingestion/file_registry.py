@@ -166,50 +166,30 @@ def purge_file_data(client: "Neo4jClient", source_doc: str) -> int:
     Returns:
         Total number of nodes deleted.
     """
+    # Build a deduplicated list of identifiers (full path + basename if different)
+    basename = source_doc.rsplit("/", 1)[-1] if "/" in source_doc else source_doc
+    src_variants = list(dict.fromkeys([source_doc, basename]))  # preserves order, deduplicates
+
     # 1. Delete child Chunk nodes (cascades CHILD_OF + MENTIONS edges)
     rows_c = client.execute_cypher(
-        "MATCH (c:Chunk {source_doc: $src}) DETACH DELETE c RETURN count(c) AS n",
-        {"src": source_doc},
+        "MATCH (c:Chunk) WHERE c.source_doc IN $srcs DETACH DELETE c RETURN count(c) AS n",
+        {"srcs": src_variants},
     )
     n_chunks = (rows_c[0].get("n") or 0) if rows_c else 0
 
-    # Also match by basename (Chunk.source_doc often stores only the filename)
-    basename = source_doc.rsplit("/", 1)[-1] if "/" in source_doc else source_doc
-    if basename != source_doc:
-        rows_c2 = client.execute_cypher(
-            "MATCH (c:Chunk {source_doc: $src}) DETACH DELETE c RETURN count(c) AS n",
-            {"src": basename},
-        )
-        n_chunks += (rows_c2[0].get("n") or 0) if rows_c2 else 0
-
     # 2. Delete parent ParentChunk nodes
     rows_p = client.execute_cypher(
-        "MATCH (pc:ParentChunk {source_doc: $src}) DETACH DELETE pc RETURN count(pc) AS n",
-        {"src": source_doc},
+        "MATCH (pc:ParentChunk) WHERE pc.source_doc IN $srcs DETACH DELETE pc RETURN count(pc) AS n",
+        {"srcs": src_variants},
     )
     n_parents = (rows_p[0].get("n") or 0) if rows_p else 0
 
-    if basename != source_doc:
-        rows_p2 = client.execute_cypher(
-            "MATCH (pc:ParentChunk {source_doc: $src}) DETACH DELETE pc RETURN count(pc) AS n",
-            {"src": basename},
-        )
-        n_parents += (rows_p2[0].get("n") or 0) if rows_p2 else 0
-
     # 3. Delete PhysicalTable nodes whose source_file matches this DDL path
-    #    (cascades MAPPED_TO and REFERENCES edges)
     rows_t = client.execute_cypher(
-        "MATCH (pt:PhysicalTable {source_file: $src}) DETACH DELETE pt RETURN count(pt) AS n",
-        {"src": source_doc},
+        "MATCH (pt:PhysicalTable) WHERE pt.source_file IN $srcs DETACH DELETE pt RETURN count(pt) AS n",
+        {"srcs": src_variants},
     )
     n_tables = (rows_t[0].get("n") or 0) if rows_t else 0
-
-    if basename != source_doc:
-        rows_t2 = client.execute_cypher(
-            "MATCH (pt:PhysicalTable {source_file: $src}) DETACH DELETE pt RETURN count(pt) AS n",
-            {"src": basename},
-        )
-        n_tables += (rows_t2[0].get("n") or 0) if rows_t2 else 0
 
     # 4. Remove the SourceFile registry node
     client.execute_cypher(

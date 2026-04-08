@@ -109,6 +109,7 @@ def vector_search(
     client: Neo4jClient,
     top_k: int | None = None,
     model=None,
+    query_vector: list[float] | None = None,
 ) -> list[RetrievedChunk]:
     """Embed the query and run Neo4j vector index search on BusinessConcept nodes.
 
@@ -117,13 +118,14 @@ def vector_search(
         client: Active ``Neo4jClient``.
         top_k: Number of results; defaults to ``settings.retrieval_vector_top_k``.
         model: Optional pre-loaded FlagModel; passed to ``embed_text``.
+        query_vector: Pre-computed embedding; skips ``embed_text`` when provided.
 
     Returns:
         Sorted list of ``RetrievedChunk`` with ``source_type="vector"``.
     """
     settings = get_settings()
     n = top_k or settings.retrieval_vector_top_k
-    query_vector: list[float] = embed_text(query, model=model)
+    qv: list[float] = query_vector if query_vector is not None else embed_text(query, model=model)
 
     cypher = (
         "CALL db.index.vector.queryNodes('businessconcept_embedding', $k, $embedding) "
@@ -132,7 +134,7 @@ def vector_search(
         "score, 'BusinessConcept' AS node_type, "
         "node.source_doc AS source_doc, node.synonyms AS synonyms"
     )
-    records = client.execute_cypher(cypher, {"k": n, "embedding": query_vector})
+    records = client.execute_cypher(cypher, {"k": n, "embedding": qv})
 
     chunks: list[RetrievedChunk] = []
     for rec in records:
@@ -167,6 +169,7 @@ def chunk_vector_search(
     client: Neo4jClient,
     top_k: int | None = None,
     model=None,
+    query_vector: list[float] | None = None,
 ) -> list[RetrievedChunk]:
     """Embed the query and search the ``chunk_embedding`` vector index.
 
@@ -179,13 +182,14 @@ def chunk_vector_search(
         client: Active ``Neo4jClient``.
         top_k: Number of results; defaults to ``settings.retrieval_vector_top_k``.
         model: Optional pre-loaded FlagModel; passed to ``embed_text``.
+        query_vector: Pre-computed embedding; skips ``embed_text`` when provided.
 
     Returns:
         Sorted list of ``RetrievedChunk`` with ``source_type="chunk_vector"``.
     """
     settings = get_settings()
     n = top_k or settings.retrieval_vector_top_k
-    query_vector: list[float] = embed_text(query, model=model)
+    qv: list[float] = query_vector if query_vector is not None else embed_text(query, model=model)
 
     # Search children for precision, then expand to parents for context richness.
     # Deduplicate by (source_doc, parent_chunk_index) so multiple children of the
@@ -202,7 +206,7 @@ def chunk_vector_search(
         "RETURN pid AS chunk_index, src AS source_doc, text, max_score AS score "
         "ORDER BY max_score DESC"
     )
-    records = client.execute_cypher(cypher, {"k": n, "embedding": query_vector})
+    records = client.execute_cypher(cypher, {"k": n, "embedding": qv})
 
     chunks: list[RetrievedChunk] = []
     for rec in records:

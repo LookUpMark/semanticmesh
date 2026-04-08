@@ -153,7 +153,8 @@ def judge_cluster(
 
     _no_merge = _no_merge_decision(cluster, "Conservative no-merge default.")
 
-    max_attempts: int = settings.max_reflection_attempts
+    # Use the capped reflection attempts for this expensive reasoning-tier path
+    max_attempts: int = settings.max_reflection_attempts_reasoning
     _fmt = (
         '{"merge": <bool>, "canonical_name": "<str>",'
         ' "reasoning": "<str>", "definition": "<str>"}'

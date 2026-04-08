@@ -17,7 +17,7 @@ _lock = Lock()
 def create_job(meta: dict[str, Any]) -> str:
     job_id = uuid.uuid4().hex[:12]
     with _lock:
-        _store[job_id] = {"status": "queued", "meta": meta}
+        _store[job_id] = {"status": "queued", "meta": meta, "current_step": None}
     return job_id
 
 
@@ -27,17 +27,25 @@ def set_running(job_id: str) -> None:
             _store[job_id]["status"] = "running"
 
 
+def set_step(job_id: str, step: str) -> None:
+    """Update the current pipeline step name (e.g. 'extract_triplets')."""
+    with _lock:
+        if job_id in _store:
+            _store[job_id]["current_step"] = step
+
+
 def set_done(job_id: str, result: dict[str, Any]) -> None:
     with _lock:
         if job_id in _store:
             _store[job_id]["status"] = "done"
             _store[job_id]["result"] = result
+            _store[job_id]["current_step"] = None
 
 
 def set_failed(job_id: str, error: str) -> None:
     with _lock:
         if job_id in _store:
-            _store[job_id].update({"status": "failed", "error": error})
+            _store[job_id].update({"status": "failed", "error": error, "current_step": None})
 
 
 def get_job(job_id: str) -> dict[str, Any] | None:

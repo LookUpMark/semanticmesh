@@ -77,9 +77,10 @@ def _node_extract_triplets(state: BuilderState) -> dict[str, Any]:
 def _node_entity_resolution(state: BuilderState) -> dict[str, Any]:
     """Resolve extracted triplets into canonical entities."""
     embeddings = get_embeddings()
-    llm = get_lightweight_llm()
+    llm = get_lightweight_llm()  # kept for singleton definition synthesis (when enabled)
     triplets = state.get("triplets") or []
     source_doc = state.get("source_doc", "unknown")
+    # ER judge itself uses midtier internally (see entity_resolver.resolve_entities)
     entities = resolve_entities(triplets, embeddings, llm, source_doc)
     return {"entities": entities}
 
@@ -287,6 +288,7 @@ def run_builder(
     use_lazy_extraction: bool | None = None,
     trace_enabled: bool = False,
     study_id: str = "manual",
+    job_id: str | None = None,
 ) -> BuilderState:
     """Convenience wrapper: compile graph and invoke with document paths.
 
@@ -401,9 +403,17 @@ def run_builder(
     # ── Load and chunk only the files that need (re-)ingestion ───────────────
     # Load all documents first, then chunk in one pass so parent_chunk_index is
     # globally unique across all source files (avoids index collisions in Neo4j).
-    all_docs = []
-    for doc_path in docs_to_ingest:
-        all_docs.extend(load_pdf(Path(doc_path)))
+    # PDF loading is I/O-bound so we parallelise across files.
+    all_docs: list = []
+    if len(docs_to_ingest) > 1:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=min(4, len(docs_to_ingest))) as _pool:
+            futures = {_pool.submit(load_pdf, Path(p)): p for p in docs_to_ingest}
+            for fut in as_completed(futures):
+                all_docs.extend(fut.result())
+    else:
+        for doc_path in docs_to_ingest:
+            all_docs.extend(load_pdf(Path(doc_path)))
     all_parents, all_children = chunk_documents_hierarchical(all_docs)
 
     # Triplet extraction and MENTIONS edges operate on parents (richer 512-tok context).
@@ -441,58 +451,68 @@ def run_builder(
             logger.info("Graph cleared before builder run.")
         setup_schema(client)
 
-        # ── Persist parent chunks (no embedding — full context for LLM) ──────
-        for parent in all_parents:
+        # ── Persist parent chunks — single UNWIND batch ───────────────────────
+        if all_parents:
             client.execute_cypher(
-                "MERGE (pc:ParentChunk {parent_chunk_index: $idx, source_doc: $src}) "
-                "ON CREATE SET pc.text = $text, pc.page = $page, "
-                "pc.created_at = datetime() "
-                "ON MATCH SET pc.text = $text, pc.updated_at = datetime()",
-                {
-                    "idx": parent.chunk_index,
-                    "src": parent.metadata.get("source", ""),
-                    "text": parent.text,
-                    "page": parent.metadata.get("page", ""),
-                },
+                "UNWIND $rows AS row "
+                "MERGE (pc:ParentChunk {parent_chunk_index: row.idx, source_doc: row.src}) "
+                "ON CREATE SET pc.text = row.text, pc.page = row.page, pc.created_at = datetime() "
+                "ON MATCH  SET pc.text = row.text, pc.updated_at = datetime()",
+                {"rows": [
+                    {
+                        "idx": p.chunk_index,
+                        "src": p.metadata.get("source", ""),
+                        "text": p.text,
+                        "page": p.metadata.get("page", ""),
+                    }
+                    for p in all_parents
+                ]},
             )
-        logger.info("Persisted %d ParentChunk nodes.", len(all_parents))
+            logger.info("Persisted %d ParentChunk nodes (batch).", len(all_parents))
 
-        # ── Persist child chunks with embeddings for vector search ────────────
+        # ── Persist child chunks with embeddings — single UNWIND batch ────────
         if all_children:
             emb_model = get_embeddings()
             child_texts = [c.text for c in all_children]
             vectors = emb_model.encode(child_texts, batch_size=32)
-            for i, child in enumerate(all_children):
-                client.execute_cypher(
-                    "MERGE (c:Chunk {chunk_index: $idx, source_doc: $src}) "
-                    "ON CREATE SET c.text = $text, c.page = $page, "
-                    "c.embedding = $emb, c.created_at = datetime() "
-                    "ON MATCH SET c.text = $text, c.embedding = $emb, "
-                    "c.updated_at = datetime()",
+            client.execute_cypher(
+                "UNWIND $rows AS row "
+                "MERGE (c:Chunk {chunk_index: row.idx, source_doc: row.src}) "
+                "ON CREATE SET c.text = row.text, c.page = row.page, "
+                "c.embedding = row.emb, c.created_at = datetime() "
+                "ON MATCH  SET c.text = row.text, c.embedding = row.emb, c.updated_at = datetime()",
+                {"rows": [
                     {
                         "idx": child.chunk_index,
                         "src": child.metadata.get("source", ""),
                         "text": child.text,
                         "page": child.metadata.get("page", ""),
                         "emb": vectors[i].tolist(),
-                    },
-                )
-            logger.info("Persisted %d Chunk nodes with embeddings.", len(all_children))
+                    }
+                    for i, child in enumerate(all_children)
+                ]},
+            )
+            logger.info("Persisted %d Chunk nodes with embeddings (batch).", len(all_children))
 
-        # ── Wire CHILD_OF edges ───────────────────────────────────────────────
-        for child in all_children:
-            if child.parent_chunk_index is not None:
-                client.execute_cypher(
-                    "MATCH (c:Chunk {chunk_index: $cidx, source_doc: $src}) "
-                    "MATCH (pc:ParentChunk {parent_chunk_index: $pidx, source_doc: $src}) "
-                    "MERGE (c)-[:CHILD_OF]->(pc)",
-                    {
-                        "cidx": child.chunk_index,
-                        "pidx": child.parent_chunk_index,
-                        "src": child.metadata.get("source", ""),
-                    },
-                )
-        logger.info("Created CHILD_OF edges for %d children.", len(all_children))
+        # ── Wire CHILD_OF edges — single UNWIND batch ─────────────────────────
+        edge_rows = [
+            {
+                "cidx": child.chunk_index,
+                "pidx": child.parent_chunk_index,
+                "src": child.metadata.get("source", ""),
+            }
+            for child in all_children
+            if child.parent_chunk_index is not None
+        ]
+        if edge_rows:
+            client.execute_cypher(
+                "UNWIND $rows AS row "
+                "MATCH (c:Chunk {chunk_index: row.cidx, source_doc: row.src}) "
+                "MATCH (pc:ParentChunk {parent_chunk_index: row.pidx, source_doc: row.src}) "
+                "MERGE (c)-[:CHILD_OF]->(pc)",
+                {"rows": edge_rows},
+            )
+            logger.info("Created CHILD_OF edges for %d children (batch).", len(edge_rows))
 
         # ── Register ingested files in the SourceFile registry ────────────────
         # Always register after a successful ingestion so that subsequent
@@ -543,7 +563,19 @@ def run_builder(
         "trace_output_dir": settings.trace_output_dir if trace_enabled else "",
     }
     config = {"configurable": {"thread_id": f"builder-{uuid.uuid4().hex[:8]}"}}
-    final_state: BuilderState = graph.invoke(initial, config=config)
+
+    # Use graph.stream() so each completed node is visible for SSE step tracking.
+    # The loop collects the last emitted state as the final_state.
+    if job_id is not None:
+        from src.api.jobs import set_step as _set_step  # local import avoids circular dep
+        final_state: BuilderState = {}  # type: ignore[assignment]
+        for node_output in graph.stream(initial, config=config):
+            # node_output is {node_name: state_delta}
+            node_name = next(iter(node_output))
+            _set_step(job_id, node_name)
+            final_state = {**final_state, **node_output[node_name]}
+    else:
+        final_state = graph.invoke(initial, config=config)
 
     # ── MENTIONS edge repair for PDF-only incremental updates ─────────────────
     # When PDFs changed but DDL was unchanged (ddl_to_ingest=[]), the graph exits

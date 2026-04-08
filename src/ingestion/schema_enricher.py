@@ -8,6 +8,7 @@ schema conventions and business glossary terminology.
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -143,21 +144,37 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
 def enrich_all(
     tables: list[TableSchema],
     llm: LLMProtocol,
+    max_workers: int = 5,
 ) -> list[EnrichedTableSchema]:
     """Enrich every table in the list; gracefully degrade on individual failures.
 
     Args:
         tables: List of ``TableSchema`` objects from ``ddl_parser``.
         llm: LLM instance to call for enrichment.
+        max_workers: Max concurrent LLM calls (default 5).
 
     Returns:
         List of ``EnrichedTableSchema`` with the same length as ``tables``.
         Tables that could not be enriched are returned with enrichment fields
         set to ``None`` / empty (never dropped).
     """
-    results: list[EnrichedTableSchema] = []
-    for table in tables:
-        enriched = enrich_schema(table, llm)
-        results.append(enriched)
-    logger.info("Enriched %d/%d tables successfully.", len(results), len(tables))
-    return results
+    if not tables:
+        return []
+
+    results: dict[int, EnrichedTableSchema] = {}
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(tables))) as pool:
+        future_to_idx = {
+            pool.submit(enrich_schema, table, llm): i
+            for i, table in enumerate(tables)
+        }
+        for future in as_completed(future_to_idx):
+            idx = future_to_idx[future]
+            try:
+                results[idx] = future.result()
+            except Exception as exc:
+                logger.warning("Enrichment failed for table index %d: %s", idx, exc)
+                results[idx] = EnrichedTableSchema.from_table_schema(tables[idx])
+
+    enriched_list = [results[i] for i in range(len(tables))]
+    logger.info("Enriched %d/%d tables successfully.", len(enriched_list), len(tables))
+    return enriched_list

@@ -160,24 +160,53 @@ def resolve_entities(
     for cluster in clusters:
         clustered_entities.update(cluster.variants)
 
-    # ── Stage 2: LLM Judge ────────────────────────────────────────────────────
+    # ── Stage 2: LLM Judge (parallelised) ───────────────────────────────────
     provenance_map = build_provenance_map(triplets)
     canonical_entities: list[Entity] = []
 
-    for cluster in clusters:
-        decision = judge_cluster(cluster, provenance_map, llm)
-        entity = cluster_to_entity(cluster, decision, provenance_map)
-        entity.source_doc = source_doc
-        canonical_entities.append(entity)
+    if clusters:
+        settings_er = get_settings()
+        concurrency = settings_er.extraction_concurrency
+        # Use midtier LLM for the judge (binary merge task, no full reasoning tier needed)
+        from src.config.llm_factory import get_midtier_llm as _get_midtier_llm
+        judge_llm = _get_midtier_llm()
+        cluster_results: dict[int, Entity] = {}
+        with ThreadPoolExecutor(max_workers=min(concurrency, len(clusters))) as pool:
+            future_to_idx = {
+                pool.submit(judge_cluster, cluster, provenance_map, judge_llm): i
+                for i, cluster in enumerate(clusters)
+            }
+            for future in as_completed(future_to_idx):
+                i = future_to_idx[future]
+                cluster = clusters[i]
+                try:
+                    decision = future.result()
+                except Exception as exc:
+                    logger.warning("LLM judge failed for cluster '%s': %s", cluster.canonical_candidate, exc)
+                    from src.models.schemas import CanonicalEntityDecision
+                    decision = CanonicalEntityDecision(
+                        merge=False,
+                        canonical_name=cluster.canonical_candidate,
+                        reasoning=f"Judge error: {exc}",
+                    )
+                entity = cluster_to_entity(cluster, decision, provenance_map)
+                entity.source_doc = source_doc
+                cluster_results[i] = entity
+        canonical_entities = [cluster_results[i] for i in range(len(clusters))]
 
-    # ── Singletons: promote with LLM-synthesized definitions ─────────────────
+    # ── Singletons: promote — optionally with LLM-synthesized definitions ──────
     singleton_entities = [e for e in all_entities if e not in clustered_entities]
     settings = get_settings()
-    singleton_definitions = _infer_singleton_definitions_batch(
-        [(e, provenance_map.get(e, [])) for e in singleton_entities],
-        llm,
-        concurrency=settings.extraction_concurrency,
-    )
+
+    if settings.enable_singleton_llm_definitions:
+        singleton_definitions = _infer_singleton_definitions_batch(
+            [(e, provenance_map.get(e, [])) for e in singleton_entities],
+            llm,
+            concurrency=settings.extraction_concurrency,
+        )
+    else:
+        singleton_definitions = {}  # use provenance text directly — free, no LLM call
+
     for singleton in singleton_entities:
         provenance_texts = provenance_map.get(singleton, [])
         # Prefer LLM-synthesized definition; fall back to joined provenance sentences

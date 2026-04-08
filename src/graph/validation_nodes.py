@@ -64,6 +64,22 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
             "hitl_flag": validated.confidence < settings.confidence_threshold,
         }
 
+    # Confidence gate: skip expensive critic call when confidence is already high
+    if (validated.confidence or 0.0) >= settings.critic_confidence_gate:
+        logger.info(
+            "Critic skipped for '%s': confidence %.2f >= gate %.2f.",
+            validated.table_name,
+            validated.confidence or 0.0,
+            settings.critic_confidence_gate,
+        )
+        return {
+            "mapping_proposal": validated,
+            "best_proposal": None,
+            "validation_error": None,
+            "reflection_attempts": 0,
+            "hitl_flag": False,
+        }
+
     decision = critic_review(validated, table, entities, llm)
     if not decision.approved:
         critique = decision.critique or "Mapping rejected by critic."

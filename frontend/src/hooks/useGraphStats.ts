@@ -5,7 +5,7 @@ export function useGraphStats() {
   return useQuery({
     queryKey: ["graphStats"],
     queryFn: getGraphStats,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
     staleTime: 10_000,
     retry: 2,
   });

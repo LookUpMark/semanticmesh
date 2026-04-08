@@ -239,27 +239,26 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     concept_lower in t.subject.lower() or concept_lower in t.object.lower()
                 ):
                     chunk_indexes.add(t.source_chunk_index)
-            for idx in chunk_indexes:
+            if chunk_indexes:
                 try:
                     client.execute_cypher(
-                        "MATCH (ch:Chunk {chunk_index: $idx}) "
+                        "UNWIND $idxs AS idx "
+                        "MATCH (ch:Chunk {chunk_index: idx}) "
                         "MATCH (bc:BusinessConcept {name: $concept}) "
                         "MERGE (ch)-[:MENTIONS]->(bc)",
-                        {"idx": idx, "concept": proposal.mapped_concept},
+                        {"idxs": list(chunk_indexes), "concept": proposal.mapped_concept},
+                    )
+                    logger.info(
+                        "MENTIONS edges: %d chunks → '%s' (batch).",
+                        len(chunk_indexes),
+                        proposal.mapped_concept,
                     )
                 except Exception as exc:
                     logger.warning(
-                        "Could not create MENTIONS edge chunk %d → '%s': %s",
-                        idx,
+                        "Could not create MENTIONS edges → '%s': %s",
                         proposal.mapped_concept,
                         exc,
                     )
-            if chunk_indexes:
-                logger.info(
-                    "MENTIONS edges: %d chunks → '%s'.",
-                    len(chunk_indexes),
-                    proposal.mapped_concept,
-                )
 
     completed = list(state.get("completed_tables") or [])
     completed.append(proposal.table_name)

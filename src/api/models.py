@@ -601,6 +601,10 @@ class BuildResultResponse(BaseModel):
     job_id: str
     status: Literal["queued", "running", "done", "failed"]
     error: str | None = None
+    current_step: str | None = Field(
+        default=None,
+        description="Name of the pipeline node currently executing (null when done/failed).",
+    )
     triplets_extracted: int | None = None
     entities_resolved: int | None = None
     tables_parsed: int | None = None

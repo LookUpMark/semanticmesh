@@ -99,6 +99,17 @@ class AppConfig:
     enable_lazy_expansion: bool = True
     lazy_expansion_confidence_threshold: float = 0.40
 
+    # ── Performance / Cost Optimisation ───────────────────────────────────────
+    # When True, singleton entity definitions are derived directly from their
+    # provenance text instead of calling the LLM — saves many lightweight calls.
+    enable_singleton_llm_definitions: bool = False
+    # Critic is skipped when the mapping confidence already exceeds this gate.
+    # Setting to 1.0 disables this gate (always run critic when enabled).
+    critic_confidence_gate: float = 0.85
+    # Max reflection retries for expensive reasoning-tier calls (mapping, ER judge).
+    # Cheaper extraction-tier retries use max_reflection_attempts unchanged.
+    max_reflection_attempts_reasoning: int = 2
+
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = "INFO"
 

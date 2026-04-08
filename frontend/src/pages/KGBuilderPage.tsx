@@ -155,7 +155,7 @@ function FileUploadZone({
   );
 }
 
-function BuildSteps({ data }: { data: { status: string; triplets_extracted?: number | null; entities_resolved?: number | null; tables_parsed?: number | null; tables_completed?: number | null } }) {
+function BuildSteps({ data }: { data: { status: string; triplets_extracted?: number | null; entities_resolved?: number | null; tables_parsed?: number | null; tables_completed?: number | null; current_step?: string | null } }) {
   const steps = [
     { label: "Queued", done: true },
     { label: "Parse & Extract", done: (data.triplets_extracted ?? 0) > 0 },
@@ -168,6 +168,12 @@ function BuildSteps({ data }: { data: { status: string; triplets_extracted?: num
   const activeIdx = currentStep === -1 ? 0 : steps.length - 1 - currentStep + 1;
 
   return (
+    <div className="space-y-2">
+      {data.current_step && data.status === "running" && (
+        <p className="text-xs text-muted-foreground">
+          Current node: <span className="text-primary font-mono">{data.current_step}</span>
+        </p>
+      )}
     <ol className="flex items-center gap-0">
       {steps.map((step, i) => {
         const isActive = i === activeIdx && data.status !== "done";
@@ -197,6 +203,7 @@ function BuildSteps({ data }: { data: { status: string; triplets_extracted?: num
         );
       })}
     </ol>
+    </div>
   );
 }
 

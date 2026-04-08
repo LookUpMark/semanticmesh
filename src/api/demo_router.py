@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 
-from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running
+from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running, set_step
 from src.evaluation.ablation_runner import _settings_override as _settings_override
 from src.api.models import (
     BuildRequest,
@@ -103,13 +103,15 @@ def _build_state_to_response(
     status: str,
     error: str | None,
     builder: dict[str, Any] | None,
+    current_step: str | None = None,
 ) -> BuildResultResponse:
     if builder is None:
-        return BuildResultResponse(job_id=job_id, status=status, error=error)  # type: ignore[arg-type]
+        return BuildResultResponse(job_id=job_id, status=status, error=error, current_step=current_step)  # type: ignore[arg-type]
     return BuildResultResponse(
         job_id=job_id,
         status=status,  # type: ignore[arg-type]
         error=error,
+        current_step=current_step,
         triplets_extracted=builder.get("triplets_extracted"),
         entities_resolved=builder.get("entities_resolved"),
         tables_parsed=builder.get("tables_parsed"),
@@ -141,6 +143,7 @@ def _run_build_task(job_id: str, req: BuildRequest) -> None:
                 force_rebuild=req.force_rebuild,
                 use_lazy_extraction=req.lazy_extraction if req.lazy_extraction else None,
                 study_id=req.study_id,
+                job_id=job_id,  # passed through so run_builder can call set_step()
             )
         result = {
             "builder": {
@@ -286,7 +289,63 @@ def get_build_status(job_id: str) -> BuildResultResponse:
     if job is None:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
     builder = (job.get("result") or {}).get("builder")
-    return _build_state_to_response(job_id, job["status"], job.get("error"), builder)
+    return _build_state_to_response(
+        job_id, job["status"], job.get("error"), builder, job.get("current_step")
+    )
+
+
+@router.get(
+    "/build/{job_id}/stream",
+    summary="Stream KG build progress via Server-Sent Events",
+    description=(
+        "Opens an SSE stream for a build job. "
+        "Emits a JSON event each time the pipeline advances to a new node. "
+        "The stream closes automatically when status reaches `done` or `failed`."
+    ),
+    response_class=__import__("fastapi.responses", fromlist=["StreamingResponse"]).StreamingResponse,
+    include_in_schema=True,
+)
+async def stream_build_status(job_id: str):
+    """SSE endpoint — yields JSON events until the job reaches a terminal state."""
+    import asyncio
+    import json as _json
+    from fastapi.responses import StreamingResponse
+
+    async def _event_generator():
+        last_step: str | None = "__init__"
+        last_status: str = "__init__"
+        while True:
+            job = get_job(job_id)
+            if job is None:
+                yield f"data: {_json.dumps({'error': 'job not found'})}\n\n"
+                return
+
+            status = job["status"]
+            step = job.get("current_step")
+            builder = (job.get("result") or {}).get("builder")
+
+            # Emit whenever status OR step changes
+            if status != last_status or step != last_step:
+                last_status = status
+                last_step = step
+                payload = _build_state_to_response(
+                    job_id, status, job.get("error"), builder, step
+                ).model_dump()
+                yield f"data: {_json.dumps(payload)}\n\n"
+
+            if status in ("done", "failed"):
+                return
+
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(
+        _event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # disable nginx buffering
+        },
+    )
 
 
 @router.post(
@@ -442,36 +501,35 @@ def get_graph_stats() -> GraphStatsResponse:
     try:
         from src.graph.neo4j_client import Neo4jClient
 
-        counts_query = """
+        # Single round-trip: node counts + relationship counts in one query
+        stats_query = """
         MATCH (n)
-        OPTIONAL MATCH ()-[r]->()
         WITH
           sum(CASE WHEN 'BusinessConcept' IN labels(n) THEN 1 ELSE 0 END) AS business_concepts,
           sum(CASE WHEN 'PhysicalTable'   IN labels(n) THEN 1 ELSE 0 END) AS physical_tables,
           sum(CASE WHEN 'ParentChunk'     IN labels(n) THEN 1 ELSE 0 END) AS parent_chunks,
           sum(CASE WHEN 'Chunk'           IN labels(n) THEN 1 ELSE 0 END) AS child_chunks,
-          count(distinct n) AS total_nodes
-        RETURN business_concepts, physical_tables, parent_chunks, child_chunks, total_nodes
+          count(n) AS total_nodes
+        OPTIONAL MATCH ()-[r]->()
+        RETURN
+          business_concepts, physical_tables, parent_chunks, child_chunks, total_nodes,
+          count(r) AS total_relationships,
+          sum(CASE WHEN type(r) = 'MENTIONS'   THEN 1 ELSE 0 END) AS mentions_edges,
+          sum(CASE WHEN type(r) = 'MAPPED_TO'  THEN 1 ELSE 0 END) AS maps_to_edges
         """
-        rel_query = "MATCH ()-[r]->() RETURN count(r) AS total_relationships"
-        rel_mentions = "MATCH ()-[r:MENTIONS]->() RETURN count(r) AS n"
-        rel_maps = "MATCH ()-[r:MAPPED_TO]->() RETURN count(r) AS n"
 
         with Neo4jClient() as client:
-            row = client.execute_cypher(counts_query)[0]
-            total_rels = client.execute_cypher(rel_query)[0]["total_relationships"]
-            mentions = client.execute_cypher(rel_mentions)[0]["n"]
-            maps_to = client.execute_cypher(rel_maps)[0]["n"]
+            row = client.execute_cypher(stats_query)[0]
 
         return GraphStatsResponse(
             business_concepts=int(row.get("business_concepts", 0) or 0),
             physical_tables=int(row.get("physical_tables", 0) or 0),
             parent_chunks=int(row.get("parent_chunks", 0) or 0),
             child_chunks=int(row.get("child_chunks", 0) or 0),
-            mentions_edges=int(mentions or 0),
-            maps_to_edges=int(maps_to or 0),
+            mentions_edges=int(row.get("mentions_edges", 0) or 0),
+            maps_to_edges=int(row.get("maps_to_edges", 0) or 0),
             total_nodes=int(row.get("total_nodes", 0) or 0),
-            total_relationships=int(total_rels or 0),
+            total_relationships=int(row.get("total_relationships", 0) or 0),
         )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
