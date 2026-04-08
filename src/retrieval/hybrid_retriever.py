@@ -14,6 +14,8 @@ Results are fused via Reciprocal Rank Fusion (RRF) and deduplicated.
 
 from __future__ import annotations
 
+import threading
+import time
 from typing import TYPE_CHECKING, Any
 
 from src.config.logging import get_logger
@@ -30,6 +32,25 @@ if TYPE_CHECKING:
 
 logger: logging.Logger = get_logger(__name__)
 
+# ── BM25 / node-index cache ────────────────────────────────────────────────────
+# Thread-safe in-memory cache for the node dump used by BM25 search.
+# TTL of 1 hour prevents stale reads across long-running server sessions.
+# Invalidated explicitly by `invalidate_bm25_cache()` after each KG build.
+
+_NODE_INDEX_CACHE: list[dict[str, Any]] | None = None
+_NODE_INDEX_EXPIRY: float = 0.0
+_NODE_INDEX_LOCK: threading.Lock = threading.Lock()
+_NODE_INDEX_TTL: int = 3600  # seconds
+
+
+def invalidate_bm25_cache() -> None:
+    """Drop the cached node-index so the next query re-fetches from Neo4j."""
+    global _NODE_INDEX_CACHE, _NODE_INDEX_EXPIRY  # noqa: PLW0603
+    with _NODE_INDEX_LOCK:
+        _NODE_INDEX_CACHE = None
+        _NODE_INDEX_EXPIRY = 0.0
+    logger.debug("BM25 node-index cache invalidated.")
+
 
 # ── Node Dump ──────────────────────────────────────────────────────────────────
 
@@ -40,12 +61,21 @@ def build_node_index(client: Neo4jClient) -> list[dict[str, Any]]:
     This snapshot is kept in memory and used to build the BM25 token index at
     query-graph startup. It must be refreshed after each ingestion run.
 
+    Results are cached in-memory for ``_NODE_INDEX_TTL`` seconds and invalidated
+    explicitly via :func:`invalidate_bm25_cache` after a KG build completes.
+
     Args:
         client: Active ``Neo4jClient`` context.
 
     Returns:
         List of node property dicts with ``name``, ``node_type``, and other fields.
     """
+    global _NODE_INDEX_CACHE, _NODE_INDEX_EXPIRY  # noqa: PLW0603
+    with _NODE_INDEX_LOCK:
+        if _NODE_INDEX_CACHE is not None and time.monotonic() < _NODE_INDEX_EXPIRY:
+            logger.debug("build_node_index: cache hit (%d nodes).", len(_NODE_INDEX_CACHE))
+            return _NODE_INDEX_CACHE
+
     concept_records = client.execute_cypher(
         "MATCH (n:BusinessConcept) RETURN n.name AS name, "
         "n.definition AS definition, 'BusinessConcept' AS node_type, "
@@ -62,7 +92,12 @@ def build_node_index(client: Neo4jClient) -> list[dict[str, Any]]:
         "pc.parent_chunk_index AS chunk_index, pc.source_doc AS source_doc, 'ParentChunk' AS node_type"
     )
     all_nodes = concept_records + table_records + chunk_records
-    logger.debug("build_node_index: %d nodes fetched.", len(all_nodes))
+    logger.debug("build_node_index: %d nodes fetched from Neo4j.", len(all_nodes))
+
+    with _NODE_INDEX_LOCK:
+        _NODE_INDEX_CACHE = all_nodes
+        _NODE_INDEX_EXPIRY = time.monotonic() + _NODE_INDEX_TTL
+
     return all_nodes
 
 
@@ -74,6 +109,7 @@ def vector_search(
     client: Neo4jClient,
     top_k: int | None = None,
     model=None,
+    query_vector: list[float] | None = None,
 ) -> list[RetrievedChunk]:
     """Embed the query and run Neo4j vector index search on BusinessConcept nodes.
 
@@ -82,13 +118,14 @@ def vector_search(
         client: Active ``Neo4jClient``.
         top_k: Number of results; defaults to ``settings.retrieval_vector_top_k``.
         model: Optional pre-loaded FlagModel; passed to ``embed_text``.
+        query_vector: Pre-computed embedding; skips ``embed_text`` when provided.
 
     Returns:
         Sorted list of ``RetrievedChunk`` with ``source_type="vector"``.
     """
     settings = get_settings()
     n = top_k or settings.retrieval_vector_top_k
-    query_vector: list[float] = embed_text(query, model=model)
+    qv: list[float] = query_vector if query_vector is not None else embed_text(query, model=model)
 
     cypher = (
         "CALL db.index.vector.queryNodes('businessconcept_embedding', $k, $embedding) "
@@ -97,7 +134,7 @@ def vector_search(
         "score, 'BusinessConcept' AS node_type, "
         "node.source_doc AS source_doc, node.synonyms AS synonyms"
     )
-    records = client.execute_cypher(cypher, {"k": n, "embedding": query_vector})
+    records = client.execute_cypher(cypher, {"k": n, "embedding": qv})
 
     chunks: list[RetrievedChunk] = []
     for rec in records:
@@ -132,6 +169,7 @@ def chunk_vector_search(
     client: Neo4jClient,
     top_k: int | None = None,
     model=None,
+    query_vector: list[float] | None = None,
 ) -> list[RetrievedChunk]:
     """Embed the query and search the ``chunk_embedding`` vector index.
 
@@ -144,13 +182,14 @@ def chunk_vector_search(
         client: Active ``Neo4jClient``.
         top_k: Number of results; defaults to ``settings.retrieval_vector_top_k``.
         model: Optional pre-loaded FlagModel; passed to ``embed_text``.
+        query_vector: Pre-computed embedding; skips ``embed_text`` when provided.
 
     Returns:
         Sorted list of ``RetrievedChunk`` with ``source_type="chunk_vector"``.
     """
     settings = get_settings()
     n = top_k or settings.retrieval_vector_top_k
-    query_vector: list[float] = embed_text(query, model=model)
+    qv: list[float] = query_vector if query_vector is not None else embed_text(query, model=model)
 
     # Search children for precision, then expand to parents for context richness.
     # Deduplicate by (source_doc, parent_chunk_index) so multiple children of the
@@ -167,7 +206,7 @@ def chunk_vector_search(
         "RETURN pid AS chunk_index, src AS source_doc, text, max_score AS score "
         "ORDER BY max_score DESC"
     )
-    records = client.execute_cypher(cypher, {"k": n, "embedding": query_vector})
+    records = client.execute_cypher(cypher, {"k": n, "embedding": qv})
 
     chunks: list[RetrievedChunk] = []
     for rec in records:

@@ -33,6 +33,13 @@ from src.graph.build_nodes import (
 from src.graph.neo4j_client import Neo4jClient, setup_schema
 from src.graph.validation_nodes import _node_validate_mapping, _route_after_validate
 from src.ingestion.ddl_parser import parse_ddl_file
+from src.ingestion.file_registry import (
+    check_file_status,
+    compute_file_sha,
+    get_orphaned_files,
+    purge_file_data,
+    register_file,
+)
 from src.ingestion.pdf_loader import chunk_documents_hierarchical, load_pdf
 from src.ingestion.schema_enricher import enrich_all
 from src.mapping.hitl import hitl_node
@@ -70,9 +77,10 @@ def _node_extract_triplets(state: BuilderState) -> dict[str, Any]:
 def _node_entity_resolution(state: BuilderState) -> dict[str, Any]:
     """Resolve extracted triplets into canonical entities."""
     embeddings = get_embeddings()
-    llm = get_lightweight_llm()
+    llm = get_lightweight_llm()  # kept for singleton definition synthesis (when enabled)
     triplets = state.get("triplets") or []
     source_doc = state.get("source_doc", "unknown")
+    # ER judge itself uses midtier internally (see entity_resolver.resolve_entities)
     entities = resolve_entities(triplets, embeddings, llm, source_doc)
     return {"entities": entities}
 
@@ -239,6 +247,7 @@ def build_builder_graph(*, production: bool = False):
             "rag_mapping": "rag_mapping",
             "generate_cypher": "generate_cypher",
             "build_graph": "build_graph",
+            "save_trace": "save_trace",
         },
     )
     graph.add_conditional_edges(
@@ -275,30 +284,136 @@ def run_builder(
     *,
     production: bool = False,
     clear_graph: bool = False,
+    force_rebuild: bool = False,
     use_lazy_extraction: bool | None = None,
     trace_enabled: bool = False,
     study_id: str = "manual",
+    job_id: str | None = None,
 ) -> BuilderState:
     """Convenience wrapper: compile graph and invoke with document paths.
 
     Args:
-        raw_documents: List of file paths to PDF documents.
-        ddl_paths:     List of file paths to DDL SQL files.
-        production:    Compile with ``SqliteSaver`` if True.
-        clear_graph:   If True, delete all nodes and relationships before running.
-                       Use in development/demo to avoid stale data from prior runs.
-        trace_enabled: If True, enable detailed debug tracing of the pipeline.
-        study_id:      Study ID for trace naming (e.g., "AB-00").
+        raw_documents:  List of file paths to PDF documents.
+        ddl_paths:      List of file paths to DDL SQL files.
+        production:     Compile with ``SqliteSaver`` if True.
+        clear_graph:    If True, delete all nodes and relationships before running.
+                        Use in development/demo to avoid stale data from prior runs.
+        force_rebuild:  If True, bypass SHA-256 change detection and re-ingest all
+                        files regardless of whether their content has changed.
+        trace_enabled:  If True, enable detailed debug tracing of the pipeline.
+        study_id:       Study ID for trace naming (e.g., "AB-00").
 
     Returns:
         Final ``BuilderState`` after graph completion.
     """
+    from src.retrieval.bm25_retriever import invalidate_bm25_cache  # local import avoids cycle
+
     settings = get_settings()
+
+    # ── Incremental ingestion: SHA-based change detection ────────────────────
+    # When clear_graph=True the whole graph is wiped, so all files are new.
+    # When force_rebuild=True we skip the SHA check and re-ingest everything.
+    skipped_files: list[str] = []
+    docs_to_ingest: list[str] = list(raw_documents)
+
+    if not clear_graph and not force_rebuild and raw_documents:
+        with Neo4jClient() as reg_client:
+            # current_paths includes both doc files AND DDL files so that
+            # DDL entries in the SourceFile registry are never mistaken for orphans.
+            current_paths: set[str] = {str(Path(p).resolve()) for p in ddl_paths}
+            filtered_docs: list[str] = []
+            for doc_path in raw_documents:
+                canonical = str(Path(doc_path).resolve())
+                current_paths.add(canonical)
+                try:
+                    sha = compute_file_sha(doc_path)
+                    status = check_file_status(reg_client, canonical, sha)
+                except FileNotFoundError:
+                    logger.warning("File not found, skipping: %s", doc_path)
+                    continue
+
+                if status == "unchanged":
+                    logger.info("Skipping unchanged file: %s", doc_path)
+                    skipped_files.append(doc_path)
+                else:
+                    if status == "modified":
+                        logger.info(
+                            "File modified — purging stale data and re-ingesting: %s", doc_path
+                        )
+                        purge_file_data(reg_client, canonical)
+                    filtered_docs.append(doc_path)
+
+            # Purge files that existed in a previous run but are absent now
+            orphans = get_orphaned_files(reg_client, current_paths)
+            for orphan_path in orphans:
+                logger.info("Purging orphaned file data: %s", orphan_path)
+                purge_file_data(reg_client, orphan_path)
+
+            docs_to_ingest = filtered_docs
+
+    # ── DDL SHA check — skip unchanged schema files too ──────────────────────
+    ddl_to_ingest: list[str] = list(ddl_paths)
+    if not clear_graph and not force_rebuild and ddl_paths:
+        with Neo4jClient() as reg_client:
+            filtered_ddl: list[str] = []
+            for ddl_path in ddl_paths:
+                canonical = str(Path(ddl_path).resolve())
+                try:
+                    sha = compute_file_sha(ddl_path)
+                    status = check_file_status(reg_client, canonical, sha)
+                except FileNotFoundError:
+                    logger.warning("DDL file not found, skipping: %s", ddl_path)
+                    continue
+                if status == "unchanged":
+                    logger.info("Skipping unchanged DDL: %s", ddl_path)
+                    skipped_files.append(ddl_path)
+                elif status == "modified":
+                    logger.info(
+                        "DDL modified — purging stale tables and re-processing: %s",
+                        ddl_path,
+                    )
+                    purge_file_data(reg_client, canonical)
+                    filtered_ddl.append(ddl_path)
+                else:
+                    filtered_ddl.append(ddl_path)
+            ddl_to_ingest = filtered_ddl
+
+
+    if not docs_to_ingest and not ddl_to_ingest:
+        logger.info(
+            "All %d file(s) unchanged — nothing to re-ingest. "
+            "Skipped: %s",
+            len(skipped_files),
+            skipped_files,
+        )
+        # Return a minimal state so callers can observe skipped_files count
+        return BuilderState(  # type: ignore[call-arg]
+            chunks=[],
+            ddl_paths=[],
+            source_doc="",
+            triplets=[],
+            entities=[],
+            tables=[],
+            enriched_tables=[],
+            pending_tables=[],
+            completed_tables=[],
+            skipped_files=skipped_files,
+        )
+
+    # ── Load and chunk only the files that need (re-)ingestion ───────────────
     # Load all documents first, then chunk in one pass so parent_chunk_index is
     # globally unique across all source files (avoids index collisions in Neo4j).
-    all_docs = []
-    for doc_path in raw_documents:
-        all_docs.extend(load_pdf(Path(doc_path)))
+    # PDF loading is I/O-bound so we parallelise across files.
+    all_docs: list = []
+    if len(docs_to_ingest) > 1:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=min(4, len(docs_to_ingest))) as _pool:
+            futures = {_pool.submit(load_pdf, Path(p)): p for p in docs_to_ingest}
+            for fut in as_completed(futures):
+                all_docs.extend(fut.result())
+    else:
+        for doc_path in docs_to_ingest:
+            all_docs.extend(load_pdf(Path(doc_path)))
     all_parents, all_children = chunk_documents_hierarchical(all_docs)
 
     # Triplet extraction and MENTIONS edges operate on parents (richer 512-tok context).
@@ -336,65 +451,104 @@ def run_builder(
             logger.info("Graph cleared before builder run.")
         setup_schema(client)
 
-        # ── Persist parent chunks (no embedding — full context for LLM) ──────
-        for parent in all_parents:
+        # ── Persist parent chunks — single UNWIND batch ───────────────────────
+        if all_parents:
             client.execute_cypher(
-                "MERGE (pc:ParentChunk {parent_chunk_index: $idx, source_doc: $src}) "
-                "ON CREATE SET pc.text = $text, pc.page = $page, "
-                "pc.created_at = datetime() "
-                "ON MATCH SET pc.text = $text, pc.updated_at = datetime()",
-                {
-                    "idx": parent.chunk_index,
-                    "src": parent.metadata.get("source", ""),
-                    "text": parent.text,
-                    "page": parent.metadata.get("page", ""),
-                },
+                "UNWIND $rows AS row "
+                "MERGE (pc:ParentChunk {parent_chunk_index: row.idx, source_doc: row.src}) "
+                "ON CREATE SET pc.text = row.text, pc.page = row.page, pc.created_at = datetime() "
+                "ON MATCH  SET pc.text = row.text, pc.updated_at = datetime()",
+                {"rows": [
+                    {
+                        "idx": p.chunk_index,
+                        "src": p.metadata.get("source", ""),
+                        "text": p.text,
+                        "page": p.metadata.get("page", ""),
+                    }
+                    for p in all_parents
+                ]},
             )
-        logger.info("Persisted %d ParentChunk nodes.", len(all_parents))
+            logger.info("Persisted %d ParentChunk nodes (batch).", len(all_parents))
 
-        # ── Persist child chunks with embeddings for vector search ────────────
+        # ── Persist child chunks with embeddings — single UNWIND batch ────────
         if all_children:
             emb_model = get_embeddings()
             child_texts = [c.text for c in all_children]
             vectors = emb_model.encode(child_texts, batch_size=32)
-            for i, child in enumerate(all_children):
-                client.execute_cypher(
-                    "MERGE (c:Chunk {chunk_index: $idx, source_doc: $src}) "
-                    "ON CREATE SET c.text = $text, c.page = $page, "
-                    "c.embedding = $emb, c.created_at = datetime() "
-                    "ON MATCH SET c.text = $text, c.embedding = $emb, "
-                    "c.updated_at = datetime()",
+            client.execute_cypher(
+                "UNWIND $rows AS row "
+                "MERGE (c:Chunk {chunk_index: row.idx, source_doc: row.src}) "
+                "ON CREATE SET c.text = row.text, c.page = row.page, "
+                "c.embedding = row.emb, c.created_at = datetime() "
+                "ON MATCH  SET c.text = row.text, c.embedding = row.emb, c.updated_at = datetime()",
+                {"rows": [
                     {
                         "idx": child.chunk_index,
                         "src": child.metadata.get("source", ""),
                         "text": child.text,
                         "page": child.metadata.get("page", ""),
                         "emb": vectors[i].tolist(),
-                    },
-                )
-            logger.info("Persisted %d Chunk nodes with embeddings.", len(all_children))
+                    }
+                    for i, child in enumerate(all_children)
+                ]},
+            )
+            logger.info("Persisted %d Chunk nodes with embeddings (batch).", len(all_children))
 
-        # ── Wire CHILD_OF edges ───────────────────────────────────────────────
-        for child in all_children:
-            if child.parent_chunk_index is not None:
-                client.execute_cypher(
-                    "MATCH (c:Chunk {chunk_index: $cidx, source_doc: $src}) "
-                    "MATCH (pc:ParentChunk {parent_chunk_index: $pidx, source_doc: $src}) "
-                    "MERGE (c)-[:CHILD_OF]->(pc)",
-                    {
-                        "cidx": child.chunk_index,
-                        "pidx": child.parent_chunk_index,
-                        "src": child.metadata.get("source", ""),
-                    },
-                )
-        logger.info("Created CHILD_OF edges for %d children.", len(all_children))
+        # ── Wire CHILD_OF edges — single UNWIND batch ─────────────────────────
+        edge_rows = [
+            {
+                "cidx": child.chunk_index,
+                "pidx": child.parent_chunk_index,
+                "src": child.metadata.get("source", ""),
+            }
+            for child in all_children
+            if child.parent_chunk_index is not None
+        ]
+        if edge_rows:
+            client.execute_cypher(
+                "UNWIND $rows AS row "
+                "MATCH (c:Chunk {chunk_index: row.cidx, source_doc: row.src}) "
+                "MATCH (pc:ParentChunk {parent_chunk_index: row.pidx, source_doc: row.src}) "
+                "MERGE (c)-[:CHILD_OF]->(pc)",
+                {"rows": edge_rows},
+            )
+            logger.info("Created CHILD_OF edges for %d children (batch).", len(edge_rows))
+
+        # ── Register ingested files in the SourceFile registry ────────────────
+        # Always register after a successful ingestion so that subsequent
+        # incremental runs (clear_graph=False) can skip unchanged files.
+        # Only skip when force_rebuild=True (explicit bypass of change detection).
+        if not force_rebuild:
+            # Group child chunks by source_doc to get per-file child count
+            from collections import Counter as _Counter  # local import
+            child_counts: dict[str, int] = _Counter(
+                c.metadata.get("source", "") for c in all_children
+            )
+            for doc_path in docs_to_ingest:
+                canonical = str(Path(doc_path).resolve())
+                try:
+                    sha = compute_file_sha(doc_path)
+                    # Use canonical path as source_doc key (matches what load_pdf stores)
+                    src_key = Path(doc_path).name  # basename only, as stored in metadata
+                    count = child_counts.get(src_key, child_counts.get(canonical, 0))
+                    register_file(client, canonical, sha, count)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not register file '%s': %s", doc_path, exc)
+            # Also register DDL files (chunk_count=0 — they produce nodes, not chunks)
+            for ddl_path in ddl_to_ingest:
+                canonical = str(Path(ddl_path).resolve())
+                try:
+                    sha = compute_file_sha(ddl_path)
+                    register_file(client, canonical, sha, 0)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not register DDL '%s': %s", ddl_path, exc)
 
     graph = build_builder_graph(production=production)
     lazy_mode = settings.use_lazy_extraction if use_lazy_extraction is None else use_lazy_extraction
     initial: BuilderState = {
         "chunks": chunks,
-        "ddl_paths": ddl_paths,
-        "source_doc": str(raw_documents[0]) if raw_documents else "unknown",
+        "ddl_paths": ddl_to_ingest,
+        "source_doc": str(docs_to_ingest[0]) if docs_to_ingest else "unknown",
         "use_lazy_extraction": lazy_mode,
         "triplets": [],
         "entities": [],
@@ -402,13 +556,82 @@ def run_builder(
         "enriched_tables": [],
         "pending_tables": [],
         "completed_tables": [],
+        "skipped_files": skipped_files,
         "skip_hitl": not production,  # bypass interrupt() in non-production runs
         "trace_enabled": trace_enabled,
         "builder_trace": builder_trace,
         "trace_output_dir": settings.trace_output_dir if trace_enabled else "",
     }
     config = {"configurable": {"thread_id": f"builder-{uuid.uuid4().hex[:8]}"}}
-    final_state: BuilderState = graph.invoke(initial, config=config)
+
+    # Use graph.stream() so each completed node is visible for SSE step tracking.
+    # The loop collects the last emitted state as the final_state.
+    if job_id is not None:
+        from src.api.jobs import set_step as _set_step  # local import avoids circular dep
+        final_state: BuilderState = {}  # type: ignore[assignment]
+        for node_output in graph.stream(initial, config=config):
+            # node_output is {node_name: state_delta}
+            node_name = next(iter(node_output))
+            _set_step(job_id, node_name)
+            final_state = {**final_state, **node_output[node_name]}
+    else:
+        final_state = graph.invoke(initial, config=config)
+
+    # ── MENTIONS edge repair for PDF-only incremental updates ─────────────────
+    # When PDFs changed but DDL was unchanged (ddl_to_ingest=[]), the graph exits
+    # early after triplet extraction without running the per-table mapping loop,
+    # so MENTIONS edges are not created for the new chunks.  Repair them here by
+    # matching triplet subject/object against ALL existing BusinessConcepts.
+    if docs_to_ingest and not ddl_to_ingest:
+        triplets_for_repair = final_state.get("triplets") or []
+        new_basenames = {Path(p).name for p in docs_to_ingest}
+        logger.info(
+            "PDF-only change: repairing MENTIONS edges for %d triplet(s) "
+            "against existing BusinessConcepts (sources: %s).",
+            len(triplets_for_repair),
+            new_basenames,
+        )
+        with Neo4jClient() as repair_client:
+            bc_rows = repair_client.execute_cypher(
+                "MATCH (bc:BusinessConcept) RETURN bc.name AS name"
+            )
+            bc_names: list[str] = [r["name"] for r in bc_rows if r.get("name")]
+            mentions_count = 0
+            for bc_name in bc_names:
+                concept_lower = bc_name.lower()
+                chunk_indexes: set[int] = set()
+                for t in triplets_for_repair:
+                    if t.source_chunk_index is not None and (
+                        concept_lower in t.subject.lower()
+                        or concept_lower in t.object.lower()
+                    ):
+                        chunk_indexes.add(t.source_chunk_index)
+                for idx in chunk_indexes:
+                    try:
+                        repair_client.execute_cypher(
+                            "MATCH (ch:Chunk {chunk_index: $idx}) "
+                            "WHERE ch.source_doc IN $srcs "
+                            "MATCH (bc:BusinessConcept {name: $concept}) "
+                            "MERGE (ch)-[:MENTIONS]->(bc)",
+                            {
+                                "idx": idx,
+                                "concept": bc_name,
+                                "srcs": list(new_basenames),
+                            },
+                        )
+                        mentions_count += 1
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning(
+                            "MENTIONS repair: could not link chunk %d → '%s': %s",
+                            idx, bc_name, exc,
+                        )
+            logger.info("MENTIONS repair: created %d edge(s).", mentions_count)
+
+    # Invalidate BM25 cache — graph contents may have changed
+    try:
+        invalidate_bm25_cache()
+    except Exception:  # noqa: BLE001
+        pass
 
     # Populate trace with final state data
     if trace_enabled and builder_trace:

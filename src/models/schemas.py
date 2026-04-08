@@ -55,6 +55,7 @@ class CanonicalEntityDecision(BaseModel):
     merge: bool
     canonical_name: str
     reasoning: str
+    definition: str | None = None
 
 
 class Entity(BaseModel):
@@ -86,6 +87,7 @@ class TableSchema(BaseModel):
     schema_name: str | None = None
     columns: list[ColumnSchema]
     ddl_source: str
+    source_file: str = ""
     comment: str | None = None
 
 

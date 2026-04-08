@@ -1,9 +1,11 @@
 # Multi-Agent Framework — Docker Compose
-# Usage: docker compose up          (API + Neo4j)
+# Usage: docker compose up          (Neo4j + API + Frontend)
 #        docker compose up --build   (rebuild after code changes)
 #
-# Swagger UI: http://localhost:8000/docs
-# Neo4j Browser: http://localhost:7474
+# Frontend (React):  http://localhost:3000
+# API (Swagger UI):  http://localhost:3000/docs  (via Nginx proxy)
+# API (direct):      http://localhost:8000/docs
+# Neo4j Browser:     http://localhost:7474
 
 services:
   # ── Neo4j Graph Database ──────────────────────────────────────────────────
@@ -40,7 +42,7 @@ services:
     environment:
       # API authentication — set API_KEY to enable; leave empty to disable (dev mode)
       API_KEY: "${API_KEY:-}"
-      # Neo4j connection (uses Docker Compose service name as host)
+      # Neo4j connection — Docker bridge network (service name resolves)
       NEO4J_URI: "bolt://neo4j:7687"
       NEO4J_USER: "${NEO4J_USER:-neo4j}"
       NEO4J_PASSWORD: "${NEO4J_PASSWORD:-thesis_password}"
@@ -53,14 +55,27 @@ services:
       LLM_MODEL_MIDTIER: "${LLM_MODEL_MIDTIER:-gpt-5.4-mini-2026-03-17}"
       LLM_MAX_TOKENS_REASONING: "${LLM_MAX_TOKENS_REASONING:-4096}"
       LLM_MAX_TOKENS_EXTRACTION: "${LLM_MAX_TOKENS_EXTRACTION:-8192}"
-      # Offline mode for HuggingFace models (pre-downloaded in image)
+      # Embedding + reranker — local FlagEmbedding models (baked into image)
+      EMBEDDING_MODEL: "${EMBEDDING_MODEL:-BAAI/bge-m3}"
+      RERANKER_MODEL: "${RERANKER_MODEL:-BAAI/bge-reranker-v2-m3}"
       HF_HOME: "/app/.cache/huggingface"
+      HF_HUB_OFFLINE: "1"
       HF_HUB_DISABLE_PROGRESS_BARS: "1"
       LOG_LEVEL: "${LOG_LEVEL:-INFO}"
     ports:
-      - "${API_PORT:-8000}:8000"
-    volumes:
-      - ./data/hf_cache:/app/.cache/huggingface
+      - "${API_PORT:-8000}:8000"    # Direct API access (dev / curl)
+    restart: unless-stopped
+
+  # ── React Frontend (Nginx) ────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: thesis-frontend
+    depends_on:
+      - api
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
     restart: unless-stopped
 
 volumes:

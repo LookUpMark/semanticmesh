@@ -19,6 +19,18 @@ COPY src/__init__.py ./src/
 RUN pip install --no-cache-dir . \
     && python -m spacy download en_core_web_sm
 
+# Pre-download HuggingFace models (embedding + reranker) so the image is
+# self-contained and works offline at runtime.  Only PyTorch weights are
+# needed; ONNX / TF / Flax formats are excluded to save ~2 GB.
+ENV HF_HOME=/tmp/hf_cache
+RUN python -c "\
+from huggingface_hub import snapshot_download; \
+snapshot_download('BAAI/bge-m3',              cache_dir='/tmp/hf_cache/hub', \
+    ignore_patterns=['*.onnx','*.onnx_data','onnx/*','*.msgpack','*.h5','flax_*','tf_*']); \
+snapshot_download('BAAI/bge-reranker-v2-m3',  cache_dir='/tmp/hf_cache/hub', \
+    ignore_patterns=['*.onnx','*.onnx_data','onnx/*','*.msgpack','*.h5','flax_*','tf_*']); \
+print('Models downloaded successfully')"
+
 # ── Stage 2: Application ──────────────────────────────────────────────────────
 FROM python:3.12-slim AS app
 
@@ -38,6 +50,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=deps /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=deps /usr/local/bin /usr/local/bin
 
+# Copy pre-downloaded HuggingFace models from deps stage
+COPY --from=deps /tmp/hf_cache /app/.cache/huggingface
+
 # Copy application code
 COPY src/ ./src/
 COPY scripts/ ./scripts/
@@ -49,7 +64,8 @@ RUN pip install --no-cache-dir --no-deps -e .
 
 # Entrypoint script (must be copied before switching user)
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Strip Windows CRLF line endings that may survive a Windows checkout
+RUN sed -i 's/\r//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Create non-root user; pre-create the HF cache directory owned by appuser.
 # With a bind mount (./data/hf_cache), the host directory is owned by the

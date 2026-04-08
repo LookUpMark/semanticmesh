@@ -6,6 +6,7 @@ healing, and execution with fallback strategies.
 
 from __future__ import annotations
 
+import json as _json
 import logging
 from typing import Any
 
@@ -56,7 +57,7 @@ def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
     )
     entity = resolved or Entity(
         name=proposal.mapped_concept or "Unknown",
-        definition=proposal.reasoning or "",
+        definition="",
         synonyms=[],
         provenance_text="",
         source_doc="",
@@ -98,6 +99,39 @@ def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
     return {"current_cypher": healed, "cypher_failed": False}
 
 
+def _build_llm_cypher_params(
+    proposal: MappingProposal,
+    table: EnrichedTableSchema,
+    entity: Entity | None,
+) -> dict[str, Any]:
+    """Build a safety-net parameter dict for LLM-generated Cypher.
+
+    The system prompt instructs the LLM to inline all values, but it sometimes
+    emits ``$parameter``-style Cypher copied from few-shot examples.  Providing
+    the full parameter set prevents ``Neo.ClientError.Statement.ParameterMissing``
+    at execution time — unused parameters are silently ignored by the driver.
+    """
+    column_names = [c.name for c in table.columns]
+    column_types = _json.dumps({c.name: c.data_type for c in table.columns})
+    return {
+        "concept_name": proposal.mapped_concept or "Unknown",
+        "definition": entity.definition if entity else "",
+        "mapping_reasoning": proposal.reasoning or "",
+        "provenance_text": entity.provenance_text if entity else "",
+        "source_doc": entity.source_doc if entity else "",
+        "synonyms": entity.synonyms if entity else [],
+        "confidence_score": proposal.confidence,
+        "table_name": table.table_name,
+        "schema_name": table.schema_name,
+        "column_names": column_names,
+        "column_types": column_types,
+        "ddl_source": table.ddl_source or "",
+        "confidence": proposal.confidence,
+        "mapping_confidence": proposal.confidence,
+        "validated_by": "llm_judge",
+    }
+
+
 def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     """Execute the best available Cypher to upsert data into Neo4j.
 
@@ -111,7 +145,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     In both cases the BusinessConcept embedding is populated afterwards so the
     vector index can serve Query Graph requests.
     """
-    proposal: MappingProposal = state["mapping_proposal"]
+    proposal: MappingProposal | None = state.get("mapping_proposal")
     table: EnrichedTableSchema | None = state.get("current_table")
 
     if not proposal or not table:
@@ -122,16 +156,22 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     cypher_failed: bool = state.get("cypher_failed", False)
     lazy_mode: bool = bool(state.get("use_lazy_extraction", get_settings().use_lazy_extraction))
 
+    # Resolve entity early — needed for both LLM and fallback paths.
+    resolved = _find_entity_for_concept(
+        proposal.mapped_concept or "", state.get("current_entities") or []
+    )
+
     if llm_cypher and not cypher_failed and not lazy_mode:
         logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
-        exec_cypher, exec_params = llm_cypher, {}
+        exec_cypher = llm_cypher
+        # Safety-net params: the system prompt tells the LLM to inline values,
+        # but it sometimes copies parameterised style from few-shot examples.
+        # Providing the params avoids ParameterMissing errors at runtime.
+        exec_params = _build_llm_cypher_params(proposal, table, resolved)
     else:
         logger.info(
             "LLM Cypher failed for '%s' — falling back to deterministic builder.",
             proposal.table_name,
-        )
-        resolved = _find_entity_for_concept(
-            proposal.mapped_concept or "", state.get("current_entities") or []
         )
         exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=resolved)
 
@@ -148,6 +188,16 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             "SET pt.table_name = $canonical",
             {"name": table.table_name, "canonical": table.table_name},
         )
+
+        # Always stamp source_file regardless of which Cypher path was used
+        # (LLM-generated Cypher doesn't know about this property)
+        if table.source_file:
+            client.execute_cypher(
+                "MATCH (pt:PhysicalTable) "
+                "WHERE toLower(pt.table_name) = toLower($name) "
+                "SET pt.source_file = $source_file",
+                {"name": table.table_name, "source_file": table.source_file},
+            )
 
         fk_statements = build_fk_cypher(table)
         for fk_cypher, fk_params in fk_statements:
@@ -189,27 +239,26 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     concept_lower in t.subject.lower() or concept_lower in t.object.lower()
                 ):
                     chunk_indexes.add(t.source_chunk_index)
-            for idx in chunk_indexes:
+            if chunk_indexes:
                 try:
                     client.execute_cypher(
-                        "MATCH (ch:Chunk {chunk_index: $idx}) "
+                        "UNWIND $idxs AS idx "
+                        "MATCH (ch:Chunk {chunk_index: idx}) "
                         "MATCH (bc:BusinessConcept {name: $concept}) "
                         "MERGE (ch)-[:MENTIONS]->(bc)",
-                        {"idx": idx, "concept": proposal.mapped_concept},
+                        {"idxs": list(chunk_indexes), "concept": proposal.mapped_concept},
+                    )
+                    logger.info(
+                        "MENTIONS edges: %d chunks → '%s' (batch).",
+                        len(chunk_indexes),
+                        proposal.mapped_concept,
                     )
                 except Exception as exc:
                     logger.warning(
-                        "Could not create MENTIONS edge chunk %d → '%s': %s",
-                        idx,
+                        "Could not create MENTIONS edges → '%s': %s",
                         proposal.mapped_concept,
                         exc,
                     )
-            if chunk_indexes:
-                logger.info(
-                    "MENTIONS edges: %d chunks → '%s'.",
-                    len(chunk_indexes),
-                    proposal.mapped_concept,
-                )
 
     completed = list(state.get("completed_tables") or [])
     completed.append(proposal.table_name)

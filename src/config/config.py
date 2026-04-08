@@ -25,6 +25,11 @@ class AppConfig:
     # ── LLM Providers ──────────────────────────────────────────────────────────
     lmstudio_base_url: str = "http://localhost:1234/v1"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # Global provider routing override: "auto" = infer from model name prefix.
+    # Other values: "openrouter", "openai", "anthropic", "lmstudio", "ollama",
+    # "google", "bedrock", "azure", "groq", "mistral", "together", "deepseek",
+    # "xai", "nvidia", "huggingface".
+    llm_provider: str = "auto"
 
     # ── LLM Models ─────────────────────────────────────────────────────────────
     llm_model_reasoning: str = "gpt-5.4-2026-03-05"
@@ -93,6 +98,17 @@ class AppConfig:
     heuristic_mapping_confidence_threshold: float = 0.60
     enable_lazy_expansion: bool = True
     lazy_expansion_confidence_threshold: float = 0.40
+
+    # ── Performance / Cost Optimisation ───────────────────────────────────────
+    # When True, singleton entity definitions are derived directly from their
+    # provenance text instead of calling the LLM — saves many lightweight calls.
+    enable_singleton_llm_definitions: bool = False
+    # Critic is skipped when the mapping confidence already exceeds this gate.
+    # Setting to 1.0 disables this gate (always run critic when enabled).
+    critic_confidence_gate: float = 0.85
+    # Max reflection retries for expensive reasoning-tier calls (mapping, ER judge).
+    # Cheaper extraction-tier retries use max_reflection_attempts unchanged.
+    max_reflection_attempts_reasoning: int = 2
 
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = "INFO"
