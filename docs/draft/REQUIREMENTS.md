@@ -56,7 +56,7 @@
 | **Hallucination Grader** | A node that generates a structured Critique if the answer contains claims not grounded in retrieved context. |
 | **RAGAS** | Retrieval-Augmented Generation Assessment — evaluation framework for RAG pipelines. |
 | **BGE-M3** | Multilingual dense embedding model by BAAI used for vector retrieval. |
-| **bge-reranker-large** | Cross-Encoder reranking model by BAAI for joint query×chunk scoring. |
+| **bge-reranker-v2-m3** | Cross-Encoder reranking model by BAAI for joint query×chunk scoring. |
 | **RIGOR** | Retrieval-Augmented Generation of Ontologies — the paradigm guiding the Builder Graph. |
 | **Provenance** | The original text fragment from which a triplet was extracted, stored for grounding. |
 | **Delta** | The incremental set of new/modified documents or tables to process on an update run. |
@@ -245,7 +245,7 @@ thesis/
 │       └── gold_standard.json
 ├── notebooks/
 │   └── exploration.ipynb
-├── .env.example
+├── .env.docker
 ├── .gitignore
 ├── pyproject.toml
 └── README.md
@@ -302,7 +302,7 @@ Bootstrap the project: environment, dependencies, settings management, logging, 
 
 **Acceptance Criteria:**
 - `src/config/settings.py` defines a `Settings` class using `pydantic_settings.BaseSettings`
-- `.env.example` documents every variable with a comment and a safe placeholder value
+- `.env.docker` is the provided template — copy it to `.env` and fill in secrets
 - Settings are a singleton (module-level `settings = Settings()`)
 
 **Required settings (current implementation — see `src/config/settings.py` for full list):**
@@ -988,7 +988,7 @@ class RetrievedChunk(BaseModel):
 ### EP-13 — Cross-Encoder Reranking
 
 #### Summary
-Use `bge-reranker-large` to jointly score each `(query, chunk)` pair and select the Top-K highest-density chunks for generation.
+Use `bge-reranker-v2-m3` to jointly score each `(query, chunk)` pair and select the Top-K highest-density chunks for generation.
 
 ---
 
@@ -998,7 +998,7 @@ Use `bge-reranker-large` to jointly score each `(query, chunk)` pair and select 
 
 **Acceptance Criteria:**
 - `src/retrieval/reranker.py` — `rerank(query: str, chunks: list[RetrievedChunk]) -> list[RetrievedChunk]`
-- Uses `FlagReranker("BAAI/bge-reranker-large", use_fp16=True)`
+- Uses `FlagReranker("BAAI/bge-reranker-v2-m3", use_fp16=True)`
 - Calls `reranker.compute_score([(query, chunk.text) for chunk in chunks])`
 - Returns chunks sorted descending by reranker score, sliced to `settings.reranker_top_k`
 - Adds `reranker_score` to each chunk's metadata
@@ -1412,7 +1412,7 @@ All prompts live in `src/prompts/templates.py` as Python string constants. The a
 
 ## 8. Configuration Reference
 
-Complete `.env.example`:
+Complete `.env.docker` (template):
 
 ```bash
 # ── Neo4j ──────────────────────────────────────────────────────────────────────
@@ -1430,7 +1430,7 @@ MAX_LLM_RETRIES=3
 
 # ── Embeddings & Reranking ────────────────────────────────────────────────────
 EMBEDDING_MODEL=BAAI/bge-m3
-RERANKER_MODEL=BAAI/bge-reranker-large
+RERANKER_MODEL=BAAI/bge-reranker-v2-m3
 RERANKER_TOP_K=5
 
 # ── Entity Resolution ─────────────────────────────────────────────────────────
@@ -1496,7 +1496,7 @@ Recommended sequential implementation order for an AI coding agent (respects dep
 
 | Step | Epic | Files to Create/Modify |
 |---|---|---|
-| 1 | EP-01 | `pyproject.toml`, `.env.example`, `src/config/settings.py` |
+| 1 | EP-01 | `pyproject.toml`, `.env.docker`, `src/config/settings.py` |
 | 2 | EP-01 | Logging setup in `src/config/settings.py` |
 | 3 | EP-06 data models | `src/models/schemas.py` — ALL schemas at once |
 | 4 | EP-07 prompts | `src/prompts/templates.py` — ALL prompt templates at once |

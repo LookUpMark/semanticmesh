@@ -464,10 +464,16 @@ FastAPI application factory in `src/api/app.py` with two router groups:
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/demo/build` | POST | Start Knowledge Graph build (async with polling) |
-| `/demo/build/{job_id}` | GET | Poll build status |
-| `/demo/query` | POST | Synchronous Q&A |
-| `/demo/pipeline` | POST | Full async E2E pipeline with polling |
+| `/demo/build` | POST | Start KG build from server-side paths (async, returns `job_id`) |
+| `/demo/build/upload` | POST | Start KG build from uploaded files (multipart form) |
+| `/demo/build/{job_id}` | GET | Poll build status / metrics |
+| `/demo/build/{job_id}/stream` | GET | Server-Sent Events stream of live build progress |
+| `/demo/query` | POST | Synchronous Q&A against the loaded KG |
+| `/demo/pipeline` | POST | Full async E2E pipeline (build + query) from paths |
+| `/demo/pipeline/upload` | POST | Full async E2E pipeline from uploaded files |
+| `/demo/pipeline/{job_id}` | GET | Poll pipeline status and per-question answers |
+| `/demo/jobs` | GET | List all submitted demo jobs |
+| `/demo/graph/stats` | GET | Live Neo4j node/relationship counts |
 
 ### 10.2 Ablation API (`/api/v1/ablation/`)
 

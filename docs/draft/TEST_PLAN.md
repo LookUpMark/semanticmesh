@@ -201,7 +201,7 @@ def test_settings() -> Settings:
         llm_model_reasoning="test-model",
         llm_model_extraction="test-slm",
         embedding_model="BAAI/bge-m3",
-        reranker_model="BAAI/bge-reranker-large",
+        reranker_model="BAAI/bge-reranker-v2-m3",
     )
 
 @pytest.fixture(scope="session")

@@ -4,7 +4,7 @@ This folder contains Jupyter notebooks and related artifacts used for demos, exp
 
 ## Structure
 
-- `00_interactive_demo.ipynb` — main interactive demo notebook.
+- `unit/` — unit-test style notebooks organized by module (part-1 through part-9).
 - `ablation/` — ablation-related artifacts:
   - `ABLATION_TASK_LIST.md` — checklist for ablation work.
   - `ablation_results/` — output artifacts from ablation runs.

@@ -13,7 +13,7 @@
 | [ADR-01](#adr-01--langgraph-over-crewai-or-autogen-for-orchestration) | LangGraph over CrewAI / AutoGen for orchestration | **Accepted** | 2026-01 |
 | [ADR-02](#adr-02--neo4j-over-a-pure-vector-database) | Neo4j over a pure vector database | **Accepted** | 2026-01 |
 | [ADR-03](#adr-03--slm-decoder-only-for-extraction-not-llm) | SLM (decoder-only) for extraction, not LLM | **Accepted** | 2026-01 |
-| [ADR-04](#adr-04--bge-m3--bge-reranker-large-over-openai-embeddings) | BGE-M3 + bge-reranker-large over OpenAI embeddings | **Accepted** | 2026-01 |
+| [ADR-04](#adr-04--bge-m3--bge-reranker-v2-m3-over-openai-embeddings) | BGE-M3 + bge-reranker-v2-m3 over OpenAI embeddings | **Accepted** | 2026-01 |
 | [ADR-05](#adr-05--pydantic-v2-for-all-llm-output-validation) | Pydantic v2 for all LLM output validation | **Accepted** | 2026-01 |
 | [ADR-06](#adr-06--merge-upsert-strategy-never-bare-create) | MERGE upsert strategy — never bare CREATE | **Accepted** | 2026-01 |
 | [ADR-07](#adr-07--actor-critic-self-reflection-over-simple-retry) | Actor-Critic self-reflection over simple retry | **Accepted** | 2026-02 |
@@ -134,7 +134,7 @@ Use a **Small Language Model (SLM)** — specifically `qwen/qwen3-next-80b-a3b-i
 
 ---
 
-## ADR-04 — BGE-M3 + bge-reranker-large over OpenAI Embeddings
+## ADR-04 — BGE-M3 + bge-reranker-v2-m3 over OpenAI Embeddings
 
 **Status:** Accepted
 **Date:** January 2026
@@ -145,7 +145,7 @@ The system needs dense embeddings for vector retrieval and a reranking model for
 
 ### Decision
 
-Use **BAAI/BGE-M3** for embeddings and **BAAI/bge-reranker-large** (Cross-Encoder) for reranking, both run locally via `sentence-transformers` / `FlagEmbedding`.
+Use **BAAI/BGE-M3** for embeddings and **BAAI/bge-reranker-v2-m3** (Cross-Encoder) for reranking, both run locally via `sentence-transformers` / `FlagEmbedding`.
 
 ### Alternatives Evaluated
 

@@ -27,14 +27,14 @@ docker run -d --name neo4j-thesis \
   neo4j:5
 
 # 2. Configure environment
-cp .env.example .env
+cp .env.docker .env
 # Edit .env with your OPENROUTER_API_KEY
 
 # 3. Install dependencies
 pip install -e ".[dev]"
 
 # 4. Run the interactive demo
-jupyter notebook notebooks/00_interactive_demo.ipynb
+jupyter notebook notebooks/
 ```
 
 ---
@@ -123,7 +123,7 @@ docker rm -f neo4j-thesis
 Copy the example environment file and add your credentials:
 
 ```bash
-cp .env.example .env
+cp .env.docker .env
 ```
 
 ### Edit `.env` with your values:
@@ -145,8 +145,8 @@ You can override any default setting from `src/config/config.py`:
 
 ```bash
 # Use different LLM models
-LLM_MODEL_REASONING=openai/gpt-4o
-LLM_MODEL_EXTRACTION=openai/gpt-4o-mini
+LLM_MODEL_REASONING=openai/gpt-oss-120b
+LLM_MODEL_EXTRACTION=openai/gpt-4.1-nano
 
 # Adjust retrieval settings
 RETRIEVAL_VECTOR_TOP_K=30
@@ -193,7 +193,7 @@ pytest tests/unit/ -v
 
 ## 📓 Interactive Demo Notebook
 
-The **Interactive Demo Notebook** (`notebooks/00_interactive_demo.ipynb`) provides a hands-on way to explore the entire pipeline.
+The **Notebooks** directory (`notebooks/`) provides unit, ablation, and e2e notebooks to explore the entire pipeline.
 
 ### Start Jupyter:
 
@@ -317,8 +317,7 @@ pytest tests/ -v
 ## 📚 Additional Resources
 
 - **Project README:** [`README.md`](../README.md)
-- **Implementation Tasks:** [`docs/implementation/TASK.md`](TASK.md)
-- **Test Plan:** [`docs/draft/TEST_PLAN.md`](TEST_PLAN.md)
+- **Test Plan:** [`docs/draft/TEST_PLAN.md`](draft/TEST_PLAN.md)
 - **API Documentation:** Check docstrings in source files
 - **LangGraph Documentation:** https://langchain-ai.github.io/langgraph/
 - **Neo4j Documentation:** https://neo4j.com/docs/
@@ -339,4 +338,4 @@ If you encounter issues not covered here:
 
 ---
 
-**Last updated:** March 2026
+**Last updated:** April 2026

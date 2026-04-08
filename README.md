@@ -261,14 +261,26 @@ The factory auto-detects the provider from the model name:
 
 ### Running the Builder Pipeline
 
-```bash
-python -m scripts.pipeline_run --help
+The builder is exposed via the REST API (recommended) or invoked directly in code:
+
+```python
+from src.graph.builder_graph import run_builder
+
+run_builder(
+    raw_documents=["path/to/docs.pdf"],
+    ddl_paths=["path/to/schema.sql"],
+    production=False,
+    clear_graph=True,
+)
 ```
 
 ### Running Queries
 
-```bash
-python -m scripts.pipeline_run --mode query --question "Which table stores customer data?"
+```python
+from src.generation.query_graph import run_query
+
+result = run_query("Which table stores customer data?")
+print(result["final_answer"])
 ```
 
 ### REST API
@@ -384,8 +396,7 @@ mypy src/                                # Type check
 | `docs/draft/ABLATION.md` | Ablation study plan and results |
 | `docs/draft/DATASET.md` | Dataset specifications (inputs, few-shot, gold standard) |
 | `docs/draft/TEST_PLAN.md` | Test strategy and test case catalogue |
-| `docs/implementation/00-overview.md` | Implementation guides index |
-| `CLAUDE.md` | Development conventions and codebase guide |
+| `docs/draft/SPECS.md` | Architecture spec (full node/state reference) |
 
 ---
 
