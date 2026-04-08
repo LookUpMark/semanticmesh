@@ -717,6 +717,8 @@ class GraphStatsResponse(BaseModel):
     child_chunks: int
     mentions_edges: int
     maps_to_edges: int
+    child_of_edges: int
+    references_edges: int
     total_nodes: int
     total_relationships: int
 

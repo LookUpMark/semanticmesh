@@ -501,21 +501,29 @@ def get_graph_stats() -> GraphStatsResponse:
     try:
         from src.graph.neo4j_client import Neo4jClient
 
-        # Single round-trip: node counts + relationship counts in one query
+        # Two independent CALL subqueries — no cross-product between nodes and edges
         stats_query = """
-        MATCH (n)
-        WITH
-          sum(CASE WHEN 'BusinessConcept' IN labels(n) THEN 1 ELSE 0 END) AS business_concepts,
-          sum(CASE WHEN 'PhysicalTable'   IN labels(n) THEN 1 ELSE 0 END) AS physical_tables,
-          sum(CASE WHEN 'ParentChunk'     IN labels(n) THEN 1 ELSE 0 END) AS parent_chunks,
-          sum(CASE WHEN 'Chunk'           IN labels(n) THEN 1 ELSE 0 END) AS child_chunks,
-          count(n) AS total_nodes
-        OPTIONAL MATCH ()-[r]->()
+        CALL {
+          MATCH (n)
+          RETURN
+            sum(CASE WHEN 'BusinessConcept' IN labels(n) THEN 1 ELSE 0 END) AS business_concepts,
+            sum(CASE WHEN 'PhysicalTable'   IN labels(n) THEN 1 ELSE 0 END) AS physical_tables,
+            sum(CASE WHEN 'ParentChunk'     IN labels(n) THEN 1 ELSE 0 END) AS parent_chunks,
+            sum(CASE WHEN 'Chunk'           IN labels(n) THEN 1 ELSE 0 END) AS child_chunks,
+            count(n) AS total_nodes
+        }
+        CALL {
+          MATCH ()-[r]->()
+          RETURN
+            count(r) AS total_relationships,
+            sum(CASE WHEN type(r) = 'MENTIONS'   THEN 1 ELSE 0 END) AS mentions_edges,
+            sum(CASE WHEN type(r) = 'MAPPED_TO'  THEN 1 ELSE 0 END) AS maps_to_edges,
+            sum(CASE WHEN type(r) = 'CHILD_OF'   THEN 1 ELSE 0 END) AS child_of_edges,
+            sum(CASE WHEN type(r) = 'REFERENCES' THEN 1 ELSE 0 END) AS references_edges
+        }
         RETURN
           business_concepts, physical_tables, parent_chunks, child_chunks, total_nodes,
-          count(r) AS total_relationships,
-          sum(CASE WHEN type(r) = 'MENTIONS'   THEN 1 ELSE 0 END) AS mentions_edges,
-          sum(CASE WHEN type(r) = 'MAPPED_TO'  THEN 1 ELSE 0 END) AS maps_to_edges
+          total_relationships, mentions_edges, maps_to_edges, child_of_edges, references_edges
         """
 
         with Neo4jClient() as client:
@@ -528,6 +536,8 @@ def get_graph_stats() -> GraphStatsResponse:
             child_chunks=int(row.get("child_chunks", 0) or 0),
             mentions_edges=int(row.get("mentions_edges", 0) or 0),
             maps_to_edges=int(row.get("maps_to_edges", 0) or 0),
+            child_of_edges=int(row.get("child_of_edges", 0) or 0),
+            references_edges=int(row.get("references_edges", 0) or 0),
             total_nodes=int(row.get("total_nodes", 0) or 0),
             total_relationships=int(row.get("total_relationships", 0) or 0),
         )

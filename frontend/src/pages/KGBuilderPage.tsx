@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAppState } from "@/contexts/AppStateContext";
 import {
   Upload,
   FileText,
@@ -303,7 +304,7 @@ export function KGBuilderPage() {
   const [studyId, setStudyId] = useState("demo");
   const [clearGraph, setClearGraph] = useState(true);
   const [lazyExtraction, setLazyExtraction] = useState(false);
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const { activeBuildJobId: activeJobId, setActiveBuildJobId: setActiveJobId } = useAppState();
 
   // Advanced config
   const [retrievalMode, setRetrievalMode] = useState<string>("hybrid");

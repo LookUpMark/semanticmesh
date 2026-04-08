@@ -131,6 +131,8 @@ export interface GraphStatsResponse {
   child_chunks: number;
   mentions_edges: number;
   maps_to_edges: number;
+  child_of_edges: number;
+  references_edges: number;
   total_nodes: number;
   total_relationships: number;
 }

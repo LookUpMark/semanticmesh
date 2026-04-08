@@ -180,10 +180,12 @@ function GraphStatsGrid({
     { key: "child_chunks", label: "Child Chunks" },
     { key: "mentions_edges", label: "MENTIONS Edges" },
     { key: "maps_to_edges", label: "MAPS_TO Edges" },
+    { key: "child_of_edges", label: "CHILD_OF Edges" },
+    { key: "references_edges", label: "FK References" },
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-4 gap-3">
       {fields.map((f) => (
         <Card key={f.key} className="p-3">
           {loading ? (

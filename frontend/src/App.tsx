@@ -12,6 +12,8 @@ import { GraphVisualizationPage } from "@/pages/GraphVisualizationPage";
 import { AblationPage } from "@/pages/AblationPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { AppStateProvider } from "@/contexts/AppStateContext";
+import { AppStateProvider } from "@/contexts/AppStateContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +36,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <DarkModeInitializer />
       <SettingsProvider>
+        <AppStateProvider>
         <TooltipProvider>
           <Toaster position="top-right" richColors />
           <BrowserRouter>
@@ -49,6 +52,7 @@ export default function App() {
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </AppStateProvider>
       </SettingsProvider>
     </QueryClientProvider>
   );

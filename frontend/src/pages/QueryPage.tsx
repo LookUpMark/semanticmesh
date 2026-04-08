@@ -8,13 +8,18 @@ import {
   ShieldCheck,
   ShieldAlert,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useSubmitQuery } from "@/hooks/useJobs";
+import { useAppState, type ChatMessage } from "@/contexts/AppStateContext";
+import { useSettings } from "@/contexts/SettingsContext";
 import type { QueryResponse } from "@/types/api";
 
 function renderMarkdown(text: string): React.ReactNode {
@@ -38,13 +43,6 @@ function renderMarkdown(text: string): React.ReactNode {
       </span>
     );
   });
-}
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  metadata?: QueryResponse;
-  isLoading?: boolean;
 }
 
 const EXAMPLE_QUESTIONS = [
@@ -152,7 +150,8 @@ function AnswerMetadata({ data }: { data: QueryResponse }) {
 }
 
 export function QueryPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { queryMessages: messages, setQueryMessages: setMessages, clearQueryMessages } = useAppState();
+  const { getGlobalPipelineConfig } = useSettings();
   const [input, setInput] = useState("");
   const submitQuery = useSubmitQuery();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -179,7 +178,7 @@ export function QueryPage() {
     setInput("");
 
     try {
-      const result = await submitQuery.mutateAsync({ question });
+      const result = await submitQuery.mutateAsync({ question, config: getGlobalPipelineConfig() });
       const assistantMessage: ChatMessage = {
         role: "assistant",
         content: result.answer,
@@ -219,10 +218,20 @@ export function QueryPage() {
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-b border-border px-6 py-4">
-        <h1 className="text-2xl font-bold tracking-tight">Query Knowledge Graph</h1>
-        <p className="text-sm text-muted-foreground">
-          Ask questions about your data using natural language.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Query Knowledge Graph</h1>
+            <p className="text-sm text-muted-foreground">
+              Ask questions about your data using natural language.
+            </p>
+          </div>
+          {messages.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={clearQueryMessages} className="gap-2 text-muted-foreground">
+              <Trash2 className="size-4" />
+              Clear conversation
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Chat area */}
