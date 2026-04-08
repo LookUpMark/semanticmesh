@@ -64,7 +64,8 @@ RUN pip install --no-cache-dir --no-deps -e .
 
 # Entrypoint script (must be copied before switching user)
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Strip Windows CRLF line endings that may survive a Windows checkout
+RUN sed -i 's/\r//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Create non-root user; pre-create the HF cache directory owned by appuser.
 # With a bind mount (./data/hf_cache), the host directory is owned by the
