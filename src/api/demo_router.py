@@ -488,6 +488,27 @@ def get_demo_jobs() -> list[dict]:
     ]
 
 
+@router.delete(
+    "/graph",
+    summary="Wipe the Knowledge Graph",
+    description=(
+        "Deletes ALL nodes and relationships from Neo4j (``MATCH (n) DETACH DELETE n``). "
+        "This action is irreversible. Returns the number of nodes removed."
+    ),
+)
+def delete_graph() -> dict[str, int]:
+    try:
+        from src.graph.neo4j_client import Neo4jClient
+
+        with Neo4jClient() as client:
+            count_rows = client.execute_cypher("MATCH (n) RETURN count(n) AS n")
+            total = int(count_rows[0].get("n", 0)) if count_rows else 0
+            client.execute_cypher("MATCH (n) DETACH DELETE n")
+        return {"nodes_deleted": total}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+
+
 @router.get(
     "/graph/stats",
     response_model=GraphStatsResponse,

@@ -9,6 +9,7 @@ import {
   MessageSquare,
   FlaskConical,
   Inbox,
+  Trash2,
 } from "lucide-react";
 import {
   Card,
@@ -18,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -30,7 +31,15 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGraphStats } from "@/hooks/useGraphStats";
-import { useDemoJobs, useHealth } from "@/hooks/useJobs";
+import { useDemoJobs, useHealth, useClearGraph } from "@/hooks/useJobs";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import type { DemoJob } from "@/types/api";
 
 function StatusIcon({ status }: { status: string }) {
@@ -208,6 +217,7 @@ export function DashboardPage() {
   const { data: graphStats, isLoading: statsLoading } = useGraphStats();
   const { data: jobs, isLoading: jobsLoading } = useDemoJobs();
   const { data: health } = useHealth();
+  const clearGraph = useClearGraph();
 
   const systemOk = health?.status === "ok" || health?.status === "healthy";
 
@@ -312,7 +322,7 @@ export function DashboardPage() {
         <CardHeader>
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-3">
+        <CardContent className="flex flex-wrap gap-3">
           <Link to="/build" className={cn(buttonVariants({ variant: "default" }))}>
             <Hammer className="mr-1.5 size-4" />
             Build Knowledge Graph
@@ -325,6 +335,46 @@ export function DashboardPage() {
             <FlaskConical className="mr-1.5 size-4" />
             Run Ablation
           </Link>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="destructive"
+                disabled={clearGraph.isPending || (graphStats?.total_nodes ?? 0) === 0}
+              >
+                {clearGraph.isPending ? (
+                  <Loader2 className="mr-1.5 size-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-1.5 size-4" />
+                )}
+                Clear Graph
+              </Button>
+            </DialogTrigger>
+            <DialogContent showCloseButton={false}>
+              <DialogHeader>
+                <p className="text-base font-semibold">Clear Knowledge Graph?</p>
+                <p className="text-sm text-muted-foreground">
+                  This will permanently delete{" "}
+                  <strong>all {graphStats?.total_nodes?.toLocaleString()} nodes</strong> and{" "}
+                  <strong>{graphStats?.total_relationships?.toLocaleString()} relationships</strong>{" "}
+                  from Neo4j. This action cannot be undone.
+                </p>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                  <Button
+                    variant="destructive"
+                    onClick={() => clearGraph.mutate()}
+                  >
+                    Yes, clear graph
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>

@@ -145,6 +145,11 @@ export async function getGraphStats(): Promise<GraphStatsResponse> {
   return res.data;
 }
 
+export async function clearGraph(): Promise<{ nodes_deleted: number }> {
+  const res = await api.delete("/demo/graph");
+  return res.data;
+}
+
 // ── Ablation API ────────────────────────────────────────────────────────────
 
 export async function getAblationMatrix(): Promise<AblationMatrixEntry[]> {
