@@ -149,7 +149,7 @@ def generate_cypher(
         provenance_text=safe_provenance,
         source_doc=entity.source_doc or "",
         mapping_confidence=mapping.confidence,
-        validated_by="llm_judge",  # Fixed: template expects this
+        validated_by="llm_judge",
     )
 
     logger.debug(

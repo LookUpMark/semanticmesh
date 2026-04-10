@@ -11,7 +11,7 @@ Developed as a Master's thesis project at Politecnico di Torino, March 2026.
 ### ✨ v1.0.0 Highlights
 
 - **~87% Neo4j write reduction** via UNWIND batch operations (O(N) → O(1) per entity type)
-- **Real-time builder progress** with SSE streaming + live React UI updates  
+- **Real-time builder progress** with SSE step tracking and live status updates in the React UI  
 - **Intelligent LLM/Critic gating** — skip expensive inference when confidence ≥ 0.85
 - **44 singleton entities** processed without LLM calls (direct provenance passthrough)
 - **Parallel PDF loading** for multi-file ingestion workloads

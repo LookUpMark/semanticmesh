@@ -47,6 +47,7 @@ from src.mapping.rag_mapper import propose_mapping, propose_mapping_heuristic
 from src.mapping.retrieval import build_retrieval_query, retrieve_top_entities
 from src.models.schemas import EnrichedTableSchema, Entity
 from src.models.state import BuilderState
+from src.prompts.few_shot import format_mapping_examples, load_mapping_examples
 from src.resolution.entity_resolver import resolve_entities
 from src.retrieval.embeddings import get_embeddings
 
@@ -154,7 +155,7 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
             current_table,
             top_entities,
             llm,
-            few_shot_examples="",  # TODO: Load from few_shot module
+            few_shot_examples=format_mapping_examples(load_mapping_examples()),
             reflection_prompt=reflection_prompt,
         )
 
