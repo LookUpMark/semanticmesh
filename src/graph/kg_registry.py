@@ -150,109 +150,188 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
     Node identity for MERGE:
     - BusinessConcept  → ``name``
     - PhysicalTable    → ``table_name``
-    - ParentChunk      → ``parent_chunk_id`` (fallback: ``chunk_id``)
-    - Chunk            → ``chunk_id``
+    - ParentChunk      → compound key: ``{parent_chunk_index, source_doc}``
+    - Chunk            → compound key: ``{chunk_index, source_doc}``
     - SourceFile       → ``path``
     - anything else    → ``name`` if present, else skip
     """
     from src.graph.neo4j_client import Neo4jClient, setup_schema
 
-    def _business_key(node: dict) -> tuple[str, str] | None:
-        """Return (label, key_value) used as MERGE identity, or None to skip."""
+    # Returns a stable string fingerprint for an eid, used to wire relationships.
+    def _node_fingerprint(node: dict) -> str | None:
         labels = node["labels"]
         props = node["props"]
         if "BusinessConcept" in labels:
             k = props.get("name")
-            return ("BusinessConcept", k) if k else None
+            return f"BusinessConcept::{k}" if k else None
         if "PhysicalTable" in labels:
             k = props.get("table_name")
-            return ("PhysicalTable", k) if k else None
+            return f"PhysicalTable::{k}" if k else None
         if "ParentChunk" in labels:
-            k = props.get("parent_chunk_id") or props.get("chunk_id")
-            return ("ParentChunk", k) if k else None
+            idx = props.get("parent_chunk_index")
+            src = props.get("source_doc", "")
+            return f"ParentChunk::{idx}::{src}" if idx is not None else None
         if "Chunk" in labels:
-            k = props.get("chunk_id")
-            return ("Chunk", k) if k else None
+            idx = props.get("chunk_index")
+            src = props.get("source_doc", "")
+            return f"Chunk::{idx}::{src}" if idx is not None else None
         if "SourceFile" in labels:
             k = props.get("path")
-            return ("SourceFile", k) if k else None
+            return f"SourceFile::{k}" if k else None
         return None
+
+    def _merge_cypher_and_params(node: dict) -> tuple[str, dict] | None:
+        """Return (cypher, params) for MERGE of this node, or None to skip."""
+        labels = node["labels"]
+        props = node["props"]
+        if "BusinessConcept" in labels:
+            name = props.get("name")
+            if not name:
+                return None
+            rest = {k: v for k, v in props.items() if k != "name"}
+            return (
+                "MERGE (n:BusinessConcept {name: $key}) SET n += $props",
+                {"key": name, "props": rest},
+            )
+        if "PhysicalTable" in labels:
+            tn = props.get("table_name")
+            if not tn:
+                return None
+            rest = {k: v for k, v in props.items() if k != "table_name"}
+            return (
+                "MERGE (n:PhysicalTable {table_name: $key}) SET n += $props",
+                {"key": tn, "props": rest},
+            )
+        if "ParentChunk" in labels:
+            idx = props.get("parent_chunk_index")
+            src = props.get("source_doc", "")
+            if idx is None:
+                return None
+            rest = {k: v for k, v in props.items() if k not in ("parent_chunk_index", "source_doc")}
+            return (
+                "MERGE (n:ParentChunk {parent_chunk_index: $idx, source_doc: $src}) SET n += $props",
+                {"idx": idx, "src": src, "props": rest},
+            )
+        if "Chunk" in labels:
+            idx = props.get("chunk_index")
+            src = props.get("source_doc", "")
+            if idx is None:
+                return None
+            rest = {k: v for k, v in props.items() if k not in ("chunk_index", "source_doc")}
+            return (
+                "MERGE (n:Chunk {chunk_index: $idx, source_doc: $src}) SET n += $props",
+                {"idx": idx, "src": src, "props": rest},
+            )
+        if "SourceFile" in labels:
+            path = props.get("path")
+            if not path:
+                return None
+            rest = {k: v for k, v in props.items() if k != "path"}
+            return (
+                "MERGE (n:SourceFile {path: $key}) SET n += $props",
+                {"key": path, "props": rest},
+            )
+        return None
+
+    def _match_clause(fingerprint: str) -> tuple[str, str, dict]:
+        """Return (alias_cypher_fragment, alias_letter, params) for a MATCH by fingerprint."""
+        parts = fingerprint.split("::", 2)
+        label = parts[0]
+        if label == "BusinessConcept":
+            return f"({{a}}:BusinessConcept {{name: ${{a}}_key}})", "a", {"{a}_key": parts[1]}
+        if label == "PhysicalTable":
+            return f"({{a}}:PhysicalTable {{table_name: ${{a}}_key}})", "a", {"{a}_key": parts[1]}
+        if label == "ParentChunk":
+            return (
+                "({a}:ParentChunk {parent_chunk_index: ${a}_idx, source_doc: ${a}_src})",
+                "a",
+                {"{a}_idx": int(parts[1]), "{a}_src": parts[2]},
+            )
+        if label == "Chunk":
+            return (
+                "({a}:Chunk {chunk_index: ${a}_idx, source_doc: ${a}_src})",
+                "a",
+                {"{a}_idx": int(parts[1]), "{a}_src": parts[2]},
+            )
+        if label == "SourceFile":
+            return f"({{a}}:SourceFile {{path: ${{a}}_key}})", "a", {"{a}_key": parts[1]}
+        return "", "a", {}
 
     with Neo4jClient() as client:
         # 1. Wipe existing graph
         client.execute_cypher("MATCH (n) DETACH DELETE n")
 
-        # 2. Re-create schema
+        # 2. Re-create schema constraints/indexes
         setup_schema(client)
 
-        # 2. Build a mapping original_eid → business_key for relationship reconstruction
-        eid_to_key: dict[str, tuple[str, str]] = {}
+        # 3. Build eid → fingerprint map for relationship reconstruction
+        eid_to_fp: dict[str, str] = {}
         for node in nodes:
-            bk = _business_key(node)
-            if bk:
-                eid_to_key[node["eid"]] = bk
+            fp = _node_fingerprint(node)
+            if fp:
+                eid_to_fp[node["eid"]] = fp
 
-        # 3. MERGE nodes
-        stmts: list[tuple[str, dict]] = []
+        # 4. MERGE nodes
+        node_stmts: list[tuple[str, dict]] = []
         for node in nodes:
-            bk = _business_key(node)
-            if not bk:
-                continue
-            label, key_val = bk
-            key_prop = "name" if label in ("BusinessConcept", "SourceFile") else (
-                "table_name" if label == "PhysicalTable" else (
-                    "parent_chunk_id" if label == "ParentChunk" else "chunk_id"
-                )
-            )
-            props_without_key = {k: v for k, v in node["props"].items() if k != key_prop}
-            cypher = (
-                f"MERGE (n:{label} {{{key_prop}: $key}}) "
-                "SET n += $props"
-            )
-            stmts.append((cypher, {"key": key_val, "props": props_without_key}))
+            mc = _merge_cypher_and_params(node)
+            if mc:
+                node_stmts.append(mc)
 
-        # Execute in batches of 200
-        for i in range(0, len(stmts), 200):
-            client.execute_batch(stmts[i:i + 200])
+        for i in range(0, len(node_stmts), 200):
+            client.execute_batch(node_stmts[i:i + 200])
 
-        # 4. MERGE relationships
+        # 5. MERGE relationships — build per-relationship MATCH+MERGE statements
         rel_stmts: list[tuple[str, dict]] = []
         for edge in edges:
-            src = eid_to_key.get(edge["start_eid"])
-            tgt = eid_to_key.get(edge["end_eid"])
-            if not src or not tgt:
+            src_fp = eid_to_fp.get(edge["start_eid"])
+            tgt_fp = eid_to_fp.get(edge["end_eid"])
+            if not src_fp or not tgt_fp:
                 continue
-            src_label, src_key = src
-            tgt_label, tgt_key = tgt
-            src_prop = "name" if src_label in ("BusinessConcept", "SourceFile") else (
-                "table_name" if src_label == "PhysicalTable" else (
-                    "parent_chunk_id" if src_label == "ParentChunk" else "chunk_id"
-                )
-            )
-            tgt_prop = "name" if tgt_label in ("BusinessConcept", "SourceFile") else (
-                "table_name" if tgt_label == "PhysicalTable" else (
-                    "parent_chunk_id" if tgt_label == "ParentChunk" else "chunk_id"
-                )
-            )
+
+            # Build MATCH fragments with distinct aliases (a, b)
+            def _match_frag(fp: str, alias: str) -> tuple[str, dict]:
+                parts = fp.split("::", 2)
+                label = parts[0]
+                if label in ("BusinessConcept", "SourceFile"):
+                    prop = "name" if label == "BusinessConcept" else "path"
+                    return (
+                        f"MATCH ({alias}:{label} {{{prop}: ${alias}_key}})",
+                        {f"{alias}_key": parts[1]},
+                    )
+                if label == "PhysicalTable":
+                    return (
+                        f"MATCH ({alias}:PhysicalTable {{table_name: ${alias}_key}})",
+                        {f"{alias}_key": parts[1]},
+                    )
+                if label == "ParentChunk":
+                    return (
+                        f"MATCH ({alias}:ParentChunk {{parent_chunk_index: ${alias}_idx, source_doc: ${alias}_src}})",
+                        {f"{alias}_idx": int(parts[1]), f"{alias}_src": parts[2]},
+                    )
+                if label == "Chunk":
+                    return (
+                        f"MATCH ({alias}:Chunk {{chunk_index: ${alias}_idx, source_doc: ${alias}_src}})",
+                        {f"{alias}_idx": int(parts[1]), f"{alias}_src": parts[2]},
+                    )
+                return "", {}
+
+            src_match, src_params = _match_frag(src_fp, "a")
+            tgt_match, tgt_params = _match_frag(tgt_fp, "b")
+            if not src_match or not tgt_match:
+                continue
+
             rel_type = edge["rel_type"]
-            cypher = (
-                f"MATCH (a:{src_label} {{{src_prop}: $src_key}}) "
-                f"MATCH (b:{tgt_label} {{{tgt_prop}: $tgt_key}}) "
-                f"MERGE (a)-[r:{rel_type}]->(b) "
-                "SET r += $props"
-            )
-            rel_stmts.append((cypher, {
-                "src_key": src_key,
-                "tgt_key": tgt_key,
-                "props": edge["props"],
-            }))
+            cypher = f"{src_match} {tgt_match} MERGE (a)-[r:{rel_type}]->(b) SET r += $props"
+            params = {**src_params, **tgt_params, "props": edge["props"]}
+            rel_stmts.append((cypher, params))
 
         for i in range(0, len(rel_stmts), 200):
             client.execute_batch(rel_stmts[i:i + 200])
 
     logger.info(
         "KG import complete: %d nodes, %d edges merged.",
-        len([n for n in nodes if _business_key(n)]),
+        len(node_stmts),
         len(rel_stmts),
     )
 
