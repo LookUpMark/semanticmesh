@@ -89,6 +89,9 @@ def make_llm(
     # Generic base URL override — forwarded to any OpenAI-compatible provider
     # (Ollama, LMStudio, Groq self-hosted, custom proxy, etc.)
     provider_base_url: str | None = None,
+    # Optional explicit provider override — if set (and != "auto"), skips
+    # detect_provider() and uses this string directly.
+    provider: str | None = None,
     extra_model_kwargs: dict | None = None,
     enable_fallback: bool = True,
 ) -> LLMProtocol:
@@ -134,11 +137,12 @@ def make_llm(
     >>> make_llm("gemini-2.0-flash")                  # → InstrumentedLLM (Google)
     >>> make_llm("local-model")                       # → InstrumentedLLM (LM Studio)
     """
-    provider = detect_provider(model)
+    # Resolve provider: explicit override > auto-detection from model name
+    resolved_provider = (provider if (provider and provider != "auto") else None) or detect_provider(model)
     is_free = _is_free_model(model)
     paid_model = _strip_free_suffix(model) if is_free else model
 
-    if provider == "openrouter":
+    if resolved_provider == "openrouter":
         if is_free and enable_fallback and model != paid_model:
             primary_chat = _build_openrouter_chat(
                 model,
@@ -173,7 +177,7 @@ def make_llm(
         )
         return _instrument(chat, role)
 
-    if provider == "openai":
+    if resolved_provider == "openai":
         chat = _build_openai_chat(
             model,
             temperature=temperature,
@@ -183,13 +187,13 @@ def make_llm(
         )
         return _instrument(chat, role)
 
-    if provider == "anthropic":
+    if resolved_provider == "anthropic":
         return _instrument(
             _build_anthropic_chat(model, temperature=temperature, max_tokens=max_tokens),
             role,
         )
 
-    if provider == "ollama":
+    if resolved_provider == "ollama":
         return _instrument(
             _build_ollama_chat(
                 model, temperature=temperature, max_tokens=max_tokens, base_url=provider_base_url
@@ -197,42 +201,42 @@ def make_llm(
             role,
         )
 
-    if provider == "google":
+    if resolved_provider == "google":
         return _instrument(
             _build_google_chat(model, temperature=temperature, max_tokens=max_tokens), role
         )
 
-    if provider == "bedrock":
+    if resolved_provider == "bedrock":
         return _instrument(
             _build_bedrock_chat(model, temperature=temperature, max_tokens=max_tokens), role
         )
 
-    if provider == "azure":
+    if resolved_provider == "azure":
         return _instrument(
             _build_azure_chat(model, temperature=temperature, max_tokens=max_tokens), role
         )
 
-    if provider == "mistral":
+    if resolved_provider == "mistral":
         return _instrument(
             _build_mistral_chat(model, temperature=temperature, max_tokens=max_tokens), role
         )
 
-    if provider == "huggingface":
+    if resolved_provider == "huggingface":
         return _instrument(
             _build_huggingface_chat(model, temperature=temperature, max_tokens=max_tokens), role
         )
 
-    if provider == "cohere":
+    if resolved_provider == "cohere":
         return _instrument(
             _build_cohere_chat(model, temperature=temperature, max_tokens=max_tokens), role
         )
 
     # OpenAI-compatible providers: groq, together, nvidia, deepseek, xai
-    if provider in ("groq", "together", "nvidia", "deepseek", "xai"):
+    if resolved_provider in ("groq", "together", "nvidia", "deepseek", "xai"):
         return _instrument(
             _build_openai_compatible_chat(
                 model,
-                provider=provider,
+                provider=resolved_provider,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 base_url_override=provider_base_url,
@@ -285,10 +289,11 @@ def get_reasoning_llm() -> LLMProtocol:
     gives the model sufficient thinking budget for multi-hop synthesis across chunks.
     """
     s = get_settings()
-    provider = detect_provider(s.llm_model_reasoning)
-    if provider == "openrouter":
+    provider_override = s.llm_provider if s.llm_provider != "auto" else None
+    effective_provider = provider_override or detect_provider(s.llm_model_reasoning)
+    if effective_provider == "openrouter":
         low_reasoning: dict | None = {"reasoning": {"effort": "medium"}}
-    elif provider == "openai":
+    elif effective_provider == "openai":
         low_reasoning = {"reasoning_effort": "medium"}
     else:
         low_reasoning = None
@@ -297,13 +302,14 @@ def get_reasoning_llm() -> LLMProtocol:
         temperature=s.llm_temperature_reasoning,
         max_tokens=s.llm_max_tokens_reasoning,
         role="reasoning",
+        provider=provider_override,
         extra_model_kwargs=low_reasoning,
     )
 
 
 @lru_cache(maxsize=1)
 def get_extraction_llm() -> LLMProtocol:
-    """Extraction SLM — provider auto-detected from model name, T=0.0.
+    """Extraction SLM — provider auto-detected from model name (or from settings.llm_provider), T=0.0.
 
     Used for: triplet extraction from PDF chunks.
 
@@ -313,9 +319,10 @@ def get_extraction_llm() -> LLMProtocol:
     - OpenAI direct (e.g. ``gpt-4o-mini``): routed to OpenAI.
     """
     s = get_settings()
-    provider = detect_provider(s.llm_model_extraction)
+    provider_override = s.llm_provider if s.llm_provider != "auto" else None
+    effective_provider = provider_override or detect_provider(s.llm_model_extraction)
 
-    if provider == "lmstudio":
+    if effective_provider == "lmstudio":
         return _instrument(
             ChatOpenAI(
                 model=s.llm_model_extraction,
@@ -334,13 +341,14 @@ def get_extraction_llm() -> LLMProtocol:
     # Standard chat models (gpt-4o*) don't accept reasoning_effort at all → pass None.
     # Note: OpenRouter models have mandatory reasoning that cannot be overridden here.
     no_reasoning: dict | None = None
-    if provider == "openai" and is_openai_reasoning_model(s.llm_model_extraction):
+    if effective_provider == "openai" and is_openai_reasoning_model(s.llm_model_extraction):
         no_reasoning = {"reasoning_effort": "none"}
     return make_llm(
         model=s.llm_model_extraction,
         temperature=s.llm_temperature_extraction,
         max_tokens=s.llm_max_tokens_extraction,
         role="extraction",
+        provider=provider_override,
         extra_model_kwargs=no_reasoning,
     )
 
@@ -353,11 +361,14 @@ def get_generation_llm() -> LLMProtocol:
     Thinking is mandatory for this model; OpenRouter keeps it in a separate
     field so the content returned is always clean prose.
     """
+    s = get_settings()
+    provider_override = s.llm_provider if s.llm_provider != "auto" else None
     return make_llm(
-        model=get_settings().llm_model_reasoning,
-        temperature=get_settings().llm_temperature_generation,
-        max_tokens=get_settings().llm_max_tokens_reasoning,
+        model=s.llm_model_reasoning,
+        temperature=s.llm_temperature_generation,
+        max_tokens=s.llm_max_tokens_reasoning,
         role="generation",
+        provider=provider_override,
     )
 
 
@@ -370,6 +381,7 @@ def get_lightweight_llm() -> LLMProtocol:
     ``reasoning_effort=none`` to suppress chain-of-thought.
     """
     s = get_settings()
+    provider_override = s.llm_provider if s.llm_provider != "auto" else None
     no_reasoning: dict | None = None
     if is_openai_reasoning_model(s.llm_model_extraction):
         no_reasoning = {"reasoning_effort": "none"}
@@ -378,6 +390,7 @@ def get_lightweight_llm() -> LLMProtocol:
         temperature=s.llm_temperature_extraction,
         max_tokens=s.llm_max_tokens_extraction,
         role="lightweight",
+        provider=provider_override,
         extra_model_kwargs=no_reasoning,
     )
 
@@ -391,10 +404,11 @@ def get_midtier_llm() -> LLMProtocol:
     than the full reasoning model while still providing good accuracy.
     """
     s = get_settings()
-    provider = detect_provider(s.llm_model_midtier)
-    if provider == "openrouter":
+    provider_override = s.llm_provider if s.llm_provider != "auto" else None
+    effective_provider = provider_override or detect_provider(s.llm_model_midtier)
+    if effective_provider == "openrouter":
         low_reasoning: dict | None = {"reasoning": {"effort": "low"}}
-    elif provider == "openai":
+    elif effective_provider == "openai":
         low_reasoning = {"reasoning_effort": "low"}
     else:
         low_reasoning = None
@@ -403,5 +417,6 @@ def get_midtier_llm() -> LLMProtocol:
         temperature=s.llm_temperature_reasoning,
         max_tokens=s.llm_max_tokens_reasoning,
         role="midtier",
+        provider=provider_override,
         extra_model_kwargs=low_reasoning,
     )

@@ -7,6 +7,7 @@ import {
   startBuildUpload,
   startPipelineUpload,
   submitQuery,
+  clearGraph,
 } from "@/lib/api";
 import type { BuildResultResponse, QueryRequest } from "@/types/api";
 import { toast } from "sonner";
@@ -132,5 +133,22 @@ export function useHealth() {
       }
     },
     refetchInterval: 30_000,
+  });
+}
+
+export function useClearGraph() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: clearGraph,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["graphStats"] });
+      queryClient.invalidateQueries({ queryKey: ["demoJobs"] });
+      toast.success("Graph cleared", {
+        description: `${data.nodes_deleted} node${data.nodes_deleted !== 1 ? "s" : ""} deleted.`,
+      });
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to clear graph: " + err.message);
+    },
   });
 }
