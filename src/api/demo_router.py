@@ -324,7 +324,7 @@ async def stream_build_status(job_id: str):
             step = job.get("current_step")
             builder = (job.get("result") or {}).get("builder")
 
-            # Emit whenever status OR step changes
+            # Emit step/status change events
             if status != last_status or step != last_step:
                 last_status = status
                 last_step = step
@@ -523,8 +523,9 @@ def get_graph_stats() -> GraphStatsResponse:
         from src.graph.neo4j_client import Neo4jClient
 
         # Two independent CALL subqueries — no cross-product between nodes and edges
+        # Use CALL () { ... } (variable scope clause) required by Neo4j 5.x+
         stats_query = """
-        CALL {
+        CALL () {
           MATCH (n)
           RETURN
             sum(CASE WHEN 'BusinessConcept' IN labels(n) THEN 1 ELSE 0 END) AS business_concepts,
@@ -533,7 +534,7 @@ def get_graph_stats() -> GraphStatsResponse:
             sum(CASE WHEN 'Chunk'           IN labels(n) THEN 1 ELSE 0 END) AS child_chunks,
             count(n) AS total_nodes
         }
-        CALL {
+        CALL () {
           MATCH ()-[r]->()
           RETURN
             count(r) AS total_relationships,
@@ -562,6 +563,95 @@ def get_graph_stats() -> GraphStatsResponse:
             total_nodes=int(row.get("total_nodes", 0) or 0),
             total_relationships=int(row.get("total_relationships", 0) or 0),
         )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+
+
+@router.get(
+    "/graph/data",
+    summary="Export Knowledge Graph nodes and edges",
+    description=(
+        "Returns up to 500 nodes and all their relationships from Neo4j, "
+        "formatted for vis-network rendering. Only BusinessConcept and PhysicalTable "
+        "nodes (and their direct edges) are included."
+    ),
+)
+def get_graph_data() -> dict:
+    try:
+        from src.graph.neo4j_client import Neo4jClient
+
+        nodes_query = """
+        MATCH (n)
+        WHERE n:BusinessConcept OR n:PhysicalTable OR n:ParentChunk OR n:Chunk
+        RETURN
+          elementId(n) AS id,
+          CASE
+            WHEN n:PhysicalTable THEN coalesce(n.table_name, toString(elementId(n)))
+            WHEN n:ParentChunk   THEN 'P#' + toString(coalesce(n.parent_chunk_index, 0))
+            WHEN n:Chunk         THEN 'C#' + toString(coalesce(n.chunk_index, 0))
+            ELSE coalesce(n.name, toString(elementId(n)))
+          END AS label,
+          labels(n)[0]   AS group,
+          n.confidence   AS confidence,
+          CASE
+            WHEN n:BusinessConcept OR n:PhysicalTable THEN properties(n)
+            ELSE {
+              text:   left(coalesce(n.text, ''), 200),
+              source: coalesce(n.source_doc, ''),
+              page:   coalesce(n.page, 0)
+            }
+          END AS props
+        LIMIT 800
+        """
+
+        edges_query = """
+        MATCH (a)-[r]->(b)
+        WHERE (a:BusinessConcept OR a:PhysicalTable OR a:ParentChunk OR a:Chunk)
+          AND (b:BusinessConcept OR b:PhysicalTable OR b:ParentChunk OR b:Chunk)
+        RETURN
+          elementId(r)   AS id,
+          elementId(a)   AS from_id,
+          elementId(b)   AS to_id,
+          type(r)        AS label,
+          r.confidence   AS confidence
+        LIMIT 3000
+        """
+
+        with Neo4jClient() as client:
+            raw_nodes = client.execute_cypher(nodes_query)
+            raw_edges = client.execute_cypher(edges_query)
+
+        nodes = [
+            {
+                "id": str(row["id"]),
+                "label": str(row.get("label") or row["id"]),
+                "group": str(row.get("group") or "BusinessConcept"),
+                "confidence": int(round((row.get("confidence") or 1.0) * 100))
+                if row.get("confidence") is not None
+                else None,
+                "properties": {
+                    k: v
+                    for k, v in (row.get("props") or {}).items()
+                    if k not in ("embedding",)  # omit large vectors
+                },
+            }
+            for row in raw_nodes
+        ]
+
+        edges = [
+            {
+                "id": str(row["id"]),
+                "from": str(row["from_id"]),
+                "to": str(row["to_id"]),
+                "label": str(row.get("label") or ""),
+                "confidence": int(round((row.get("confidence") or 1.0) * 100))
+                if row.get("confidence") is not None
+                else None,
+            }
+            for row in raw_edges
+        ]
+
+        return {"nodes": nodes, "edges": edges}
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
 

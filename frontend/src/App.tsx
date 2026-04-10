@@ -13,7 +13,6 @@ import { AblationPage } from "@/pages/AblationPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { AppStateProvider } from "@/contexts/AppStateContext";
-import { AppStateProvider } from "@/contexts/AppStateContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {

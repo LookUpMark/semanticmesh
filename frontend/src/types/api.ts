@@ -137,6 +137,27 @@ export interface GraphStatsResponse {
   total_relationships: number;
 }
 
+export interface GraphNodeData {
+  id: string;
+  label: string;
+  group: string;
+  confidence?: number | null;
+  properties?: Record<string, unknown>;
+}
+
+export interface GraphEdgeData {
+  id: string;
+  from: string;
+  to: string;
+  label: string;
+  confidence?: number | null;
+}
+
+export interface GraphDataResponse {
+  nodes: GraphNodeData[];
+  edges: GraphEdgeData[];
+}
+
 export interface DemoJob {
   job_id: string;
   type: string;

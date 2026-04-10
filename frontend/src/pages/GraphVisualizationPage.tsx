@@ -22,11 +22,14 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGraphStats } from "@/hooks/useGraphStats";
+import { getGraphData } from "@/lib/api";
 
 // ── Theme Colors ──────────────────────────────────────────────────────────────
 const THEME = {
   red: "#e94560",       // BusinessConcept
   blue: "#0f3460",      // PhysicalTable
+  green: "#1a7a4a",     // ParentChunk
+  teal: "#0d6e6e",      // Chunk
   gray: "#a8a8b3",      // Edges
   bg: "#0f0f23",        // Canvas background
   surface: "#16213e",   // Panel background
@@ -36,13 +39,24 @@ const THEME = {
 const NODE_COLORS: Record<string, string> = {
   BusinessConcept: THEME.red,
   PhysicalTable: THEME.blue,
+  ParentChunk: THEME.green,
+  Chunk: THEME.teal,
   default: THEME.gray,
 };
 
+const NODE_LABELS: Record<string, string> = {
+  BusinessConcept: "Business Concept",
+  PhysicalTable: "Physical Table",
+  ParentChunk: "Parent Chunk",
+  Chunk: "Chunk",
+};
+
 const EDGE_COLORS: Record<string, string> = {
+  MAPPED_TO: THEME.red,
   MAPS_TO: THEME.red,
   REFERENCES: THEME.blue,
   MENTIONS: THEME.gray,
+  CHILD_OF: THEME.green,
   default: THEME.gray,
 };
 
@@ -167,17 +181,29 @@ export function GraphVisualizationPage() {
   const [nodeTypeFilters, setNodeTypeFilters] = useState<Record<string, boolean>>({
     BusinessConcept: true,
     PhysicalTable: true,
+    ParentChunk: true,
+    Chunk: true,
   });
   const [edgeTypeFilters, setEdgeTypeFilters] = useState<Record<string, boolean>>({
+    MAPPED_TO: true,
     MAPS_TO: true,
     REFERENCES: true,
     MENTIONS: true,
+    CHILD_OF: true,
   });
 
   // Counts
   const [nodeCount, setNodeCount] = useState(0);
   const [edgeCount, setEdgeCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Incremental animation progress
+  const [animationProgress, setAnimationProgress] = useState<{
+    phase: "nodes" | "edges";
+    current: number;
+    total: number;
+  } | null>(null);
+  const animationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Drag-and-drop state
   const [dragOver, setDragOver] = useState(false);
@@ -277,8 +303,18 @@ export function GraphVisualizationPage() {
           visibleNodeIds.has(e.to),
       );
 
-      const visNodesArr = filteredNodes.map(toVisNode);
-      const visEdgesArr = filteredEdges.map(toVisEdge);
+      const _seenN = new Set<string>();
+      const visNodesArr = filteredNodes.map(toVisNode).filter((n) => {
+        if (_seenN.has(n.id)) return false;
+        _seenN.add(n.id);
+        return true;
+      });
+      const _seenE = new Set<string>();
+      const visEdgesArr = filteredEdges.map(toVisEdge).filter((e) => {
+        if (_seenE.has(e.id)) return false;
+        _seenE.add(e.id);
+        return true;
+      });
 
       // Dynamic import then create
       Promise.all([import("vis-network"), import("vis-data")]).then(([vis, { DataSet }]) => {
@@ -318,6 +354,22 @@ export function GraphVisualizationPage() {
                 border: THEME.blue,
               },
             },
+            ParentChunk: {
+              color: {
+                background: THEME.green,
+                border: THEME.green,
+              },
+              shape: "square" as const,
+              size: 10,
+            },
+            Chunk: {
+              color: {
+                background: THEME.teal,
+                border: THEME.teal,
+              },
+              shape: "triangle" as const,
+              size: 8,
+            },
           },
         };
 
@@ -355,14 +407,211 @@ export function GraphVisualizationPage() {
     [nodeTypeFilters, edgeTypeFilters, physicsEnabled],
   );
 
-  // ── Init with sample data ───────────────────────────────────────────────────
+  // ── Build network with incremental animation ────────────────────────────────
+  const buildNetworkIncremental = useCallback(
+    (nodes: NodeData[], edges: EdgeData[]) => {
+      if (!containerRef.current) return;
+
+      // Cancel any running animation
+      if (animationTimerRef.current) {
+        clearInterval(animationTimerRef.current);
+        animationTimerRef.current = null;
+      }
+
+      // Destroy old network if any
+      if (networkRef.current) {
+        (networkRef.current as { destroy: () => void }).destroy();
+        networkRef.current = null;
+      }
+
+      // Filter
+      const filteredNodes = nodes.filter((n) => nodeTypeFilters[n.group] !== false);
+      const visibleNodeIds = new Set(filteredNodes.map((n) => n.id));
+      const filteredEdges = edges.filter(
+        (e) =>
+          edgeTypeFilters[e.label] !== false &&
+          visibleNodeIds.has(e.from) &&
+          visibleNodeIds.has(e.to),
+      );
+
+      // Deduplicate by id before batching — DataSet.add() throws on duplicate ids
+      // within the same array, even across separate batch calls on the same DataSet.
+      const seenNodeIds = new Set<string>();
+      const visNodesArr = filteredNodes
+        .map(toVisNode)
+        .filter((n) => {
+          if (seenNodeIds.has(n.id)) return false;
+          seenNodeIds.add(n.id);
+          return true;
+        });
+
+      const seenEdgeIds = new Set<string>();
+      const visEdgesArr = filteredEdges
+        .map(toVisEdge)
+        .filter((e) => {
+          if (seenEdgeIds.has(e.id)) return false;
+          seenEdgeIds.add(e.id);
+          return true;
+        });
+
+      Promise.all([import("vis-network"), import("vis-data")]).then(
+        ([vis, { DataSet }]) => {
+          if (!containerRef.current) return;
+
+          // Start with empty datasets — we'll fill them incrementally
+          const visNodes = new DataSet<VisNode>([]);
+          const visEdges = new DataSet<VisEdge>([]);
+
+          visNodesRef.current = visNodes;
+          visEdgesRef.current = visEdges;
+
+          const options = {
+            physics: { ...PHYSICS_OPTIONS, enabled: physicsEnabled },
+            interaction: {
+              hover: true,
+              tooltipDelay: 200,
+              zoomView: true,
+              dragView: true,
+            },
+            nodes: { shape: "dot" as const, size: 16 },
+            edges: { width: 1.5 },
+            groups: {
+              BusinessConcept: { color: { background: THEME.red, border: THEME.red } },
+              PhysicalTable: { color: { background: THEME.blue, border: THEME.blue } },
+              ParentChunk: {
+                color: { background: THEME.green, border: THEME.green },
+                shape: "square" as const,
+                size: 10,
+              },
+              Chunk: {
+                color: { background: THEME.teal, border: THEME.teal },
+                shape: "triangle" as const,
+                size: 8,
+              },
+            },
+          };
+
+          const network = new vis.Network(
+            containerRef.current,
+            { nodes: visNodes, edges: visEdges },
+            options,
+          );
+
+          network.on("click", (params: { nodes: string[] }) => {
+            if (params.nodes.length > 0) {
+              const nodeId = params.nodes[0];
+              const nodeData = visNodes.get(nodeId);
+              const original = nodes.find((n) => n.id === nodeId);
+              setSelectedNode({
+                id: nodeId,
+                label: nodeData.label as string,
+                group: nodeData.group as string,
+                confidence: original?.confidence,
+                properties: original?.properties,
+              });
+              setDetailsOpen(true);
+            } else {
+              setSelectedNode(null);
+              setDetailsOpen(false);
+            }
+          });
+
+          networkRef.current = network;
+          setLoading(false);
+
+          if (visNodesArr.length === 0) {
+            setNodeCount(0);
+            setEdgeCount(0);
+            return;
+          }
+
+          // ~50 ticks total regardless of graph size
+          const NODE_BATCH = Math.max(1, Math.ceil(visNodesArr.length / 50));
+          let nodeIdx = 0;
+
+          setAnimationProgress({ phase: "nodes", current: 0, total: visNodesArr.length });
+
+          animationTimerRef.current = setInterval(() => {
+            const batch = visNodesArr.slice(nodeIdx, nodeIdx + NODE_BATCH);
+            // Use update() (upsert) instead of add() so SSE-pre-added nodes
+            // don't cause "duplicate id" crashes.
+            (visNodesRef.current as { update: (items: VisNode[]) => void }).update(batch);
+            nodeIdx += batch.length;
+            setNodeCount(nodeIdx);
+            setAnimationProgress({ phase: "nodes", current: nodeIdx, total: visNodesArr.length });
+
+            if (nodeIdx >= visNodesArr.length) {
+              clearInterval(animationTimerRef.current!);
+              animationTimerRef.current = null;
+
+              // Start edge animation
+              const EDGE_BATCH = Math.max(1, Math.ceil(visEdgesArr.length / 40));
+              let edgeIdx = 0;
+
+              if (visEdgesArr.length === 0) {
+                setEdgeCount(0);
+                setAnimationProgress(null);
+                return;
+              }
+
+              setAnimationProgress({ phase: "edges", current: 0, total: visEdgesArr.length });
+
+              animationTimerRef.current = setInterval(() => {
+                const eBatch = visEdgesArr.slice(edgeIdx, edgeIdx + EDGE_BATCH);
+                (visEdgesRef.current as { update: (items: VisEdge[]) => void }).update(eBatch);
+                edgeIdx += eBatch.length;
+                setEdgeCount(edgeIdx);
+                setAnimationProgress({
+                  phase: "edges",
+                  current: edgeIdx,
+                  total: visEdgesArr.length,
+                });
+
+                if (edgeIdx >= visEdgesArr.length) {
+                  clearInterval(animationTimerRef.current!);
+                  animationTimerRef.current = null;
+                  setAnimationProgress(null);
+                }
+              }, 40);
+            }
+          }, 60);
+        },
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nodeTypeFilters, edgeTypeFilters, physicsEnabled],
+  );
+
+  // ── Init: load real graph data from backend ─────────────────────────────────
   useEffect(() => {
-    const { nodes, edges } = generateSampleData();
-    setAllNodes(nodes);
-    setAllEdges(edges);
-    buildNetwork(nodes, edges);
+    let cancelled = false;
+    setLoading(true);
+
+    getGraphData()
+      .then(({ nodes, edges }) => {
+        if (cancelled) return;
+        setAllNodes(nodes);
+        setAllEdges(edges);
+        if (nodes.length > 0) {
+          buildNetworkIncremental(nodes, edges);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Backend unavailable — fall back to empty state
+        setAllNodes([]);
+        setAllEdges([]);
+        setLoading(false);
+      });
 
     return () => {
+      cancelled = true;
+      if (animationTimerRef.current) {
+        clearInterval(animationTimerRef.current);
+        animationTimerRef.current = null;
+      }
       if (networkRef.current) {
         (networkRef.current as { destroy: () => void }).destroy();
       }
@@ -374,6 +623,14 @@ export function GraphVisualizationPage() {
   useEffect(() => {
     if (allNodes.length > 0) {
       buildNetwork(allNodes, allEdges);
+    } else {
+      // Graph is empty — destroy any leftover network
+      if (networkRef.current) {
+        (networkRef.current as { destroy: () => void }).destroy();
+        networkRef.current = null;
+      }
+      setNodeCount(0);
+      setEdgeCount(0);
     }
   }, [nodeTypeFilters, edgeTypeFilters, physicsEnabled, allNodes, allEdges, buildNetwork]);
 
@@ -471,13 +728,14 @@ export function GraphVisualizationPage() {
           setAllEdges(importedEdges);
           setSelectedNode(null);
           setDetailsOpen(false);
+          buildNetworkIncremental(importedNodes, importedEdges);
         } catch (err) {
           console.error("Failed to parse dropped file:", err);
         }
       };
       reader.readAsText(file);
     },
-    [],
+    [buildNetworkIncremental],
   );
 
   // ── Count unique types for stats ────────────────────────────────────────────
@@ -575,7 +833,7 @@ export function GraphVisualizationPage() {
                         className="inline-block size-2.5 rounded-full shrink-0"
                         style={{ backgroundColor: color }}
                       />
-                      {type === "BusinessConcept" ? "Business Concept" : "Physical Table"}
+                      {NODE_LABELS[type] ?? type}
                     </Label>
                   </div>
                 ))}
@@ -631,6 +889,37 @@ export function GraphVisualizationPage() {
             </div>
           )}
 
+          {/* Incremental animation progress HUD */}
+          {animationProgress && (
+            <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
+              <div
+                className="flex min-w-[220px] flex-col gap-1.5 rounded-lg border border-border px-4 py-2.5 shadow-lg"
+                style={{ backgroundColor: THEME.surface }}
+              >
+                <div className="flex items-center justify-between gap-4 text-xs">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <Network className="size-3.5 animate-pulse" style={{ color: THEME.red }} />
+                    {animationProgress.phase === "nodes"
+                      ? `Adding nodes… ${animationProgress.current}/${animationProgress.total}`
+                      : `Adding edges… ${animationProgress.current}/${animationProgress.total}`}
+                  </span>
+                  <span className="font-mono text-[10px] tabular-nums" style={{ color: THEME.red }}>
+                    {Math.round((animationProgress.current / animationProgress.total) * 100)}%
+                  </span>
+                </div>
+                <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full transition-all duration-75"
+                    style={{
+                      width: `${Math.round((animationProgress.current / animationProgress.total) * 100)}%`,
+                      backgroundColor: animationProgress.phase === "nodes" ? THEME.red : THEME.blue,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Drag-and-drop overlay */}
           {dragOver && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-sm">
@@ -650,11 +939,11 @@ export function GraphVisualizationPage() {
             <div className="absolute inset-0 z-10 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3 text-muted-foreground">
                 <FolderOpen className="size-12" style={{ color: THEME.gray }} />
-                <p className="text-sm font-medium">No graph data loaded</p>
+                <p className="text-sm font-medium">Knowledge Graph is empty</p>
                 <p className="text-xs text-center max-w-xs">
-                  Drag and drop a JSON file here to visualize it.
+                  Build the KG first from the KG Builder page, or
                   <br />
-                  Supported formats: vis.js DataSet format with colored nodes and edges.
+                  drag and drop a JSON file to visualize a local graph.
                 </p>
               </div>
             </div>

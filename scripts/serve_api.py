@@ -65,6 +65,8 @@ def main(argv: list[str] | None = None) -> None:
     }
     if args.reload:
         kwargs["reload"] = True
+        kwargs["reload_dirs"] = ["src", "scripts"]
+        kwargs["reload_excludes"] = [".venv", "node_modules", "graphify-out", "__pycache__"]
     else:
         kwargs["workers"] = args.workers
 

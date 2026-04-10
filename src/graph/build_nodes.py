@@ -18,6 +18,7 @@ from src.graph.cypher_generator import generate_cypher
 from src.graph.cypher_healer import heal_cypher
 from src.graph.neo4j_client import Neo4jClient
 from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
+from src.utils.text_utils import normalize_concept_name
 from src.models.state import BuilderState
 from src.prompts.few_shot import load_cypher_examples
 from src.retrieval.embeddings import embed_text, get_embeddings
@@ -156,9 +157,12 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     cypher_failed: bool = state.get("cypher_failed", False)
     lazy_mode: bool = bool(state.get("use_lazy_extraction", get_settings().use_lazy_extraction))
 
+    # Normalize the concept name to Title Case before any graph writes
+    concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
+
     # Resolve entity early — needed for both LLM and fallback paths.
     resolved = _find_entity_for_concept(
-        proposal.mapped_concept or "", state.get("current_entities") or []
+        concept_name, state.get("current_entities") or []
     )
 
     if llm_cypher and not cypher_failed and not lazy_mode:
@@ -220,19 +224,19 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
         if proposal.mapped_concept:
             try:
                 model = get_embeddings()
-                vector = embed_text(proposal.mapped_concept, model=model)
+                vector = embed_text(concept_name, model=model)
                 client.execute_cypher(
                     "MATCH (c:BusinessConcept {name: $name}) SET c.embedding = $emb",
-                    {"name": proposal.mapped_concept, "emb": vector},
+                    {"name": concept_name, "emb": vector},
                 )
-                logger.info("Embedding set for BusinessConcept '%s'.", proposal.mapped_concept)
+                logger.info("Embedding set for BusinessConcept '%s'.", concept_name)
             except Exception as exc:
-                logger.warning("Could not set embedding for '%s': %s", proposal.mapped_concept, exc)
+                logger.warning("Could not set embedding for '%s': %s", concept_name, exc)
 
         # ── MENTIONS edges: link Chunk nodes to this BusinessConcept ──
         if proposal.mapped_concept:
             triplets = state.get("triplets") or []
-            concept_lower = proposal.mapped_concept.lower()
+            concept_lower = concept_name.lower()
             chunk_indexes: set[int] = set()
             for t in triplets:
                 if t.source_chunk_index is not None and (
@@ -246,17 +250,17 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                         "MATCH (ch:Chunk {chunk_index: idx}) "
                         "MATCH (bc:BusinessConcept {name: $concept}) "
                         "MERGE (ch)-[:MENTIONS]->(bc)",
-                        {"idxs": list(chunk_indexes), "concept": proposal.mapped_concept},
+                        {"idxs": list(chunk_indexes), "concept": concept_name},
                     )
                     logger.info(
                         "MENTIONS edges: %d chunks → '%s' (batch).",
                         len(chunk_indexes),
-                        proposal.mapped_concept,
+                        concept_name,
                     )
                 except Exception as exc:
                     logger.warning(
                         "Could not create MENTIONS edges → '%s': %s",
-                        proposal.mapped_concept,
+                        concept_name,
                         exc,
                     )
 

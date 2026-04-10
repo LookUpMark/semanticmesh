@@ -75,3 +75,8 @@ frontend/node_modules/
 
 # Frontend duplicate (empty scaffold — safe to delete)
 # frontend/frontend/
+
+graphify-out
+.obsidian
+raw
+.github

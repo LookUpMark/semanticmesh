@@ -439,7 +439,7 @@ function ResultsTab() {
               jobs.map((job: AblationJobResponse) => (
                 <TableRow key={job.job_id}>
                   <TableCell className="font-mono text-xs">
-                    {job.job_id.slice(0, 8)}...
+                    {job.job_id?.slice(0, 8) ?? "—"}...
                   </TableCell>
                   <TableCell className="text-sm font-medium">
                     {job.study_id}
@@ -481,7 +481,7 @@ function ResultsTab() {
             <CardTitle className="text-base">
               Result: {result.study_id}
             </CardTitle>
-            <CardDescription>Job {selectedJobId.slice(0, 12)}...</CardDescription>
+            <CardDescription>Job {selectedJobId?.slice(0, 12) ?? "—"}...</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {result.error && (

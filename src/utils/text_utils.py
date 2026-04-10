@@ -147,6 +147,116 @@ def clean_text(text: str) -> str:
     return normalized.strip(TRAILING_PUNCTUATION)
 
 
+#: Matches a camelCase or PascalCase transition (lowercase followed by uppercase).
+_CAMEL_SPLIT_RE: Final[re.Pattern[str]] = re.compile(r"([a-z])([A-Z])")
+
+#: English articles/determiners and common sentence-starter verbs to skip when
+#: extracting a noun phrase from a sentence-like concept name.
+_LEADING_SKIP_WORDS: Final[frozenset[str]] = frozenset({
+    "a", "an", "the", "this", "that", "these", "those",
+    "each", "every", "any", "some", "all",
+    "it", "its", "they", "their",
+    "is", "are", "was", "were", "be", "been",
+    "represents", "contains", "stores", "holds", "describes",
+    "indicates", "records", "defines", "specifies",
+})
+
+#: Regex to detect a sentence-like concept name: starts with a determiner/article
+#: or has a subordinating clause marker.
+_SENTENCE_MARKER_RE: Final[re.Pattern[str]] = re.compile(
+    r"^(a|an|the|this|that|each|every)\s+", re.IGNORECASE
+)
+
+
+def normalize_concept_name(name: str) -> str:
+    """Normalize a raw LLM-generated entity name to a short Title Case phrase.
+
+    Handles the following input forms:
+    - ``camelCase`` / ``PascalCase`` → splits on case boundary
+    - ``SNAKE_CASE`` / ``ALL_CAPS`` → splits on underscores
+    - Short noun phrase → collapses whitespace and applies Title Case
+    - **Sentence-like description** (≥ 5 words or starts with an article) →
+      extracts the core noun phrase using two strategies:
+
+      1. **Title-Case run extraction**: scans the sentence for consecutive
+         capitalised words (e.g. "Sales Order", "Product") and returns the
+         longest run of ≥ 2 words, or the first single capitalised word.
+      2. **Leading-word fallback**: strips leading articles/determiners and
+         takes the first 3 content words.
+
+    Args:
+        name: Raw entity name string from the LLM.
+
+    Returns:
+        Normalised, title-cased concept name of at most ~4 words.
+
+    Examples:
+        >>> normalize_concept_name("customerOrder")
+        'Customer Order'
+        >>> normalize_concept_name("CUSTOMER_ORDER_DETAIL")
+        'Customer Order Detail'
+        >>> normalize_concept_name(
+        ...     "a single line within a Sales Order specifying a Product"
+        ... )
+        'Sales Order'
+    """
+    if not name:
+        return name
+
+    # ── Step 1: split camelCase / PascalCase ──────────────────────────────────
+    name = _CAMEL_SPLIT_RE.sub(r"\1 \2", name)
+    # Replace underscores and dashes with spaces, strip punctuation
+    name = name.replace("_", " ").replace("-", " ")
+    name = SPACES_RE.sub(" ", name).strip().strip(".,;:!?\"'")
+
+    words = name.split()
+
+    # ── Step 2: if it's a short phrase (≤ 4 words), just Title-Case it ───────
+    if len(words) <= 4 and not _SENTENCE_MARKER_RE.match(name):
+        return name.title()
+
+    # ── Step 3: sentence-like → extract noun phrase ───────────────────────────
+    # Strategy A: find the longest run of consecutive Title-Case words
+    # that appear in the middle of the sentence (skip the very first word
+    # since it's always capitalised due to sentence start).
+    # A word is considered "Title Case in context" if the original had it
+    # capitalised (we peek at the raw words before .title()).
+    raw_words = name.split()
+    # Find runs of words that were originally capitalised (i.e. not all-lower)
+    runs: list[list[str]] = []
+    current_run: list[str] = []
+    for i, w in enumerate(raw_words):
+        clean_w = w.strip(".,;:!?\"'()")
+        is_cap = clean_w and clean_w[0].isupper() and i > 0  # skip first word
+        if is_cap and clean_w.lower() not in _LEADING_SKIP_WORDS:
+            current_run.append(clean_w)
+        else:
+            if current_run:
+                runs.append(current_run)
+            current_run = []
+    if current_run:
+        runs.append(current_run)
+
+    if runs:
+        # Pick the longest run; if tied, pick the first
+        best_run = max(runs, key=len)
+        candidate = " ".join(best_run[:4])  # cap at 4 words
+        if candidate:
+            return candidate.title()
+
+    # Strategy B: strip leading skip words and take first 3 content words
+    content_words = []
+    for w in raw_words:
+        clean_w = w.strip(".,;:!?\"'()")
+        if not content_words and clean_w.lower() in _LEADING_SKIP_WORDS:
+            continue
+        content_words.append(clean_w)
+        if len(content_words) >= 3:
+            break
+
+    return " ".join(content_words).title() if content_words else name.title()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Token Extraction Functions
 # ─────────────────────────────────────────────────────────────────────────────

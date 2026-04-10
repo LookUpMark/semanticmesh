@@ -260,7 +260,7 @@ function BuildMetricsCard({ jobId }: { jobId: string }) {
             </span>
           </div>
         </div>
-        <CardDescription>Job ID: {data.job_id.slice(0, 12)}...</CardDescription>
+        <CardDescription>Job ID: {data.job_id?.slice(0, 12) ?? "—"}...</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {data.error && (

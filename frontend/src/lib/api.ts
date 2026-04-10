@@ -8,6 +8,7 @@ import type {
   PipelineJobResponse,
   PipelineResultResponse,
   GraphStatsResponse,
+  GraphDataResponse,
   DemoJob,
   CustomAblationRequest,
   PresetAblationRequest,
@@ -147,6 +148,11 @@ export async function getGraphStats(): Promise<GraphStatsResponse> {
 
 export async function clearGraph(): Promise<{ nodes_deleted: number }> {
   const res = await api.delete("/demo/graph");
+  return res.data;
+}
+
+export async function getGraphData(): Promise<GraphDataResponse> {
+  const res = await api.get("/demo/graph/data");
   return res.data;
 }
 

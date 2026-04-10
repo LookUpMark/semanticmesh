@@ -165,7 +165,7 @@ function RecentJobsTable({ jobs, loading }: { jobs: DemoJob[]; loading: boolean 
               </div>
             </TableCell>
             <TableCell className="font-mono text-xs">
-              {job.job_id.slice(0, 8)}...
+              {job.job_id?.slice(0, 8) ?? "—"}...
             </TableCell>
             <TableCell className="text-sm">{job.study_id}</TableCell>
           </TableRow>

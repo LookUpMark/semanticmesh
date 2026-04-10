@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 
 from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
+from src.utils.text_utils import normalize_concept_name
 
 _UPSERT_CYPHER = """\
 MERGE (bc:BusinessConcept {name: $concept_name})
@@ -74,7 +75,7 @@ def build_upsert_cypher(
     column_types = json.dumps({c.name: c.data_type for c in table.columns})
 
     params: dict = {
-        "concept_name": proposal.mapped_concept or "Unknown",
+        "concept_name": normalize_concept_name(proposal.mapped_concept or "Unknown"),
         "definition": entity.definition if entity else "",
         "mapping_reasoning": proposal.reasoning or "",
         "provenance_text": entity.provenance_text if entity else "",

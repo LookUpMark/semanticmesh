@@ -573,7 +573,9 @@ def run_builder(
             # node_output is {node_name: state_delta}
             node_name = next(iter(node_output))
             _set_step(job_id, node_name)
-            final_state = {**final_state, **node_output[node_name]}
+            node_delta = node_output[node_name]
+            if node_delta is not None:
+                final_state = {**final_state, **node_delta}
     else:
         final_state = graph.invoke(initial, config=config)
 
