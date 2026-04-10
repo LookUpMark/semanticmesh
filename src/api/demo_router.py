@@ -7,7 +7,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+import threading
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running, set_step
 from src.evaluation.ablation_runner import _settings_override as _settings_override
@@ -233,9 +234,9 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
         "Returns a `job_id` — poll **GET /demo/build/{job_id}** for results."
     ),
 )
-def post_build(req: BuildRequest, background_tasks: BackgroundTasks) -> BuildResultResponse:
+def post_build(req: BuildRequest) -> BuildResultResponse:
     job_id = create_job(meta={"type": "build", "study_id": req.study_id})
-    background_tasks.add_task(_run_build_task, job_id, req)
+    threading.Thread(target=_run_build_task, args=(job_id, req), daemon=True).start()
     return BuildResultResponse(job_id=job_id, status="queued")  # type: ignore[arg-type]
 
 
@@ -251,7 +252,6 @@ def post_build(req: BuildRequest, background_tasks: BackgroundTasks) -> BuildRes
     ),
 )
 async def post_build_upload(
-    background_tasks: BackgroundTasks,
     doc_files: list[UploadFile] = File(..., description="Business documentation files (PDF, MD, TXT)."),
     ddl_files: list[UploadFile] = File(..., description="DDL SQL files to map onto the ontology."),
     clear_graph: bool = True,
@@ -269,7 +269,7 @@ async def post_build_upload(
             lazy_extraction=lazy_extraction,
         )
         job_id = create_job(meta={"type": "build", "study_id": study_id})
-        background_tasks.add_task(_run_build_task, job_id, req)
+        threading.Thread(target=_run_build_task, args=(job_id, req), daemon=True).start()
         return BuildResultResponse(job_id=job_id, status="queued")  # type: ignore[arg-type]
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Upload error: {exc}") from exc
@@ -380,11 +380,11 @@ def post_query(req: QueryRequest) -> QueryResponse:
         "Returns a `job_id` — poll **GET /demo/pipeline/{job_id}** for results."
     ),
 )
-def post_pipeline(req: PipelineRequest, background_tasks: BackgroundTasks) -> PipelineJobResponse:
+def post_pipeline(req: PipelineRequest) -> PipelineJobResponse:
     job_id = create_job(
         meta={"type": "pipeline", "study_id": req.study_id, "num_questions": len(req.questions)},
     )
-    background_tasks.add_task(_run_pipeline_task, job_id, req)
+    threading.Thread(target=_run_pipeline_task, args=(job_id, req), daemon=True).start()
     return PipelineJobResponse(job_id=job_id, status="queued", num_questions=len(req.questions))
 
 
@@ -399,7 +399,6 @@ def post_pipeline(req: PipelineRequest, background_tasks: BackgroundTasks) -> Pi
     ),
 )
 async def post_pipeline_upload(
-    background_tasks: BackgroundTasks,
     doc_files: list[UploadFile] = File(..., description="Business documentation files (PDF, MD, TXT)."),
     ddl_files: list[UploadFile] = File(..., description="DDL SQL files to map onto the ontology."),
     questions: list[str] = Form(..., description="One or more natural-language questions (send multiple 'questions' fields for a list)."),
@@ -423,7 +422,7 @@ async def post_pipeline_upload(
         job_id = create_job(
             meta={"type": "pipeline", "study_id": study_id, "num_questions": len(questions)},
         )
-        background_tasks.add_task(_run_pipeline_task, job_id, req)
+        threading.Thread(target=_run_pipeline_task, args=(job_id, req), daemon=True).start()
         return PipelineJobResponse(job_id=job_id, status="queued", num_questions=len(questions))
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Upload error: {exc}") from exc
