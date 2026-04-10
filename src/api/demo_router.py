@@ -16,12 +16,14 @@ from src.api.models import (
     BuildRequest,
     BuildResultResponse,
     GraphStatsResponse,
+    KGSnapshotMeta,
     PipelineConfig,
     PipelineJobResponse,
     PipelineRequest,
     PipelineResultResponse,
     QueryRequest,
     QueryResponse,
+    SaveSnapshotRequest,
 )
 
 router = APIRouter(prefix="/demo", tags=["E2E Demo"])
@@ -364,8 +366,18 @@ def post_query(req: QueryRequest) -> QueryResponse:
 
         env_overrides = req.config.to_env_overrides() if req.config else {}
         with _settings_override(env_overrides):
-            result = run_query(req.question)
-        return _query_result_to_response(result)
+            result = run_query(req.question, session_id=req.session_id)
+        r = _query_result_to_response(result)
+        return QueryResponse(
+            answer=r.answer,
+            sources=r.sources,
+            retrieval_quality_score=r.retrieval_quality_score,
+            retrieval_chunk_count=r.retrieval_chunk_count,
+            gate_decision=r.gate_decision,
+            grounded=r.grounded,
+            context_previews=r.context_previews,
+            session_id=req.session_id,
+        )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -653,4 +665,100 @@ def get_graph_data() -> dict:
         return {"nodes": nodes, "edges": edges}
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+
+
+# ── KG Snapshot endpoints ─────────────────────────────────────────────────────
+
+@router.get(
+    "/kg/snapshots",
+    response_model=list[KGSnapshotMeta],
+    summary="List saved Knowledge Graph snapshots",
+    description="Returns all named KG snapshots stored in the local registry.",
+)
+def list_kg_snapshots() -> list[KGSnapshotMeta]:
+    from src.graph.kg_registry import list_snapshots
+    return [KGSnapshotMeta(**s) for s in list_snapshots()]
+
+
+@router.get(
+    "/kg/snapshots/active",
+    response_model=KGSnapshotMeta | None,
+    summary="Get the currently loaded KG snapshot",
+    description="Returns metadata of the active snapshot, or null if none is loaded.",
+)
+def get_active_kg_snapshot() -> KGSnapshotMeta | None:
+    from src.graph.kg_registry import get_active_snapshot
+    snap = get_active_snapshot()
+    return KGSnapshotMeta(**snap) if snap else None
+
+
+@router.post(
+    "/kg/snapshots",
+    response_model=KGSnapshotMeta,
+    summary="Save the current KG as a named snapshot",
+    description=(
+        "Exports the live Neo4j graph to a JSON file and registers it with the given name. "
+        "The snapshot can be loaded later via **POST /demo/kg/snapshots/{id}/load**."
+    ),
+)
+def save_kg_snapshot(req: SaveSnapshotRequest) -> KGSnapshotMeta:
+    try:
+        from src.graph.kg_registry import save_snapshot
+        snap = save_snapshot(name=req.name, description=req.description)
+        return KGSnapshotMeta(**snap)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.post(
+    "/kg/snapshots/{snapshot_id}/load",
+    response_model=KGSnapshotMeta,
+    summary="Load a saved KG snapshot into Neo4j",
+    description=(
+        "Clears the current Neo4j graph and restores the selected snapshot. "
+        "Equivalent to 'loading a model' — only one KG can be active at a time. "
+        "Runs synchronously (may take a few seconds for large graphs)."
+    ),
+)
+def load_kg_snapshot(snapshot_id: str) -> KGSnapshotMeta:
+    try:
+        from src.graph.kg_registry import load_snapshot
+        snap = load_snapshot(snapshot_id)
+        return KGSnapshotMeta(**snap)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=410, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.post(
+    "/kg/snapshots/eject",
+    summary="Eject the active KG snapshot",
+    description=(
+        "Clears the active-snapshot pointer without modifying Neo4j. "
+        "Use this to signal that no named snapshot is currently loaded."
+    ),
+)
+def eject_kg_snapshot() -> dict[str, str]:
+    from src.graph.kg_registry import eject_snapshot
+    eject_snapshot()
+    return {"status": "ejected"}
+
+
+@router.delete(
+    "/kg/snapshots/{snapshot_id}",
+    summary="Delete a saved KG snapshot",
+    description="Removes the snapshot file and its registry entry. Cannot be undone.",
+)
+def delete_kg_snapshot(snapshot_id: str) -> dict[str, str]:
+    try:
+        from src.graph.kg_registry import delete_snapshot
+        delete_snapshot(snapshot_id)
+        return {"status": "deleted", "id": snapshot_id}
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from src.config.logging import get_logger
 from src.prompts.templates import (
@@ -85,6 +85,7 @@ def generate_answer(
     llm: LLMProtocol,
     critique: str | None = None,
     context_sufficiency: str = "insufficient",
+    history: list[BaseMessage] | None = None,
 ) -> str:
     """Generate a grounded natural-language answer from reranked context chunks.
 
@@ -92,11 +93,17 @@ def generate_answer(
     alternative ``ANSWER_WITH_CRITIQUE_USER`` template is used, which embeds the
     previous critique before the question so the model can correct its answer.
 
+    If ``history`` is provided, the last 20 messages (10 turns) of prior
+    conversation are injected between the system prompt and the current question
+    to enable multi-turn coherence.
+
     Args:
         query:    The user's natural-language question.
         chunks:   Reranked ``RetrievedChunk`` list.
         llm:      Reasoning LLM (temperature = ``settings.llm_temperature_generation``).
         critique: Optional Hallucination Grader critique from the previous attempt.
+        context_sufficiency: Retrieval quality label ("adequate" | "sparse" | "insufficient").
+        history:  Prior conversation turns as LangChain BaseMessage objects.
 
     Returns:
         The generated answer string.
@@ -123,17 +130,22 @@ def generate_answer(
         system_prompt = ANSWER_SYSTEM_INSUFFICIENT
 
     logger.debug(
-        "generate_answer: query='%s', %d chunks, critique=%s.",
+        "generate_answer: query='%s', %d chunks, critique=%s, history_turns=%d.",
         query[:60],
         len(chunks),
         "yes" if critique else "no",
+        len(history) if history else 0,
     )
-    response = llm.invoke(
-        [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt),
-        ]
-    )
+
+    def _build_messages(final_user_prompt: str) -> list:
+        """Assemble the message list with optional history injection."""
+        msgs: list = [SystemMessage(content=system_prompt)]
+        if history:
+            msgs.extend(history[-20:])  # cap at last 20 messages (10 turns)
+        msgs.append(HumanMessage(content=final_user_prompt))
+        return msgs
+
+    response = llm.invoke(_build_messages(user_prompt))
     answer: str = extract_text_content(response.content).strip()
 
     if _is_abstention(answer) and chunks:
@@ -154,12 +166,7 @@ def generate_answer(
                 hallucination_critique=corrective_critique,
                 user_query=query,
             )
-            second_response = llm.invoke(
-                [
-                    SystemMessage(content=system_prompt),
-                    HumanMessage(content=corrective_prompt),
-                ]
-            )
+            second_response = llm.invoke(_build_messages(corrective_prompt))
             answer = extract_text_content(second_response.content).strip()
 
     elif _is_partial_abstention(answer) and chunks:
@@ -181,12 +188,7 @@ def generate_answer(
                 hallucination_critique=partial_critique,
                 user_query=query,
             )
-            second_response = llm.invoke(
-                [
-                    SystemMessage(content=system_prompt),
-                    HumanMessage(content=partial_prompt),
-                ]
-            )
+            second_response = llm.invoke(_build_messages(partial_prompt))
             answer = extract_text_content(second_response.content).strip()
 
     logger.info("Answer generated (%d chars).", len(answer))

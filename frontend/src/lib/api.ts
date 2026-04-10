@@ -17,6 +17,8 @@ import type {
   AblationResultResponse,
   AblationMatrixEntry,
   AIJudgePayload,
+  KGSnapshotMeta,
+  SaveSnapshotRequest,
 } from "@/types/api";
 
 const api = axios.create({
@@ -208,4 +210,34 @@ export async function getAIJudgePayload(
 ): Promise<AIJudgePayload> {
   const res = await api.get(`/ablation/evaluate/${studyId}/${datasetId}`);
   return res.data;
+}
+
+// ── KG Snapshot API ─────────────────────────────────────────────────────────
+
+export async function listKGSnapshots(): Promise<KGSnapshotMeta[]> {
+  const res = await api.get("/demo/kg/snapshots");
+  return res.data;
+}
+
+export async function getActiveKGSnapshot(): Promise<KGSnapshotMeta | null> {
+  const res = await api.get("/demo/kg/snapshots/active");
+  return res.data;
+}
+
+export async function saveKGSnapshot(req: SaveSnapshotRequest): Promise<KGSnapshotMeta> {
+  const res = await api.post("/demo/kg/snapshots", req);
+  return res.data;
+}
+
+export async function loadKGSnapshot(snapshotId: string): Promise<KGSnapshotMeta> {
+  const res = await api.post(`/demo/kg/snapshots/${snapshotId}/load`);
+  return res.data;
+}
+
+export async function ejectKGSnapshot(): Promise<void> {
+  await api.post("/demo/kg/snapshots/eject");
+}
+
+export async function deleteKGSnapshot(snapshotId: string): Promise<void> {
+  await api.delete(`/demo/kg/snapshots/${snapshotId}`);
 }

@@ -617,6 +617,33 @@ class BuildResultResponse(BaseModel):
     )
 
 
+# ── KG Snapshot models ────────────────────────────────────────────────────────
+
+class KGSnapshotMeta(BaseModel):
+    """Metadata for a saved Knowledge Graph snapshot."""
+
+    id: str = Field(description="UUID of the snapshot.")
+    name: str = Field(description="Human-readable snapshot name.")
+    description: str = Field(default="", description="Optional description.")
+    created_at: str = Field(description="ISO-8601 UTC creation timestamp.")
+    node_count: int = Field(description="Number of nodes in the snapshot.")
+    edge_count: int = Field(description="Number of edges in the snapshot.")
+    is_active: bool = Field(description="Whether this snapshot is currently loaded in Neo4j.")
+
+
+class SaveSnapshotRequest(BaseModel):
+    """Request to save the current KG as a named snapshot."""
+
+    name: str = Field(
+        description="Human-readable name for this snapshot.",
+        examples=["E-Commerce v1", "Finance schema — April 2026"],
+    )
+    description: str = Field(
+        default="",
+        description="Optional longer description.",
+    )
+
+
 class QueryRequest(BaseModel):
     """Query the Knowledge Graph with a natural-language question."""
 
@@ -631,6 +658,12 @@ class QueryRequest(BaseModel):
         default=None,
         description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
     )
+    session_id: str | None = Field(
+        default=None,
+        description="Client-generated session UUID. The server uses it as LangGraph thread_id "
+                    "so the MemorySaver checkpoint carries the full conversation history "
+                    "server-side — no need to replay history in the request body.",
+    )
 
 
 class QueryResponse(BaseModel):
@@ -642,6 +675,10 @@ class QueryResponse(BaseModel):
     grounded: bool = Field(description="Whether the answer is verifiably grounded in context.")
     context_previews: list[str] = Field(
         description="First 3 context chunks (first 300 chars each).",
+    )
+    session_id: str | None = Field(
+        default=None,
+        description="Echo of the request session_id for client-side correlation.",
     )
 
 

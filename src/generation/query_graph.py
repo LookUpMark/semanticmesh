@@ -13,9 +13,11 @@ integrating nodes from:
 
 from __future__ import annotations
 
+import threading
 from typing import TYPE_CHECKING, Any
+from pathlib import Path
 
-from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import END, StateGraph
 
 # Re-export for backward compatibility with tests
@@ -46,6 +48,51 @@ if TYPE_CHECKING:
     import logging
 
 logger: logging.Logger = get_logger(__name__)
+
+_CONVERSATIONS_DB = Path(__file__).parent.parent.parent / "data" / "memory" / "conversations.db"
+
+
+def _make_checkpointer():
+    """Return a SqliteSaver backed by data/memory/conversations.db.
+
+    Falls back to in-process MemorySaver if the package is not installed,
+    so the server still starts without the optional dependency.
+    """
+    try:
+        import sqlite3
+        from langgraph.checkpoint.sqlite import SqliteSaver
+        _CONVERSATIONS_DB.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(_CONVERSATIONS_DB), check_same_thread=False)
+        return SqliteSaver(conn)
+    except ImportError:
+        from langgraph.checkpoint.memory import MemorySaver
+        logger.warning(
+            "langgraph-checkpoint-sqlite not installed — using in-memory checkpointer. "
+            "Run: pip install langgraph-checkpoint-sqlite"
+        )
+        return MemorySaver()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Singleton compiled graph
+# ─────────────────────────────────────────────────────────────────────────────
+# The same checkpointer instance must be reused across calls so that
+# checkpoints (= per-session conversation history) survive across requests.
+# build_query_graph() is called only once; tests may call it directly to
+# get a fresh graph with an isolated checkpointer.
+
+_QUERY_GRAPH: Any = None
+_GRAPH_LOCK = threading.Lock()
+
+
+def _get_query_graph():
+    """Return (and lazily build) the singleton compiled query graph."""
+    global _QUERY_GRAPH
+    if _QUERY_GRAPH is None:
+        with _GRAPH_LOCK:
+            if _QUERY_GRAPH is None:
+                _QUERY_GRAPH = build_query_graph()
+    return _QUERY_GRAPH
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -160,6 +207,8 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
     """Finalize query response and collect metadata for evaluation.
 
     Compiles the final answer with sources and retrieval metrics for RAGAS evaluation.
+    Also appends the accepted AIMessage to the LangGraph-native messages state so it
+    is persisted in the checkpoint and available as history for the next turn.
     """
     answer: str = state.get("current_answer") or ""
     gate_decision = state.get("retrieval_gate_decision", "proceed")
@@ -171,6 +220,9 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
     # retrieved_contexts: full texts used by RAGAS evaluation
     retrieved_contexts: list[str] = [c.text for c in generated_with if c.text]
     return {
+        # Persist accepted answer as AIMessage via add_messages reducer.
+        # Next invocation will see [..., HumanMessage(prev_q), AIMessage(prev_a), HumanMessage(curr_q)].
+        "messages": [AIMessage(content=answer)],
         "final_answer": answer,
         "sources": sources,
         "retrieved_contexts": retrieved_contexts,
@@ -251,7 +303,7 @@ def build_query_graph():
         },
     )
 
-    return graph.compile(checkpointer=MemorySaver())
+    return graph.compile(checkpointer=_make_checkpointer())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -275,6 +327,7 @@ def run_query(
     query_index: int = 0,
     builder_trace_id: str = "",
     study_id: str = "manual",
+    session_id: str | None = None,
 ) -> dict[str, Any]:
     """Convenience entry point: builds and runs the query graph for a single query.
 
@@ -318,12 +371,17 @@ def run_query(
         )
         logger.info(f"Query tracing enabled for query {query_index}")
 
-    graph = build_query_graph()
-    config = {"configurable": {"thread_id": f"query-run-{query_index}"}}
+    # Use the singleton graph so the MemorySaver persists checkpoints across calls.
+    # Tests that call build_query_graph() directly are unaffected (fresh graph).
+    graph = _get_query_graph()
+    thread_id = session_id if session_id else f"query-run-{query_index}"
+    config = {"configurable": {"thread_id": thread_id}}
     # Ensure schema (vector index) exists before querying.
     with Neo4jClient() as client:
         setup_schema(client)
     initial: QueryState = {
+        # Seed current user message; add_messages appends it to the checkpoint.
+        "messages": [HumanMessage(content=user_query)],
         "user_query": user_query,
         "iteration_count": 0,
         "retrieved_chunks": [],

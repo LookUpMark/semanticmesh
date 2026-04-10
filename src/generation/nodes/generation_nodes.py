@@ -20,6 +20,7 @@ from src.models.state import QueryState
 
 if TYPE_CHECKING:
     import logging
+    from langchain_core.messages import BaseMessage
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -148,6 +149,13 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
     generation_chunks = state.get("generation_chunks") or _compose_generation_chunks(query, chunks)
     critique: str | None = state.get("last_critique")
     sufficiency: str = state.get("context_sufficiency", "insufficient")
+
+    # Extract conversation history from LangGraph-native messages state.
+    # messages = [...prior turns..., HumanMessage(current_query)]
+    # History = everything except the last message (the current user query).
+    all_messages: list[BaseMessage] = list(state.get("messages") or [])
+    history: list[BaseMessage] | None = all_messages[:-1] if len(all_messages) > 1 else None
+
     if generation_chunks and sufficiency != "adequate":
         logger.warning(
             "Generating answer with %s context (chunks=%d).",
@@ -160,6 +168,7 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
         llm,
         critique=critique,
         context_sufficiency=sufficiency,
+        history=history,
     )
     iteration = state.get("iteration_count", 0) + 1
     return {

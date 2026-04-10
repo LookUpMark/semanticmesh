@@ -266,10 +266,12 @@ def build_builder_graph(*, production: bool = False):
     # Checkpointer
     if production:
         try:
+            import sqlite3
             from langgraph.checkpoint.sqlite import SqliteSaver
 
             settings = get_settings()
-            checkpointer = SqliteSaver.from_conn_string(settings.sqlite_checkpoint_path)
+            conn = sqlite3.connect(settings.sqlite_checkpoint_path, check_same_thread=False)
+            checkpointer = SqliteSaver(conn)
         except ImportError:
             logger.warning("SqliteSaver not available — falling back to MemorySaver.")
             checkpointer = MemorySaver()

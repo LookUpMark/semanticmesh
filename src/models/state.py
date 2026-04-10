@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Annotated, Any, TypedDict
+
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 
 from src.models.schemas import (
     Chunk,
@@ -54,6 +57,11 @@ class BuilderState(TypedDict, total=False):
 
 class QueryState(TypedDict, total=False):
     """Mutable state flowing through the Query/Answer graph."""
+
+    # ── Conversation memory (LangGraph-native: add_messages reducer) ─────────
+    # Accumulates across checkpoints keyed by thread_id (= session_id).
+    # Each turn appends HumanMessage (initial state) + AIMessage (_node_finalise).
+    messages: Annotated[list[BaseMessage], add_messages]
 
     user_query: str
     retrieved_chunks: list[RetrievedChunk]

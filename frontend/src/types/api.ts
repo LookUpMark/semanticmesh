@@ -86,6 +86,7 @@ export interface BuildResultResponse {
 export interface QueryRequest {
   question: string;
   config?: PipelineConfig | null;
+  session_id?: string | null;
 }
 
 export interface QueryResponse {
@@ -96,6 +97,7 @@ export interface QueryResponse {
   gate_decision: string;
   grounded: boolean;
   context_previews: string[];
+  session_id?: string | null;
 }
 
 export interface PipelineRequest {
@@ -240,6 +242,22 @@ export interface AblationMatrixEntry {
 // ── Health ──────────────────────────────────────────────────────────────────
 export interface HealthResponse {
   status: string;
+}
+
+// ── KG Snapshots ─────────────────────────────────────────────────────────────
+export interface KGSnapshotMeta {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  node_count: number;
+  edge_count: number;
+  is_active: boolean;
+}
+
+export interface SaveSnapshotRequest {
+  name: string;
+  description?: string;
 }
 
 // ── AI Judge ────────────────────────────────────────────────────────────────
