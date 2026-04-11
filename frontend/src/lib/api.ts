@@ -2,6 +2,8 @@ import axios from "axios";
 import type {
   BuildRequest,
   BuildResultResponse,
+  ConversationDetail,
+  ConversationMeta,
   QueryRequest,
   QueryResponse,
   PipelineRequest,
@@ -18,7 +20,10 @@ import type {
   AblationMatrixEntry,
   AIJudgePayload,
   KGSnapshotMeta,
+  RenameSnapshotRequest,
   SaveSnapshotRequest,
+  SaveConversationRequest,
+  RenameConversationRequest,
 } from "@/types/api";
 
 const api = axios.create({
@@ -240,4 +245,45 @@ export async function ejectKGSnapshot(): Promise<void> {
 
 export async function deleteKGSnapshot(snapshotId: string): Promise<void> {
   await api.delete(`/demo/kg/snapshots/${snapshotId}`);
+}
+
+export async function renameKGSnapshot(
+  snapshotId: string,
+  req: RenameSnapshotRequest
+): Promise<KGSnapshotMeta> {
+  const res = await api.patch(`/demo/kg/snapshots/${snapshotId}`, req);
+  return res.data;
+}
+
+// ── Streaming Query ──────────────────────────────────────────────────────────
+
+// ── Conversations ────────────────────────────────────────────────────────────
+
+export async function listConversations(): Promise<ConversationMeta[]> {
+  const res = await api.get("/demo/conversations");
+  return res.data;
+}
+
+export async function getConversation(id: string): Promise<ConversationDetail> {
+  const res = await api.get(`/demo/conversations/${id}`);
+  return res.data;
+}
+
+export async function saveConversation(
+  req: SaveConversationRequest
+): Promise<ConversationMeta> {
+  const res = await api.post("/demo/conversations", req);
+  return res.data;
+}
+
+export async function renameConversation(
+  id: string,
+  req: RenameConversationRequest
+): Promise<ConversationMeta> {
+  const res = await api.patch(`/demo/conversations/${id}`, req);
+  return res.data;
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  await api.delete(`/demo/conversations/${id}`);
 }

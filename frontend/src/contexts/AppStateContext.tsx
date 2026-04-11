@@ -79,6 +79,8 @@ interface AppState {
   clearQueryMessages: () => void;
   sessionId: string;
   resetSession: () => void;
+  /** Load a saved conversation: replaces messages and sets the session ID. */
+  loadConversation: (sessionId: string, messages: ChatMessage[]) => void;
 
   // KG Builder page
   activeBuildJobId: string | null;
@@ -122,6 +124,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(CHAT_HISTORY_KEY);
   }, []);
 
+  /** Load a saved conversation — restores session ID and message history. */
+  const loadConversation = useCallback(
+    (savedSessionId: string, messages: ChatMessage[]) => {
+      localStorage.setItem(SESSION_ID_KEY, savedSessionId);
+      setSessionId(savedSessionId);
+      const safe = messages.filter((m) => !m.isLoading);
+      setQueryMessagesRaw(safe);
+      saveMessages(safe);
+    },
+    [],
+  );
+
   // Persist job ID in sessionStorage so a hard-reload on the same tab shows it
   const [activeBuildJobId, setActiveBuildJobIdState] = useState<string | null>(
     () => sessionStorage.getItem("active_build_job_id"),
@@ -144,6 +158,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         clearQueryMessages,
         sessionId,
         resetSession,
+        loadConversation,
         activeBuildJobId,
         setActiveBuildJobId,
       }}

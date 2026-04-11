@@ -494,3 +494,51 @@ def delete_snapshot(snapshot_id: str) -> None:
     if path.exists():
         path.unlink()
     logger.info("Snapshot '%s' deleted.", snapshot_id)
+
+
+def rename_snapshot(
+    snapshot_id: str,
+    name: str,
+    description: str | None = None,
+) -> dict[str, Any]:
+    """Update the name and optionally the description of an existing snapshot.
+
+    Args:
+        snapshot_id: UUID of the snapshot to rename.
+        name: New human-readable name.
+        description: New description. If ``None``, the existing value is kept.
+
+    Returns:
+        Updated snapshot metadata dict.
+
+    Raises:
+        ValueError: If the snapshot does not exist.
+    """
+    with _db() as conn:
+        row = conn.execute(
+            "SELECT id, name, description, created_at, node_count, edge_count "
+            "FROM kg_snapshots WHERE id = ?",
+            (snapshot_id,),
+        ).fetchone()
+        if row is None:
+            raise ValueError(f"Snapshot '{snapshot_id}' not found.")
+
+        new_desc = description if description is not None else row["description"]
+        conn.execute(
+            "UPDATE kg_snapshots SET name = ?, description = ? WHERE id = ?",
+            (name, new_desc, snapshot_id),
+        )
+
+        active_row = conn.execute("SELECT snapshot_id FROM kg_active WHERE singleton=1").fetchone()
+        active_id = active_row["snapshot_id"] if active_row else None
+
+    logger.info("Snapshot '%s' renamed to '%s'.", snapshot_id, name)
+    return {
+        "id": snapshot_id,
+        "name": name,
+        "description": new_desc,
+        "created_at": row["created_at"],
+        "node_count": row["node_count"],
+        "edge_count": row["edge_count"],
+        "is_active": snapshot_id == active_id,
+    }
