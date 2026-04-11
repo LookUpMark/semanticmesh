@@ -6,8 +6,9 @@ import {
   loadKGSnapshot,
   ejectKGSnapshot,
   deleteKGSnapshot,
+  renameKGSnapshot,
 } from "@/lib/api";
-import type { SaveSnapshotRequest } from "@/types/api";
+import type { SaveSnapshotRequest, RenameSnapshotRequest } from "@/types/api";
 import { toast } from "sonner";
 
 export function useKGSnapshots() {
@@ -79,5 +80,19 @@ export function useDeleteKGSnapshot() {
       toast.success("Snapshot deleted");
     },
     onError: (err: Error) => toast.error("Delete failed: " + err.message),
+  });
+}
+
+export function useRenameKGSnapshot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, req }: { id: string; req: RenameSnapshotRequest }) =>
+      renameKGSnapshot(id, req),
+    onSuccess: (snap) => {
+      qc.invalidateQueries({ queryKey: ["kgSnapshots"] });
+      qc.invalidateQueries({ queryKey: ["kgActiveSnapshot"] });
+      toast.success(`Snapshot renamed to "${snap.name}"`);
+    },
+    onError: (err: Error) => toast.error("Rename failed: " + err.message),
   });
 }

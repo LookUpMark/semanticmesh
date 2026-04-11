@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGraphStats } from "@/hooks/useGraphStats";
 import { getGraphData } from "@/lib/api";
+import { KGSnapshotManager } from "@/components/KGSnapshotManager";
 
 // ── Theme Colors ──────────────────────────────────────────────────────────────
 const THEME = {
@@ -583,6 +584,26 @@ export function GraphVisualizationPage() {
   );
 
   // ── Init: load real graph data from backend ─────────────────────────────────
+  const loadGraphData = useCallback(() => {
+    setLoading(true);
+    getGraphData()
+      .then(({ nodes, edges }) => {
+        setAllNodes(nodes);
+        setAllEdges(edges);
+        if (nodes.length > 0) {
+          buildNetworkIncremental(nodes, edges);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        setAllNodes([]);
+        setAllEdges([]);
+        setLoading(false);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildNetworkIncremental]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -865,6 +886,11 @@ export function GraphVisualizationPage() {
                   </div>
                 ))}
             </div>
+
+            <Separator className="my-3" />
+
+            {/* KG Snapshot Manager */}
+            <KGSnapshotManager variant="panel" onLoad={loadGraphData} />
 
             <Separator className="my-3" />
 

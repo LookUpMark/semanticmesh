@@ -15,6 +15,8 @@ from src.evaluation.ablation_runner import _settings_override as _settings_overr
 from src.api.models import (
     BuildRequest,
     BuildResultResponse,
+    ConversationDetail,
+    ConversationMeta,
     GraphStatsResponse,
     KGSnapshotMeta,
     PipelineConfig,
@@ -23,6 +25,9 @@ from src.api.models import (
     PipelineResultResponse,
     QueryRequest,
     QueryResponse,
+    RenameConversationRequest,
+    RenameSnapshotRequest,
+    SaveConversationRequest,
     SaveSnapshotRequest,
 )
 
@@ -757,6 +762,104 @@ def delete_kg_snapshot(snapshot_id: str) -> dict[str, str]:
         from src.graph.kg_registry import delete_snapshot
         delete_snapshot(snapshot_id)
         return {"status": "deleted", "id": snapshot_id}
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.patch(
+    "/kg/snapshots/{snapshot_id}",
+    response_model=KGSnapshotMeta,
+    summary="Rename / update a KG snapshot",
+    description="Update the name and/or description of an existing snapshot.",
+)
+def rename_kg_snapshot(snapshot_id: str, req: RenameSnapshotRequest) -> KGSnapshotMeta:
+    try:
+        from src.graph.kg_registry import rename_snapshot
+        snap = rename_snapshot(snapshot_id, req.name, req.description)
+        return KGSnapshotMeta(**snap)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+# ── Conversation endpoints ────────────────────────────────────────────────────
+
+@router.get(
+    "/conversations",
+    response_model=list[ConversationMeta],
+    summary="List saved conversations",
+    description="Returns all saved chat conversations ordered by last update.",
+)
+def list_conversations() -> list[ConversationMeta]:
+    from src.graph.conversation_registry import list_conversations as _list
+    return [ConversationMeta(**c) for c in _list()]
+
+
+@router.get(
+    "/conversations/{conversation_id}",
+    response_model=ConversationDetail,
+    summary="Get a saved conversation",
+    description="Returns the full message history for a saved conversation.",
+)
+def get_conversation(conversation_id: str) -> ConversationDetail:
+    from src.graph.conversation_registry import get_conversation as _get
+    try:
+        conv = _get(conversation_id)
+        return ConversationDetail(**conv)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post(
+    "/conversations",
+    response_model=ConversationMeta,
+    summary="Save a conversation",
+    description="Persist a chat conversation (session ID + messages) for later retrieval.",
+)
+def save_conversation(req: SaveConversationRequest) -> ConversationMeta:
+    from src.graph.conversation_registry import save_conversation as _save
+    try:
+        conv = _save(
+            session_id=req.session_id,
+            title=req.title,
+            messages=req.messages,
+            active_snapshot_id=req.active_snapshot_id,
+        )
+        return ConversationMeta(**conv)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.patch(
+    "/conversations/{conversation_id}",
+    response_model=ConversationMeta,
+    summary="Rename a conversation",
+    description="Update the title of a saved conversation.",
+)
+def rename_conversation(conversation_id: str, req: RenameConversationRequest) -> ConversationMeta:
+    from src.graph.conversation_registry import rename_conversation as _rename
+    try:
+        conv = _rename(conversation_id, req.title)
+        return ConversationMeta(**conv)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.delete(
+    "/conversations/{conversation_id}",
+    summary="Delete a conversation",
+    description="Remove a saved conversation permanently.",
+)
+def delete_conversation(conversation_id: str) -> dict[str, str]:
+    from src.graph.conversation_registry import delete_conversation as _delete
+    try:
+        _delete(conversation_id)
+        return {"status": "deleted", "id": conversation_id}
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001

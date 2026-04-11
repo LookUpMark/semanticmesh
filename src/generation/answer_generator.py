@@ -145,6 +145,8 @@ def generate_answer(
         msgs.append(HumanMessage(content=final_user_prompt))
         return msgs
 
+    # ── Primary generation ────────────────────────────────────────────────────
+
     response = llm.invoke(_build_messages(user_prompt))
     answer: str = extract_text_content(response.content).strip()
 

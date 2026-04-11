@@ -260,6 +260,44 @@ export interface SaveSnapshotRequest {
   description?: string;
 }
 
+export interface RenameSnapshotRequest {
+  name: string;
+  description?: string | null;
+}
+
+// ── Conversations ─────────────────────────────────────────────────────────────
+export interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+  metadata?: QueryResponse | null;
+}
+
+export interface ConversationMeta {
+  id: string;
+  title: string;
+  session_id: string;
+  preview: string;
+  message_count: number;
+  active_snapshot_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationDetail extends ConversationMeta {
+  messages: ConversationMessage[];
+}
+
+export interface SaveConversationRequest {
+  session_id: string;
+  title?: string;
+  messages: ConversationMessage[];
+  active_snapshot_id?: string | null;
+}
+
+export interface RenameConversationRequest {
+  title: string;
+}
+
 // ── AI Judge ────────────────────────────────────────────────────────────────
 export interface AIJudgePayload {
   system_prompt: string;
