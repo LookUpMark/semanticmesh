@@ -1,0 +1,43 @@
+# Cache and dependencies
+data/hf_cache
+node_modules
+venv
+.venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Generated and build artifacts
+graphify-out
+dist
+build
+*.egg-info
+.pytest_cache
+.coverage
+htmlcov
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.github
+
+# Claude
+.claude
+
+# Logs
+*.log
+
+# Test fixtures that are duplicates
+notebooks/ablation/ablation_results/**/ai_judge*.md
