@@ -478,6 +478,9 @@ def run_query(
         "semantic_verification_overlap": result.get("semantic_verification_overlap", 1.0),
         "semantic_verification_passed": result.get("semantic_verification_passed", True),
         "semantic_verification_warning": result.get("semantic_verification_warning"),
+        "grader_grounded": bool(
+            getattr(result.get("grader_decision"), "grounded", True)
+        ),
         "grader_consistency_valid": result.get("grader_consistency_valid", True),
         "grader_rejection_count": result.get("grader_rejection_count", 0),
     }
