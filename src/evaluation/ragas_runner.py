@@ -179,12 +179,24 @@ def _build_trace_diagnostics(
 
 
 def _load_dataset(dataset_path: Path) -> list[dict[str, Any]]:
-    """Load and validate the gold-standard QA dataset JSON file."""
-    with dataset_path.open("r", encoding="utf-8") as f:
-        data = json.load(f)
-    if not isinstance(data, list):
-        raise ValueError(f"Expected a JSON array in {dataset_path}, got {type(data).__name__}")
-    return data
+    """Load and normalize the gold-standard QA dataset JSON file.
+
+    Handles both bare JSON arrays (legacy RAGAS format) and dict-wrapped
+    formats (``{"pairs": [...]}``, ``{"qa_pairs": [...]}``, etc.).
+    """
+    from src.evaluation.gold_standard_loader import load_gold_standard  # noqa: PLC0415
+
+    _meta, normalized_pairs = load_gold_standard(dataset_path)
+
+    # Convert to RAGAS-expected flat schema for backward compatibility.
+    return [
+        {
+            "question": p["question"],
+            "ground_truth": p.get("expected_answer", ""),
+            "ground_truth_contexts": [],
+        }
+        for p in normalized_pairs
+    ]
 
 
 def _run_pipeline_on_sample(

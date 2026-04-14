@@ -45,7 +45,11 @@ def evaluate_bundle(bundle_path: Path, judge_model: str, system_prompt: str) -> 
     """Call the AI judge for a single evaluation bundle."""
     from openai import OpenAI
 
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
+    base_url = None
+    if not os.environ.get("OPENAI_API_KEY") and os.environ.get("OPENROUTER_API_KEY"):
+        base_url = "https://openrouter.ai/api/v1"
+    client = OpenAI(api_key=api_key, base_url=base_url)
 
     bundle_text = bundle_path.read_text(encoding="utf-8")
     user_msg = (

@@ -162,38 +162,51 @@ def _default_run_tag(dataset_path: Path | None, use_smoke_fixtures: bool) -> str
     return f"{ds}.{profile}"
 
 
-def _load_query_questions(dataset_path: Path | None, max_samples: int | None) -> list[str]:
-    """Load query questions from dataset and apply sample cap, with fallback."""
+def _load_query_pairs(
+    dataset_path: Path | None, max_samples: int | None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Load normalized QA pairs from gold standard, with fallback to TEST_QUESTIONS.
+
+    Returns ``(dataset_metadata, pairs)`` where each pair has canonical
+    fields (query_id, question, expected_answer, expected_sources,
+    query_type, difficulty).
+    """
+    _fallback_pairs = [
+        {
+            "query_id": f"TQ{i + 1:03d}",
+            "question": q,
+            "expected_answer": "",
+            "expected_sources": [],
+            "query_type": "unknown",
+            "difficulty": "unknown",
+        }
+        for i, q in enumerate(TEST_QUESTIONS)
+    ]
+
     if dataset_path is None:
-        return list(TEST_QUESTIONS)
+        return {}, _fallback_pairs
 
     try:
-        from src.evaluation.ragas_runner import _load_dataset  # noqa: PLC0415
+        from src.evaluation.gold_standard_loader import load_gold_standard  # noqa: PLC0415
 
-        dataset = _load_dataset(dataset_path)
+        metadata, pairs = load_gold_standard(dataset_path)
         if max_samples is not None and max_samples > 0:
-            dataset = dataset[:max_samples]
-        questions = [str(sample.get("question", "")).strip() for sample in dataset]
-        questions = [q for q in questions if q]
-        if questions:
-            logger.info(
-                "Loaded %d query questions from dataset '%s'.",
-                len(questions),
-                dataset_path,
-            )
-            return questions
+            pairs = pairs[:max_samples]
+        if pairs:
+            logger.info("Loaded %d QA pairs from '%s'.", len(pairs), dataset_path)
+            return metadata, pairs
         logger.warning(
-            "Dataset '%s' produced no valid questions; falling back to default test questions.",
+            "Dataset '%s' produced no valid pairs; falling back to default test questions.",
             dataset_path,
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning(
-            "Failed loading dataset questions from '%s' (%s); falling back to default test questions.",
+            "Failed loading dataset from '%s' (%s); falling back to default test questions.",
             dataset_path,
             exc,
         )
 
-    return list(TEST_QUESTIONS)
+    return {}, _fallback_pairs
 
 
 # ── Study execution ─────────────────────────────────────────────────────────────
@@ -317,56 +330,116 @@ def run_ablation_study(
 
             # ── 2. Query Graph ─────────────────────────────────────────────────
             from src.generation.query_graph import run_query  # noqa: E402
+            from src.utils.text_utils import normalize_source_name  # noqa: E402
 
             print("\n[2/2] Query Graph …")
             t1 = time.time()
-            questions = _load_query_questions(dataset_path=dataset_path, max_samples=max_samples)
-            if not questions:
+            ds_metadata, pairs = _load_query_pairs(
+                dataset_path=dataset_path, max_samples=max_samples,
+            )
+            if not pairs:
                 raise ValueError(
                     "Query phase has no questions to evaluate (empty dataset and empty fallback)."
                 )
 
             grounded_count = 0
-            results = []
+            per_question: list[dict[str, Any]] = []
+            gt_coverages: list[float] = []
+            top_scores: list[float] = []
+            chunk_counts: list[int] = []
+
             query_trace_file = study_dir / "traces" / f"{study_id}.{tag}.query_trace.jsonl"
-            with query_trace_file.open("w", encoding="utf-8") as qtf:
-                pass
-            for i, q in enumerate(questions, 1):
-                r = run_query(q)
+            query_trace_file.write_text("", encoding="utf-8")
+
+            for i, pair in enumerate(pairs, 1):
+                question = pair.get("question", "")
+                r = run_query(question)
                 answer = r.get("final_answer", "")
                 sources = list(r.get("sources", []))
                 retrieved_contexts = list(r.get("retrieved_contexts", []))
-                grounded = bool(
-                    answer
-                    and answer.strip()
-                    and not answer.strip().lower().startswith("i cannot")
-                    and not answer.strip().lower().startswith("i don't")
-                )
+
+                # Grounded: use grader_grounded from pipeline, fallback to heuristic
+                grounded = bool(r.get("grader_grounded", True))
+                if not grounded:
+                    grounded = bool(
+                        answer
+                        and answer.strip()
+                        and not answer.strip().lower().startswith("i cannot")
+                        and not answer.strip().lower().startswith("i don't")
+                    )
+
+                # Ground-truth coverage: how many expected_sources appear in retrieved
+                expected_sources = pair.get("expected_sources", [])
+                covered_sources: list[str] = []
+                gt_coverage = 0.0
+                if expected_sources:
+                    norm_retrieved = {
+                        normalize_source_name(s) for s in sources if s
+                    }
+                    for es in expected_sources:
+                        if normalize_source_name(str(es)) in norm_retrieved:
+                            covered_sources.append(str(es))
+                    gt_coverage = len(covered_sources) / len(expected_sources)
+
+                gt_coverages.append(gt_coverage)
+                top_scores.append(r.get("retrieval_quality_score", 0.0))
+                chunk_counts.append(r.get("retrieval_chunk_count", 0))
                 grounded_count += int(grounded)
+
                 mark = "✅" if grounded else "❌"
-                results.append((q, answer, grounded))
-                print(f"\n    [{i}/{len(questions)}] {mark}  Q: {q}")
+                print(f"\n    [{i}/{len(pairs)}] {mark}  Q: {question}")
                 print(f"         A: {answer[:120]}{'…' if len(answer) > 120 else ''}")
+                if gt_coverage > 0:
+                    print(f"         GT coverage: {gt_coverage:.2f} ({len(covered_sources)}/{len(expected_sources)})")
                 logger.info(
-                    "Query trace %d/%d | q='%s' | answer_chars=%d | sources=%d | contexts=%d",
-                    i,
-                    len(questions),
-                    q[:80],
-                    len(answer),
-                    len(sources),
+                    "Query %d/%d | grounded=%s | gt_cov=%.2f | sources=%d | contexts=%d",
+                    i, len(pairs), grounded, gt_coverage, len(sources),
                     len(retrieved_contexts),
                 )
+
+                # Per-question record (for AI judge)
+                per_question.append({
+                    "query_id": pair.get("query_id", f"Q{i:03d}"),
+                    "question": question,
+                    "expected_answer": pair.get("expected_answer", ""),
+                    "generated_answer": answer,
+                    "expected_sources": expected_sources,
+                    "covered_sources": covered_sources,
+                    "gt_coverage": round(gt_coverage, 4),
+                    "sources": sources,
+                    "retrieved_contexts": retrieved_contexts,
+                    "grounded": grounded,
+                    "query_type": pair.get("query_type", "unknown"),
+                    "difficulty": pair.get("difficulty", "unknown"),
+                    "retrieval_quality_score": r.get("retrieval_quality_score", 0.0),
+                    "retrieval_chunk_count": r.get("retrieval_chunk_count", 0),
+                    "retrieval_gate_decision": r.get("retrieval_gate_decision", "proceed"),
+                    "context_sufficiency": r.get("context_sufficiency", "insufficient"),
+                    "grader_consistency_valid": r.get("grader_consistency_valid", True),
+                    "grader_rejection_count": r.get("grader_rejection_count", 0),
+                })
+
+                # JSONL trace
                 with query_trace_file.open("a", encoding="utf-8") as qtf:
                     qtf.write(
                         json.dumps(
                             {
                                 "study_id": study_id,
                                 "index": i,
-                                "question": q,
+                                "query_id": pair.get("query_id", f"Q{i:03d}"),
+                                "question": question,
+                                "expected_answer": pair.get("expected_answer", ""),
+                                "expected_sources": expected_sources,
+                                "covered_sources": covered_sources,
+                                "gt_coverage": round(gt_coverage, 4),
                                 "final_answer": answer,
                                 "sources": sources,
                                 "retrieved_contexts": retrieved_contexts,
                                 "grounded": grounded,
+                                "query_type": pair.get("query_type", "unknown"),
+                                "difficulty": pair.get("difficulty", "unknown"),
+                                "retrieval_quality_score": r.get("retrieval_quality_score", 0.0),
+                                "retrieval_gate_decision": r.get("retrieval_gate_decision", "proceed"),
                                 "timestamp": datetime.now(tz=UTC).isoformat(),
                             },
                             ensure_ascii=False,
@@ -375,8 +448,14 @@ def run_ablation_study(
                     )
 
             query_elapsed = time.time() - t1
+            avg_gt_coverage = sum(gt_coverages) / len(gt_coverages) if gt_coverages else 0.0
+            avg_top_score = sum(top_scores) / len(top_scores) if top_scores else 0.0
+            avg_chunk_count = sum(chunk_counts) / len(chunk_counts) if chunk_counts else 0.0
+
             print(f"\n    Query elapsed   : {query_elapsed:.1f} s")
-            print(f"    Grounded        : {grounded_count} / {len(questions)}")
+            print(f"    Grounded        : {grounded_count} / {len(pairs)}")
+            print(f"    Avg GT coverage : {avg_gt_coverage:.3f}")
+            print(f"    Avg top score   : {avg_top_score:.3f}")
             print(f"    Query trace     : {query_trace_file}")
 
             # ── 3. RAGAS Evaluation (optional) ─────────────────────────────────
@@ -426,7 +505,7 @@ def run_ablation_study(
                 len(triplets) > 0
                 and len(completed) == len(tables)
                 and not failed
-                and grounded_count == len(questions)
+                and grounded_count == len(pairs)
             )
 
             print()
@@ -436,6 +515,55 @@ def run_ablation_study(
             print(f"  Total    : {total_elapsed:.1f} s")
             print(sep())
 
+            # ── Write evaluation bundle ────────────────────────────────────────
+            from src.evaluation.bundle_writer import write_evaluation_bundle  # noqa: E402
+
+            dataset_id = dataset_path.stem if dataset_path else "unknown"
+            config_snapshot = {
+                "reasoning_model": os.environ.get("LLM_MODEL_REASONING", "?"),
+                "extraction_model": os.environ.get("LLM_MODEL_EXTRACTION", "?"),
+                "study_id": study_id,
+                "env_overrides": env_overrides,
+                "run_ragas": study_run_ragas,
+                "fixture_profile": profile,
+                "skip_builder": skip_builder,
+                "max_samples": max_samples,
+            }
+            builder_info = {
+                "triplets_extracted": len(triplets),
+                "entities_resolved": len(entities),
+                "tables_parsed": len(tables),
+                "tables_completed": len(completed),
+                "cypher_failed": bool(failed),
+                "elapsed_s": round(builder_elapsed, 1),
+            }
+            query_summary = {
+                "total_questions": len(pairs),
+                "grounded_count": grounded_count,
+                "grounded_rate": round(grounded_count / len(pairs), 4) if pairs else 0.0,
+                "abstained_count": sum(
+                    1 for pq in per_question if pq.get("retrieval_gate_decision") == "abstain_early"
+                ),
+                "avg_gt_coverage": round(avg_gt_coverage, 4),
+                "avg_top_score": round(avg_top_score, 4),
+                "avg_chunk_count": round(avg_chunk_count, 2),
+                "elapsed_s": round(query_elapsed, 1),
+            }
+
+            bundle_path = write_evaluation_bundle(
+                output_dir=study_dir / "runs",
+                study_id=study_id,
+                dataset_id=dataset_id,
+                dataset_info=ds_metadata,
+                config=config_snapshot,
+                builder_info=builder_info,
+                query_summary=query_summary,
+                per_question=per_question,
+                ragas_metrics=ragas_metrics,
+            )
+            print(f"\n  Bundle saved to : {bundle_path}")
+
+            # Keep flat JSON result for backward compat
             result = {
                 "study_id": study_id,
                 "success": True,
@@ -449,7 +577,10 @@ def run_ablation_study(
                 "tables_completed": len(completed),
                 "cypher_failed": bool(failed),
                 "grounded_count": grounded_count,
-                "question_count": len(questions),
+                "grounded_rate": query_summary["grounded_rate"],
+                "avg_gt_coverage": query_summary["avg_gt_coverage"],
+                "avg_top_score": query_summary["avg_top_score"],
+                "question_count": len(pairs),
                 "positive": bool(positive),
                 "ragas": ragas_metrics,
                 "ragas_diagnostics": ragas_diagnostics,
@@ -463,12 +594,12 @@ def run_ablation_study(
                 "timestamp": datetime.now(tz=UTC).isoformat(),
             }
 
-            # Save JSON result
+            # Save flat JSON result
             json_file = study_dir / "runs" / f"{study_id}.{tag}.json"
             with json_file.open("w", encoding="utf-8") as f:
                 json.dump(result, f, indent=2)
-            print(f"\n  Result saved to: {json_file}")
-            print(f"  Log saved to:    {log_file}")
+            print(f"  Result saved to : {json_file}")
+            print(f"  Log saved to    : {log_file}")
 
         finally:
             # Restore environment
