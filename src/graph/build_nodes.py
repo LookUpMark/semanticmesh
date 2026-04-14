@@ -43,6 +43,30 @@ def _find_entity_for_concept(concept_name: str, entities: list[Entity]) -> Entit
     return None
 
 
+def _entity_from_table(concept_name: str, table: EnrichedTableSchema) -> Entity:
+    """Build a best-effort Entity from table metadata when entity resolution yields no match.
+
+    This prevents BusinessConcept nodes from being written with empty properties
+    when the RAG Mapper produces a concept name that doesn't match any resolved
+    entity (e.g. because the LLM normalised 'SALES_ORDER_HDR' → 'SalesOrder').
+    The table's LLM-enriched description and DDL source are rich enough to
+    populate definition, provenance_text, and source_doc meaningfully.
+    """
+    definition = (
+        getattr(table, "table_description", None)
+        or table.comment
+        or ""
+    )
+    provenance_text = (table.ddl_source or "")[:400].strip()
+    return Entity(
+        name=concept_name,
+        definition=definition,
+        synonyms=[],
+        provenance_text=provenance_text,
+        source_doc=table.source_file or "",
+    )
+
+
 def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
     """Generate MERGE-based Cypher from mapping proposal."""
     settings = get_settings()
@@ -56,13 +80,7 @@ def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
     resolved = _find_entity_for_concept(
         proposal.mapped_concept or "", state.get("current_entities") or []
     )
-    entity = resolved or Entity(
-        name=proposal.mapped_concept or "Unknown",
-        definition="",
-        synonyms=[],
-        provenance_text="",
-        source_doc="",
-    )
+    entity = resolved or _entity_from_table(proposal.mapped_concept or "Unknown", table)
     few_shot = load_cypher_examples(settings.few_shot_cypher_examples)
     cypher = generate_cypher(proposal, table, entity, few_shot, llm)
     return {"current_cypher": cypher, "healing_attempts": 0}
@@ -114,6 +132,13 @@ def _build_llm_cypher_params(
     """
     column_names = [c.name for c in table.columns]
     column_types = _json.dumps({c.name: c.data_type for c in table.columns})
+
+    enriched_cols_json = ""
+    if hasattr(table, "enriched_columns") and table.enriched_columns:
+        enriched_cols_json = _json.dumps(
+            [{"original": ec.original_name, "enriched": ec.enriched_name} for ec in table.enriched_columns]
+        )
+
     return {
         "concept_name": proposal.mapped_concept or "Unknown",
         "definition": entity.definition if entity else "",
@@ -127,6 +152,11 @@ def _build_llm_cypher_params(
         "column_names": column_names,
         "column_types": column_types,
         "ddl_source": table.ddl_source or "",
+        "source_file": table.source_file or "",
+        "table_comment": table.comment or "",
+        "enriched_table_name": getattr(table, "enriched_table_name", None),
+        "enriched_columns": enriched_cols_json,
+        "table_description": getattr(table, "table_description", None) or "",
         "confidence": proposal.confidence,
         "mapping_confidence": proposal.confidence,
         "validated_by": "llm_judge",
@@ -161,9 +191,20 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
 
     # Resolve entity early — needed for both LLM and fallback paths.
+    # If no matching resolved entity exists (e.g. the RAG Mapper normalised the
+    # concept name differently from what entity resolution produced), fall back
+    # to a best-effort Entity built from the table's enriched metadata so that
+    # BusinessConcept nodes are never written with empty properties.
     resolved = _find_entity_for_concept(
         concept_name, state.get("current_entities") or []
     )
+    entity_for_write = resolved or _entity_from_table(concept_name, table)
+    if resolved is None:
+        logger.warning(
+            "No resolved entity matched concept '%s' — using table metadata as fallback "
+            "(definition from table_description, provenance from ddl_source).",
+            concept_name,
+        )
 
     if llm_cypher and not cypher_failed and not lazy_mode:
         logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
@@ -171,13 +212,13 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
         # Safety-net params: the system prompt tells the LLM to inline values,
         # but it sometimes copies parameterised style from few-shot examples.
         # Providing the params avoids ParameterMissing errors at runtime.
-        exec_params = _build_llm_cypher_params(proposal, table, resolved)
+        exec_params = _build_llm_cypher_params(proposal, table, entity_for_write)
     else:
         logger.info(
             "LLM Cypher failed for '%s' — falling back to deterministic builder.",
             proposal.table_name,
         )
-        exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=resolved)
+        exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=entity_for_write)
 
     with Neo4jClient() as client:
         client.execute_cypher(exec_cypher, exec_params)
@@ -201,6 +242,33 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 "WHERE toLower(pt.table_name) = toLower($name) "
                 "SET pt.source_file = $source_file",
                 {"name": table.table_name, "source_file": table.source_file},
+            )
+
+        # Always stamp enriched metadata on the PhysicalTable node so that
+        # nodes written via the LLM Cypher path get full properties too.
+        enriched_params: dict[str, Any] = {"name": table.table_name}
+        enriched_set_clauses: list[str] = []
+        if getattr(table, "enriched_table_name", None):
+            enriched_set_clauses.append("pt.enriched_table_name = $etn")
+            enriched_params["etn"] = table.enriched_table_name
+        if getattr(table, "table_description", None):
+            enriched_set_clauses.append("pt.table_description = $td")
+            enriched_params["td"] = table.table_description
+        if getattr(table, "enriched_columns", None):
+            enriched_set_clauses.append("pt.enriched_columns = $ec")
+            enriched_params["ec"] = _json.dumps(
+                [{"original": ec.original_name, "enriched": ec.enriched_name}
+                 for ec in table.enriched_columns]
+            )
+        if table.comment:
+            enriched_set_clauses.append("pt.comment = $cmt")
+            enriched_params["cmt"] = table.comment
+        if enriched_set_clauses:
+            client.execute_cypher(
+                "MATCH (pt:PhysicalTable) "
+                "WHERE toLower(pt.table_name) = toLower($name) "
+                f"SET {', '.join(enriched_set_clauses)}",
+                enriched_params,
             )
 
         fk_statements = build_fk_cypher(table)

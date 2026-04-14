@@ -583,6 +583,19 @@ def get_graph_stats() -> GraphStatsResponse:
         raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
 
 
+def _sanitize_neo4j_value(v: Any) -> Any:
+    """Convert Neo4j-native types to JSON-serializable Python primitives."""
+    # neo4j.time types: DateTime, Date, Time, Duration
+    type_name = type(v).__module__ + "." + type(v).__qualname__
+    if "neo4j" in type_name:
+        return str(v)
+    if isinstance(v, list):
+        return [_sanitize_neo4j_value(i) for i in v]
+    if isinstance(v, dict):
+        return {k2: _sanitize_neo4j_value(v2) for k2, v2 in v.items()}
+    return v
+
+
 @router.get(
     "/graph/data",
     summary="Export Knowledge Graph nodes and edges",
@@ -646,7 +659,7 @@ def get_graph_data() -> dict:
                 if row.get("confidence") is not None
                 else None,
                 "properties": {
-                    k: v
+                    k: _sanitize_neo4j_value(v)
                     for k, v in (row.get("props") or {}).items()
                     if k not in ("embedding",)  # omit large vectors
                 },
