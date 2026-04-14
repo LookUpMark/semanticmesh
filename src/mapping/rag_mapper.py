@@ -30,6 +30,7 @@ from src.models.schemas import (
 from src.prompts.templates import MAPPING_SYSTEM, MAPPING_USER, REFLECTION_TEMPLATE
 from src.retrieval.embeddings import embed_text
 from src.utils.json_utils import clean_json, extract_text_content
+from src.utils.text_utils import normalize_concept_name
 
 if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
@@ -183,6 +184,10 @@ def propose_mapping(
             proposal.mapped_concept,
             proposal.confidence,
         )
+        if proposal.mapped_concept:
+            proposal = proposal.model_copy(
+                update={"mapped_concept": normalize_concept_name(proposal.mapped_concept)}
+            )
         return proposal
 
     # Unreachable — loop always returns
@@ -316,6 +321,9 @@ def propose_mapping_heuristic(
         if fallback_name and not _is_attribute_like(fallback_name):
             mapped_concept = fallback_name
             best_confidence = max(best_confidence, max(0.0, threshold - 0.05))
+
+    if mapped_concept is not None:
+        mapped_concept = normalize_concept_name(mapped_concept)
 
     return MappingProposal(
         table_name=table.table_name,

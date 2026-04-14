@@ -140,7 +140,7 @@ def _build_llm_cypher_params(
         )
 
     return {
-        "concept_name": proposal.mapped_concept or "Unknown",
+        "concept_name": normalize_concept_name(proposal.mapped_concept or "Unknown"),
         "definition": entity.definition if entity else "",
         "mapping_reasoning": proposal.reasoning or "",
         "provenance_text": entity.provenance_text if entity else "",

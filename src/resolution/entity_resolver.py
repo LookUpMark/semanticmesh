@@ -23,6 +23,7 @@ from src.resolution.llm_judge import (
     judge_cluster,
 )
 from src.utils.json_utils import clean_json, extract_text_content
+from src.utils.text_utils import normalize_concept_name
 
 if TYPE_CHECKING:
     import logging
@@ -191,6 +192,7 @@ def resolve_entities(
                     )
                 entity = cluster_to_entity(cluster, decision, provenance_map)
                 entity.source_doc = source_doc
+                entity.name = normalize_concept_name(entity.name)
                 cluster_results[i] = entity
         canonical_entities = [cluster_results[i] for i in range(len(clusters))]
 
@@ -213,7 +215,7 @@ def resolve_entities(
         definition = singleton_definitions.get(singleton) or " | ".join(provenance_texts[:3])
         canonical_entities.append(
             Entity(
-                name=singleton,
+                name=normalize_concept_name(singleton),
                 definition=definition,
                 synonyms=[],
                 provenance_text=" | ".join(provenance_texts[:3]),
