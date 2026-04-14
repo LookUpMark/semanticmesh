@@ -73,7 +73,7 @@ TEST_QUESTIONS = [
 from src.evaluation.ablation_runner import ABLATION_MATRIX  # noqa: E402
 
 # ── Results directory ───────────────────────────────────────────────────────────
-RESULTS_DIR = ROOT / "notebooks" / "ablation" / "ablation_results"
+RESULTS_DIR = ROOT / "docs" / "ablation" / "ablation_results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 META_DIR = RESULTS_DIR / "meta"
 META_DIR.mkdir(parents=True, exist_ok=True)
@@ -106,10 +106,52 @@ def _study_dir(study_id: str) -> Path:
     return base
 
 
-def _select_fixtures(use_smoke_fixtures: bool) -> tuple[list[Path], list[Path]]:
+def _select_fixtures(
+    use_smoke_fixtures: bool,
+    dataset_path: Path | None = None,
+) -> tuple[list[Path], list[Path]]:
     """Select source docs and DDL fixtures based on the requested profile."""
     if use_smoke_fixtures:
         return DOC_PATHS_SMOKE, DDL_PATHS_SMOKE
+
+    # When a dataset is specified, look for docs/DDL in the same directory
+    if dataset_path is not None:
+        ds_dir = dataset_path.parent
+        docs_found: list[Path] = []
+        ddl_found: list[Path] = []
+
+        # business glossary (txt or md)
+        for name in ("business_glossary.txt", "business_glossary.md"):
+            p = ds_dir / name
+            if p.exists():
+                docs_found.append(p)
+                break
+
+        # data dictionary (txt or md)
+        for name in ("data_dictionary.txt", "data_dictionary.md"):
+            p = ds_dir / name
+            if p.exists():
+                docs_found.append(p)
+                break
+
+        # schema DDL
+        ddl = ds_dir / "schema.sql"
+        if ddl.exists():
+            ddl_found.append(ddl)
+
+        if docs_found and ddl_found:
+            logger.info(
+                "Using dataset-specific fixtures: docs=%s, ddl=%s",
+                docs_found,
+                ddl_found,
+            )
+            return docs_found, ddl_found
+
+        logger.warning(
+            "Dataset dir '%s' missing docs or DDL, falling back to defaults.",
+            ds_dir,
+        )
+
     return DOC_PATHS_DEFAULT, DDL_PATHS_DEFAULT
 
 
@@ -190,7 +232,7 @@ def run_ablation_study(
         print("  Env overrides: (none - using defaults)")
     print(f"  Run RAGAS:     {study_run_ragas}")
 
-    docs, ddls = _select_fixtures(use_smoke_fixtures)
+    docs, ddls = _select_fixtures(use_smoke_fixtures, dataset_path)
     profile = "smoke" if use_smoke_fixtures else "full"
     print(f"  Fixture profile: {profile}")
     print(f"  Skip builder:    {skip_builder}")

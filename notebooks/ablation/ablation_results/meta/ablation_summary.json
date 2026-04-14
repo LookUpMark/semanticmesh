@@ -1,37 +1,20 @@
 {
-  "timestamp": "2026-03-20T23:23:37.134533+00:00",
-  "total_elapsed_s": 128.2,
+  "timestamp": "2026-04-14T14:00:12.813015+00:00",
+  "total_elapsed_s": 7.4,
   "studies": {
     "AB-00": {
       "study_id": "AB-00",
-      "success": true,
-      "builder_elapsed_s": 0.0,
-      "query_elapsed_s": 128.2,
-      "total_elapsed_s": 128.2,
-      "triplets": 0,
-      "entities": 0,
-      "tables_parsed": 0,
-      "tables_enriched": 0,
-      "tables_completed": 0,
-      "cypher_failed": false,
-      "grounded_count": 10,
-      "question_count": 10,
-      "positive": false,
-      "ragas": null,
-      "ragas_diagnostics": null,
+      "success": false,
+      "error": "File not found: C:\\Users\\ma.lopez\\OneDrive - Reply\\Documenti\\github\\thesis\\tests\\fixtures\\00_legacy\\sample_docs\\data_dictionary.txt",
+      "elapsed_s": 7.4,
       "env_overrides": {},
       "run_ragas": false,
-      "dataset_path": "tests/fixtures/gold_standard.json",
-      "max_samples": 10,
-      "fixture_profile": "full",
-      "skip_builder": true,
-      "run_tag": "repro-queryonly-v3",
-      "timestamp": "2026-03-20T23:23:37.127366+00:00"
+      "timestamp": "2026-04-14T14:00:12.807445+00:00"
     }
   },
-  "dataset_path": "tests/fixtures/gold_standard.json",
-  "max_samples": 10,
+  "dataset_path": "tests\\fixtures\\01_basics_ecommerce\\gold_standard.json",
+  "max_samples": null,
   "fixture_profile": "full",
-  "skip_builder": true,
-  "run_tag": "repro-queryonly-v3"
+  "skip_builder": false,
+  "run_tag": "ds01"
 }
