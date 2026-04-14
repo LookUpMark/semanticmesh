@@ -72,6 +72,7 @@ class QueryState(TypedDict, total=False):
     grader_decision: GraderDecision | None
     final_answer: str
     sources: list[str]
+    entity_names: list[str]
     retrieved_contexts: list[str]
     retrieval_quality_score: float
     retrieval_chunk_count: int

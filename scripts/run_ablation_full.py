@@ -26,7 +26,7 @@ from dotenv import load_dotenv  # type: ignore[import]
 load_dotenv(ROOT / ".env")
 os.environ.setdefault("NEO4J_URI", "bolt://localhost:7687")
 os.environ.setdefault("NEO4J_USER", "neo4j")
-os.environ.setdefault("NEO4J_PASSWORD", "test_password")
+os.environ.setdefault("NEO4J_PASSWORD", "thesis_password")
 os.environ.setdefault("LLM_MODEL_REASONING", "openai/gpt-oss-120b:free")
 os.environ.setdefault("LLM_MODEL_EXTRACTION", "openai/gpt-4.1-nano")
 os.environ.setdefault("LLM_MAX_TOKENS_REASONING", "16384")
@@ -356,25 +356,26 @@ def run_ablation_study(
                 r = run_query(question)
                 answer = r.get("final_answer", "")
                 sources = list(r.get("sources", []))
+                entity_names = list(r.get("entity_names", []))
                 retrieved_contexts = list(r.get("retrieved_contexts", []))
 
                 # Grounded: use grader_grounded from pipeline, fallback to heuristic
-                grounded = bool(r.get("grader_grounded", True))
-                if not grounded:
-                    grounded = bool(
-                        answer
-                        and answer.strip()
-                        and not answer.strip().lower().startswith("i cannot")
-                        and not answer.strip().lower().startswith("i don't")
+                # Empty/whitespace-only answers are never grounded regardless of grader
+                has_answer = bool(answer and answer.strip())
+                grounded = bool(r.get("grader_grounded", True)) and has_answer
+                if not grounded and has_answer:
+                    grounded = not (
+                        answer.strip().lower().startswith("i cannot")
+                        or answer.strip().lower().startswith("i don't")
                     )
 
-                # Ground-truth coverage: how many expected_sources appear in retrieved
+                # Ground-truth coverage: how many expected_sources appear in retrieved entities
                 expected_sources = pair.get("expected_sources", [])
                 covered_sources: list[str] = []
                 gt_coverage = 0.0
-                if expected_sources:
+                if expected_sources and entity_names:
                     norm_retrieved = {
-                        normalize_source_name(s) for s in sources if s
+                        normalize_source_name(s) for s in entity_names if s
                     }
                     for es in expected_sources:
                         if normalize_source_name(str(es)) in norm_retrieved:
@@ -407,6 +408,7 @@ def run_ablation_study(
                     "covered_sources": covered_sources,
                     "gt_coverage": round(gt_coverage, 4),
                     "sources": sources,
+                    "entity_names": entity_names,
                     "retrieved_contexts": retrieved_contexts,
                     "grounded": grounded,
                     "query_type": pair.get("query_type", "unknown"),
@@ -434,6 +436,7 @@ def run_ablation_study(
                                 "gt_coverage": round(gt_coverage, 4),
                                 "final_answer": answer,
                                 "sources": sources,
+                                "entity_names": entity_names,
                                 "retrieved_contexts": retrieved_contexts,
                                 "grounded": grounded,
                                 "query_type": pair.get("query_type", "unknown"),

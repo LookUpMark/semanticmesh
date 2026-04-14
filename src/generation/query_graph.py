@@ -217,6 +217,10 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
     reranked: list[RetrievedChunk] = state.get("reranked_chunks") or []
     generated_with: list[RetrievedChunk] = state.get("generation_chunks") or reranked
     sources: list[str] = [c.node_id for c in generated_with]
+    # Entity names from vector/graph retrieval — used for GT coverage comparison
+    entity_names: list[str] = list({
+        c.node_id for c in reranked if c.source_type in ("vector", "graph")
+    })
     # retrieved_contexts: full texts used by RAGAS evaluation
     retrieved_contexts: list[str] = [c.text for c in generated_with if c.text]
     return {
@@ -225,6 +229,7 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
         "messages": [AIMessage(content=answer)],
         "final_answer": answer,
         "sources": sources,
+        "entity_names": entity_names,
         "retrieved_contexts": retrieved_contexts,
         "retrieval_quality_score": float(state.get("retrieval_quality_score", 0.0)),
         "retrieval_chunk_count": int(state.get("retrieval_chunk_count", len(reranked))),
@@ -342,6 +347,7 @@ def run_query(
         ``{
             "final_answer": str,
             "sources": list[str],
+            "entity_names": list[str],
             "retrieved_contexts": list[str],
             "retrieval_quality_score": float,
             "retrieval_chunk_count": int,
@@ -392,6 +398,7 @@ def run_query(
         "grader_decision": None,
         "final_answer": "",
         "sources": [],
+        "entity_names": [],
         "retrieved_contexts": [],
         "retrieval_quality_score": 0.0,
         "retrieval_chunk_count": 0,
@@ -469,6 +476,7 @@ def run_query(
     return {
         "final_answer": result.get("final_answer", ""),
         "sources": result.get("sources", []),
+        "entity_names": result.get("entity_names", []),
         "retrieved_contexts": result.get("retrieved_contexts", []),
         "retrieval_quality_score": result.get("retrieval_quality_score", 0.0),
         "retrieval_chunk_count": result.get("retrieval_chunk_count", 0),
