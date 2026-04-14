@@ -805,12 +805,16 @@ def list_conversations() -> list[ConversationMeta]:
     description="Returns the full message history for a saved conversation.",
 )
 def get_conversation(conversation_id: str) -> ConversationDetail:
+    from pydantic import ValidationError
     from src.graph.conversation_registry import get_conversation as _get
     try:
         conv = _get(conversation_id)
-        return ConversationDetail(**conv)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    try:
+        return ConversationDetail(**conv)
+    except ValidationError as exc:
+        raise HTTPException(status_code=500, detail=f"Stored conversation data is corrupted: {exc}") from exc
 
 
 @router.post(
@@ -825,7 +829,7 @@ def save_conversation(req: SaveConversationRequest) -> ConversationMeta:
         conv = _save(
             session_id=req.session_id,
             title=req.title,
-            messages=req.messages,
+            messages=[m.model_dump() for m in req.messages],
             active_snapshot_id=req.active_snapshot_id,
         )
         return ConversationMeta(**conv)
