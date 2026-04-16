@@ -1,0 +1,1752 @@
+{
+  "study_id": "AB-BEST-OPENROUTER",
+  "timestamp": "2026-04-15T16:45:00.268406+00:00",
+  "trace_id": "AB-BEST-OPENROUTER.2026-04-15T16-45-00.268406+00-00",
+  "config": {
+    "llm_model_reasoning": "openai/gpt-oss-120b",
+    "llm_model_extraction": "openai/gpt-4.1-nano",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "tests/fixtures/02_intermediate_finance/business_glossary.md",
+    "tests/fixtures/02_intermediate_finance/data_dictionary.md"
+  ],
+  "ddl_files": [
+    "tests/fixtures/02_intermediate_finance/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition:** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds.\n\n**Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship managem... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "637"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Transaction\n\n**Definition:** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees.\n\n**Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service.\n\n**Key Attributes:**\n- Transaction ID (unique identifier)\n- Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fe... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "717"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate.\n\n**Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.\n\n**Key Attributes:**\n- Interest Rate (annual percentage)\n- APR (Annual Percentage Rate) - for loans\n- APY (Annual Percentage Yield) - for d... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "686"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## ATM\n\n**Definition:** Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance.\n\n**Business Context:** ATMs extend banking access beyond branch hours and locations. They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores.\n\n**Key Attributes:**\n- ATM ID and Code\n- Location (address and GPS coordinates)\n- ATM Type (Standalone, Branch, DriveThrough... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "761"
+    },
+    {
+      "chunk_id": 4,
+      "text": "# Retail Banking Data Dictionary\n\nThis document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.\n\n---\n\n## customers\n\n**Description:** Core customer dimension table containing master data for all individual and corporate banking customers. Includes KYC (Know Your Customer) compliance status, risk profiling for investment suitability, and preferred customer flags for VIP treatmen... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "538"
+    },
+    {
+      "chunk_id": 5,
+      "text": "## branches\n\n**Description:** Physical bank locations including full-service branches, satellite offices, and ATM-only locations. Tracks staffing levels, operating hours, ATM counts, and branch status for operational management.\n\n**Primary Key:** `branch_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| branch_id | INTEGER | Unique branch identifier (primary key) | NO |\n| branch_code | VARCHAR(4) | 4-digit ... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "489"
+    },
+    {
+      "chunk_id": 6,
+      "text": "## atms\n\n**Description:** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location services, and operational status for availability management.\n\n**Primary Key:** `atm_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| atm_id | INTEGER | Unique ATM identifier (primary key) | NO |\n| atm_code | VA... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "464"
+    },
+    {
+      "chunk_id": 7,
+      "text": "## accounts\n\n**Description:** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status.\n\n**Primary Key:** `account_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| account_id |... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "668"
+    },
+    {
+      "chunk_id": 8,
+      "text": "## customer_account\n\n**Description:** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes.\n\n**Primary Key:** Composite (`customer_id`, `account_id`)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| customer_id | INTEGER | Foreign key to cus... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "392"
+    },
+    {
+      "chunk_id": 9,
+      "text": "## transactions\n\n**Description:** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated fields (balance_after) and includes location data for POS and ATM transactions for fraud detection.\n\n**Primary Key:** `transaction_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Uniq... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "480"
+    },
+    {
+      "chunk_id": 10,
+      "text": "## loans\n\n**Description:** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management.\n\n**Primary Key:** `loan_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| loan_id | INTEGER | Unique loan identifier (primary k... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "497"
+    },
+    {
+      "chunk_id": 11,
+      "text": "## cards\n\n**Description:** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, and card status. Supports multiple networks (Visa, Mastercard, Discover, American Express).\n\n**Primary Key:** `card_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| card_id | INTEGER | Unique card identifier (p... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "658"
+    },
+    {
+      "chunk_id": 12,
+      "text": "## Entity Relationship Summary\n\n**Key Relationships:**\n- customers \u2190\u2192 accounts (many-to-many via customer_account)\n- accounts \u2192 accounts (self-reference for parent-child hierarchy)\n- accounts \u2192 transactions (one-to-many)\n- customers \u2192 loans (one-to-many)\n- accounts \u2192 cards (one-to-many)\n- branches \u2192 accounts (one-to-many)\n- branches \u2192 atms (one-to-many)\n\n**Cascade Rules:**\n- All foreign keys have NO CASCADE by default (manual integrity management)\n- customer_account junction table requires both ... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "246"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 13,
+    "total_tokens": 7233,
+    "avg_tokens": 556.3846153846154
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "defines",
+      "object": "the core business concepts and terminology used in the retail banking domain",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "is",
+      "object": "a financial arrangement between a customer and the bank that allows deposit, withdrawal, and managem... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Accounts",
+      "predicate": "are",
+      "object": "the primary vehicle for customer banking relationships",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "can be",
+      "object": "individual or jointly held",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "may be organized into",
+      "object": "hierarchical portfolio structures for relationship management purposes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account Number",
+      "predicate": "is",
+      "object": "unique identifier",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account Type",
+      "predicate": "includes",
+      "object": "Checking, Savings, MoneyMarket, CD, Investment",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Current Balance vs. Available Balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Interest Rate and Interest Earned",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Minimum Balance Requirements",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Monthly Fees",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account Status",
+      "predicate": "includes",
+      "object": "Active, Dormant, Frozen, Closed",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account numbers",
+      "predicate": "must be",
+      "object": "unique across the system",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Parent accounts",
+      "predicate": "cannot reference",
+      "object": "themselves (no circular hierarchies)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Available balance",
+      "predicate": "may be",
+      "object": "less than current balance due to holds or pending transactions",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Minimum balance requirements",
+      "predicate": "may trigger",
+      "object": "monthly fees if not met",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Dormant accounts",
+      "predicate": "are",
+      "object": "automatically flagged after 12 months of inactivity",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is",
+      "object": "an individual or corporate entity that maintains a banking relationship with the institution, having... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customers",
+      "predicate": "are",
+      "object": "the central entities in retail banking",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "undergoes",
+      "object": "KYC screening to comply with regulatory requirements",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is assigned",
+      "object": "a risk profile to guide product recommendations and investment strategies",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer ID",
+      "predicate": "is",
+      "object": "primary key",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Tax ID",
+      "predicate": "must be",
+      "object": "unique across all customers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "KYC Level1",
+      "predicate": "is",
+      "object": "minimum requirement for account opening",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Level3 KYC",
+      "predicate": "is required for",
+      "object": "high-value accounts and international transfers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Risk profile",
+      "predicate": "determines",
+      "object": "eligibility for investment products and credit limits",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Preferred customers",
+      "predicate": "receive",
+      "object": "waived fees and priority service",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "represent",
+      "object": "the operational heartbeat of banking",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "flow through",
+      "object": "multiple states (Pending \u2192 Posted)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "create",
+      "object": "audit trails for regulatory compliance and customer service",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Debit transactions",
+      "predicate": "reduce",
+      "object": "account balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Credit transactions",
+      "predicate": "increase",
+      "object": "account balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "must maintain",
+      "object": "sufficient funds",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Posted transactions",
+      "predicate": "are",
+      "object": "final and cannot be modified",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Failed transactions",
+      "predicate": "are logged for",
+      "object": "audit but do not affect balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "POS transactions",
+      "predicate": "include",
+      "object": "merchant location data for fraud detection",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan",
+      "predicate": "is",
+      "object": "a financial arrangement",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loans",
+      "predicate": "range from",
+      "object": "secured mortgages to unsecured personal loans and revolving credit facilities",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan",
+      "predicate": "tracks",
+      "object": "amortization, remaining balance, and maturity dates",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan ID",
+      "predicate": "is",
+      "object": "a unique identifier",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan Type",
+      "predicate": "includes",
+      "object": "Mortgage, Personal, Auto, HELOC, CreditCard",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Principal Amount",
+      "predicate": "is",
+      "object": "a key attribute",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Interest Rate (APR)",
+      "predicate": "is",
+      "object": "a key attribute",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Term (months)",
+      "predicate": "is",
+      "object": "a key attribute",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan",
+      "predicate": "has",
+      "object": "a status (Pending, Approved, Active, PaidOff, Defaulted)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest",
+      "predicate": "is defined as",
+      "object": "The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), exp... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest",
+      "predicate": "is the",
+      "object": "fundamental profit mechanism in banking",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Banks",
+      "predicate": "pay interest on",
+      "object": "deposits",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Banks",
+      "predicate": "charge interest on",
+      "object": "loans",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest",
+      "predicate": "has attributes",
+      "object": "Interest Rate, APR, APY, Compounding Frequency, Simple vs. Compound Interest, Fixed vs. Variable Rat... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Deposit interest",
+      "predicate": "is credited",
+      "object": "monthly",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Loan interest",
+      "predicate": "is amortized",
+      "object": "early payments are mostly interest, later mostly principal",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "APY",
+      "predicate": "accounts for",
+      "object": "compounding effects",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "APY",
+      "predicate": "is higher than",
+      "object": "stated rate",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Promotional rates",
+      "predicate": "may be",
+      "object": "temporary",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Penalty rates",
+      "predicate": "may apply for",
+      "object": "rule violations",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Standard Savings",
+      "predicate": "has",
+      "object": "0.25% APY",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Premium Savings",
+      "predicate": "has",
+      "object": "0.50% APY",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Money Market",
+      "predicate": "has",
+      "object": "0.75% APY tiered by balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "12-Month CD",
+      "predicate": "has",
+      "object": "4.50% APR",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Mortgage",
+      "predicate": "has",
+      "object": "5.50% fixed APR for 360-month term",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Credit Card",
+      "predicate": "has",
+      "object": "18.50% variable APR based on prime rate",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branch",
+      "predicate": "is defined as",
+      "object": "A physical banking location where customers can access in-person services including teller transacti... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branches",
+      "predicate": "represent",
+      "object": "the physical presence of the bank",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branches",
+      "predicate": "range from",
+      "object": "full-service headquarters with multiple staff to satellite locations with limited services and ATM-o... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branch ID and Code",
+      "predicate": "are",
+      "object": "key attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "FullService branches",
+      "predicate": "offer",
+      "object": "complete banking services including loan origination",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Satellite branches",
+      "predicate": "have",
+      "object": "limited hours and staff (no loan officers)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "ATMOnly locations",
+      "predicate": "have",
+      "object": "no staff, only cash machines",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branch codes",
+      "predicate": "must be",
+      "object": "unique within the bank",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Temporary closures",
+      "predicate": "require",
+      "object": "system status updates and customer notifications",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Automated Teller Machine",
+      "predicate": "allows",
+      "object": "customers to perform basic transactions without teller assistance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATMs",
+      "predicate": "extend",
+      "object": "banking access beyond branch hours and locations",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATMs",
+      "predicate": "can be",
+      "object": "physically attached to branches or deployed as standalone units in high-traffic areas like malls and... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM ID and Code",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Location (address and GPS coordinates)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM Type (Standalone, Branch, DriveThrough)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Status (Operational, OutOfService, OutOfCash)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cash Balance and Last Replenished Date",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Supported Features (Deposit, Cardless Withdrawal)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Installation Date",
+      "predicate": "is",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Standalone ATMs",
+      "predicate": "are",
+      "object": "not affiliated with a branch",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Branch ATMs",
+      "predicate": "are located on",
+      "object": "branch premises",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "DriveThrough ATMs",
+      "predicate": "serve",
+      "object": "vehicles only",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cash replenishment",
+      "predicate": "is triggered when",
+      "object": "balance falls below threshold",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "OutOfCash status",
+      "predicate": "prevents",
+      "object": "withdrawal attempts",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cardless transactions",
+      "predicate": "require",
+      "object": "mobile app authentication",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "A payment card",
+      "predicate": "is",
+      "object": "issued to a customer",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cards",
+      "predicate": "are",
+      "object": "the primary interface for customer banking activities",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cards",
+      "predicate": "range from",
+      "object": "ATM-only cards to full-featured debit cards and revolving credit cards",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Card ID and Card Number (PAN)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Card Type (Debit, Credit, ATM)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Card Network (Visa, Mastercard, Discover, AmericanExpress)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Linked Account and Customer",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cardholder Name",
+      "predicate": "is",
+      "object": "a Key Attribute",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Expiration Date and CVV",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Credit Limit (for credit cards)",
+      "predicate": "is",
+      "object": "a Key Attribute",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Daily Limits (POS and ATM)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Security Features (Chip, Contactless, PIN)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Card Status (Active, Frozen, Blocked, Expired)",
+      "predicate": "are",
+      "object": "Key Attributes",
+      "confidence": 1.0
+    },
+    "... [55 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 155,
+    "avg_confidence": 1.0,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Apr",
+      "definition": "A fixed 5.50% annual percentage rate for a 360-month mortgage term.",
+      "synonyms": [
+        "0.25% APY",
+        "0.50% APY",
+        "0.75% APY tiered by balance",
+        "4.50% APR"
+      ],
+      "provenance_text": "- Mortgage: 5.50% fixed APR for 360-month term | - Standard Savings: 0.25% APY (0.10% stated rate with monthly compounding) | - Premium Savings: 0.50% APY (0.495% stated rate with daily compounding) | - Money Market: 0.75% APY tiered by balance | - 12-Month CD: 4.50% APR (4.60% APY with monthly compounding)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Type Standalone Branch Drive",
+      "definition": "An Account is a financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds.",
+      "synonyms": [
+        "A payment card",
+        "ATM ID and Code",
+        "ATM cards",
+        "ATM codes",
+        "ATMs",
+        "ATMs (not POS terminals)",
+        "Account",
+        "Account Number",
+        "Account Status",
+        "Account Type",
+        "Account hierarchy",
+        "Account numbers",
+        "Accounts",
+        "Available balance",
+        "Branch ATMs",
+        "Card Type (Debit, Credit, ATM)",
+        "Card numbers",
+        "Cardholder Name",
+        "Cards",
+        "Chip cards",
+        "Credit Card",
+        "Credit cards",
+        "Credit transactions",
+        "Current Balance vs. Available Balance",
+        "Customer",
+        "Customer ID",
+        "Customer's first name",
+        "Customer's last name",
+        "Customers",
+        "Debit cards",
+        "Debit transactions",
+        "Deposit interest",
+        "DriveThrough ATMs",
+        "Expired cards",
+        "Failed transactions",
+        "Loan",
+        "Loan ID",
+        "Loan Type",
+        "Loan interest",
+        "Loans",
+        "Lost/stolen cards",
+        "Mortgage",
+        "POS transactions",
+        "Parent accounts",
+        "Posted transactions",
+        "Preferred customers",
+        "Standalone ATMs",
+        "Tax ID",
+        "Tax IDs",
+        "Transactions",
+        "account balance",
+        "accounts",
+        "cards",
+        "customer_id",
+        "customer_since",
+        "customers",
+        "first_name",
+        "issued to a customer",
+        "last_name",
+        "last_name, first_name",
+        "loans",
+        "tax_id",
+        "transactions"
+      ],
+      "provenance_text": "Key Attributes: - ATM Type (Standalone, Branch, DriveThrough) | A payment card issued to a customer, linked to their bank account or credit line, enabling electronic transactions at POS terminals, ATMs, and online merchants. | Key Attributes: - ATM ID and Code | - ATM cards only work at ATMs (not POS terminals) | - ATM codes must be unique | ATMs extend banking access beyond branch hours and locations. | They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores. | This document defines the core business concepts and terminology used in the retail banking domain. | **Definition:** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. | They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. | - Current Balance vs. Available Balance | - Interest Rate and Interest Earned | - Minim",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Branch",
+      "definition": "A physical banking location where customers can access in\u2011person services such as teller transactions, account opening, loan applications, and financial advisory services.",
+      "synonyms": [
+        "A physical banking location where customers can access in-person services including teller transactions, account opening, loan applications, and financial advisory services",
+        "the physical presence of the bank"
+      ],
+      "provenance_text": "## Branch\n\n**Definition:** A physical banking location where customers can access in-person services including teller transactions, account opening, loan applications, and financial advisory services. | **Key Attributes:**\n- Branch ID and Code\n- Branch Name\n- Branch Type (FullService, Satellite, ATMOnly)\n- Physical Address and Contact Information\n- Operating Hours\n- Teller Count and Manager Assignment\n- ATM Count (on-premises)\n- Branch Status (Active, TemporarilyClosed, PermanentlyClosed) | - Branch codes must be unique within the bank | - Branch codes must be unique | **Business Context:** Branches represent the physical presence of the bank. | They range from full-service headquarters with multiple staff to satellite locations with limited services and ATM-only locations with no staff. | - branches \u2192 accounts (one-to-many) | - branches \u2192 atms (one-to-many)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Branch",
+      "definition": "A physical banking location where customers can access in\u2011person services such as teller transactions, account opening, loan applications, and financial advisory services.",
+      "synonyms": [
+        "Branch ID and Code",
+        "Branch codes",
+        "Branches",
+        "branches"
+      ],
+      "provenance_text": "## Branch\n\n**Definition:** A physical banking location where customers can access in-person services including teller transactions, account opening, loan applications, and financial advisory services. | **Key Attributes:**\n- Branch ID and Code\n- Branch Name\n- Branch Type (FullService, Satellite, ATMOnly)\n- Physical Address and Contact Information\n- Operating Hours\n- Teller Count and Manager Assignment\n- ATM Count (on-premises)\n- Branch Status (Active, TemporarilyClosed, PermanentlyClosed) | - Branch codes must be unique within the bank | - Branch codes must be unique | **Business Context:** Branches represent the physical presence of the bank. | They range from full-service headquarters with multiple staff to satellite locations with limited services and ATM-only locations with no staff. | - branches \u2192 accounts (one-to-many) | - branches \u2192 atms (one-to-many)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Kyc Level1/Level2/Level3",
+      "definition": "The set of KYC verification levels (Level1, Level2, Level3) required for account opening and transaction authorization.",
+      "synonyms": [
+        "CHECK (kyc_status IN ('Level1', 'Level2', 'Level3'))",
+        "KYC Level1",
+        "KYC levels",
+        "KYC verification level: Level1/Level2/Level3",
+        "Level3 KYC"
+      ],
+      "provenance_text": "Constraints: - CHECK (kyc_status IN ('Level1', 'Level2', 'Level3')) | - KYC Level1 is minimum requirement for account opening | - KYC levels must be Level1, Level2, or Level3 | KYC verification level: Level1/Level2/Level3 | - Level3 KYC required for high-value accounts and international transfers",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Investment Risk Tolerance: Conservative/Moderate/Aggressive",
+      "definition": "The classification of an investor\u2019s risk tolerance into Conservative, Moderate, or Aggressive categories.",
+      "synonyms": [
+        "CHECK (risk_profile IN ('Conservative', 'Moderate', 'Aggressive'))",
+        "Conservative, Moderate, or Aggressive"
+      ],
+      "provenance_text": "Investment risk tolerance: Conservative/Moderate/Aggressive | Constraints: - CHECK (risk_profile IN ('Conservative', 'Moderate', 'Aggressive')) | - Risk profiles must be Conservative, Moderate, or Aggressive",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Current Timestamp",
+      "definition": "CURRENT_TIMESTAMP is a database function that returns the current date and time.",
+      "synonyms": [
+        "CURRENT_DATE"
+      ],
+      "provenance_text": "Default Values: - created_at: CURRENT_TIMESTAMP | Default Values: - updated_at: CURRENT_TIMESTAMP | Default Values: - customer_since: CURRENT_DATE",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Pending Approved Active Paid",
+      "definition": "The current operational state of a card, indicating whether it is active, frozen, blocked, or expired.",
+      "synonyms": [
+        "Card Status (Active, Frozen, Blocked, Expired)"
+      ],
+      "provenance_text": "Key Attributes: - Loan Status (Pending, Approved, Active, PaidOff, Defaulted) | Key Attributes: - Card Status (Active, Frozen, Blocked, Expired)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Limits Pos",
+      "definition": "Daily Limits (POS and ATM) are the maximum amounts allowed per day for point-of-sale and ATM transactions to control exposure and prevent fraud.",
+      "synonyms": [
+        "Daily limits"
+      ],
+      "provenance_text": "Key Attributes: - Daily Limits (POS and ATM) | - Daily limits prevent fraud and control exposure",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Primary Key",
+      "definition": "A set of essential characteristics or fields that uniquely identify or describe an entity within a data model or system. These attributes are used to distinguish one instance of the entity from another and are typically required for data integrity, lookup, and relational mapping.",
+      "synonyms": [
+        "Key Attributes",
+        "a Key Attribute",
+        "a key attribute",
+        "key attributes"
+      ],
+      "provenance_text": "- Customer ID (primary key) | Key Attributes: - ATM ID and Code | Key Attributes: - Location (address and GPS coordinates) | Key Attributes: - ATM Type (Standalone, Branch, DriveThrough) | Key Attributes: - Status (Operational, OutOfService, OutOfCash) | Key Attributes: - Cash Balance and Last Replenished Date | Key Attributes: - Supported Features (Deposit, Cardless Withdrawal) | Key Attributes: - Installation Date | Key Attributes: - Card ID and Card Number (PAN) | Key Attributes: - Card Type (Debit, Credit, ATM) | Key Attributes: - Card Network (Visa, Mastercard, Discover, AmericanExpress) | Key Attributes: - Linked Account and Customer | Key Attributes: - Expiration Date and CVV | Key Attributes: - Daily Limits (POS and ATM) | Key Attributes: - Security Features (Chip, Contactless, PIN) | Key Attributes: - Card Status (Active, Frozen, Blocked, Expired) | Key Attributes: - Cardholder Name | Key Attributes: - Credit Limit (for credit cards) | Key Attributes: - Principal Amount | Key ",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Minimum Requirement For",
+      "definition": "The minimum requirement for opening an account, as specified by KYC Level1.",
+      "synonyms": [
+        "Minimum Balance Requirements",
+        "Minimum balance requirements"
+      ],
+      "provenance_text": "- KYC Level1 is minimum requirement for account opening | - Minimum Balance Requirements | - Minimum balance requirements may trigger monthly fees if not met",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Monthly Fees",
+      "definition": "Monthly fees charged on an account, typically applied when minimum balance requirements are not met.",
+      "synonyms": [
+        "monthly fees if not met"
+      ],
+      "provenance_text": "- Monthly Fees | - Minimum balance requirements may trigger monthly fees if not met",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Operational Out Of Service",
+      "definition": "A status indicator that specifies whether a system or service is Operational, OutOfService, or OutOfCash, affecting withdrawal and inquiry capabilities.",
+      "synonyms": [
+        "OutOfCash status"
+      ],
+      "provenance_text": "Key Attributes: - Status (Operational, OutOfService, OutOfCash) |  - OutOfCash status prevents withdrawal attempts but allows balance inquiries",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Primary Phone Number",
+      "definition": "The main contact phone number for an individual or entity.",
+      "synonyms": [
+        "phone"
+      ],
+      "provenance_text": "Primary phone number",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Record Last Modification Timestamp",
+      "definition": "The timestamp indicating when a record was last modified.",
+      "synonyms": [
+        "Record creation timestamp"
+      ],
+      "provenance_text": "Record last modification timestamp | Record creation timestamp",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Risk Profile",
+      "definition": "A classification of a customer\u2019s investment risk tolerance that determines eligibility for products, credit limits, and guides product recommendations.",
+      "synonyms": [
+        "Risk profiles",
+        "a risk profile to guide product recommendations and investment strategies",
+        "risk_profile"
+      ],
+      "provenance_text": "- Risk profile determines eligibility for investment products and credit limits | - Risk profiles must be Conservative, Moderate, or Aggressive | Each customer undergoes KYC screening to comply with regulatory requirements and is assigned a risk profile to guide product recommendations and investment strategies. | Investment risk tolerance: Conservative/Moderate/Aggressive | Default Values: - risk_profile: 'Moderate' | Constraints: - CHECK (risk_profile IN ('Conservative', 'Moderate', 'Aggressive'))",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Street Address",
+      "definition": "A street address is a specific location identifier for a building or property, including street name and number.",
+      "synonyms": [
+        "address"
+      ],
+      "provenance_text": "Street address",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Zip Or Postal Code",
+      "definition": "The alphanumeric code used to identify a specific geographic delivery area.",
+      "synonyms": [
+        "zip_code"
+      ],
+      "provenance_text": "ZIP or postal code",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Financial Arrangement Between",
+      "definition": "A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds.",
+      "synonyms": [
+        "a financial arrangement"
+      ],
+      "provenance_text": "**Definition:** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. | Definition: A financial arrangement where the bank lends a principal amount to a customer, who repays with interest over a specified term according to a fixed schedule.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Unique Identifier",
+      "definition": "A property indicating that a given identifier must be distinct within a specified scope (e.g., customer, system, or bank).",
+      "synonyms": [
+        "a unique identifier",
+        "unique",
+        "unique across all customers",
+        "unique across the system",
+        "unique within the bank"
+      ],
+      "provenance_text": "- Account Number (unique identifier) | Key Attributes: - Loan ID (unique identifier) | - Account numbers must be unique | - Tax IDs must be unique | - Branch codes must be unique | - ATM codes must be unique | - Card numbers must be unique | - Tax ID must be unique across all customers | - Account numbers must be unique across the system | - Branch codes must be unique within the bank",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Idx Customers Tax Id",
+      "definition": "An index on the customers table that optimizes queries filtering by the tax_id column.",
+      "synonyms": [
+        "idx_customers_kyc",
+        "idx_customers_name"
+      ],
+      "provenance_text": "Indexes: - idx_customers_tax_id ON (tax_id) | Indexes: - idx_customers_kyc ON (kyc_status) | Indexes: - idx_customers_name ON (last_name, first_name)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Limited Hours And",
+      "definition": "An ATM-only location that has no staff and provides only cash dispensing machines.",
+      "synonyms": [
+        "no staff, only cash machines"
+      ],
+      "provenance_text": "- Satellite branches have limited hours and staff (no loan officers) | - ATMOnly locations have no staff, only cash machines",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Primary Vehicle For",
+      "definition": "Accounts are the primary vehicle for customer banking relationships.",
+      "synonyms": [
+        "the primary interface for customer banking activities"
+      ],
+      "provenance_text": "**Business Context:** Accounts are the primary vehicle for customer banking relationships. | Cards are the primary interface for customer banking activities.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Level1",
+      "definition": "Default Values: - kyc_status: 'Level1'",
+      "synonyms": [],
+      "provenance_text": "Default Values: - kyc_status: 'Level1'",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Moderate",
+      "definition": "Default Values: - risk_profile: 'Moderate'",
+      "synonyms": [],
+      "provenance_text": "Default Values: - risk_profile: 'Moderate'",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "0 (False)",
+      "definition": "Default Values: - is_preferred: 0 (false)",
+      "synonyms": [],
+      "provenance_text": "Default Values: - is_preferred: 0 (false)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "12 Month Cd",
+      "definition": "- 12-Month CD: 4.50% APR (4.60% APY with monthly compounding)",
+      "synonyms": [],
+      "provenance_text": "- 12-Month CD: 4.50% APR (4.60% APY with monthly compounding)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Apr",
+      "definition": "- Credit Card: 18.50% variable APR based on prime rate",
+      "synonyms": [],
+      "provenance_text": "- Credit Card: 18.50% variable APR based on prime rate",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Apy",
+      "definition": "- APY accounts for compounding effects and is higher than stated rate | - APY accounts for compounding effects and is higher than stated rate",
+      "synonyms": [],
+      "provenance_text": "- APY accounts for compounding effects and is higher than stated rate | - APY accounts for compounding effects and is higher than stated rate",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Atm Only Cards",
+      "definition": "They range from ATM-only cards to full-featured debit cards and revolving credit cards, each with specific security features and spending limits.",
+      "synonyms": [],
+      "provenance_text": "They range from ATM-only cards to full-featured debit cards and revolving credit cards, each with specific security features and spending limits.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Atmonly Locations",
+      "definition": "- ATMOnly locations have no staff, only cash machines",
+      "synonyms": [],
+      "provenance_text": "- ATMOnly locations have no staff, only cash machines",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Active, Dormant, Frozen, Closed",
+      "definition": "- Account Status (Active, Dormant, Frozen, Closed)",
+      "synonyms": [],
+      "provenance_text": "- Account Status (Active, Dormant, Frozen, Closed)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Automated Teller Machine",
+      "definition": "Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance.",
+      "synonyms": [],
+      "provenance_text": "Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Banks",
+      "definition": "Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. | Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.",
+      "synonyms": [],
+      "provenance_text": "Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. | Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Business Glossary Concept",
+      "definition": "Business Concept Mapping: Maps to **Customer** business glossary concept",
+      "synonyms": [],
+      "provenance_text": "Business Concept Mapping: Maps to **Customer** business glossary concept",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Card Number Pan",
+      "definition": "Key Attributes: - Card ID and Card Number (PAN)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Card ID and Card Number (PAN)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Network Visa Mastercard Discover",
+      "definition": "Key Attributes: - Card Network (Visa, Mastercard, Discover, AmericanExpress)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Card Network (Visa, Mastercard, Discover, AmericanExpress)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Cardless Transactions",
+      "definition": " - Cardless transactions require mobile app authentication",
+      "synonyms": [],
+      "provenance_text": " - Cardless transactions require mobile app authentication",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Last Replenished Date",
+      "definition": "Key Attributes: - Cash Balance and Last Replenished Date",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Cash Balance and Last Replenished Date",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Cash Replenishment",
+      "definition": " - Cash replenishment is triggered when balance falls below threshold",
+      "synonyms": [],
+      "provenance_text": " - Cash replenishment is triggered when balance falls below threshold",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Savings Money Market Cd",
+      "definition": "- Account Type (Checking, Savings, MoneyMarket, CD, Investment)",
+      "synonyms": [],
+      "provenance_text": "- Account Type (Checking, Savings, MoneyMarket, CD, Investment)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "City Of Residence",
+      "definition": "City of residence",
+      "synonyms": [],
+      "provenance_text": "City of residence",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Contactless (Tap To Pay)",
+      "definition": "- Contactless (tap-to-pay) has transaction amount limits",
+      "synonyms": [],
+      "provenance_text": "- Contactless (tap-to-pay) has transaction amount limits",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Core Customer Dimension",
+      "definition": "Core customer dimension table containing master data for all individual and corporate banking customers.",
+      "synonyms": [],
+      "provenance_text": "Core customer dimension table containing master data for all individual and corporate banking customers.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Limit",
+      "definition": "Key Attributes: - Credit Limit (for credit cards)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Credit Limit (for credit cards)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Date Customer Relationship Began",
+      "definition": "Date customer relationship began",
+      "synonyms": [],
+      "provenance_text": "Date customer relationship began",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Dormant Accounts",
+      "definition": "- Dormant accounts are automatically flagged after 12 months of inactivity",
+      "synonyms": [],
+      "provenance_text": "- Dormant accounts are automatically flagged after 12 months of inactivity",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Emv Security For",
+      "definition": "- Chip cards provide EMV security for in-person transactions",
+      "synonyms": [],
+      "provenance_text": "- Chip cards provide EMV security for in-person transactions",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Expiration Date And Cvv",
+      "definition": "Key Attributes: - Expiration Date and CVV",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Expiration Date and CVV",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Full Service Branches",
+      "definition": "- FullService branches offer complete banking services including loan origination",
+      "synonyms": [],
+      "provenance_text": "- FullService branches offer complete banking services including loan origination",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Installation Date",
+      "definition": "Key Attributes: - Installation Date",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Installation Date",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Interest",
+      "definition": "Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. | Interest is the fundamental profit mechanism in banking. | **Key Attributes:**\n- Interest Rate (annual percentage)\n- APR (Annual Percentage Rate) - for loans\n- APY (Annual Percentage Yield) - for deposits\n- Compounding Frequency (daily, monthly, annually)\n- Simple vs. Compound Interest\n- Fixed vs. Variable Rates",
+      "synonyms": [],
+      "provenance_text": "Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. | Interest is the fundamental profit mechanism in banking. | **Key Attributes:**\n- Interest Rate (annual percentage)\n- APR (Annual Percentage Rate) - for loans\n- APY (Annual Percentage Yield) - for deposits\n- Compounding Frequency (daily, monthly, annually)\n- Simple vs. Compound Interest\n- Fixed vs. Variable Rates",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Interest Rate (Apr)",
+      "definition": "Key Attributes: - Interest Rate (APR)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Interest Rate (APR)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Interest Earned",
+      "definition": "- Interest Rate and Interest Earned",
+      "synonyms": [],
+      "provenance_text": "- Interest Rate and Interest Earned",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Rate Apr Apy Compounding",
+      "definition": "**Key Attributes:**\n- Interest Rate (annual percentage)\n- APR (Annual Percentage Rate) - for loans\n- APY (Annual Percentage Yield) - for deposits\n- Compounding Frequency (daily, monthly, annually)\n- Simple vs. Compound Interest\n- Fixed vs. Variable Rates",
+      "synonyms": [],
+      "provenance_text": "**Key Attributes:**\n- Interest Rate (annual percentage)\n- APR (Annual Percentage Rate) - for loans\n- APY (Annual Percentage Yield) - for deposits\n- Compounding Frequency (daily, monthly, annually)\n- Simple vs. Compound Interest\n- Fixed vs. Variable Rates",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Know Your Customer",
+      "definition": "Includes KYC (Know Your Customer) compliance status, risk profiling for investment suitability, and preferred customer flags for VIP treatment.",
+      "synonyms": [],
+      "provenance_text": "Includes KYC (Know Your Customer) compliance status, risk profiling for investment suitability, and preferred customer flags for VIP treatment.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Kyc Screening To",
+      "definition": "Each customer undergoes KYC screening to comply with regulatory requirements and is assigned a risk profile to guide product recommendations and investment strategies.",
+      "synonyms": [],
+      "provenance_text": "Each customer undergoes KYC screening to comply with regulatory requirements and is assigned a risk profile to guide product recommendations and investment strategies.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Level1, Level2, Or Level3",
+      "definition": "- KYC levels must be Level1, Level2, or Level3",
+      "synonyms": [],
+      "provenance_text": "- KYC levels must be Level1, Level2, or Level3",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Linked Account And Customer",
+      "definition": "Key Attributes: - Linked Account and Customer",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Linked Account and Customer",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Gps",
+      "definition": "Key Attributes: - Location (address and GPS coordinates)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Location (address and GPS coordinates)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Money Market",
+      "definition": "- Money Market: 0.75% APY tiered by balance",
+      "synonyms": [],
+      "provenance_text": "- Money Market: 0.75% APY tiered by balance",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Personal Auto Heloc Credit",
+      "definition": "Key Attributes: - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Penalty Rates",
+      "definition": "- Penalty rates may apply for rule violations (e.g., early CD withdrawal)",
+      "synonyms": [],
+      "provenance_text": "- Penalty rates may apply for rule violations (e.g., early CD withdrawal)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Premium Savings",
+      "definition": "- Premium Savings: 0.50% APY (0.495% stated rate with daily compounding)",
+      "synonyms": [],
+      "provenance_text": "- Premium Savings: 0.50% APY (0.495% stated rate with daily compounding)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Primary Email Address",
+      "definition": "Primary email address for notifications",
+      "synonyms": [],
+      "provenance_text": "Primary email address for notifications",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Principal Amount",
+      "definition": "Key Attributes: - Principal Amount",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Principal Amount",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Promotional Rates",
+      "definition": "- Promotional rates may be temporary (e.g., 12-month CD bonus rates)",
+      "synonyms": [],
+      "provenance_text": "- Promotional rates may be temporary (e.g., 12-month CD bonus rates)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Satellite Branches",
+      "definition": "- Satellite branches have limited hours and staff (no loan officers)",
+      "synonyms": [],
+      "provenance_text": "- Satellite branches have limited hours and staff (no loan officers)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Features Chip Contactless Pin",
+      "definition": "Key Attributes: - Security Features (Chip, Contactless, PIN)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Security Features (Chip, Contactless, PIN)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Standard Savings",
+      "definition": "- Standard Savings: 0.25% APY (0.10% stated rate with monthly compounding)",
+      "synonyms": [],
+      "provenance_text": "- Standard Savings: 0.25% APY (0.10% stated rate with monthly compounding)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Features Deposit Cardless Withdrawal",
+      "definition": "Key Attributes: - Supported Features (Deposit, Cardless Withdrawal)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Supported Features (Deposit, Cardless Withdrawal)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Ssn/Ein",
+      "definition": "Tax identification number (SSN/EIN), must be unique",
+      "synonyms": [],
+      "provenance_text": "Tax identification number (SSN/EIN), must be unique",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Temporary Closures",
+      "definition": "- Temporary closures require system status updates and customer notifications",
+      "synonyms": [],
+      "provenance_text": "- Temporary closures require system status updates and customer notifications",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Term (Months)",
+      "definition": "Key Attributes: - Term (months)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Term (months)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Cost Of Borrowing",
+      "definition": "Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate.",
+      "synonyms": [],
+      "provenance_text": "Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Document",
+      "definition": "This document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.",
+      "synonyms": [],
+      "provenance_text": "This document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Two Letter State Code",
+      "definition": "Two-letter state code",
+      "synonyms": [],
+      "provenance_text": "Two-letter state code",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Unique (Tax Id)",
+      "definition": "Constraints: - UNIQUE (tax_id)",
+      "synonyms": [],
+      "provenance_text": "Constraints: - UNIQUE (tax_id)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Unique Customer Identifier",
+      "definition": "Unique customer identifier (primary key)",
+      "synonyms": [],
+      "provenance_text": "Unique customer identifier (primary key)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Vip Flag For",
+      "definition": "VIP flag for fee waivers and priority service",
+      "synonyms": [],
+      "provenance_text": "VIP flag for fee waivers and priority service",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Amortization Remaining Balance",
+      "definition": "Each loan tracks amortization, remaining balance, and maturity dates.",
+      "synonyms": [],
+      "provenance_text": "Each loan tracks amortization, remaining balance, and maturity dates.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Know Your Customer Kyc",
+      "definition": "**Definition:** An individual or corporate entity that maintains a banking relationship with the institution, having completed Know Your Customer (KYC) verification.",
+      "synonyms": [],
+      "provenance_text": "**Definition:** An individual or corporate entity that maintains a banking relationship with the institution, having completed Know Your Customer (KYC) verification.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Atms",
+      "definition": "- branches \u2192 atms (one-to-many)",
+      "synonyms": [],
+      "provenance_text": "- branches \u2192 atms (one-to-many)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Audit But Do",
+      "definition": "- Failed transactions are logged for audit but do not affect balance",
+      "synonyms": [],
+      "provenance_text": "- Failed transactions are logged for audit but do not affect balance",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Audit Trails For",
+      "definition": "and create audit trails for regulatory compliance and customer service.",
+      "synonyms": [],
+      "provenance_text": "and create audit trails for regulatory compliance and customer service.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Automatically Flagged After",
+      "definition": "- Dormant accounts are automatically flagged after 12 months of inactivity",
+      "synonyms": [],
+      "provenance_text": "- Dormant accounts are automatically flagged after 12 months of inactivity",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Automatically Renewed And",
+      "definition": "- Expired cards are automatically renewed and mailed to customer",
+      "synonyms": [],
+      "provenance_text": "- Expired cards are automatically renewed and mailed to customer",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Balance Falls Below Threshold",
+      "definition": " - Cash replenishment is triggered when balance falls below threshold",
+      "synonyms": [],
+      "provenance_text": " - Cash replenishment is triggered when balance falls below threshold",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Banking Access Beyond",
+      "definition": "ATMs extend banking access beyond branch hours and locations.",
+      "synonyms": [],
+      "provenance_text": "ATMs extend banking access beyond branch hours and locations.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Branch Premises",
+      "definition": " - Branch ATMs are located on branch premises",
+      "synonyms": [],
+      "provenance_text": " - Branch ATMs are located on branch premises",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Circular References",
+      "definition": "- Account hierarchy prevents circular references (parent != child)",
+      "synonyms": [],
+      "provenance_text": "- Account hierarchy prevents circular references (parent != child)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "City",
+      "definition": "City of residence",
+      "synonyms": [],
+      "provenance_text": "City of residence",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Complete Banking Services",
+      "definition": "- FullService branches offer complete banking services including loan origination",
+      "synonyms": [],
+      "provenance_text": "- FullService branches offer complete banking services including loan origination",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Compounding Effects",
+      "definition": "- APY accounts for compounding effects and is higher than stated rate",
+      "synonyms": [],
+      "provenance_text": "- APY accounts for compounding effects and is higher than stated rate",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Comprehensive Schema Documentation",
+      "definition": "This document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.",
+      "synonyms": [],
+      "provenance_text": "This document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Created At",
+      "definition": "Record creation timestamp | Default Values: - created_at: CURRENT_TIMESTAMP",
+      "synonyms": [],
+      "provenance_text": "Record creation timestamp | Default Values: - created_at: CURRENT_TIMESTAMP",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Customers To Perform",
+      "definition": "Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance.",
+      "synonyms": [],
+      "provenance_text": "Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Deposits",
+      "definition": "Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.",
+      "synonyms": [],
+      "provenance_text": "Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Directly From Linked",
+      "definition": "- Debit cards deduct directly from linked checking account",
+      "synonyms": [],
+      "provenance_text": "- Debit cards deduct directly from linked checking account",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Early Payments Are",
+      "definition": "- Loan interest is amortized (early payments are mostly interest, later mostly principal)",
+      "synonyms": [],
+      "provenance_text": "- Loan interest is amortized (early payments are mostly interest, later mostly principal)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 138
+  },
+  "tables_parsed": [
+    {
+      "name": "CUSTOMERS",
+      "columns": 16
+    },
+    {
+      "name": "BRANCHES",
+      "columns": 16
+    },
+    {
+      "name": "ATMS",
+      "columns": 14
+    },
+    {
+      "name": "ACCOUNTS",
+      "columns": 18
+    },
+    {
+      "name": "CUSTOMER_ACCOUNT",
+      "columns": 8
+    },
+    {
+      "name": "TRANSACTIONS",
+      "columns": 13
+    },
+    {
+      "name": "LOANS",
+      "columns": 13
+    },
+    {
+      "name": "CARDS",
+      "columns": 19
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customers",
+      "description": "This table stores detailed information about customers, including their contact details, identification, risk assessment status, and customer lifecycle timestamps."
+    },
+    {
+      "name": "Branches",
+      "description": "This table stores information about bank branch locations, including their identifiers, contact details, operational hours, and staffing information."
+    },
+    {
+      "name": "Automated Teller Machines",
+      "description": "This table stores information about Automated Teller Machines, including their locations, statuses, capabilities, and maintenance details."
+    },
+    {
+      "name": "Bank Accounts",
+      "description": "This table stores information about bank accounts, including account details, balances, interest, and status history."
+    },
+    {
+      "name": "Customer Account",
+      "description": "This table stores information about the relationships between customers and their accounts, including ownership details and linkage dates."
+    },
+    {
+      "name": "Transactions",
+      "description": "This table records individual financial transactions, including details such as transaction type, amount, currency, date, status, and related account information."
+    },
+    {
+      "name": "Loans",
+      "description": "This table stores information about loan agreements, including borrower details, loan terms, payment schedules, and current status."
+    },
+    {
+      "name": "Customer Credit Card Information",
+      "description": "This table stores information about customers' credit cards, including card details, limits, status, and usage history."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 8,
+    "tables_enriched": 8,
+    "total_columns": 117
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 76,
+    "total_relationships": 78,
+    "completed_tables": 8
+  },
+  "stage_timings": {}
+}
