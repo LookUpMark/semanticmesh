@@ -176,6 +176,28 @@ ABLATION_MATRIX: dict[str, dict[str, Any]] = {
         "primary_metric": "faithfulness",
         "run_ragas": False,  # Disables the component being measured
     },
+    # AB-BEST: Best known configuration — all features enabled, aggressive ER
+    "AB-BEST": {
+        "description": "Best config — hybrid retrieval, reranker ON, aggressive ER (0.65), all features enabled",
+        "env_overrides": {
+            "ER_SIMILARITY_THRESHOLD": "0.65",
+            "RETRIEVAL_VECTOR_TOP_K": "20",
+            "RETRIEVAL_BM25_TOP_K": "10",
+            "RERANKER_TOP_K": "10",
+            "ENABLE_SCHEMA_ENRICHMENT": "true",
+            "ENABLE_CYPHER_HEALING": "true",
+            "ENABLE_CRITIC_VALIDATION": "true",
+            "ENABLE_RERANKER": "true",
+            "ENABLE_HALLUCINATION_GRADER": "true",
+            "ENABLE_RETRIEVAL_QUALITY_GATE": "true",
+            "ENABLE_GRADER_CONSISTENCY_VALIDATOR": "true",
+            "ENABLE_LAZY_EXPANSION": "true",
+            "LLM_MAX_TOKENS_REASONING": "16384",
+            "LLM_MAX_TOKENS_EXTRACTION": "16384",
+        },
+        "primary_metric": "faithfulness",
+        "run_ragas": True,
+    },
 }
 
 

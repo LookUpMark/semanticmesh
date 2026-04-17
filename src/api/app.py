@@ -82,9 +82,10 @@ Run, monitor, and compare ablation experiments:
 )
 
 # Allow all origins in development (tighten for production if needed)
+_cors_origins = os.environ.get("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -172,8 +173,17 @@ def set_config(req: ServerConfigRequest) -> dict[str, object]:
     Overrides are applied in-process via os.environ and the settings cache is
     reloaded.  Sensitive keys are accepted but never echoed back.
     """
+    blocked_keys = frozenset({
+        "API_KEY", "PATH", "PYTHONPATH", "LD_LIBRARY_PATH",
+        "NEO4J_PASSWORD", "OPENROUTER_API_KEY", "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY", "GOOGLE_API_KEY",
+    })
     applied: list[str] = []
+    blocked: list[str] = []
     for key, value in req.overrides.items():
+        if key in blocked_keys:
+            blocked.append(key)
+            continue
         if value:  # ignore empty strings (skip clearing)
             os.environ[key] = value
             applied.append(key)
@@ -187,5 +197,6 @@ def set_config(req: ServerConfigRequest) -> dict[str, object]:
     # Return applied keys but mask sensitive values
     return {
         "applied": applied,
+        "blocked": blocked,
         "masked": [k for k in applied if k in _SENSITIVE_KEYS],
     }

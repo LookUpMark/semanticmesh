@@ -11,7 +11,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from src.config.llm_factory import get_midtier_llm, get_reasoning_llm
-from src.config.logging import get_logger
+from src.config.logging import NodeTimer, get_logger, log_node_event
 from src.config.settings import get_settings
 from src.generation.answer_generator import generate_answer
 from src.generation.hallucination_grader import grade_answer
@@ -20,6 +20,7 @@ from src.models.state import QueryState
 
 if TYPE_CHECKING:
     import logging
+
     from langchain_core.messages import BaseMessage
 
 logger: logging.Logger = get_logger(__name__)
@@ -32,29 +33,8 @@ _PRIORITY_STRUCTURE_TOKENS = ("references", "foreign key")
 
 
 def _query_terms(query: str) -> set[str]:
-    stop = {
-        "what",
-        "which",
-        "where",
-        "when",
-        "how",
-        "does",
-        "the",
-        "this",
-        "that",
-        "with",
-        "into",
-        "from",
-        "table",
-        "database",
-        "business",
-        "concept",
-        "information",
-        "schema",
-        "knowledge",
-        "graph",
-    }
-    return {t.lower() for t in _TOKEN_RE.findall(query) if len(t) > 2 and t.lower() not in stop}
+    from src.utils.query_utils import query_terms as _qt
+    return _qt(query)
 
 
 def _has_priority_structure_tokens(text: str) -> bool:
@@ -143,40 +123,42 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
     Composes a balanced context window from reranked chunks, prioritizing
     query relevance and structural evidence while enforcing per-source caps.
     """
-    llm = get_reasoning_llm()
-    query: str = state["user_query"]
-    chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
-    generation_chunks = state.get("generation_chunks") or _compose_generation_chunks(query, chunks)
-    critique: str | None = state.get("last_critique")
-    sufficiency: str = state.get("context_sufficiency", "insufficient")
+    with NodeTimer() as timer:
+        llm = get_reasoning_llm()
+        query: str = state["user_query"]
+        chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
+        generation_chunks = state.get("generation_chunks") or _compose_generation_chunks(query, chunks)
+        critique: str | None = state.get("last_critique")
+        sufficiency: str = state.get("context_sufficiency", "insufficient")
 
-    # Extract conversation history from LangGraph-native messages state.
-    # messages = [...prior turns..., HumanMessage(current_query)]
-    # History = everything except the last message (the current user query).
-    all_messages: list[BaseMessage] = list(state.get("messages") or [])
-    history: list[BaseMessage] | None = all_messages[:-1] if len(all_messages) > 1 else None
+        # Extract conversation history from LangGraph-native messages state.
+        # messages = [...prior turns..., HumanMessage(current_query)]
+        # History = everything except the last message (the current user query).
+        all_messages: list[BaseMessage] = list(state.get("messages") or [])
+        history: list[BaseMessage] | None = all_messages[:-1] if len(all_messages) > 1 else None
 
-    if generation_chunks and sufficiency != "adequate":
-        logger.warning(
-            "Generating answer with %s context (chunks=%d).",
-            sufficiency,
-            len(generation_chunks),
+        if generation_chunks and sufficiency != "adequate":
+            logger.warning(
+                "Generating answer with %s context (chunks=%d).",
+                sufficiency,
+                len(generation_chunks),
+            )
+        answer = generate_answer(
+            query,
+            generation_chunks,
+            llm,
+            critique=critique,
+            context_sufficiency=sufficiency,
+            history=history,
         )
-    answer = generate_answer(
-        query,
-        generation_chunks,
-        llm,
-        critique=critique,
-        context_sufficiency=sufficiency,
-        history=history,
-    )
-    iteration = state.get("iteration_count", 0) + 1
-    return {
-        "current_answer": answer,
-        "iteration_count": iteration,
-        "last_critique": None,
-        "generation_chunks": generation_chunks,
-    }
+        iteration = state.get("iteration_count", 0) + 1
+        log_node_event(logger, "answer_generation", f"iteration={iteration} chunks={len(generation_chunks)}", "answer generated", timer.elapsed_ms, model_used=get_settings().llm_model_reasoning)
+        return {
+            "current_answer": answer,
+            "iteration_count": iteration,
+            "last_critique": None,
+            "generation_chunks": generation_chunks,
+        }
 
 
 def _node_grade_hallucination(state: QueryState) -> dict[str, Any]:
@@ -185,29 +167,32 @@ def _node_grade_hallucination(state: QueryState) -> dict[str, Any]:
     Implements loop guard: after max_hallucination_retries, forces acceptance
     to prevent infinite regeneration loops.
     """
-    settings = get_settings()
-    if not settings.enable_hallucination_grader:
-        return {"grader_decision": GraderDecision(grounded=True, critique=None, action="pass")}
-    llm = get_midtier_llm()
-    query: str = state["user_query"]
-    answer: str = state.get("current_answer") or ""
-    chunks: list[RetrievedChunk] = (
-        state.get("generation_chunks") or state.get("reranked_chunks") or []
-    )
-    iteration: int = state.get("iteration_count", 0)
-
-    if iteration >= settings.max_hallucination_retries:
-        logger.warning("Max hallucination retries reached — accepting current answer.")
-        decision = GraderDecision(
-            grounded=True,
-            critique=None,
-            action="pass",
+    with NodeTimer() as timer:
+        settings = get_settings()
+        if not settings.enable_hallucination_grader:
+            log_node_event(logger, "grade_hallucination", "disabled", "pass", timer.elapsed_ms)
+            return {"grader_decision": GraderDecision(grounded=True, critique=None, action="pass")}
+        llm = get_midtier_llm()
+        query: str = state["user_query"]
+        answer: str = state.get("current_answer") or ""
+        chunks: list[RetrievedChunk] = (
+            state.get("generation_chunks") or state.get("reranked_chunks") or []
         )
-    else:
-        decision = grade_answer(query, answer, chunks, llm)
+        iteration: int = state.get("iteration_count", 0)
 
-    update: dict[str, Any] = {"grader_decision": decision}
-    if decision.action == "regenerate":
-        update["last_critique"] = decision.critique
-        update["grader_rejection_count"] = int(state.get("grader_rejection_count", 0)) + 1
-    return update
+        if iteration >= settings.max_hallucination_retries:
+            logger.warning("Max hallucination retries reached — accepting current answer.")
+            decision = GraderDecision(
+                grounded=True,
+                critique=None,
+                action="pass",
+            )
+        else:
+            decision = grade_answer(query, answer, chunks, llm)
+
+        update: dict[str, Any] = {"grader_decision": decision}
+        if decision.action == "regenerate":
+            update["last_critique"] = decision.critique
+            update["grader_rejection_count"] = int(state.get("grader_rejection_count", 0)) + 1
+        log_node_event(logger, "grade_hallucination", f"iteration={iteration}", f"action={decision.action}", timer.elapsed_ms)
+        return update

@@ -54,6 +54,7 @@ from typing import TYPE_CHECKING
 
 from langchain_openai import ChatOpenAI
 
+from src.config.config import LMSTUDIO_PLACEHOLDER_KEY
 from src.config.settings import get_settings
 
 if TYPE_CHECKING:
@@ -183,7 +184,7 @@ def _build_lmstudio_chat(
         temperature=temperature,
         max_tokens=max_tokens,
         base_url=base_url,
-        api_key="lm-studio",
+        api_key=LMSTUDIO_PLACEHOLDER_KEY,
         request_timeout=120,
         model_kwargs={"extra_body": kwargs},
     )

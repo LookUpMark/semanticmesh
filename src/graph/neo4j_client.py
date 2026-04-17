@@ -7,6 +7,7 @@ plus idempotent schema setup (constraints and vector index for BGE-M3).
 from __future__ import annotations
 
 import logging
+from threading import Lock
 from types import TracebackType
 from typing import Any
 
@@ -18,6 +19,44 @@ from src.config.settings import get_settings
 logger: logging.Logger = get_logger(__name__)
 
 _EMBEDDING_DIMENSION: int = 1024
+
+# Singleton driver — reused across all Neo4jClient instances.
+_driver_lock = Lock()
+_singleton_driver = None
+_singleton_uri: str | None = None
+_singleton_auth: tuple[str, str] | None = None
+
+
+def _get_shared_driver(uri: str, auth: tuple[str, str]):
+    """Return a singleton Neo4j driver, creating it if needed."""
+    global _singleton_driver, _singleton_uri, _singleton_auth
+    with _driver_lock:
+        if _singleton_driver is not None and _singleton_uri == uri and _singleton_auth == auth:
+            return _singleton_driver
+        # Close old driver if URI/auth changed
+        if _singleton_driver is not None:
+            try:
+                _singleton_driver.close()
+            except Exception:
+                pass
+        _singleton_driver = GraphDatabase.driver(uri, auth=auth)
+        _singleton_driver.verify_connectivity()
+        _singleton_uri = uri
+        _singleton_auth = auth
+        logger.debug("Neo4j shared driver connected to %s.", uri)
+        return _singleton_driver
+
+
+def close_shared_driver() -> None:
+    """Close the singleton driver. Call on shutdown or settings reload."""
+    global _singleton_driver, _singleton_uri, _singleton_auth
+    with _driver_lock:
+        if _singleton_driver is not None:
+            _singleton_driver.close()
+            logger.debug("Neo4j shared driver closed.")
+        _singleton_driver = None
+        _singleton_uri = None
+        _singleton_auth = None
 
 _SCHEMA_STATEMENTS: list[str] = [
     "CREATE CONSTRAINT businessconcept_name_unique IF NOT EXISTS "
@@ -74,12 +113,7 @@ class Neo4jClient:
         self._driver = None
 
     def __enter__(self) -> Neo4jClient:
-        self._driver = GraphDatabase.driver(
-            self._uri,
-            auth=(self._username, self._password),
-        )
-        self._driver.verify_connectivity()
-        logger.debug("Neo4j driver connected to %s.", self._uri)
+        self._driver = _get_shared_driver(self._uri, (self._username, self._password))
         return self
 
     def __exit__(
@@ -88,9 +122,8 @@ class Neo4jClient:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        if self._driver is not None:
-            self._driver.close()
-            logger.debug("Neo4j driver closed.")
+        # Driver is shared — do NOT close it here. close_shared_driver() on shutdown.
+        return None
 
     @property
     def driver(self) -> GraphDatabase.driver:

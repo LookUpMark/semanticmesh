@@ -23,7 +23,7 @@ import json
 import sqlite3
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -140,7 +140,7 @@ def save_conversation(
     Returns the conversation metadata dict.
     """
     conv_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     # Auto-title from first user message
     if not title.strip():
@@ -188,7 +188,7 @@ def rename_conversation(conversation_id: str, title: str) -> dict[str, Any]:
     Raises:
         ValueError: If not found.
     """
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     with _db() as conn:
         row = conn.execute(
             "SELECT id, session_id, preview, message_count, active_snapshot_id, created_at "

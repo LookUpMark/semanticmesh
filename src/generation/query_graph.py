@@ -14,14 +14,14 @@ integrating nodes from:
 from __future__ import annotations
 
 import threading
-from typing import TYPE_CHECKING, Any
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import END, StateGraph
 
 # Re-export for backward compatibility with tests
-from src.config.logging import get_logger
+from src.config.logging import NodeTimer, get_logger, log_node_event
 from src.config.settings import get_settings
 from src.generation.nodes import (
     _node_answer_generation,
@@ -50,6 +50,7 @@ if TYPE_CHECKING:
 logger: logging.Logger = get_logger(__name__)
 
 _CONVERSATIONS_DB = Path(__file__).parent.parent.parent / "data" / "memory" / "conversations.db"
+_QUERY_GRAPH_CHECKPOINT_CONN: Any = None
 
 
 def _make_checkpointer():
@@ -57,13 +58,18 @@ def _make_checkpointer():
 
     Falls back to in-process MemorySaver if the package is not installed,
     so the server still starts without the optional dependency.
+
+    The connection is reused on subsequent calls (singleton pattern).
     """
+    global _QUERY_GRAPH_CHECKPOINT_CONN
     try:
         import sqlite3
+
         from langgraph.checkpoint.sqlite import SqliteSaver
         _CONVERSATIONS_DB.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(str(_CONVERSATIONS_DB), check_same_thread=False)
-        return SqliteSaver(conn)
+        if _QUERY_GRAPH_CHECKPOINT_CONN is None:
+            _QUERY_GRAPH_CHECKPOINT_CONN = sqlite3.connect(str(_CONVERSATIONS_DB), check_same_thread=False)
+        return SqliteSaver(_QUERY_GRAPH_CHECKPOINT_CONN)
     except ImportError:
         from langgraph.checkpoint.memory import MemorySaver
         logger.warning(
@@ -132,48 +138,55 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
         "proceed_with_warning": Low quality but usable
         "abstain_early": Insufficient context, abort early
     """
+    with NodeTimer() as timer:
+        settings = get_settings()
+        if not getattr(settings, "enable_retrieval_quality_gate", True):
+            log_node_event(logger, "retrieval_quality_gate", "disabled", "proceed", timer.elapsed_ms)
+            return {"retrieval_gate_decision": "proceed"}
 
-    settings = get_settings()
-    if not getattr(settings, "enable_retrieval_quality_gate", True):
-        return {"retrieval_gate_decision": "proceed"}
+        top_score = float(state.get("retrieval_quality_score", 0.0))
+        chunk_count = int(state.get("retrieval_chunk_count", 0))
+        sufficiency = state.get("context_sufficiency", "insufficient")
+        query = str(state.get("user_query", ""))
+        reranked: list[RetrievedChunk] = state.get("reranked_chunks") or []
+        has_structural_evidence = _has_structural_relationship_evidence(reranked)
+        relation_query = any(k in query.lower() for k in ("related", "relationship", "linked", "link"))
 
-    top_score = float(state.get("retrieval_quality_score", 0.0))
-    chunk_count = int(state.get("retrieval_chunk_count", 0))
-    sufficiency = state.get("context_sufficiency", "insufficient")
-    query = str(state.get("user_query", ""))
-    reranked: list[RetrievedChunk] = state.get("reranked_chunks") or []
-    has_structural_evidence = _has_structural_relationship_evidence(reranked)
-    relation_query = any(k in query.lower() for k in ("related", "relationship", "linked", "link"))
+        if chunk_count == 0:
+            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks=0", "abstain_early", timer.elapsed_ms)
+            return {"retrieval_gate_decision": "abstain_early"}
 
-    if chunk_count == 0:
-        return {"retrieval_gate_decision": "abstain_early"}
+        if chunk_count == 1 and (has_structural_evidence or relation_query):
+            logger.info(
+                "Retrieval gate: preserving sparse but structured evidence (score %.4f).",
+                top_score,
+            )
+            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks=1 structured", "proceed_with_warning", timer.elapsed_ms)
+            return {"retrieval_gate_decision": "proceed_with_warning"}
 
-    if chunk_count == 1 and (has_structural_evidence or relation_query):
-        logger.info(
-            "Retrieval gate: preserving sparse but structured evidence (score %.4f).",
-            top_score,
-        )
+        if sufficiency == "adequate" and top_score >= 0.2:
+            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count}", "proceed", timer.elapsed_ms)
+            return {"retrieval_gate_decision": "proceed"}
+
+        if top_score < 0.02 and not has_structural_evidence and chunk_count <= 2:
+            logger.info(
+                "Retrieval gate: near-zero score (%.4f) without structural evidence (chunks=%d); abstaining early.",
+                top_score,
+                chunk_count,
+            )
+            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count}", "abstain_early", timer.elapsed_ms)
+            return {"retrieval_gate_decision": "abstain_early"}
+
+        if top_score < 0.05 and has_structural_evidence:
+            logger.info(
+                "Retrieval gate: low-score but structural evidence present (chunks=%d); proceeding with warning.",
+                chunk_count,
+            )
+            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count} structured", "proceed_with_warning", timer.elapsed_ms)
+            return {"retrieval_gate_decision": "proceed_with_warning"}
+
+        log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count}", "proceed_with_warning", timer.elapsed_ms)
         return {"retrieval_gate_decision": "proceed_with_warning"}
-
-    if sufficiency == "adequate" and top_score >= 0.2:
-        return {"retrieval_gate_decision": "proceed"}
-
-    if top_score < 0.02 and not has_structural_evidence and chunk_count <= 2:
-        logger.info(
-            "Retrieval gate: near-zero score (%.4f) without structural evidence (chunks=%d); abstaining early.",
-            top_score,
-            chunk_count,
-        )
-        return {"retrieval_gate_decision": "abstain_early"}
-
-    if top_score < 0.05 and has_structural_evidence:
-        logger.info(
-            "Retrieval gate: low-score but structural evidence present (chunks=%d); proceeding with warning.",
-            chunk_count,
-        )
-        return {"retrieval_gate_decision": "proceed_with_warning"}
-
-    return {"retrieval_gate_decision": "proceed_with_warning"}
 
 
 def _node_grader_consistency_validator(state: QueryState) -> dict[str, Any]:
@@ -182,25 +195,28 @@ def _node_grader_consistency_validator(state: QueryState) -> dict[str, Any]:
     Ensures that if a decision is marked as grounded, its action is "pass".
     Inconsistent decisions are logged as warnings.
     """
+    with NodeTimer() as timer:
+        settings = get_settings()
+        if not getattr(settings, "enable_grader_consistency_validator", True):
+            log_node_event(logger, "grader_consistency_validator", "disabled", "valid", timer.elapsed_ms)
+            return {"grader_consistency_valid": True}
 
-    settings = get_settings()
-    if not getattr(settings, "enable_grader_consistency_validator", True):
-        return {"grader_consistency_valid": True}
+        from src.models.schemas import GraderDecision
 
-    from src.models.schemas import GraderDecision
+        decision: GraderDecision | None = state.get("grader_decision")
+        if decision is None:
+            log_node_event(logger, "grader_consistency_validator", "no decision", "valid", timer.elapsed_ms)
+            return {"grader_consistency_valid": True}
 
-    decision: GraderDecision | None = state.get("grader_decision")
-    if decision is None:
-        return {"grader_consistency_valid": True}
-
-    valid = not (decision.grounded and decision.action != "pass")
-    if not valid:
-        logger.warning(
-            "Grader consistency validator detected invalid decision: grounded=%s action=%s",
-            decision.grounded,
-            decision.action,
-        )
-    return {"grader_consistency_valid": valid}
+        valid = not (decision.grounded and decision.action != "pass")
+        if not valid:
+            logger.warning(
+                "Grader consistency validator detected invalid decision: grounded=%s action=%s",
+                decision.grounded,
+                decision.action,
+            )
+        log_node_event(logger, "grader_consistency_validator", f"grounded={decision.grounded} action={decision.action}", f"valid={valid}", timer.elapsed_ms)
+        return {"grader_consistency_valid": valid}
 
 
 def _node_finalise(state: QueryState) -> dict[str, Any]:
@@ -210,20 +226,22 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
     Also appends the accepted AIMessage to the LangGraph-native messages state so it
     is persisted in the checkpoint and available as history for the next turn.
     """
-    answer: str = state.get("current_answer") or ""
-    gate_decision = state.get("retrieval_gate_decision", "proceed")
-    if gate_decision == "abstain_early":
-        answer = "I cannot find this information in the knowledge graph."
-    reranked: list[RetrievedChunk] = state.get("reranked_chunks") or []
-    generated_with: list[RetrievedChunk] = state.get("generation_chunks") or reranked
-    sources: list[str] = [c.node_id for c in generated_with]
-    # Entity names from vector/graph retrieval — used for GT coverage comparison
-    entity_names: list[str] = list({
-        c.node_id for c in reranked if c.source_type in ("vector", "graph")
-    })
-    # retrieved_contexts: full texts used by RAGAS evaluation
-    retrieved_contexts: list[str] = [c.text for c in generated_with if c.text]
-    return {
+    with NodeTimer() as timer:
+        answer: str = state.get("current_answer") or ""
+        gate_decision = state.get("retrieval_gate_decision", "proceed")
+        if gate_decision == "abstain_early":
+            answer = "I cannot find this information in the knowledge graph."
+        reranked: list[RetrievedChunk] = state.get("reranked_chunks") or []
+        generated_with: list[RetrievedChunk] = state.get("generation_chunks") or reranked
+        sources: list[str] = [c.node_id for c in generated_with]
+        # Entity names from vector/graph retrieval — used for GT coverage comparison
+        entity_names: list[str] = list({
+            c.node_id for c in reranked if c.source_type in ("vector", "graph")
+        })
+        # retrieved_contexts: full texts used by RAGAS evaluation
+        retrieved_contexts: list[str] = [c.text for c in generated_with if c.text]
+        log_node_event(logger, "finalise", f"gate={gate_decision} sources={len(sources)}", "finalised", timer.elapsed_ms)
+        return {
         # Persist accepted answer as AIMessage via add_messages reducer.
         # Next invocation will see [..., HumanMessage(prev_q), AIMessage(prev_a), HumanMessage(curr_q)].
         "messages": [AIMessage(content=answer)],

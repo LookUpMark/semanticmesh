@@ -84,9 +84,9 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
         from src.generation.query_graph import run_query
         from src.graph.builder_graph import run_builder
 
-        dataset_path = Path(req.dataset)
-        if not dataset_path.is_absolute():
-            dataset_path = _ROOT / dataset_path
+        dataset_path = Path(req.dataset).resolve()
+        if not str(dataset_path).startswith(str(_ROOT.resolve())):
+            raise ValueError(f"Dataset path '{req.dataset}' is outside the allowed directory.")
         if not dataset_path.exists():
             raise FileNotFoundError(f"Dataset not found: {dataset_path}")
 
@@ -317,9 +317,9 @@ def _run_ablation_task_with_preset(
         from src.generation.query_graph import run_query
         from src.graph.builder_graph import run_builder
 
-        dataset_path = Path(req.dataset)
-        if not dataset_path.is_absolute():
-            dataset_path = _ROOT / dataset_path
+        dataset_path = Path(req.dataset).resolve()
+        if not str(dataset_path).startswith(str(_ROOT.resolve())):
+            raise ValueError(f"Dataset path '{req.dataset}' is outside the allowed directory.")
         if not dataset_path.exists():
             raise FileNotFoundError(f"Dataset not found: {dataset_path}")
 

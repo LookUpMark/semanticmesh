@@ -44,6 +44,7 @@ class BuilderState(TypedDict, total=False):
     cypher_failed: bool
     hitl_flag: bool
     skip_hitl: bool
+    rejected: bool
     failed_mappings: list[str]
     ingestion_errors: list[str]
     completed_tables: list[str]

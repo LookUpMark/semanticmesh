@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from src.config.config import LMSTUDIO_PLACEHOLDER_KEY
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 
@@ -79,7 +80,7 @@ def get_reranker():
             emb_model = emb_model[len("lmstudio/"):]
         base_url: str = settings.lmstudio_base_url
         logger.info("Using LM Studio reranker (cosine similarity via '%s').", emb_model)
-        return _LMStudioReranker(client=OpenAI(api_key="lm-studio", base_url=base_url), model=emb_model)
+        return _LMStudioReranker(client=OpenAI(api_key=LMSTUDIO_PLACEHOLDER_KEY, base_url=base_url), model=emb_model)
 
     try:
         from FlagEmbedding import FlagReranker

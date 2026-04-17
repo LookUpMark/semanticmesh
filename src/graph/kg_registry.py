@@ -30,7 +30,7 @@ import json
 import sqlite3
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +41,11 @@ logger = get_logger(__name__)
 _DATA_DIR = Path(__file__).parent.parent.parent / "data" / "memory"
 _REGISTRY_DB = _DATA_DIR / "kg_registry.db"
 _SNAPSHOTS_DIR = _DATA_DIR / "kg_snapshots"
+
+_ALLOWED_REL_TYPES = frozenset({
+    "MAPPED_TO", "HAS_ATTRIBUTE", "REFERENCES", "MENTIONS",
+    "DESCRIBED_BY", "PART_OF", "INSTANCE_OF", "CONTAINS_CHUNK",
+})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -238,9 +243,9 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
         parts = fingerprint.split("::", 2)
         label = parts[0]
         if label == "BusinessConcept":
-            return f"({{a}}:BusinessConcept {{name: ${{a}}_key}})", "a", {"{a}_key": parts[1]}
+            return "({a}:BusinessConcept {name: ${a}_key})", "a", {"{a}_key": parts[1]}
         if label == "PhysicalTable":
-            return f"({{a}}:PhysicalTable {{table_name: ${{a}}_key}})", "a", {"{a}_key": parts[1]}
+            return "({a}:PhysicalTable {table_name: ${a}_key})", "a", {"{a}_key": parts[1]}
         if label == "ParentChunk":
             return (
                 "({a}:ParentChunk {parent_chunk_index: ${a}_idx, source_doc: ${a}_src})",
@@ -254,7 +259,7 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
                 {"{a}_idx": int(parts[1]), "{a}_src": parts[2]},
             )
         if label == "SourceFile":
-            return f"({{a}}:SourceFile {{path: ${{a}}_key}})", "a", {"{a}_key": parts[1]}
+            return "({a}:SourceFile {path: ${a}_key})", "a", {"{a}_key": parts[1]}
         return "", "a", {}
 
     with Neo4jClient() as client:
@@ -322,7 +327,10 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
                 continue
 
             rel_type = edge["rel_type"]
-            cypher = f"{src_match} {tgt_match} MERGE (a)-[r:{rel_type}]->(b) SET r += $props"
+            if rel_type not in _ALLOWED_REL_TYPES:
+                logger.warning("Skipping unknown relationship type '%s' during import.", rel_type)
+                continue
+            cypher = f"{src_match} {tgt_match} MERGE (a)-[r:`{rel_type}`]->(b) SET r += $props"
             params = {**src_params, **tgt_params, "props": edge["props"]}
             rel_stmts.append((cypher, params))
 
@@ -394,7 +402,7 @@ def save_snapshot(name: str, description: str = "") -> dict[str, Any]:
     _ensure_dirs()
     snapshot_path.write_text(json.dumps(payload, default=str), encoding="utf-8")
 
-    created_at = datetime.now(timezone.utc).isoformat()
+    created_at = datetime.now(UTC).isoformat()
     with _db() as conn:
         conn.execute(
             "INSERT INTO kg_snapshots (id, name, description, created_at, node_count, edge_count, snapshot_path) "

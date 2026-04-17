@@ -31,29 +31,8 @@ _TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
 
 def _query_terms(query: str) -> set[str]:
-    stop = {
-        "what",
-        "which",
-        "where",
-        "when",
-        "how",
-        "does",
-        "the",
-        "this",
-        "that",
-        "with",
-        "into",
-        "from",
-        "table",
-        "database",
-        "business",
-        "concept",
-        "information",
-        "schema",
-        "knowledge",
-        "graph",
-    }
-    return {t.lower() for t in _TOKEN_RE.findall(query) if len(t) > 2 and t.lower() not in stop}
+    from src.utils.query_utils import query_terms as _qt
+    return _qt(query)
 
 
 def _distill_text(chunk: RetrievedChunk) -> str:

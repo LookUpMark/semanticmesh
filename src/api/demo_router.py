@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 import tempfile
+import threading
 from pathlib import Path
 from typing import Any
 
-import threading
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running, set_step
-from src.evaluation.ablation_runner import _settings_override as _settings_override
+from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running
 from src.api.models import (
     BuildRequest,
     BuildResultResponse,
@@ -19,7 +19,6 @@ from src.api.models import (
     ConversationMeta,
     GraphStatsResponse,
     KGSnapshotMeta,
-    PipelineConfig,
     PipelineJobResponse,
     PipelineRequest,
     PipelineResultResponse,
@@ -30,6 +29,7 @@ from src.api.models import (
     SaveConversationRequest,
     SaveSnapshotRequest,
 )
+from src.evaluation.ablation_runner import _settings_override as _settings_override
 
 router = APIRouter(prefix="/demo", tags=["E2E Demo"])
 
@@ -40,8 +40,10 @@ _ROOT = Path(__file__).parent.parent.parent  # repo root
 
 
 def _to_abs(path: str) -> str:
-    p = Path(path)
-    return str(p if p.is_absolute() else _ROOT / p)
+    p = Path(path).resolve()
+    if not str(p).startswith(str(_ROOT.resolve())):
+        raise ValueError(f"Path '{path}' is outside the allowed directory.")
+    return str(p)
 
 
 _MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB per file
@@ -86,7 +88,7 @@ async def _save_uploads(files: list[UploadFile]) -> list[str]:
             )
 
         temp_file = temp_dir / safe_name
-        temp_file.write_bytes(content)
+        await asyncio.to_thread(temp_file.write_bytes, content)
         paths.append(str(temp_file))
 
     return paths
@@ -316,6 +318,7 @@ async def stream_build_status(job_id: str):
     """SSE endpoint — yields JSON events until the job reaches a terminal state."""
     import asyncio
     import json as _json
+
     from fastapi.responses import StreamingResponse
 
     async def _event_generator():
@@ -522,7 +525,7 @@ def delete_graph() -> dict[str, int]:
             client.execute_cypher("MATCH (n) DETACH DELETE n")
         return {"nodes_deleted": total}
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+        raise HTTPException(status_code=503, detail="Neo4j unavailable.") from exc
 
 
 @router.get(
@@ -580,7 +583,7 @@ def get_graph_stats() -> GraphStatsResponse:
             total_relationships=int(row.get("total_relationships", 0) or 0),
         )
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+        raise HTTPException(status_code=503, detail="Neo4j unavailable.") from exc
 
 
 def _sanitize_neo4j_value(v: Any) -> Any:
@@ -682,7 +685,7 @@ def get_graph_data() -> dict:
 
         return {"nodes": nodes, "edges": edges}
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+        raise HTTPException(status_code=503, detail="Neo4j unavailable.") from exc
 
 
 # ── KG Snapshot endpoints ─────────────────────────────────────────────────────
@@ -819,6 +822,7 @@ def list_conversations() -> list[ConversationMeta]:
 )
 def get_conversation(conversation_id: str) -> ConversationDetail:
     from pydantic import ValidationError
+
     from src.graph.conversation_registry import get_conversation as _get
     try:
         conv = _get(conversation_id)
@@ -827,7 +831,7 @@ def get_conversation(conversation_id: str) -> ConversationDetail:
     try:
         return ConversationDetail(**conv)
     except ValidationError as exc:
-        raise HTTPException(status_code=500, detail=f"Stored conversation data is corrupted: {exc}") from exc
+        raise HTTPException(status_code=500, detail="Stored conversation data is corrupted.") from exc
 
 
 @router.post(

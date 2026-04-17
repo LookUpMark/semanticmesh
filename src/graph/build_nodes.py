@@ -11,17 +11,17 @@ import logging
 from typing import Any
 
 from src.config.llm_factory import get_reasoning_llm
-from src.config.logging import get_logger
+from src.config.logging import NodeTimer, get_logger, log_node_event
 from src.config.settings import get_settings
 from src.graph.cypher_builder import build_fk_cypher, build_upsert_cypher
 from src.graph.cypher_generator import generate_cypher
 from src.graph.cypher_healer import heal_cypher
 from src.graph.neo4j_client import Neo4jClient
 from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
-from src.utils.text_utils import normalize_concept_name
 from src.models.state import BuilderState
 from src.prompts.few_shot import load_cypher_examples
 from src.retrieval.embeddings import embed_text, get_embeddings
+from src.utils.text_utils import normalize_concept_name
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -69,53 +69,72 @@ def _entity_from_table(concept_name: str, table: EnrichedTableSchema) -> Entity:
 
 def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
     """Generate MERGE-based Cypher from mapping proposal."""
-    settings = get_settings()
-    if bool(state.get("use_lazy_extraction", settings.use_lazy_extraction)):
-        logger.info("Lazy mode: skipping LLM Cypher generation.")
-        return {"current_cypher": None, "healing_attempts": 0}
+    with NodeTimer() as timer:
+        settings = get_settings()
+        if bool(state.get("use_lazy_extraction", settings.use_lazy_extraction)):
+            logger.info("Lazy mode: skipping LLM Cypher generation.")
+            log_node_event(logger, "generate_cypher", "lazy mode", "skipped", timer.elapsed_ms)
+            return {"current_cypher": None, "healing_attempts": 0}
 
-    llm = get_reasoning_llm()
-    proposal: MappingProposal = state["mapping_proposal"]
-    table = state.get("current_table")
-    resolved = _find_entity_for_concept(
-        proposal.mapped_concept or "", state.get("current_entities") or []
-    )
-    entity = resolved or _entity_from_table(proposal.mapped_concept or "Unknown", table)
-    few_shot = load_cypher_examples(settings.few_shot_cypher_examples)
-    cypher = generate_cypher(proposal, table, entity, few_shot, llm)
-    return {"current_cypher": cypher, "healing_attempts": 0}
+        proposal: MappingProposal | None = state.get("mapping_proposal")
+        if not proposal:
+            logger.warning("No mapping_proposal in generate_cypher — skipping.")
+            log_node_event(logger, "generate_cypher", "no proposal", "skipped", timer.elapsed_ms)
+            return {"current_cypher": None, "healing_attempts": 0}
+
+        llm = get_reasoning_llm()
+        table = state.get("current_table")
+        resolved = _find_entity_for_concept(
+            proposal.mapped_concept or "", state.get("current_entities") or []
+        )
+        entity = resolved or _entity_from_table(proposal.mapped_concept or "Unknown", table)
+        few_shot = load_cypher_examples(settings.few_shot_cypher_examples)
+        cypher = generate_cypher(proposal, table, entity, few_shot, llm)
+        log_node_event(logger, "generate_cypher", f"table={proposal.table_name}", "cypher generated", timer.elapsed_ms, model_used=settings.llm_model_reasoning)
+        return {"current_cypher": cypher, "healing_attempts": 0}
 
 
 def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
     """Validate and heal Cypher via dry-run + LLM reflection loop."""
-    settings = get_settings()
-    if bool(state.get("use_lazy_extraction", settings.use_lazy_extraction)):
-        return {"cypher_failed": True, "current_cypher": None}
+    with NodeTimer() as timer:
+        settings = get_settings()
+        if bool(state.get("use_lazy_extraction", settings.use_lazy_extraction)):
+            log_node_event(logger, "heal_cypher", "lazy mode", "skipped", timer.elapsed_ms)
+            return {"cypher_failed": True, "current_cypher": None}
 
-    if not settings.enable_cypher_healing:
-        logger.info("Cypher healing disabled — using deterministic builder fallback.")
-        return {"cypher_failed": True, "current_cypher": None}
-    llm = get_reasoning_llm()
-    cypher: str = state.get("current_cypher") or ""
-    proposal: MappingProposal = state["mapping_proposal"]
+        if not settings.enable_cypher_healing:
+            logger.info("Cypher healing disabled — using deterministic builder fallback.")
+            log_node_event(logger, "heal_cypher", "disabled", "fallback", timer.elapsed_ms)
+            return {"cypher_failed": True, "current_cypher": None}
 
-    with Neo4jClient() as client:
-        healed = heal_cypher(
-            cypher,
-            proposal,
-            client.driver,
-            llm,
-            max_attempts=settings.max_cypher_healing_attempts,
-        )
+        proposal: MappingProposal | None = state.get("mapping_proposal")
+        if not proposal:
+            logger.warning("No mapping_proposal in heal_cypher — marking as failed.")
+            log_node_event(logger, "heal_cypher", "no proposal", "failed", timer.elapsed_ms)
+            return {"cypher_failed": True, "current_cypher": None}
 
-    if healed is None:
-        logger.warning(
-            "Cypher healing failed for table '%s' — using deterministic builder.",
-            proposal.table_name,
-        )
-        return {"cypher_failed": True, "current_cypher": None}
+        llm = get_reasoning_llm()
+        cypher: str = state.get("current_cypher") or ""
 
-    return {"current_cypher": healed, "cypher_failed": False}
+        with Neo4jClient() as client:
+            healed = heal_cypher(
+                cypher,
+                proposal,
+                client.driver,
+                llm,
+                max_attempts=settings.max_cypher_healing_attempts,
+            )
+
+        if healed is None:
+            logger.warning(
+                "Cypher healing failed for table '%s' — using deterministic builder.",
+                proposal.table_name,
+            )
+            log_node_event(logger, "heal_cypher", f"table={proposal.table_name}", "healing failed", timer.elapsed_ms)
+            return {"cypher_failed": True, "current_cypher": None}
+
+        log_node_event(logger, "heal_cypher", f"table={proposal.table_name}", "healed", timer.elapsed_ms)
+        return {"current_cypher": healed, "cypher_failed": False}
 
 
 def _build_llm_cypher_params(
@@ -176,165 +195,169 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
     In both cases the BusinessConcept embedding is populated afterwards so the
     vector index can serve Query Graph requests.
     """
-    proposal: MappingProposal | None = state.get("mapping_proposal")
-    table: EnrichedTableSchema | None = state.get("current_table")
+    with NodeTimer() as timer:
+        proposal: MappingProposal | None = state.get("mapping_proposal")
+        table: EnrichedTableSchema | None = state.get("current_table")
 
-    if not proposal or not table:
-        logger.warning("Missing proposal or table in build_graph — skipping.")
-        return {}
+        if not proposal or not table:
+            logger.warning("Missing proposal or table in build_graph — skipping.")
+            log_node_event(logger, "build_graph", "no proposal/table", "skipped", timer.elapsed_ms)
+            return {}
 
-    llm_cypher: str | None = state.get("current_cypher")
-    cypher_failed: bool = state.get("cypher_failed", False)
-    lazy_mode: bool = bool(state.get("use_lazy_extraction", get_settings().use_lazy_extraction))
+        llm_cypher: str | None = state.get("current_cypher")
+        cypher_failed: bool = state.get("cypher_failed", False)
+        lazy_mode: bool = bool(state.get("use_lazy_extraction", get_settings().use_lazy_extraction))
 
-    # Normalize the concept name to Title Case before any graph writes
-    concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
+        # Normalize the concept name to Title Case before any graph writes
+        concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
 
-    # Resolve entity early — needed for both LLM and fallback paths.
-    # If no matching resolved entity exists (e.g. the RAG Mapper normalised the
-    # concept name differently from what entity resolution produced), fall back
-    # to a best-effort Entity built from the table's enriched metadata so that
-    # BusinessConcept nodes are never written with empty properties.
-    resolved = _find_entity_for_concept(
-        concept_name, state.get("current_entities") or []
-    )
-    entity_for_write = resolved or _entity_from_table(concept_name, table)
-    if resolved is None:
-        logger.warning(
-            "No resolved entity matched concept '%s' — using table metadata as fallback "
-            "(definition from table_description, provenance from ddl_source).",
-            concept_name,
+        # Resolve entity early — needed for both LLM and fallback paths.
+        # If no matching resolved entity exists (e.g. the RAG Mapper normalised the
+        # concept name differently from what entity resolution produced), fall back
+        # to a best-effort Entity built from the table's enriched metadata so that
+        # BusinessConcept nodes are never written with empty properties.
+        resolved = _find_entity_for_concept(
+            concept_name, state.get("current_entities") or []
         )
-
-    if llm_cypher and not cypher_failed and not lazy_mode:
-        logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
-        exec_cypher = llm_cypher
-        # Safety-net params: the system prompt tells the LLM to inline values,
-        # but it sometimes copies parameterised style from few-shot examples.
-        # Providing the params avoids ParameterMissing errors at runtime.
-        exec_params = _build_llm_cypher_params(proposal, table, entity_for_write)
-    else:
-        logger.info(
-            "LLM Cypher failed for '%s' — falling back to deterministic builder.",
-            proposal.table_name,
-        )
-        exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=entity_for_write)
-
-    with Neo4jClient() as client:
-        client.execute_cypher(exec_cypher, exec_params)
-        logger.info("Graph updated for table '%s'.", proposal.table_name)
-
-        # Normalize PhysicalTable.table_name to canonical UPPERCASE
-        # (LLM Cypher may use lowercase from DDL source text, while
-        # build_fk_cypher always uses the UPPERCASE name from the parser)
-        client.execute_cypher(
-            "MATCH (pt:PhysicalTable) "
-            "WHERE toLower(pt.table_name) = toLower($name) "
-            "SET pt.table_name = $canonical",
-            {"name": table.table_name, "canonical": table.table_name},
-        )
-
-        # Always stamp source_file regardless of which Cypher path was used
-        # (LLM-generated Cypher doesn't know about this property)
-        if table.source_file:
-            client.execute_cypher(
-                "MATCH (pt:PhysicalTable) "
-                "WHERE toLower(pt.table_name) = toLower($name) "
-                "SET pt.source_file = $source_file",
-                {"name": table.table_name, "source_file": table.source_file},
+        entity_for_write = resolved or _entity_from_table(concept_name, table)
+        if resolved is None:
+            logger.warning(
+                "No resolved entity matched concept '%s' — using table metadata as fallback "
+                "(definition from table_description, provenance from ddl_source).",
+                concept_name,
             )
 
-        # Always stamp enriched metadata on the PhysicalTable node so that
-        # nodes written via the LLM Cypher path get full properties too.
-        enriched_params: dict[str, Any] = {"name": table.table_name}
-        enriched_set_clauses: list[str] = []
-        if getattr(table, "enriched_table_name", None):
-            enriched_set_clauses.append("pt.enriched_table_name = $etn")
-            enriched_params["etn"] = table.enriched_table_name
-        if getattr(table, "table_description", None):
-            enriched_set_clauses.append("pt.table_description = $td")
-            enriched_params["td"] = table.table_description
-        if getattr(table, "enriched_columns", None):
-            enriched_set_clauses.append("pt.enriched_columns = $ec")
-            enriched_params["ec"] = _json.dumps(
-                [{"original": ec.original_name, "enriched": ec.enriched_name}
-                 for ec in table.enriched_columns]
-            )
-        if table.comment:
-            enriched_set_clauses.append("pt.comment = $cmt")
-            enriched_params["cmt"] = table.comment
-        if enriched_set_clauses:
-            client.execute_cypher(
-                "MATCH (pt:PhysicalTable) "
-                "WHERE toLower(pt.table_name) = toLower($name) "
-                f"SET {', '.join(enriched_set_clauses)}",
-                enriched_params,
-            )
-
-        fk_statements = build_fk_cypher(table)
-        for fk_cypher, fk_params in fk_statements:
-            try:
-                client.execute_cypher(fk_cypher, fk_params)
-                logger.info(
-                    "FK edge: %s.%s -> %s",
-                    table.table_name,
-                    fk_params["fk_column"],
-                    fk_params["tgt_table"],
-                )
-            except Exception as exc:
-                logger.warning(
-                    "Could not write FK edge for %s.%s: %s",
-                    table.table_name,
-                    fk_params["fk_column"],
-                    exc,
-                )
-
-        if proposal.mapped_concept:
-            try:
-                model = get_embeddings()
-                vector = embed_text(concept_name, model=model)
-                client.execute_cypher(
-                    "MATCH (c:BusinessConcept {name: $name}) SET c.embedding = $emb",
-                    {"name": concept_name, "emb": vector},
-                )
-                logger.info("Embedding set for BusinessConcept '%s'.", concept_name)
-            except Exception as exc:
-                logger.warning("Could not set embedding for '%s': %s", concept_name, exc)
-
-        # ── MENTIONS edges: link Chunk nodes to this BusinessConcept ──
-        if proposal.mapped_concept:
-            triplets = state.get("triplets") or []
-            concept_lower = concept_name.lower()
-            chunk_indexes: set[int] = set()
-            for t in triplets:
-                if t.source_chunk_index is not None and (
-                    concept_lower in t.subject.lower() or concept_lower in t.object.lower()
-                ):
-                    chunk_indexes.add(t.source_chunk_index)
-            if chunk_indexes:
-                try:
-                    client.execute_cypher(
-                        "UNWIND $idxs AS idx "
-                        "MATCH (ch:Chunk {chunk_index: idx}) "
-                        "MATCH (bc:BusinessConcept {name: $concept}) "
-                        "MERGE (ch)-[:MENTIONS]->(bc)",
-                        {"idxs": list(chunk_indexes), "concept": concept_name},
-                    )
-                    logger.info(
-                        "MENTIONS edges: %d chunks → '%s' (batch).",
-                        len(chunk_indexes),
-                        concept_name,
-                    )
-                except Exception as exc:
+        if llm_cypher and not cypher_failed and not lazy_mode:
+            blocked_keywords = ("DETACH DELETE", "DROP ", "REMOVE ", "DELETE ")
+            upper_cypher = llm_cypher.upper()
+            for kw in blocked_keywords:
+                if kw in upper_cypher:
                     logger.warning(
-                        "Could not create MENTIONS edges → '%s': %s",
-                        concept_name,
-                        exc,
+                        "LLM Cypher contains blocked keyword '%s' — falling back to deterministic builder.",
+                        kw.strip(),
                     )
+                    cypher_failed = True
+                    break
+            if not cypher_failed:
+                logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
+            exec_cypher = llm_cypher
+            # Safety-net params: the system prompt tells the LLM to inline values,
+            # but it sometimes copies parameterised style from few-shot examples.
+            # Providing the params avoids ParameterMissing errors at runtime.
+            exec_params = _build_llm_cypher_params(proposal, table, entity_for_write)
+        else:
+            logger.info(
+                "LLM Cypher failed for '%s' — falling back to deterministic builder.",
+                proposal.table_name,
+            )
+            exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=entity_for_write)
 
-    completed = list(state.get("completed_tables") or [])
-    completed.append(proposal.table_name)
-    return {"completed_tables": completed}
+        with Neo4jClient() as client:
+            client.execute_cypher(exec_cypher, exec_params)
+            logger.info("Graph updated for table '%s'.", proposal.table_name)
+
+            # Normalize PhysicalTable.table_name to canonical UPPERCASE
+            # (LLM Cypher may use lowercase from DDL source text, while
+            # build_fk_cypher always uses the UPPERCASE name from the parser)
+            client.execute_cypher(
+                "MATCH (pt:PhysicalTable) "
+                "WHERE toLower(pt.table_name) = toLower($name) "
+                "SET pt.table_name = $canonical",
+                {"name": table.table_name, "canonical": table.table_name},
+            )
+
+            # Always stamp source_file regardless of which Cypher path was used
+            # (LLM-generated Cypher doesn't know about this property)
+            if table.source_file:
+                client.execute_cypher(
+                    "MATCH (pt:PhysicalTable) "
+                    "WHERE toLower(pt.table_name) = toLower($name) "
+                    "SET pt.source_file = $source_file",
+                    {"name": table.table_name, "source_file": table.source_file},
+                )
+
+            # Always stamp enriched metadata on the PhysicalTable node so that
+            # nodes written via the LLM Cypher path get full properties too.
+            enriched_params: dict[str, Any] = {"name": table.table_name}
+            enriched_set_clauses: list[str] = []
+            if getattr(table, "enriched_table_name", None):
+                enriched_set_clauses.append("pt.enriched_table_name = $etn")
+                enriched_params["etn"] = table.enriched_table_name
+            if getattr(table, "table_description", None):
+                enriched_set_clauses.append("pt.table_description = $td")
+                enriched_params["td"] = table.table_description
+            if getattr(table, "enriched_columns", None):
+                enriched_set_clauses.append("pt.enriched_columns = $ec")
+                enriched_params["ec"] = _json.dumps(
+                    [{"original": ec.original_name, "enriched": ec.enriched_name}
+                     for ec in table.enriched_columns]
+                )
+            if table.comment:
+                enriched_set_clauses.append("pt.comment = $cmt")
+                enriched_params["cmt"] = table.comment
+            if enriched_set_clauses:
+                client.execute_cypher(
+                    "MATCH (pt:PhysicalTable) "
+                    "WHERE toLower(pt.table_name) = toLower($name) "
+                    f"SET {', '.join(enriched_set_clauses)}",
+                    enriched_params,
+                )
+
+            fk_statements = build_fk_cypher(table)
+            if fk_statements:
+                try:
+                    client.execute_batch(fk_statements)
+                    logger.info("FK edges: %d batched for table '%s'.", len(fk_statements), table.table_name)
+                except Exception as exc:
+                    logger.warning("Could not write FK edges for '%s': %s", table.table_name, exc)
+
+            if proposal.mapped_concept:
+                try:
+                    model = get_embeddings()
+                    vector = embed_text(concept_name, model=model)
+                    client.execute_cypher(
+                        "MATCH (c:BusinessConcept {name: $name}) SET c.embedding = $emb",
+                        {"name": concept_name, "emb": vector},
+                    )
+                    logger.info("Embedding set for BusinessConcept '%s'.", concept_name)
+                except Exception as exc:
+                    logger.warning("Could not set embedding for '%s': %s", concept_name, exc)
+
+            # ── MENTIONS edges: link Chunk nodes to this BusinessConcept ──
+            if proposal.mapped_concept:
+                triplets = state.get("triplets") or []
+                concept_lower = concept_name.lower()
+                chunk_indexes: set[int] = set()
+                for t in triplets:
+                    if t.source_chunk_index is not None and (
+                        concept_lower in t.subject.lower() or concept_lower in t.object.lower()
+                    ):
+                        chunk_indexes.add(t.source_chunk_index)
+                if chunk_indexes:
+                    try:
+                        client.execute_cypher(
+                            "UNWIND $idxs AS idx "
+                            "MATCH (ch:Chunk {chunk_index: idx}) "
+                            "MATCH (bc:BusinessConcept {name: $concept}) "
+                            "MERGE (ch)-[:MENTIONS]->(bc)",
+                            {"idxs": list(chunk_indexes), "concept": concept_name},
+                        )
+                        logger.info(
+                            "MENTIONS edges: %d chunks → '%s' (batch).",
+                            len(chunk_indexes),
+                            concept_name,
+                        )
+                    except Exception as exc:
+                        logger.warning(
+                            "Could not create MENTIONS edges → '%s': %s",
+                            concept_name,
+                            exc,
+                        )
+
+        completed = list(state.get("completed_tables") or [])
+        completed.append(proposal.table_name)
+        log_node_event(logger, "build_graph", f"table={proposal.table_name}", f"{len(completed)} completed", timer.elapsed_ms)
+        return {"completed_tables": completed}
 
 
 def _route_after_heal(state: BuilderState) -> str:

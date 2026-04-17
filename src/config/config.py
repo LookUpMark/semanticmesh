@@ -9,6 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Placeholder API key for local LM Studio (localhost-only, not a real secret).
+LMSTUDIO_PLACEHOLDER_KEY = "lm-studio"
+
 
 @dataclass(frozen=True)
 class AppConfig:

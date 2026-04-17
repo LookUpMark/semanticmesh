@@ -89,7 +89,7 @@ def propose_mapping(
                 "name": e.name,
                 "definition": e.definition,
                 "synonyms": e.synonyms,
-                "provenance_text": e.provenance_text[:300],
+                "provenance_text": (e.provenance_text or "")[:300],
             }
             for e in entities
         ]
