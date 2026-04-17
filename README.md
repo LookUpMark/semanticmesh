@@ -306,10 +306,13 @@ python -m scripts.neo4j_lifecycle --help  # Clear database, setup schema
 
 ```bash
 # Run a single ablation study
-python -m scripts.run_ablation_full --study AB-10 --dataset DS01
+python -m scripts.run_pipeline --study AB-10 --dataset tests/fixtures/01_basics_ecommerce/gold_standard.json
+
+# Run best known config
+python -m scripts.run_pipeline --best --all-datasets
 
 # Run full campaign (21 studies x 6 datasets)
-python -m scripts.run_ablation_full --all
+python -m scripts.run_pipeline --all-studies --all-datasets --ragas
 ```
 
 ---

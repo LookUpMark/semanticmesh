@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
-"""
-Run AI-as-Judge evaluation on one or more evaluation_bundle.json files.
+"""Run AI-as-Judge evaluation on evaluation bundles.
 
-Each bundle is evaluated individually and saved as ``ai_judge.md`` inside
-the same directory as the bundle.  An optional combined summary report can
-be written with ``--output``.
+Supports:
+  - Specific bundles via --bundles PATH ...
+  - Auto-discover all un-judged bundles via --all (replaces run_judge_all.sh)
+  - Filter by study/dataset with --studies and --datasets
+  - Force re-evaluation with --force
+
+Uses the project's make_llm() factory for provider-agnostic model access.
 
 Usage:
-    python scripts/run_ai_judge.py \
-        --bundles outputs/ablation/AB-00/datasets/01_basics_ecommerce/evaluation_bundle.json \
-                  outputs/ablation/AB-00/datasets/02_intermediate_finance/evaluation_bundle.json \
-        --judge gpt-5.4-mini
-
-    # With optional combined output:
-    python scripts/run_ai_judge.py \
-        --bundles ... \
-        --output outputs/ablation/AB-00/judge/AI_JUDGE_REPORT.md \
-        --judge gpt-5.4-mini
+    python -m scripts.run_ai_judge --bundles outputs/ablation/AB-00/datasets/01_basics_ecommerce/evaluation_bundle.json
+    python -m scripts.run_ai_judge --all --studies AB-01 AB-02
+    python -m scripts.run_ai_judge --all --judge gpt-5.4-mini --force
 """
+
+from __future__ import annotations
 
 import argparse
 import json
@@ -26,12 +24,28 @@ import sys
 from datetime import date
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from dotenv import load_dotenv  # noqa: E402
+from dotenv import load_dotenv  # type: ignore[import]
 
 load_dotenv(ROOT / ".env")
+
+# ── Constants ────────────────────────────────────────────────────────────────────
+
+BASE = Path("outputs/ablation")
+DATASETS = [
+    "01_basics_ecommerce",
+    "02_intermediate_finance",
+    "03_advanced_healthcare",
+    "04_complex_manufacturing",
+    "05_edgecases_incomplete",
+    "06_edgecases_legacy",
+]
+STUDY_IDS = [f"AB-{i:02d}" for i in range(1, 21)]
+
+
+# ── Core ─────────────────────────────────────────────────────────────────────────
 
 
 def load_prompt() -> str:
@@ -42,14 +56,10 @@ def load_prompt() -> str:
 
 
 def evaluate_bundle(bundle_path: Path, judge_model: str, system_prompt: str) -> str:
-    """Call the AI judge for a single evaluation bundle."""
-    from openai import OpenAI
+    """Call the AI judge for a single evaluation bundle using make_llm()."""
+    from langchain_core.messages import HumanMessage, SystemMessage  # type: ignore[import]
 
-    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
-    base_url = None
-    if not os.environ.get("OPENAI_API_KEY") and os.environ.get("OPENROUTER_API_KEY"):
-        base_url = "https://openrouter.ai/api/v1"
-    client = OpenAI(api_key=api_key, base_url=base_url)
+    from src.config.llm_factory import make_llm  # noqa: PLC0415
 
     bundle_text = bundle_path.read_text(encoding="utf-8")
     user_msg = (
@@ -59,15 +69,12 @@ def evaluate_bundle(bundle_path: Path, judge_model: str, system_prompt: str) -> 
     )
 
     print(f"  Calling {judge_model} for {bundle_path.parent.name}...", flush=True)
-    response = client.chat.completions.create(
-        model=judge_model,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_msg},
-        ],
-        max_completion_tokens=8000,
-    )
-    return response.choices[0].message.content or ""
+    llm = make_llm(judge_model, temperature=0.0, max_tokens=8000, role="ai_judge")
+    response = llm.invoke([
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=user_msg),
+    ])
+    return response.content or ""
 
 
 def _bundle_meta(bundle_path: Path) -> dict:
@@ -79,8 +86,6 @@ def _bundle_meta(bundle_path: Path) -> dict:
     br = d.get("builder_report", {})
     return {
         "label": f"{meta.get('study_id', '?')}/{meta.get('dataset_id', '?')}",
-        "reasoning_model": cfg.get("reasoning_model", "?"),
-        "extraction_model": cfg.get("extraction_model", "?"),
         "grounded_rate": qr.get("grounded_rate", 0),
         "avg_gt_coverage": qr.get("avg_gt_coverage", 0),
         "avg_top_score": qr.get("avg_top_score", 0),
@@ -89,36 +94,36 @@ def _bundle_meta(bundle_path: Path) -> dict:
     }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Run AI Judge on evaluation bundles")
-    parser.add_argument(
-        "--bundles",
-        nargs="+",
-        required=True,
-        help="Paths to evaluation_bundle.json files",
-    )
-    parser.add_argument(
-        "--output",
-        default=None,
-        help="Optional: combined output markdown file path",
-    )
-    parser.add_argument(
-        "--judge",
-        default="gpt-5.4-mini",
-        help="Judge model name (default: gpt-5.4-mini)",
-    )
-    args = parser.parse_args()
+def _discover_unjudged(
+    studies: list[str] | None,
+    datasets: list[str] | None,
+    force: bool,
+) -> list[Path]:
+    """Find evaluation_bundle.json files that need judging."""
+    studies = studies or STUDY_IDS
+    datasets = datasets or DATASETS
+    bundles: list[Path] = []
 
-    # Load system prompt
-    system_prompt = load_prompt()
-    print(f"Loaded AI Judge system prompt ({len(system_prompt)} chars)")
+    for study in studies:
+        for ds in datasets:
+            bundle_path = BASE / study / ds / "evaluation_bundle.json"
+            judge_path = BASE / study / ds / "ai_judge.md"
+            if not bundle_path.exists():
+                continue
+            if not force and judge_path.exists():
+                continue
+            bundles.append(bundle_path)
 
-    bundle_paths = [Path(p) for p in args.bundles if Path(p).exists()]
-    missing = [p for p in args.bundles if not Path(p).exists()]
-    for p in missing:
-        print(f"WARNING: bundle not found: {p}", file=sys.stderr)
+    return bundles
 
-    # Build summary table rows (from metadata, before calling the judge)
+
+def _evaluate_bundles(
+    bundle_paths: list[Path],
+    judge_model: str,
+    system_prompt: str,
+    output: Path | None,
+) -> None:
+    """Evaluate a list of bundles and save results."""
     bundle_metas = [_bundle_meta(p) for p in bundle_paths]
     hdr = "| Run | grounded_rate | avg_gt_coverage | avg_top_score | triplets | entities |\n"
     sep = "|-----|:---:|:---:|:---:|:---:|:---:|\n"
@@ -131,32 +136,30 @@ def main() -> None:
 
     combined_sections: list[str] = []
 
-    if args.output:
+    if output:
         combined_sections.append(
             f"# AI-Judge Evaluation Report\n"
-            f"**Generated by:** AI Judge (`{args.judge}`) using `docs/AI_JUDGE_PROMPT.md`  \n"
+            f"**Generated by:** AI Judge (`{judge_model}`) using `docs/AI_JUDGE_PROMPT.md`  \n"
             f"**Date:** {date.today()}\n"
             f"\n---\n\n"
             f"## Raw Metrics Summary\n\n"
             + hdr + sep + rows + "\n---\n\n"
         )
 
-    # Per-bundle evaluation
     for bundle_path in bundle_paths:
         with open(bundle_path) as f:
             bundle_data = json.load(f)
 
         meta = bundle_data.get("meta", {})
         label = f"{meta.get('study_id', '?')}/{meta.get('dataset_id', '?')}"
-        print(f"\nEvaluating bundle: {label}")
+        print(f"\nEvaluating: {label}")
 
-        evaluation = evaluate_bundle(bundle_path, args.judge, system_prompt)
+        evaluation = evaluate_bundle(bundle_path, judge_model, system_prompt)
 
-        # Save per-bundle file alongside the bundle itself
         per_bundle_path = bundle_path.parent / "ai_judge.md"
         per_bundle_content = (
             f"# AI-Judge Evaluation: {label}\n"
-            f"**Generated by:** AI Judge (`{args.judge}`) using `docs/AI_JUDGE_PROMPT.md`  \n"
+            f"**Generated by:** AI Judge (`{judge_model}`) using `docs/AI_JUDGE_PROMPT.md`  \n"
             f"**Date:** {date.today()}\n\n"
             f"---\n\n"
             + evaluation
@@ -164,17 +167,59 @@ def main() -> None:
         per_bundle_path.write_text(per_bundle_content, encoding="utf-8")
         print(f"  Saved: {per_bundle_path}")
 
-        if args.output:
+        if output:
             combined_sections.append(f"# Evaluation: {label}\n\n{evaluation}\n\n---\n\n")
 
-    # Optional combined output
-    if args.output:
-        output_path = Path(args.output)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text("\n".join(combined_sections), encoding="utf-8")
-        print(f"\nCombined report saved to: {output_path}")
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text("\n".join(combined_sections), encoding="utf-8")
+        print(f"\nCombined report: {output}")
+
+
+# ── CLI ─────────────────────────────────────────────────────────────────────────
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Run AI Judge on evaluation bundles")
+
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--bundles", nargs="+", metavar="PATH", help="Specific evaluation_bundle.json files")
+    mode.add_argument("--all", action="store_true", help="Auto-discover all un-judged bundles")
+
+    parser.add_argument("--studies", nargs="+", metavar="AB-XX", help="Filter studies (with --all)")
+    parser.add_argument("--datasets", nargs="+", metavar="DS", help="Filter datasets (with --all)")
+    parser.add_argument("--output", type=Path, default=None, help="Combined output markdown")
+    parser.add_argument("--judge", default="gpt-5.4-mini", help="Judge model (default: gpt-5.4-mini)")
+    parser.add_argument("--force", action="store_true", help="Re-evaluate even if ai_judge.md exists")
+    args = parser.parse_args()
+
+    system_prompt = load_prompt()
+    print(f"Loaded AI Judge prompt ({len(system_prompt)} chars)")
+
+    if args.all:
+        bundle_paths = _discover_unjudged(args.studies, args.datasets, args.force)
+        if not bundle_paths:
+            print("No un-judged bundles found.")
+            return
+        print(f"Found {len(bundle_paths)} bundles to evaluate")
+    else:
+        bundle_paths = []
+        missing = []
+        for p in args.bundles:
+            pp = Path(p)
+            if pp.exists():
+                bundle_paths.append(pp)
+            else:
+                missing.append(p)
+        for m in missing:
+            print(f"WARNING: not found: {m}", file=sys.stderr)
+
+    if not bundle_paths:
+        print("No bundles to evaluate.")
+        return
+
+    _evaluate_bundles(bundle_paths, args.judge, system_prompt, args.output)
 
 
 if __name__ == "__main__":
     main()
-

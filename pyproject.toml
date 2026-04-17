@@ -49,7 +49,9 @@ dev = [
 
 [project.scripts]
 ragas-eval = "src.evaluation.ragas_runner:main"
-ablation-run = "scripts.run_ablation_full:main"
+pipeline-run = "scripts.run_pipeline:main"
+ablation-run = "scripts.run_pipeline:main"
+ai-judge = "scripts.run_ai_judge:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -2,11 +2,22 @@
 """
 Generate the comprehensive ablation study analysis markdown report.
 Reads all ai_judge.md and run.json files and produces a detailed analysis.
+
+Usage:
+    python -m scripts.generate_ablation_report
+    python -m scripts.generate_ablation_report --scores path/to/all_scores_full.json
 """
+import argparse
 import re
 import json
+import sys
 from datetime import date
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from src.evaluation.ablation_runner import ABLATION_DESC, ABLATION_MATRIX  # noqa: E402
 
 BASE = Path("outputs/ablation")
 DATA = json.loads((BASE / "all_scores_full.json").read_text())
@@ -36,176 +47,11 @@ DS_FULL = {
     "06_edgecases_legacy": "Edge Cases: Legacy naming (8 tables, 12 Q)",
 }
 
-ABLATION_DESC = {
-    "AB-00": {
-        "title": "Baseline — default settings",
-        "group": "Baseline",
-        "env": {},
-        "description": "Default settings: hybrid retrieval (dense vector + BM25 + graph traversal), cross-encoder reranker ON (top_k=12), chunking 256/32, ER threshold=0.75, all pipeline components enabled.",
-        "hypothesis": "The full-featured pipeline should achieve the best possible quality across all dimensions.",
-        "affected_components": "None (reference point)",
-    },
-    "AB-01": {
-        "title": "Retrieval: Vector-only (no BM25, no graph)",
-        "group": "Retrieval Mode",
-        "env": {"RETRIEVAL_MODE": "vector"},
-        "description": "Dense vector-only retrieval using BGE-M3 embeddings. BM25 keyword channel and graph traversal channel are disabled.",
-        "hypothesis": "Vector-only retrieval should underperform hybrid retrieval, particularly on exact-match and structural queries.",
-        "affected_components": "Query graph: retrieval node",
-    },
-    "AB-02": {
-        "title": "Retrieval: BM25-only (no vector, no graph)",
-        "group": "Retrieval Mode",
-        "env": {"RETRIEVAL_MODE": "bm25"},
-        "description": "BM25 keyword-only retrieval. Dense vector and graph traversal channels are disabled.",
-        "hypothesis": "BM25 should perform better than vector-only for exact schema/column name queries, but worse for semantic queries.",
-        "affected_components": "Query graph: retrieval node",
-    },
-    "AB-03": {
-        "title": "Retrieval: Reranker OFF (raw hybrid ranking)",
-        "group": "Retrieval Mode",
-        "env": {"ENABLE_RERANKER": "false"},
-        "description": "Hybrid retrieval (all three channels) without cross-encoder reranking. RRF-fused results passed directly to generation.",
-        "hypothesis": "Without reranking, context ordering may be suboptimal, slightly reducing answer quality on boundary cases.",
-        "affected_components": "Query graph: reranker node",
-    },
-    "AB-04": {
-        "title": "Reranker top_k=5 (smaller pool)",
-        "group": "Reranker Pool Size",
-        "env": {"RERANKER_TOP_K": "5"},
-        "description": "Cross-encoder reranker receives only the top-5 candidates from the hybrid fusion pool.",
-        "hypothesis": "Smaller pool reduces reranking overhead but may miss relevant documents that ranked 6-12 in the fusion stage.",
-        "affected_components": "Query graph: reranker node",
-    },
-    "AB-05": {
-        "title": "Reranker top_k=20 (larger pool)",
-        "group": "Reranker Pool Size",
-        "env": {"RERANKER_TOP_K": "20"},
-        "description": "Cross-encoder reranker receives the top-20 candidates from the hybrid fusion pool.",
-        "hypothesis": "Larger pool gives the reranker more material to work with, potentially improving recall at the cost of latency.",
-        "affected_components": "Query graph: reranker node",
-    },
-    "AB-06": {
-        "title": "Chunking 128/16 (smaller chunks)",
-        "group": "Chunk Size",
-        "env": {"CHUNK_SIZE": "128", "CHUNK_OVERLAP": "16"},
-        "description": "Child chunks of 128 tokens with 16-token overlap. Finer granularity for indexing and retrieval.",
-        "hypothesis": "Smaller chunks increase precision but may fragment single-concept context, hurting multi-hop questions.",
-        "affected_components": "Builder graph: chunk node, embeddings",
-    },
-    "AB-07": {
-        "title": "Chunking 384/48 (larger chunks)",
-        "group": "Chunk Size",
-        "env": {"CHUNK_SIZE": "384", "CHUNK_OVERLAP": "48"},
-        "description": "Child chunks of 384 tokens with 48-token overlap.",
-        "hypothesis": "Larger chunks preserve more context per retrieval unit at the cost of retrieval precision.",
-        "affected_components": "Builder graph: chunk node, embeddings",
-    },
-    "AB-08": {
-        "title": "Chunking 512/64 (largest chunks)",
-        "group": "Chunk Size",
-        "env": {"CHUNK_SIZE": "512", "CHUNK_OVERLAP": "64"},
-        "description": "Child chunks of 512 tokens with 64-token overlap. Maximum context per chunk.",
-        "hypothesis": "Very large chunks may harm precision but benefit complex multi-hop questions that need broad context.",
-        "affected_components": "Builder graph: chunk node, embeddings",
-    },
-    "AB-09": {
-        "title": "Extraction max tokens=4096 (conservative)",
-        "group": "Extraction Token Limit",
-        "env": {"LLM_MAX_TOKENS_EXTRACTION": "4096"},
-        "description": "LLM extraction output token limit capped at 4,096. May trigger the truncated-extraction fallback on large chunks.",
-        "hypothesis": "Fewer tokens per extraction call may reduce triplet completeness on dense documents.",
-        "affected_components": "Builder graph: triplet extraction node",
-    },
-    "AB-10": {
-        "title": "Extraction max tokens=16384 (generous)",
-        "group": "Extraction Token Limit",
-        "env": {"LLM_MAX_TOKENS_EXTRACTION": "16384"},
-        "description": "LLM extraction output token limit increased to 16,384. Allows exhaustive listing of triplets per chunk.",
-        "hypothesis": "Higher token budget improves extraction completeness; may improve KG density.",
-        "affected_components": "Builder graph: triplet extraction node",
-    },
-    "AB-11": {
-        "title": "ER similarity threshold=0.65 (aggressive merging)",
-        "group": "Entity Resolution",
-        "env": {"ER_SIMILARITY_THRESHOLD": "0.65"},
-        "description": "Entity resolution similarity threshold lowered from 0.75 to 0.65. More entity pairs pass the blocking stage.",
-        "hypothesis": "More aggressive merging may collapse distinct entities into erroneous super-nodes, hurting precision.",
-        "affected_components": "Builder graph: entity resolution",
-    },
-    "AB-12": {
-        "title": "ER similarity threshold=0.85 (conservative merging)",
-        "group": "Entity Resolution",
-        "env": {"ER_SIMILARITY_THRESHOLD": "0.85"},
-        "description": "Entity resolution similarity threshold raised to 0.85. Only high-confidence pairs enter the LLM judge.",
-        "hypothesis": "Conservative merging preserves entity distinctness, possibly at the cost of missing synonymous concepts.",
-        "affected_components": "Builder graph: entity resolution",
-    },
-    "AB-13": {
-        "title": "ER blocking top_k=5 (smaller candidate set)",
-        "group": "Entity Resolution",
-        "env": {"ER_BLOCKING_TOP_K": "5"},
-        "description": "K-NN blocking stage retrieves only the 5 nearest neighbours per entity.",
-        "hypothesis": "Smaller K reduces LLM judge calls but may miss similar entities ranked 6-10 in embedding space.",
-        "affected_components": "Builder graph: ER blocking",
-    },
-    "AB-14": {
-        "title": "ER blocking top_k=20 (larger candidate set)",
-        "group": "Entity Resolution",
-        "env": {"ER_BLOCKING_TOP_K": "20"},
-        "description": "K-NN blocking stage retrieves 20 nearest neighbours per entity.",
-        "hypothesis": "Larger K increases recall for entity deduplication at the cost of more LLM judge invocations.",
-        "affected_components": "Builder graph: ER blocking",
-    },
-    "AB-15": {
-        "title": "Schema enrichment OFF",
-        "group": "Pipeline Components",
-        "env": {"ENABLE_SCHEMA_ENRICHMENT": "false"},
-        "description": "LLM acronym expansion on DDL column names is disabled. Raw column names (e.g., CUST_ID, ORD_AMT) pass directly to mapping.",
-        "hypothesis": "Without enrichment, the mapping node may produce lower-confidence proposals on legacy/acronym-heavy schemas.",
-        "affected_components": "Builder graph: schema enrichment node",
-    },
-    "AB-16": {
-        "title": "Actor–Critic validation OFF",
-        "group": "Pipeline Components",
-        "env": {"ENABLE_CRITIC_VALIDATION": "false"},
-        "description": "All mapping proposals from the Actor are accepted without the Critic validation loop. No retries.",
-        "hypothesis": "Without validation, low-confidence or erroneous proposals pass directly to Cypher generation, potentially reducing KG quality.",
-        "affected_components": "Builder graph: validate mapping node",
-    },
-    "AB-17": {
-        "title": "HITL confidence threshold=0.70",
-        "group": "HITL Threshold",
-        "env": {"CONFIDENCE_THRESHOLD": "0.70"},
-        "description": "HITL interrupt triggered when mapping confidence < 0.70 (lower than default 0.90). More proposals require human review.",
-        "hypothesis": "More HITL interrupts may slow pipeline but improve mapping accuracy on borderline proposals.",
-        "affected_components": "Builder graph: validate mapping, HITL interrupt",
-    },
-    "AB-18": {
-        "title": "HITL confidence threshold=0.85",
-        "group": "HITL Threshold",
-        "env": {"CONFIDENCE_THRESHOLD": "0.85"},
-        "description": "HITL interrupt triggered when mapping confidence < 0.85. Fewer proposals are automatically accepted.",
-        "hypothesis": "Higher threshold filters more proposals to human review, potentially improving quality.",
-        "affected_components": "Builder graph: validate mapping, HITL interrupt",
-    },
-    "AB-19": {
-        "title": "Cypher healing OFF",
-        "group": "Pipeline Components",
-        "env": {"ENABLE_CYPHER_HEALING": "false"},
-        "description": "Cypher self-healing loop disabled. On syntax error, EXPLAIN dry-run fails immediately without reflection retry.",
-        "hypothesis": "Without healing, any Cypher syntax errors from LLM generation cause table failures, reducing graph completeness.",
-        "affected_components": "Builder graph: cypher heal node",
-    },
-    "AB-20": {
-        "title": "Hallucination grader OFF",
-        "group": "Pipeline Components",
-        "env": {"ENABLE_HALLUCINATION_GRADER": "false"},
-        "description": "Self-RAG hallucination grading loop disabled. First generated answer is returned without critique.",
-        "hypothesis": "Without grading, hallucinated or unsupported answers may pass through, reducing answer quality.",
-        "affected_components": "Query graph: hallucination grader node",
-    },
-}
+# Extend ABLATION_DESC with description and env from ABLATION_MATRIX
+for _sid in ABLATION_DESC:
+    _m = ABLATION_MATRIX.get(_sid, {})
+    ABLATION_DESC[_sid].setdefault("description", _m.get("description", ""))
+    ABLATION_DESC[_sid].setdefault("env", _m.get("env_overrides", {}))
 
 def avg(ab, key, exclude_zero=True):
     vals = DATA.get(ab, {}).values()
@@ -273,7 +119,7 @@ w(f"")
 w(f"### 1.2 Evaluation Pipeline")
 w(f"")
 w(f"For each ablation run:")
-w(f"1. `run_ab00.py` executes the full pipeline (builder + query) on a dataset, saving `run.json` and `evaluation_bundle.json`")
+w(f"1. `run_pipeline.py` executes the full pipeline (builder + query) on a dataset, saving `run.json` and `evaluation_bundle.json`")
 w(f"2. `run_ai_judge.py` calls `gpt-5.4-mini` with the evaluation bundle and the 18 KB system prompt in `docs/AI_JUDGE_PROMPT.md`")
 w(f"3. The judge outputs a structured markdown report saved as `ai_judge.md` alongside the bundle")
 w(f"4. This report aggregates all 127 individual evaluations into a unified analysis")
@@ -448,7 +294,7 @@ for ab in STUDIES:
     w(f"### {ab}: {d['title']}")
     w(f"")
     w(f"**Group:** {d['group']}  ")
-    w(f"**Env override:** `{json.dumps(d['env']) if d['env'] else 'none (baseline)'}` ")
+    w(f"**Env override:** `{json.dumps(d.get('env', {})) or 'none (baseline)'}` ")
     w(f"**Affected components:** {d['affected_components']}")
     w(f"")
     w(f"**Description:**  ")
