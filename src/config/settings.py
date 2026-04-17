@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
     llm_max_tokens_extraction: int = DEFAULT_CONFIG.llm_max_tokens_extraction
     llm_max_tokens_reasoning: int = DEFAULT_CONFIG.llm_max_tokens_reasoning
+    llm_request_timeout: int = DEFAULT_CONFIG.llm_request_timeout
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = DEFAULT_CONFIG.embedding_model

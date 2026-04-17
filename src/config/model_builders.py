@@ -84,8 +84,7 @@ def _build_openrouter_chat(
     """Build a ChatOpenAI instance pointing at the OpenRouter base URL.
 
     Always uses ChatOpenAI with OpenRouter's base_url — the native
-    ChatOpenRouter client suffers from SSL handshake timeouts in
-    containerised environments.
+    ChatOpenRouter client suffers from SSL handshake timeouts.
     """
     api_key = openrouter_api_key or get_settings().openrouter_api_key.get_secret_value()
     base_url = openrouter_base_url or get_settings().openrouter_base_url
@@ -96,7 +95,7 @@ def _build_openrouter_chat(
         max_tokens=max_tokens,
         base_url=base_url,
         api_key=api_key,
-        request_timeout=120,
+        request_timeout=get_settings().llm_request_timeout,
         **_optional_model_kwargs(extra_model_kwargs),
     )
 
@@ -129,7 +128,7 @@ def _build_openai_chat(
         "temperature": temperature,
         "max_tokens": max_tokens,
         "api_key": api_key,
-        "request_timeout": 120,
+        "request_timeout": get_settings().llm_request_timeout,
     }
     if mkwargs:
         chat_kwargs["model_kwargs"] = mkwargs
@@ -185,7 +184,7 @@ def _build_lmstudio_chat(
         max_tokens=max_tokens,
         base_url=base_url,
         api_key=LMSTUDIO_PLACEHOLDER_KEY,
-        request_timeout=120,
+        request_timeout=get_settings().llm_request_timeout,
         model_kwargs={"extra_body": kwargs},
     )
 
@@ -242,7 +241,7 @@ def _build_openai_compatible_chat(
         max_tokens=max_tokens,
         base_url=base_url,
         api_key=api_key,
-        request_timeout=120,
+        request_timeout=get_settings().llm_request_timeout,
         **_optional_model_kwargs(extra_model_kwargs),
     )
 
@@ -392,7 +391,7 @@ def _build_azure_chat(
         azure_deployment=model,
         azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
         api_key=os.environ.get("AZURE_OPENAI_API_KEY", ""),  # type: ignore[arg-type]
-        api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-11-01-preview"),
+        api_version=os.environ.get("AZURE_OPENAI_API_VERSION", get_settings().azure_openai_api_version),
         temperature=temperature,
         max_tokens=max_tokens,
     )

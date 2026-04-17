@@ -245,7 +245,7 @@ thesis/
 │       └── gold_standard.json
 ├── notebooks/
 │   └── exploration.ipynb
-├── .env.docker
+├── .env.example
 ├── .gitignore
 ├── pyproject.toml
 └── README.md
@@ -302,7 +302,7 @@ Bootstrap the project: environment, dependencies, settings management, logging, 
 
 **Acceptance Criteria:**
 - `src/config/settings.py` defines a `Settings` class using `pydantic_settings.BaseSettings`
-- `.env.docker` is the provided template — copy it to `.env` and fill in secrets
+- `.env.example` is the provided template — copy it to `.env` and fill in secrets
 - Settings are a singleton (module-level `settings = Settings()`)
 
 **Required settings (current implementation — see `src/config/settings.py` for full list):**
@@ -1412,7 +1412,7 @@ All prompts live in `src/prompts/templates.py` as Python string constants. The a
 
 ## 8. Configuration Reference
 
-Complete `.env.docker` (template):
+Complete `.env.example` (template):
 
 ```bash
 # ── Neo4j ──────────────────────────────────────────────────────────────────────
@@ -1496,7 +1496,7 @@ Recommended sequential implementation order for an AI coding agent (respects dep
 
 | Step | Epic | Files to Create/Modify |
 |---|---|---|
-| 1 | EP-01 | `pyproject.toml`, `.env.docker`, `src/config/settings.py` |
+| 1 | EP-01 | `pyproject.toml`, `.env.example`, `src/config/settings.py` |
 | 2 | EP-01 | Logging setup in `src/config/settings.py` |
 | 3 | EP-06 data models | `src/models/schemas.py` — ALL schemas at once |
 | 4 | EP-07 prompts | `src/prompts/templates.py` — ALL prompt templates at once |
