@@ -362,7 +362,7 @@ Key findings:
 - The hallucination grader provides substantial quality improvement (-0.80 when disabled)
 - Larger extraction token budgets improve triplet richness (+0.31)
 
-Full results in `docs/draft/ABLATION.md` and `notebooks/ablation/ablation_results/ABLATION_ANALYSIS_COMPLETE.md`.
+Full results in `docs/draft/ABLATION.md` and `outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md`.
 
 ---
 

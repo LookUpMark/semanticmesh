@@ -8,14 +8,14 @@ be written with ``--output``.
 
 Usage:
     python scripts/run_ai_judge.py \
-        --bundles notebooks/ablation/ablation_results/AB-00/01_basics_ecommerce/evaluation_bundle.json \
-                  notebooks/ablation/ablation_results/AB-00/02_intermediate_finance/evaluation_bundle.json \
+        --bundles outputs/ablation/AB-00/datasets/01_basics_ecommerce/evaluation_bundle.json \
+                  outputs/ablation/AB-00/datasets/02_intermediate_finance/evaluation_bundle.json \
         --judge gpt-5.4-mini
 
     # With optional combined output:
     python scripts/run_ai_judge.py \
         --bundles ... \
-        --output notebooks/ablation/ablation_results/AB-00_AI_JUDGE.md \
+        --output outputs/ablation/AB-00/judge/AI_JUDGE_REPORT.md \
         --judge gpt-5.4-mini
 """
 

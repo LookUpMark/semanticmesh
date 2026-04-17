@@ -27,7 +27,7 @@ htmlcov
 data/hf_cache/
 neo4j_data/
 notebooks/e2e/generated/
-notebooks/ablation/ablation_results/
+outputs/ablation/
 
 # Frontend (has its own Dockerfile — not needed in Python API image)
 frontend/

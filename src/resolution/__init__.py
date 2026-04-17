@@ -1,1 +1,1 @@
-# src.resolution — Agentic entity resolution (blocking + LLM judge).
+"""Entity resolution: blocking + LLM judge."""

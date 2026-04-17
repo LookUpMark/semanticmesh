@@ -264,7 +264,7 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
             bundle_dir = (
-                _ROOT / "notebooks" / "ablation" / "ablation_results" / req.study_id / dataset_id
+                _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
             )
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
@@ -471,7 +471,7 @@ def _run_ablation_task_with_preset(
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
             bundle_dir = (
-                _ROOT / "notebooks" / "ablation" / "ablation_results" / req.study_id / dataset_id
+                _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
             )
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
@@ -733,7 +733,7 @@ def _bundle_path(study_id: str, dataset_id: str) -> Path:
         _ROOT
         / "notebooks"
         / "ablation"
-        / "ablation_results"
+        / "outputs" / "ablation"
         / study_id
         / dataset_id
         / "evaluation_bundle.json"

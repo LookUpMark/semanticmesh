@@ -321,7 +321,7 @@ class CustomAblationRequest(BaseModel):
     )
     study_id: str = Field(
         default="custom-run",
-        description="Output directory prefix under notebooks/ablation/ablation_results/.",
+        description="Output directory prefix under outputs/ablation/.",
     )
     max_samples: int | None = Field(
         default=None,

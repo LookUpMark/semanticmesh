@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 logger: logging.Logger = get_logger(__name__)
 
 _DEFAULT_DATASET: Path = (
-    Path(__file__).parent.parent.parent / "tests" / "fixtures" / "00_legacy" / "gold_standard.json"
+    Path(__file__).parent.parent.parent / "tests" / "fixtures" / "01_basics_ecommerce" / "gold_standard.json"
 )
 
 _DEFAULT_EVALUATOR_MODEL: str = "gpt-4.1-mini"
@@ -704,3 +704,28 @@ def run_ragas_evaluation(
 
     logger.info("RAGAS evaluation complete: %s", metrics)
     return metrics
+
+
+def main() -> None:
+    """CLI entry point for ``ragas-eval``."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run RAGAS evaluation on gold-standard dataset")
+    parser.add_argument("--dataset", type=Path, default=None, help="Path to gold_standard.json")
+    parser.add_argument("--model", type=str, default=_DEFAULT_EVALUATOR_MODEL, help="Evaluator model")
+    parser.add_argument("--max-samples", type=int, default=None, help="Limit number of samples")
+    parser.add_argument("--trace-output", type=Path, default=None, help="JSONL trace output path")
+    parser.add_argument("--trace-summary", type=Path, default=None, help="JSON diagnostics path")
+    parser.add_argument("--trace-verbose", action="store_true", help="Log per-sample details")
+    parser.add_argument("--skip-ragas", action="store_true", help="Skip RAGAS computation")
+    args = parser.parse_args()
+
+    run_ragas_evaluation(
+        dataset_path=args.dataset,
+        evaluator_model=args.model,
+        run_ragas=not args.skip_ragas,
+        max_samples=args.max_samples,
+        trace_output_path=args.trace_output,
+        trace_summary_path=args.trace_summary,
+        trace_verbose=args.trace_verbose,
+    )

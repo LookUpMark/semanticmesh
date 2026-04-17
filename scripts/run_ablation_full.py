@@ -1,7 +1,7 @@
 """Automated ablation study runner with RAGAS evaluation.
 
 Runs studies (AB-00 through AB-20) with environment overrides.
-Results saved to notebooks/ablation/ablation_results/studies/AB-XX/
+Results saved to docs/ablation/ablation_results/studies/AB-XX/
 """
 
 from __future__ import annotations
@@ -51,16 +51,16 @@ logger = logging.getLogger("ablation_runner")
 # ── Test data ───────────────────────────────────────────────────────────────────
 FIXTURE_DIR = ROOT / "tests" / "fixtures"
 DOC_PATHS_DEFAULT = [
-    FIXTURE_DIR / "00_legacy" / "sample_docs" / "business_glossary.txt",
-    FIXTURE_DIR / "00_legacy" / "sample_docs" / "data_dictionary.txt",
+    FIXTURE_DIR / "01_basics_ecommerce" / "business_glossary.txt",
+    FIXTURE_DIR / "01_basics_ecommerce" / "data_dictionary.txt",
 ]
-DDL_PATHS_DEFAULT = [FIXTURE_DIR / "00_legacy" / "sample_ddl" / "complex_schema.sql"]
+DDL_PATHS_DEFAULT = [FIXTURE_DIR / "02_intermediate_finance" / "schema.sql"]
 
 DOC_PATHS_SMOKE = [
-    FIXTURE_DIR / "00_legacy" / "smoke" / "business_glossary_smoke.txt",
-    FIXTURE_DIR / "00_legacy" / "smoke" / "data_dictionary_smoke.txt",
+    FIXTURE_DIR / "01_basics_ecommerce" / "business_glossary.txt",
+    FIXTURE_DIR / "01_basics_ecommerce" / "data_dictionary.txt",
 ]
-DDL_PATHS_SMOKE = [FIXTURE_DIR / "00_legacy" / "smoke" / "smoke_schema.sql"]
+DDL_PATHS_SMOKE = [FIXTURE_DIR / "01_basics_ecommerce" / "schema.sql"]
 
 # ── Test questions ───────────────────────────────────────────────────────────────
 TEST_QUESTIONS = [

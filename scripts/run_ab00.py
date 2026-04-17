@@ -2,7 +2,7 @@
 """Unified runner for ablation studies.
 
 Supports multiple datasets and writes structured output:
-  notebooks/ablation/ablation_results/{study_id}/{dataset_id}/
+  outputs/ablation/{study_id}/datasets/{dataset_id}/
     run.json      — full results
     run.log       — full log
     analysis.md   — auto-generated deep-dive analysis
@@ -355,7 +355,7 @@ def main() -> None:
     # ── Structured output directory (study_id / dataset_id) ──
     timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_tag = args.run_tag or f"run-{timestamp_str}"
-    out_dir = Path("notebooks/ablation/ablation_results") / args.study_id / dataset_id
+    out_dir = Path("outputs/ablation") / args.study_id / "datasets" / dataset_id
     out_dir.mkdir(parents=True, exist_ok=True)
     log_file = out_dir / "run.log"
 

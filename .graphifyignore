@@ -40,4 +40,4 @@ Thumbs.db
 *.log
 
 # Test fixtures that are duplicates
-notebooks/ablation/ablation_results/**/ai_judge*.md
+outputs/ablation/**/judge/**/ai_judge*.md

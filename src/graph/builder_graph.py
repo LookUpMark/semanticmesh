@@ -40,7 +40,7 @@ from src.ingestion.file_registry import (
     purge_file_data,
     register_file,
 )
-from src.ingestion.pdf_loader import chunk_documents_hierarchical, load_pdf
+from src.ingestion.pdf_loader import chunk_documents_hierarchical, load_pdfs_batch
 from src.ingestion.schema_enricher import enrich_all
 from src.mapping.hitl import hitl_node
 from src.mapping.rag_mapper import propose_mapping, propose_mapping_heuristic
@@ -406,17 +406,11 @@ def run_builder(
     # ── Load and chunk only the files that need (re-)ingestion ───────────────
     # Load all documents first, then chunk in one pass so parent_chunk_index is
     # globally unique across all source files (avoids index collisions in Neo4j).
-    # PDF loading is I/O-bound so we parallelise across files.
+    # opendataloader-pdf spawns a JVM per convert() call, so we batch all PDFs
+    # into a single call to amortise startup cost.
     all_docs: list = []
-    if len(docs_to_ingest) > 1:
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        with ThreadPoolExecutor(max_workers=min(4, len(docs_to_ingest))) as _pool:
-            futures = {_pool.submit(load_pdf, Path(p)): p for p in docs_to_ingest}
-            for fut in as_completed(futures):
-                all_docs.extend(fut.result())
-    else:
-        for doc_path in docs_to_ingest:
-            all_docs.extend(load_pdf(Path(doc_path)))
+    if docs_to_ingest:
+        all_docs = load_pdfs_batch([Path(p) for p in docs_to_ingest])
     all_parents, all_children = chunk_documents_hierarchical(all_docs)
 
     # Triplet extraction and MENTIONS edges operate on parents (richer 512-tok context).

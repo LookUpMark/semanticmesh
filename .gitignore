@@ -52,7 +52,7 @@ logs/
 *.bak
 
 # Ablation results (generated artifacts: logs, JSON bundles, traces, judge reports)
-docs/ablation/ablation_results/
+outputs/
 
 # Claude Code
 .claude/

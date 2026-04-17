@@ -1,1 +1,1 @@
-# src.generation — Answer generation, hallucination grading, and Query Graph.
+"""Answer generation and query orchestration."""

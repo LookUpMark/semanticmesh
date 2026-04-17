@@ -8,7 +8,7 @@ import json
 from datetime import date
 from pathlib import Path
 
-BASE = Path("notebooks/ablation/ablation_results")
+BASE = Path("outputs/ablation")
 DATA = json.loads((BASE / "all_scores_full.json").read_text())
 STUDIES = [f"AB-{i:02d}" for i in range(21)]
 DATASETS = [
@@ -842,7 +842,7 @@ w(f"")
 w(f"*End of report. Generated on {date.today()} from 127 AI-Judge evaluations (126 ablation runs + 1 baseline stress test).*")
 
 output = "\n".join(lines)
-out_path = Path("notebooks/ablation/ablation_results/ABLATION_ANALYSIS_COMPLETE.md")
+out_path = Path("outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md")
 out_path.write_text(output, encoding="utf-8")
 print(f"Report written: {out_path}")
 print(f"Lines: {len(lines)}, Characters: {len(output)}")

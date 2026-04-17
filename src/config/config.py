@@ -115,7 +115,7 @@ class AppConfig:
 
     # ── Debug Tracing ───────────────────────────────────────────────────────────
     enable_debug_trace: bool = False
-    trace_output_dir: str = "notebooks/ablation/ablation_results/traces/debug"
+    trace_output_dir: str = "outputs/ablation/traces/debug"
     trace_compress_large_fields: bool = True
     trace_truncate_length: int = 500
     trace_max_items: int = 100
