@@ -46,7 +46,7 @@ class AppConfig:
     llm_temperature_generation: float = 0.3
 
     llm_max_tokens_extraction: int = 8192
-    llm_max_tokens_reasoning: int = 4096
+    llm_max_tokens_reasoning: int = 8192
     llm_request_timeout: int = 120
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
