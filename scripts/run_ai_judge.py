@@ -78,7 +78,7 @@ def evaluate_bundle(bundle_path: Path, judge_model: str, system_prompt: str) -> 
 
 
 def _bundle_meta(bundle_path: Path) -> dict:
-    with open(bundle_path) as f:
+    with open(bundle_path, encoding="utf-8") as f:
         d = json.load(f)
     meta = d.get("meta", {})
     cfg = d.get("config", {})
@@ -147,7 +147,7 @@ def _evaluate_bundles(
         )
 
     for bundle_path in bundle_paths:
-        with open(bundle_path) as f:
+        with open(bundle_path, encoding="utf-8") as f:
             bundle_data = json.load(f)
 
         meta = bundle_data.get("meta", {})
@@ -180,7 +180,7 @@ def _evaluate_bundles(
         from src.evaluation.thesis_export import export_run_csv, export_run_summary_csv  # noqa: PLC0415
 
         for bundle_path in bundle_paths:
-            with open(bundle_path) as f:
+            with open(bundle_path, encoding="utf-8") as f:
                 bd = json.load(f)
             # Reconstruct a summary-like dict from the bundle
             meta = bd.get("meta", {})
