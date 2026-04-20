@@ -417,7 +417,12 @@ def _run_single(
                 expected_sources = pair.get("expected_sources", [])
                 covered_sources: list[str] = []
                 if expected_sources and entity_names:
-                    norm_retrieved = {_ns(s) for s in entity_names if s}
+                    # entity_names may use "ConceptName→TABLE_NAME" format — expand both sides
+                    norm_retrieved: set[str] = set()
+                    for s in entity_names:
+                        if s:
+                            for part in s.split("→"):
+                                norm_retrieved.add(_ns(part.strip()))
                     for es in expected_sources:
                         if _ns(str(es)) in norm_retrieved:
                             covered_sources.append(str(es))
@@ -604,6 +609,25 @@ def _run_single(
                 ragas_metrics=ragas_metrics,
             )
 
+            # ── Thesis exports (CSV + plots) ──
+            try:
+                from src.evaluation.thesis_export import (  # noqa: PLC0415
+                    export_run_csv,
+                    export_run_plots,
+                    export_run_summary_csv,
+                )
+
+                thesis_dir = out / "thesis"
+                export_run_csv(summary, thesis_dir)
+                export_run_summary_csv(summary, thesis_dir)
+                plot_paths = export_run_plots(summary, thesis_dir / "plots")
+                logger.info(
+                    "  Thesis artifacts: 2 CSVs + %d plots in %s",
+                    len(plot_paths), thesis_dir,
+                )
+            except Exception as tex:
+                logger.warning("Thesis export failed (non-fatal): %s", tex)
+
             logger.info("Outputs: run.json | analysis.md | %s | %s", bundle_path.name, log_file)
 
             result = {
@@ -765,7 +789,7 @@ def main() -> None:
     setup_notebook_logging()
 
     all_results: list[dict[str, Any]] = []
-    total_start = _time.time()
+    total_start = _time.perf_counter()
 
     for study_id in studies:
         results = _run_study(
@@ -783,6 +807,18 @@ def main() -> None:
 
     total_elapsed = _time.perf_counter() - total_start
     successful = sum(1 for r in all_results if r.get("success"))
+
+    # ── Cross-study thesis exports (if all_scores_full.json exists) ──
+    all_scores_path = args.output_dir / "all_scores_full.json"
+    if all_scores_path.exists() and len(studies) > 1:
+        try:
+            from src.evaluation.ablation_runner import ABLATION_DESC  # noqa: PLC0415
+            from src.evaluation.thesis_export import generate_all_thesis_artifacts  # noqa: PLC0415
+
+            thesis_dir = args.output_dir / "thesis"
+            generate_all_thesis_artifacts(all_scores_path, thesis_dir, ablation_desc=ABLATION_DESC)
+        except Exception as tex:
+            print(f"  ⚠ Cross-study thesis export failed (non-fatal): {tex}")
 
     print()
     print("=" * 60)

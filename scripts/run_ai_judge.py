@@ -175,6 +175,33 @@ def _evaluate_bundles(
         output.write_text("\n".join(combined_sections), encoding="utf-8")
         print(f"\nCombined report: {output}")
 
+    # ── Thesis CSV export for evaluated bundles ──
+    try:
+        from src.evaluation.thesis_export import export_run_csv, export_run_summary_csv  # noqa: PLC0415
+
+        for bundle_path in bundle_paths:
+            with open(bundle_path) as f:
+                bd = json.load(f)
+            # Reconstruct a summary-like dict from the bundle
+            meta = bd.get("meta", {})
+            thesis_summary = {
+                "study_id": meta.get("study_id", ""),
+                "dataset_id": meta.get("dataset_id", ""),
+                "run_tag": meta.get("run_tag", ""),
+                "timestamp": meta.get("timestamp", ""),
+                "config": bd.get("config", {}),
+                "builder": bd.get("builder_report", {}),
+                "query": bd.get("query_report", {}),
+                "per_question": bd.get("per_question", []),
+                "ragas": bd.get("ragas_metrics"),
+            }
+            thesis_dir = bundle_path.parent / "thesis"
+            export_run_csv(thesis_summary, thesis_dir)
+            export_run_summary_csv(thesis_summary, thesis_dir)
+        print(f"  Thesis CSVs exported for {len(bundle_paths)} bundles")
+    except Exception as tex:
+        print(f"  ⚠ Thesis CSV export failed (non-fatal): {tex}")
+
 
 # ── CLI ─────────────────────────────────────────────────────────────────────────
 

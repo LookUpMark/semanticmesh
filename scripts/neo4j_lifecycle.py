@@ -18,12 +18,13 @@ from __future__ import annotations
 import atexit
 import subprocess
 import time
+import os
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 CONTAINER_NAME = "neo4j-thesis"
 IMAGE = "neo4j:5"
-NEO4J_AUTH = "neo4j/test_password"
+NEO4J_AUTH = f"{os.getenv('NEO4J_USER', 'neo4j')}/{os.getenv('NEO4J_PASSWORD', 'thesis_password')}"  # format: "user/password"
 HTTP_PORT = 7474
 BOLT_PORT = 7687
 VOLUME_NAME = "neo4j-thesis-data"

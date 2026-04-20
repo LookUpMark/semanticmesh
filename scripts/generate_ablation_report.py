@@ -692,3 +692,16 @@ out_path = Path("outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md")
 out_path.write_text(output, encoding="utf-8")
 print(f"Report written: {out_path}")
 print(f"Lines: {len(lines)}, Characters: {len(output)}")
+
+# ── Thesis artifacts (CSV + plots) ──────────────────────────────────────────
+try:
+    from src.evaluation.thesis_export import generate_all_thesis_artifacts  # noqa: E402,PLC0415
+
+    thesis_dir = Path("outputs/ablation/thesis")
+    generate_all_thesis_artifacts(
+        BASE / "all_scores_full.json",
+        thesis_dir,
+        ablation_desc=ABLATION_DESC,
+    )
+except Exception as tex:
+    print(f"⚠ Thesis export failed (non-fatal): {tex}")
