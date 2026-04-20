@@ -74,7 +74,7 @@ def evaluate_bundle(bundle_path: Path, judge_model: str, system_prompt: str) -> 
         SystemMessage(content=system_prompt),
         HumanMessage(content=user_msg),
     ])
-    return response.content or ""
+    return response.content or "" # type: ignore
 
 
 def _bundle_meta(bundle_path: Path) -> dict:
@@ -177,7 +177,10 @@ def _evaluate_bundles(
 
     # ── Thesis CSV export for evaluated bundles ──
     try:
-        from src.evaluation.thesis_export import export_run_csv, export_run_summary_csv  # noqa: PLC0415
+        from src.evaluation.thesis_export import (  # noqa: PLC0415
+            export_run_csv,
+            export_run_summary_csv,
+        )
 
         for bundle_path in bundle_paths:
             with open(bundle_path, encoding="utf-8") as f:
