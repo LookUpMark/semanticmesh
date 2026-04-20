@@ -70,6 +70,10 @@ node_modules/
 frontend/dist/
 frontend/.vite/
 frontend/node_modules/
+frontend/build/
+frontend/.cache/
+frontend/package-lock.json
+frontend/package.json
 
 # Frontend duplicate (empty scaffold — safe to delete)
 # frontend/frontend/
