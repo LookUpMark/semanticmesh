@@ -73,9 +73,15 @@ def load_gold_standard(path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]
             norm["expected_sources"] = next(
                 (p.get(k) for k in _SOURCES_KEYS if p.get(k)), []
             )
-        # query_type
+        # query_type — normalize value to snake_case regardless of source field
         if "query_type" not in norm:
             norm["query_type"] = next((p.get(k) for k in _TYPE_KEYS if p.get(k)), "unknown")
+        norm["query_type"] = (
+            norm["query_type"]
+            .lower()
+            .replace(" ", "_")
+            .replace("-", "_")
+        )
         # difficulty
         if "difficulty" not in norm:
             norm["difficulty"] = next(

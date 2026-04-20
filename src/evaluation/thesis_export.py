@@ -110,7 +110,7 @@ def export_run_csv(summary: dict[str, Any], output_dir: Path) -> Path:
                 "query_type": pq.get("query_type", ""),
                 "difficulty": pq.get("difficulty", ""),
                 "grounded": pq.get("grounded", False),
-                "gt_coverage": pq.get("gt_coverage", 0.0),
+                "gt_coverage": pq.get("gt_coverage"),  # None when expected_sources absent
                 "retrieval_quality_score": pq.get("retrieval_quality_score", 0.0),
                 "retrieval_chunk_count": pq.get("retrieval_chunk_count", 0),
                 "retrieval_gate_decision": pq.get("retrieval_gate_decision", ""),
@@ -198,18 +198,22 @@ def export_run_plots(summary: dict[str, Any], output_dir: Path) -> list[Path]:
     # ── 1. Per-question GT coverage bar chart ──
     fig, ax = plt.subplots(figsize=(12, 5))
     qids = [r.get("query_id", f"Q{i}") for i, r in enumerate(pq)]
-    coverages = [r.get("gt_coverage", 0) for r in pq]
+    coverages = [r.get("gt_coverage") for r in pq]  # may contain None
+    # For bars: None → 0 (visually absent); distinct colour signals unmeasured
+    bar_coverages = [c if c is not None else 0.0 for c in coverages]
+    has_null_coverage = any(c is None for c in coverages)
     colors = ["#2ecc71" if r.get("grounded") else "#e74c3c" for r in pq]
-    ax.bar(qids, coverages, color=colors, edgecolor="white", linewidth=0.5)
+    ax.bar(qids, bar_coverages, color=colors, edgecolor="white", linewidth=0.5)
     ax.set_ylabel("GT Coverage")
     ax.set_title(f"{study_id} / {DS_SHORT.get(dataset_id, dataset_id)} — Per-Question GT Coverage")
     ax.set_ylim(0, 1.05)
     ax.axhline(y=1.0, color="gray", linestyle="--", alpha=0.5)
     ax.tick_params(axis="x", rotation=45)
-    # Legend
     from matplotlib.patches import Patch
     legend_elements = [Patch(facecolor="#2ecc71", label="Grounded"),
                        Patch(facecolor="#e74c3c", label="Ungrounded")]
+    if has_null_coverage:
+        legend_elements.append(Patch(facecolor="none", edgecolor="gray", label="GT N/A (0 shown)"))
     ax.legend(handles=legend_elements, loc="lower right")
     p = output_dir / f"{prefix}_gt_coverage_bar.png"
     fig.savefig(p)
@@ -231,9 +235,16 @@ def export_run_plots(summary: dict[str, Any], output_dir: Path) -> list[Path]:
     # ── 3. Difficulty vs GT coverage box plot (if difficulty info present) ──
     difficulties = [r.get("difficulty", "unknown") for r in pq]
     unique_diffs = sorted(set(difficulties))
-    if len(unique_diffs) > 1:
+    # Only draw boxplot when we have measured gt_coverage values
+    measured_coverages = [c for c in coverages if c is not None]
+    if len(unique_diffs) > 1 and measured_coverages:
         import pandas as pd
-        df = pd.DataFrame({"difficulty": difficulties, "gt_coverage": coverages})
+        df_rows = [
+            {"difficulty": d, "gt_coverage": c}
+            for d, c in zip(difficulties, coverages)
+            if c is not None
+        ]
+        df = pd.DataFrame(df_rows)
         fig, ax = plt.subplots(figsize=(8, 5))
         sns.boxplot(data=df, x="difficulty", y="gt_coverage", ax=ax, palette="Set2",
                     order=["easy", "medium", "hard"] if set(unique_diffs) <= {"easy", "medium", "hard", "unknown"} else unique_diffs)

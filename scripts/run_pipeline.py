@@ -20,6 +20,7 @@ import argparse
 import json
 import logging
 import os
+import re as _re
 import sys
 import time as _time
 from datetime import UTC, datetime, timezone
@@ -175,7 +176,7 @@ def _generate_analysis_md(summary: dict, dataset_id: str) -> str:
         "|--------|-------|",
         f"| Questions | {total} |",
         f"| Grounded | **{grounded}/{total} ({rate:.0%})** |",
-        f"| Avg GT Coverage | {qry.get('avg_gt_coverage', 0):.0%} |",
+        ("| Avg GT Coverage | " + (f"{qry['avg_gt_coverage']:.0%}" if qry.get('avg_gt_coverage') is not None else "N/A") + " |"),
         f"| Avg Top Score | {qry.get('avg_top_score', 0):.4f} |",
         f"| Avg Chunk Count | {qry.get('avg_chunk_count', 0):.1f} |",
         f"| Abstained | {qry.get('abstained_count', 0)} |",
@@ -226,7 +227,7 @@ def _generate_analysis_md(summary: dict, dataset_id: str) -> str:
             f"### {icon} {qid} \u2014 {question}",
             "",
             f"**Status:** {status_label}  ",
-            f"**GT Coverage:** {gt_cov:.0%} | **Top Score:** {top_score:.4f} | **Gate:** `{gate}`",
+            f"**GT Coverage:** {'N/A' if gt_cov is None else f'{gt_cov:.0%}'} | **Top Score:** {top_score:.4f} | **Gate:** `{gate}`",
             "",
             "**Expected answer:**",
             f"> {expected[:300]}{'\u2026' if len(expected) > 300 else ''}",
@@ -416,17 +417,33 @@ def _run_single(
 
                 expected_sources = pair.get("expected_sources", [])
                 covered_sources: list[str] = []
-                if expected_sources and entity_names:
+                if expected_sources:
+                    # Build token-level index from entity_names.
                     # entity_names may use "ConceptName→TABLE_NAME" format — expand both sides
-                    norm_retrieved: set[str] = set()
+                    # then split each normalized part into individual tokens.
+                    norm_retrieved_tokens: set[str] = set()
                     for s in entity_names:
                         if s:
                             for part in s.split("→"):
-                                norm_retrieved.add(_ns(part.strip()))
+                                norm_retrieved_tokens.update(_ns(part.strip()).split())
+                    # Fallback: if entity_names is empty, extract section headers from
+                    # retrieved contexts (e.g. "## Interest\n\n..." → "interest").
+                    if not norm_retrieved_tokens:
+                        _header_re = _re.compile(r"^##\s+(.+?)(?:\n|$)", _re.MULTILINE)
+                        for chunk in r.get("retrieved_contexts", []):
+                            for header in _header_re.findall(str(chunk)):
+                                norm_retrieved_tokens.update(_ns(header.strip()).split())
+                    # Partial token overlap: a source is covered if at least one of its
+                    # tokens appears in the retrieved token index.
                     for es in expected_sources:
-                        if _ns(str(es)) in norm_retrieved:
+                        es_tokens = set(_ns(str(es)).split())
+                        if es_tokens and (es_tokens & norm_retrieved_tokens):
                             covered_sources.append(str(es))
-                gt_coverage = len(covered_sources) / len(expected_sources) if expected_sources else 1.0
+                # None when no expected_sources — metric is not applicable (not inflated to 1.0)
+                gt_coverage: float | None = (
+                    len(covered_sources) / len(expected_sources)
+                    if expected_sources else None
+                )
 
                 gt_coverages.append(gt_coverage)
                 top_scores.append(r.get("retrieval_quality_score", 0.0))
@@ -434,8 +451,9 @@ def _run_single(
 
                 status = "\u2705" if grounded else ("\u26d4" if gate == "abstain_early" else "\u274c")
                 logger.info(
-                    "  [%d/%d] %s Q: %s | gt=%.0f%% score=%.4f",
-                    i + 1, len(pairs), status, question[:80], gt_coverage * 100,
+                    "  [%d/%d] %s Q: %s | gt=%s score=%.4f",
+                    i + 1, len(pairs), status, question[:80],
+                    f"{gt_coverage:.0%}" if gt_coverage is not None else "N/A",
                     r.get("retrieval_quality_score", 0),
                 )
 
@@ -446,7 +464,7 @@ def _run_single(
                     "generated_answer": answer,
                     "expected_sources": expected_sources,
                     "covered_sources": covered_sources,
-                    "gt_coverage": round(gt_coverage, 4),
+                    "gt_coverage": round(gt_coverage, 4) if gt_coverage is not None else None,
                     "sources": sources,
                     "entity_names": entity_names,
                     "retrieved_contexts": list(r.get("retrieved_contexts", [])),
@@ -462,14 +480,17 @@ def _run_single(
                 })
 
             query_elapsed = _time.perf_counter() - t1
-            avg_gt = sum(gt_coverages) / len(gt_coverages) if gt_coverages else 0.0
+            _valid_gt = [x for x in gt_coverages if x is not None]
+            avg_gt: float | None = sum(_valid_gt) / len(_valid_gt) if _valid_gt else None
             avg_score = sum(top_scores) / len(top_scores) if top_scores else 0.0
             avg_chunks = sum(chunk_counts) / len(chunk_counts) if chunk_counts else 0.0
             abstained = sum(1 for pq in per_question if pq.get("retrieval_gate_decision") == "abstain_early")
 
+            _avg_gt_display = f"{avg_gt * 100:.0f}%" if avg_gt is not None else "N/A"
             logger.info(
-                "  Query done: %.1fs | Grounded: %d/%d | GT cov: %.0f%%",
-                query_elapsed, grounded_count, len(pairs), avg_gt * 100,
+                "  Query done: %.1fs | Grounded: %d/%d | GT cov: %s",
+                query_elapsed, grounded_count, len(pairs),
+                f"{avg_gt:.0%}" if avg_gt is not None else "N/A",
             )
 
             # ── Stage 3: RAGAS (optional) ──

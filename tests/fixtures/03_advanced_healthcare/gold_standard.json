@@ -38,7 +38,10 @@
       "category": "Direct Mapping",
       "question": "What tables store information about patients?",
       "expected_answer": "The patients table stores demographic and administrative information including MRN, name, date of birth, gender, contact details, and emergency contacts. Additionally, patient-related data is stored in diagnoses, treatments, medications, lab_results, appointments, and claims tables through foreign key relationships.",
-      "concepts": ["Patient"],
+      "concepts": [
+        "Patient",
+        "patients"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -47,7 +50,10 @@
       "category": "Direct Mapping",
       "question": "How are medical diagnoses coded and classified?",
       "expected_answer": "Diagnoses are stored in the diagnoses table with ICD-10-CM codes (icd_10_code field). They are classified into four types: 'principal' (primary condition), 'comorbidity' (additional conditions), 'admitting' (condition causing admission), and 'secondary'. Each diagnosis includes the diagnosis name, type, the provider who made it, diagnosis date, and optional resolution date.",
-      "concepts": ["Diagnosis"],
+      "concepts": [
+        "Diagnosis",
+        "diagnoses"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -56,7 +62,10 @@
       "category": "Direct Mapping",
       "question": "What information is tracked for medications prescribed to patients?",
       "expected_answer": "The medications table tracks medication name, National Drug Code (NDC), dosage, route of administration (oral, IV, IM, topical, inhaled, subcutaneous), frequency, prescribing provider, start date, and end date. Active medications have a NULL end_date. The table uses temporal historization with valid_from and valid_to timestamps.",
-      "concepts": ["Medication"],
+      "concepts": [
+        "Medication",
+        "medications"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -65,7 +74,10 @@
       "category": "Direct Mapping",
       "question": "How are healthcare providers organized and tracked?",
       "expected_answer": "Providers are stored in the providers table with a unique National Provider Identifier (NPI), name, provider type (MD, DO, NP, PA, RN, PT, Other), specialty, and department affiliation. Providers have is_active and is_deleted flags for status tracking. The table uses temporal historization to track credential and affiliation changes over time.",
-      "concepts": ["Provider"],
+      "concepts": [
+        "Provider",
+        "providers"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -74,7 +86,10 @@
       "category": "Direct Mapping",
       "question": "What is the structure of departments and how do they relate to each other?",
       "expected_answer": "Departments are stored in the departments table with department_name, department_code, parent_department_id (self-referential foreign key for hierarchy), service_line (strategic grouping), and location. Departments can have parent departments creating a hierarchical structure (e.g., Cardiology as a child of Internal Medicine). Each department has is_active and is_deleted flags.",
-      "concepts": ["Department"],
+      "concepts": [
+        "Department",
+        "departments"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -83,7 +98,11 @@
       "category": "Direct Mapping",
       "question": "How are insurance plans and payers represented in the system?",
       "expected_answer": "The insurance_plans table stores plan_name, payer_name (insurance company), plan_type (commercial, medicare, medicaid, tricare, self_pay), and prior_auth_required flag. Plans have is_active status and use temporal historization. The patients table references insurance_plans via primary_insurance_id foreign key for primary coverage.",
-      "concepts": ["Insurance"],
+      "concepts": [
+        "Insurance",
+        "insurance_plans",
+        "insurance"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -92,7 +111,10 @@
       "category": "Direct Mapping",
       "question": "What constitutes an insurance claim and what is its lifecycle?",
       "expected_answer": "Claims are stored in the claims table with claim_number (unique identifier), patient_id, insurance_plan_id, service_date, submission_date, CPT code (procedure), ICD-10 code (diagnosis), amounts (charged, allowed, paid), and claim_status. Status workflow includes: submitted → pending → approved/denied/partially_paid → appealed. Denied claims include denial_reason.",
-      "concepts": ["Claim"],
+      "concepts": [
+        "Claim",
+        "claims"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -101,7 +123,10 @@
       "category": "Direct Mapping",
       "question": "How are patient appointments scheduled and tracked?",
       "expected_answer": "The appointments table stores patient_id, provider_id, department_id, appointment_date, appointment_time, appointment_type (new_patient, established, consultation, follow_up, procedure, telehealth), duration_minutes, and appointment_status. Status workflow: scheduled → confirmed → checked_in → in_progress → completed/canceled/no_show. Canceled appointments require cancellation_reason.",
-      "concepts": ["Appointment"],
+      "concepts": [
+        "Appointment",
+        "appointments"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -110,7 +135,10 @@
       "category": "Direct Mapping",
       "question": "What information is captured in laboratory test results?",
       "expected_answer": "Lab results are stored in the lab_results table with test_name, LOINC code (Logical Observation Identifiers Names and Codes), test_value, unit of measurement, reference_range, is_abnormal flag, ordering_provider_id, result_date, and notes. The is_abnormal flag is automatically set when results fall outside the reference range. Abnormal results are indexed for quick clinical follow-up.",
-      "concepts": ["LabResult"],
+      "concepts": [
+        "LabResult",
+        "lab_results"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -119,7 +147,10 @@
       "category": "Direct Mapping",
       "question": "How are medical treatments and procedures documented?",
       "expected_answer": "The treatments table stores patient_id, diagnosis_id (for clinical justification), treatment_name, CPT code (for billing), provider_id, department_id, treatment_date, treatment_status (scheduled, completed, canceled, in_progress), and clinical notes. Treatments link to both providers and departments, and must reference a diagnosis for medical necessity documentation.",
-      "concepts": ["Treatment"],
+      "concepts": [
+        "Treatment",
+        "treatments"
+      ],
       "query_type": "concept_lookup",
       "complexity": "simple"
     },
@@ -128,7 +159,14 @@
       "category": "Multi-hop",
       "question": "What are all the diagnoses for a specific patient, including the providers who diagnosed them?",
       "expected_answer": "To get all diagnoses for a patient with provider information, join the patients table to diagnoses on patient_id, then left join to providers on provider_id. The query returns icd_10_code, diagnosis_name, diagnosis_type, diagnosis_date, resolution_date, and the provider's name (first_name, last_name, NPI). Filter by patient MRN or patient_id and exclude soft-deleted records (is_deleted = FALSE, valid_to IS NULL).",
-      "concepts": ["Patient", "Diagnosis", "Provider"],
+      "concepts": [
+        "Patient",
+        "Diagnosis",
+        "Provider",
+        "patients",
+        "diagnoses",
+        "providers"
+      ],
       "query_type": "multi_hop",
       "complexity": "intermediate",
       "query_path": "patients → diagnoses → providers"
@@ -138,7 +176,16 @@
       "category": "Multi-hop",
       "question": "Which patients have received treatments from cardiology department providers?",
       "expected_answer": "Join patients to treatments on patient_id, treatments to providers on provider_id, and providers to departments on department_id. Filter where department_name = 'Cardiology' (or department_code). Return patient MRN, name, treatment_name, treatment_date, and provider name. Exclude soft-deleted records from all tables. This query supports departmental workload analysis.",
-      "concepts": ["Patient", "Treatment", "Provider", "Department"],
+      "concepts": [
+        "Patient",
+        "Treatment",
+        "Provider",
+        "Department",
+        "patients",
+        "treatments",
+        "providers",
+        "departments"
+      ],
       "query_type": "multi_hop",
       "complexity": "intermediate",
       "query_path": "patients → treatments → providers → departments"
@@ -148,7 +195,14 @@
       "category": "Multi-hop",
       "question": "What treatments have been performed for a patient's specific diagnosis?",
       "expected_answer": "Join diagnoses to treatments on diagnosis_id, then treatments to patients on patient_id and providers on provider_id. Filter by patient_id and specific icd_10_code. Return treatment_name, CPT code, treatment_date, treatment_status, department_name, and provider name. This links clinical conditions to interventions for outcomes analysis.",
-      "concepts": ["Diagnosis", "Treatment", "Provider"],
+      "concepts": [
+        "Diagnosis",
+        "Treatment",
+        "Provider",
+        "diagnoses",
+        "treatments",
+        "providers"
+      ],
       "query_type": "multi_hop",
       "complexity": "intermediate",
       "query_path": "diagnoses → treatments → providers"
@@ -158,7 +212,14 @@
       "category": "Multi-hop",
       "question": "Which providers have prescribed medications to patients with a specific diagnosis?",
       "expected_answer": "Join diagnoses to patients on patient_id, patients to medications on patient_id, and medications to providers on prescribing_provider_id. Filter by specific icd_10_code. Return provider name, NPI, specialty, patient name, medication_name, dosage, and prescription dates. This supports medication pattern analysis for specific conditions.",
-      "concepts": ["Diagnosis", "Medication", "Provider"],
+      "concepts": [
+        "Diagnosis",
+        "Medication",
+        "Provider",
+        "diagnoses",
+        "medications",
+        "providers"
+      ],
       "query_type": "multi_hop",
       "complexity": "intermediate",
       "query_path": "diagnoses → patients → medications → providers"
@@ -168,7 +229,14 @@
       "category": "Multi-hop",
       "question": "What is the complete medication history for a patient including prescribing providers?",
       "expected_answer": "Join patients to medications on patient_id, then medications to providers on prescribing_provider_id. Filter by patient_id. Return medication_name, NDC code, dosage, route, frequency, start_date, end_date, and provider name. Include historical records (valid_to IS NOT NULL) to show medication changes over time. Active medications have NULL end_date.",
-      "concepts": ["Patient", "Medication", "Provider"],
+      "concepts": [
+        "Patient",
+        "Medication",
+        "Provider",
+        "patients",
+        "medications",
+        "providers"
+      ],
       "query_type": "multi_hop",
       "complexity": "intermediate",
       "query_path": "patients → medications → providers"
@@ -178,7 +246,14 @@
       "category": "Multi-hop",
       "question": "Which departments have the highest volume of patient appointments?",
       "expected_answer": "Join appointments to departments on department_id and patients on patient_id. Group by department_id, department_name, and service_line. Count appointments and optionally filter by appointment_date range. Order by count DESC to identify high-volume departments. Exclude canceled and no-show appointments for utilization metrics.",
-      "concepts": ["Appointment", "Department", "Patient"],
+      "concepts": [
+        "Appointment",
+        "Department",
+        "Patient",
+        "appointments",
+        "departments",
+        "patients"
+      ],
       "query_type": "multi_hop",
       "complexity": "intermediate",
       "query_path": "appointments → departments"
@@ -188,7 +263,17 @@
       "category": "Multi-hop",
       "question": "What claims have been submitted for a specific patient's treatments?",
       "expected_answer": "Join patients to treatments on patient_id, treatments to claims on patient_id and service_date ≈ treatment_date, and claims to insurance_plans on insurance_plan_id. Filter by patient_id. Return claim_number, service_date, CPT code, ICD-10 code, amount_charged, amount_paid, claim_status, payer_name, and plan_type. Link treatments to claims for revenue cycle analysis.",
-      "concepts": ["Patient", "Treatment", "Claim", "Insurance"],
+      "concepts": [
+        "Patient",
+        "Treatment",
+        "Claim",
+        "Insurance",
+        "patients",
+        "treatments",
+        "claims",
+        "insurance_plans",
+        "insurance"
+      ],
       "query_type": "multi_hop",
       "complexity": "intermediate",
       "query_path": "patients → treatments → claims → insurance_plans"
@@ -198,7 +283,14 @@
       "category": "Multi-hop",
       "question": "Which providers in a specific department have ordered abnormal lab results?",
       "expected_answer": "Join lab_results to providers on ordering_provider_id, providers to departments on department_id. Filter by department_id and is_abnormal = TRUE. Return provider name, NPI, specialty, patient name, test_name, test_value, reference_range, and result_date. Order by result_date DESC. This identifies providers who may need follow-up support with critical results.",
-      "concepts": ["LabResult", "Provider", "Department"],
+      "concepts": [
+        "LabResult",
+        "Provider",
+        "Department",
+        "lab_results",
+        "providers",
+        "departments"
+      ],
       "query_type": "multi_hop",
       "complexity": "intermediate",
       "query_path": "lab_results → providers → departments"
@@ -208,7 +300,18 @@
       "category": "Multi-hop",
       "question": "What is a patient's complete care journey including diagnoses, treatments, and medications?",
       "expected_answer": "Perform multiple joins from patients: to diagnoses (patient_id), to treatments (patient_id), to medications (patient_id), to lab_results (patient_id), and to appointments (patient_id). Include provider joins for clinical context. Group by clinical event date (diagnosis_date, treatment_date, start_date, result_date, appointment_date) and order chronologically. This creates a longitudinal care timeline.",
-      "concepts": ["Patient", "Diagnosis", "Treatment", "Medication", "LabResult"],
+      "concepts": [
+        "Patient",
+        "Diagnosis",
+        "Treatment",
+        "Medication",
+        "LabResult",
+        "patients",
+        "diagnoses",
+        "treatments",
+        "medications",
+        "lab_results"
+      ],
       "query_type": "multi_hop",
       "complexity": "advanced",
       "query_path": "patients → {diagnoses, treatments, medications, lab_results}"
@@ -218,7 +321,13 @@
       "category": "Multi-hop",
       "question": "Which insurance plans have the highest claim denial rates?",
       "expected_answer": "Join claims to insurance_plans on insurance_plan_id. Group by plan_id, payer_name, and plan_type. Count total claims and count claims where claim_status = 'denied'. Calculate denial rate as (denied_claims / total_claims) * 100. Order by denial rate DESC. Filter by service_date range for current period analysis. Identifies payers requiring prior authorization improvements.",
-      "concepts": ["Claim", "Insurance"],
+      "concepts": [
+        "Claim",
+        "Insurance",
+        "claims",
+        "insurance_plans",
+        "insurance"
+      ],
       "query_type": "multi_hop",
       "complexity": "intermediate",
       "query_path": "claims → insurance_plans"
@@ -228,7 +337,12 @@
       "category": "Temporal",
       "question": "What were a patient's diagnoses in a specific past time period?",
       "expected_answer": "Query the diagnoses table filtered by patient_id and date range (diagnosis_date >= start_date AND diagnosis_date <= end_date). Additionally check temporal validity: valid_from <= query_date AND (valid_to IS NULL OR valid_to > query_date). Return icd_10_code, diagnosis_name, diagnosis_type, provider name. This reconstructs historical clinical state for audit or longitudinal analysis.",
-      "concepts": ["Patient", "Diagnosis"],
+      "concepts": [
+        "Patient",
+        "Diagnosis",
+        "patients",
+        "diagnoses"
+      ],
       "query_type": "temporal",
       "complexity": "intermediate"
     },
@@ -237,7 +351,12 @@
       "category": "Temporal",
       "question": "How have a patient's medications changed over time?",
       "expected_answer": "Query medications table for patient_id including historical records (ignore is_deleted and valid_to filters). Return medication_name, dosage, start_date, end_date, valid_from, valid_to. Order by start_date DESC, valid_from DESC. Changes appear as new records with end_date on the old record and start_date on the new record. Supports medication reconciliation.",
-      "concepts": ["Patient", "Medication"],
+      "concepts": [
+        "Patient",
+        "Medication",
+        "patients",
+        "medications"
+      ],
       "query_type": "temporal",
       "complexity": "intermediate"
     },
@@ -246,7 +365,12 @@
       "category": "Temporal",
       "question": "What was a provider's department affiliation at a specific past date?",
       "expected_answer": "Query providers table joined to departments on department_id. Filter by provider_id and check temporal validity: valid_from <= historical_date AND (valid_to IS NULL OR valid_to > historical_date). Return provider name, department_name, department_code, and service_line. This reconstructs organizational structure changes for credentialing audits.",
-      "concepts": ["Provider", "Department"],
+      "concepts": [
+        "Provider",
+        "Department",
+        "providers",
+        "departments"
+      ],
       "query_type": "temporal",
       "complexity": "intermediate"
     },
@@ -255,7 +379,13 @@
       "category": "Temporal",
       "question": "Show all changes to a patient's primary insurance coverage over time.",
       "expected_answer": "Query patients table joined to insurance_plans on primary_insurance_id. Include historical records by not filtering on valid_to. Return mrn, patient name, plan_name, payer_name, plan_type, valid_from, valid_to. Order by valid_from DESC. Insurance changes appear as new patient records with updated primary_insurance_id and historized timestamps.",
-      "concepts": ["Patient", "Insurance"],
+      "concepts": [
+        "Patient",
+        "Insurance",
+        "patients",
+        "insurance_plans",
+        "insurance"
+      ],
       "query_type": "temporal",
       "complexity": "intermediate"
     },
@@ -264,7 +394,10 @@
       "category": "Temporal",
       "question": "What diagnoses were resolved within a specific time period?",
       "expected_answer": "Query diagnoses table where resolution_date IS NOT NULL and resolution_date falls within the date range. Include patient_id, icd_10_code, diagnosis_name, diagnosis_date, resolution_date, and provider. Join to patients for names. Filter for current records (is_deleted = FALSE, valid_to IS NULL). This supports outcomes analysis and closed episode reporting.",
-      "concepts": ["Diagnosis"],
+      "concepts": [
+        "Diagnosis",
+        "diagnoses"
+      ],
       "query_type": "temporal",
       "complexity": "intermediate"
     },
@@ -273,7 +406,12 @@
       "category": "Temporal",
       "question": "Reconstruct a patient's active medications as of a specific historical date.",
       "expected_answer": "Query medications for patient_id where: (1) start_date <= historical_date AND (end_date IS NULL OR end_date > historical_date) for medication active period, AND (2) valid_from <= historical_date AND (valid_to IS NULL OR valid_to > historical_date) for record validity. Return medication_name, dosage, route, frequency, and prescribing provider. This shows what medications were active at that point in time.",
-      "concepts": ["Patient", "Medication"],
+      "concepts": [
+        "Patient",
+        "Medication",
+        "patients",
+        "medications"
+      ],
       "query_type": "temporal",
       "complexity": "advanced"
     },
@@ -282,7 +420,14 @@
       "category": "Privacy-focused",
       "question": "Count the number of patients per department without exposing individual patient identities.",
       "expected_answer": "Join appointments to departments on department_id. Group by department_id, department_name, service_line. Count DISTINCT patient_id for privacy (prevents counting multiple appointments per patient). Filter by appointment_date range and exclude canceled/no-show status. Return aggregated counts only—no patient identifiers. Follows HIPAA minimum necessary standard.",
-      "concepts": ["Patient", "Department", "Appointment"],
+      "concepts": [
+        "Patient",
+        "Department",
+        "Appointment",
+        "patients",
+        "departments",
+        "appointments"
+      ],
       "query_type": "privacy_focused",
       "complexity": "intermediate"
     },
@@ -291,7 +436,10 @@
       "category": "Privacy-focused",
       "question": "What are the most common diagnoses (by count) without linking to specific patients?",
       "expected_answer": "Query diagnoses table grouped by icd_10_code and diagnosis_name. COUNT(*) each diagnosis. Order by count DESC. Return only icd_10_code, diagnosis_name, and count—no patient identifiers, MRNs, or names. Optionally filter by diagnosis_date range. This epidemiological analysis follows HIPAA de-identification standards by aggregating without direct identifiers.",
-      "concepts": ["Diagnosis"],
+      "concepts": [
+        "Diagnosis",
+        "diagnoses"
+      ],
       "query_type": "privacy_focused",
       "complexity": "simple"
     },
@@ -300,7 +448,14 @@
       "category": "Privacy-focused",
       "question": "Which providers have the highest patient volume without exposing patient information?",
       "expected_answer": "Join appointments to providers on provider_id. Group by provider_id, provider name, NPI, specialty, department. COUNT DISTINCT patient_id for unique patient count (not appointment count). Filter by appointment_date range and completed status. Return only provider information and aggregated counts—no patient names or MRNs. Supports capacity planning while protecting privacy.",
-      "concepts": ["Provider", "Patient", "Appointment"],
+      "concepts": [
+        "Provider",
+        "Patient",
+        "Appointment",
+        "providers",
+        "patients",
+        "appointments"
+      ],
       "query_type": "privacy_focused",
       "complexity": "intermediate"
     },
@@ -309,7 +464,13 @@
       "category": "Privacy-focused",
       "question": "What is the average claim payment amount by insurance plan type?",
       "expected_answer": "Join claims to insurance_plans on insurance_plan_id. Group by plan_type (commercial, medicare, medicaid, tricare, self_pay). Calculate AVG(amount_paid) and AVG(amount_charged). Filter by service_date range and claim_status = 'approved' or 'partially_paid'. Return only plan_type and aggregated averages—no patient identifiers, specific plan names, or claim details. Supports financial benchmarking.",
-      "concepts": ["Claim", "Insurance"],
+      "concepts": [
+        "Claim",
+        "Insurance",
+        "claims",
+        "insurance_plans",
+        "insurance"
+      ],
       "query_type": "privacy_focused",
       "complexity": "intermediate"
     }
@@ -317,7 +478,9 @@
   "query_patterns": {
     "direct_mapping": {
       "description": "Single table lookups for concept definitions",
-      "examples": ["Q001-Q010"],
+      "examples": [
+        "Q001-Q010"
+      ],
       "cypher_patterns": [
         "MATCH (c:Concept) WHERE c.name CONTAINS 'concept_name' RETURN c",
         "MATCH (t:Table) WHERE t.table_name = 'table_name' RETURN t"
@@ -325,7 +488,9 @@
     },
     "multi_hop": {
       "description": "Traversing multiple relationships to answer complex questions",
-      "examples": ["Q011-Q020"],
+      "examples": [
+        "Q011-Q020"
+      ],
       "cypher_patterns": [
         "MATCH (p:Patient)-[:HAS_DIAGNOSIS]->(d:Diagnosis)-[:DIAGNOSED_BY]->(pr:Provider) RETURN p, d, pr",
         "MATCH (p:Patient)-[:RECEIVED_TREATMENT]->(t:Treatment)-[:PERFORMED_BY]->(pr:Provider)-[:WORKS_IN]->(d:Department) RETURN p, t, pr, d"
@@ -333,7 +498,9 @@
     },
     "temporal": {
       "description": "Queries using valid_from/valid_to for historical reconstruction",
-      "examples": ["Q021-Q026"],
+      "examples": [
+        "Q021-Q026"
+      ],
       "cypher_patterns": [
         "MATCH (d:Diagnosis) WHERE d.valid_date <= $query_date AND (d.valid_to IS NULL OR d.valid_to > $query_date) RETURN d",
         "MATCH (p:Patient)-[:HAS_MEDICATION]->(m:Medication) WHERE m.start_date <= $date AND (m.end_date IS NULL OR m.end_date > $date) RETURN p, m"
@@ -341,7 +508,9 @@
     },
     "privacy_focused": {
       "description": "Aggregated queries that de-identify PHI per HIPAA minimum necessary standard",
-      "examples": ["Q027-Q030"],
+      "examples": [
+        "Q027-Q030"
+      ],
       "cypher_patterns": [
         "MATCH (p:Patient)-[:HAS_APPOINTMENT]->(a:Appointment)-[:SCHEDULED_AT]->(d:Department) RETURN d.department_name, COUNT(DISTINCT p.patient_id)",
         "MATCH (d:Diagnosis) RETURN d.icd_10_code, d.diagnosis_name, COUNT(*) AS frequency ORDER BY frequency DESC"
@@ -350,36 +519,210 @@
   },
   "expected_ontology": {
     "entities": [
-      {"label": "Patient", "properties": ["mrn", "first_name", "last_name", "date_of_birth", "gender"]},
-      {"label": "Diagnosis", "properties": ["icd_10_code", "diagnosis_name", "diagnosis_type", "diagnosis_date"]},
-      {"label": "Treatment", "properties": ["treatment_name", "cpt_code", "treatment_date", "treatment_status"]},
-      {"label": "Medication", "properties": ["medication_name", "ndc_code", "dosage", "route", "frequency"]},
-      {"label": "Provider", "properties": ["npi", "first_name", "last_name", "provider_type", "specialty"]},
-      {"label": "Department", "properties": ["department_name", "department_code", "service_line"]},
-      {"label": "InsurancePlan", "properties": ["plan_name", "payer_name", "plan_type"]},
-      {"label": "Claim", "properties": ["claim_number", "claim_status", "amount_charged", "amount_paid"]},
-      {"label": "Appointment", "properties": ["appointment_date", "appointment_time", "appointment_type", "appointment_status"]},
-      {"label": "LabResult", "properties": ["test_name", "loinc_code", "test_value", "is_abnormal"]}
+      {
+        "label": "Patient",
+        "properties": [
+          "mrn",
+          "first_name",
+          "last_name",
+          "date_of_birth",
+          "gender"
+        ]
+      },
+      {
+        "label": "Diagnosis",
+        "properties": [
+          "icd_10_code",
+          "diagnosis_name",
+          "diagnosis_type",
+          "diagnosis_date"
+        ]
+      },
+      {
+        "label": "Treatment",
+        "properties": [
+          "treatment_name",
+          "cpt_code",
+          "treatment_date",
+          "treatment_status"
+        ]
+      },
+      {
+        "label": "Medication",
+        "properties": [
+          "medication_name",
+          "ndc_code",
+          "dosage",
+          "route",
+          "frequency"
+        ]
+      },
+      {
+        "label": "Provider",
+        "properties": [
+          "npi",
+          "first_name",
+          "last_name",
+          "provider_type",
+          "specialty"
+        ]
+      },
+      {
+        "label": "Department",
+        "properties": [
+          "department_name",
+          "department_code",
+          "service_line"
+        ]
+      },
+      {
+        "label": "InsurancePlan",
+        "properties": [
+          "plan_name",
+          "payer_name",
+          "plan_type"
+        ]
+      },
+      {
+        "label": "Claim",
+        "properties": [
+          "claim_number",
+          "claim_status",
+          "amount_charged",
+          "amount_paid"
+        ]
+      },
+      {
+        "label": "Appointment",
+        "properties": [
+          "appointment_date",
+          "appointment_time",
+          "appointment_type",
+          "appointment_status"
+        ]
+      },
+      {
+        "label": "LabResult",
+        "properties": [
+          "test_name",
+          "loinc_code",
+          "test_value",
+          "is_abnormal"
+        ]
+      }
     ],
     "relationships": [
-      {"type": "HAS_DIAGNOSIS", "from": "Patient", "to": "Diagnosis", "properties": ["diagnosis_date"]},
-      {"type": "DIAGNOSED_BY", "from": "Diagnosis", "to": "Provider"},
-      {"type": "RECEIVED_TREATMENT", "from": "Patient", "to": "Treatment", "properties": ["treatment_date"]},
-      {"type": "TREATS_DIAGNOSIS", "from": "Treatment", "to": "Diagnosis"},
-      {"type": "PERFORMED_BY", "from": "Treatment", "to": "Provider"},
-      {"type": "TREATMENT_LOCATION", "from": "Treatment", "to": "Department"},
-      {"type": "HAS_MEDICATION", "from": "Patient", "to": "Medication", "properties": ["start_date"]},
-      {"type": "PRESCRIBED_BY", "from": "Medication", "to": "Provider"},
-      {"type": "HAS_LAB_RESULT", "from": "Patient", "to": "LabResult", "properties": ["result_date"]},
-      {"type": "ORDERED_BY", "from": "LabResult", "to": "Provider"},
-      {"type": "HAS_APPOINTMENT", "from": "Patient", "to": "Appointment", "properties": ["appointment_date"]},
-      {"type": "SCHEDULED_WITH", "from": "Appointment", "to": "Provider"},
-      {"type": "APPOINTMENT_LOCATION", "from": "Appointment", "to": "Department"},
-      {"type": "PRIMARY_COVERAGE", "from": "Patient", "to": "InsurancePlan"},
-      {"type": "HAS_CLAIM", "from": "Patient", "to": "Claim", "properties": ["service_date"]},
-      {"type": "CLAIM_TO_INSURANCE", "from": "Claim", "to": "InsurancePlan"},
-      {"type": "WORKS_IN", "from": "Provider", "to": "Department"},
-      {"type": "DEPARTMENT_HIERARCHY", "from": "Department", "to": "Department", "properties": ["parent_child"]}
+      {
+        "type": "HAS_DIAGNOSIS",
+        "from": "Patient",
+        "to": "Diagnosis",
+        "properties": [
+          "diagnosis_date"
+        ]
+      },
+      {
+        "type": "DIAGNOSED_BY",
+        "from": "Diagnosis",
+        "to": "Provider"
+      },
+      {
+        "type": "RECEIVED_TREATMENT",
+        "from": "Patient",
+        "to": "Treatment",
+        "properties": [
+          "treatment_date"
+        ]
+      },
+      {
+        "type": "TREATS_DIAGNOSIS",
+        "from": "Treatment",
+        "to": "Diagnosis"
+      },
+      {
+        "type": "PERFORMED_BY",
+        "from": "Treatment",
+        "to": "Provider"
+      },
+      {
+        "type": "TREATMENT_LOCATION",
+        "from": "Treatment",
+        "to": "Department"
+      },
+      {
+        "type": "HAS_MEDICATION",
+        "from": "Patient",
+        "to": "Medication",
+        "properties": [
+          "start_date"
+        ]
+      },
+      {
+        "type": "PRESCRIBED_BY",
+        "from": "Medication",
+        "to": "Provider"
+      },
+      {
+        "type": "HAS_LAB_RESULT",
+        "from": "Patient",
+        "to": "LabResult",
+        "properties": [
+          "result_date"
+        ]
+      },
+      {
+        "type": "ORDERED_BY",
+        "from": "LabResult",
+        "to": "Provider"
+      },
+      {
+        "type": "HAS_APPOINTMENT",
+        "from": "Patient",
+        "to": "Appointment",
+        "properties": [
+          "appointment_date"
+        ]
+      },
+      {
+        "type": "SCHEDULED_WITH",
+        "from": "Appointment",
+        "to": "Provider"
+      },
+      {
+        "type": "APPOINTMENT_LOCATION",
+        "from": "Appointment",
+        "to": "Department"
+      },
+      {
+        "type": "PRIMARY_COVERAGE",
+        "from": "Patient",
+        "to": "InsurancePlan"
+      },
+      {
+        "type": "HAS_CLAIM",
+        "from": "Patient",
+        "to": "Claim",
+        "properties": [
+          "service_date"
+        ]
+      },
+      {
+        "type": "CLAIM_TO_INSURANCE",
+        "from": "Claim",
+        "to": "InsurancePlan"
+      },
+      {
+        "type": "WORKS_IN",
+        "from": "Provider",
+        "to": "Department"
+      },
+      {
+        "type": "DEPARTMENT_HIERARCHY",
+        "from": "Department",
+        "to": "Department",
+        "properties": [
+          "parent_child"
+        ]
+      }
     ]
   }
 }

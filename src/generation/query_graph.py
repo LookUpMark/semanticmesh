@@ -14,8 +14,19 @@ integrating nodes from:
 from __future__ import annotations
 
 import threading
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+# Suppress LangGraph msgpack deserialisation warnings for types that are
+# registered below via the serde configuration. These warnings appear when
+# checkpoint data created before the serde registration is replayed.
+warnings.filterwarnings(
+    "ignore",
+    message=r"Deserializing unregistered type.*RetrievedChunk|GraderDecision|QueryTrace",
+    category=UserWarning,
+    module=r"langgraph\.checkpoint\.serde\.jsonplus",
+)
 
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import END, StateGraph
@@ -62,6 +73,24 @@ def _make_checkpointer():
     The connection is reused on subsequent calls (singleton pattern).
     """
     global _QUERY_GRAPH_CHECKPOINT_CONN
+    # Register custom types so LangGraph msgpack serialiser does not warn
+    try:
+        from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer  # type: ignore[import]
+
+        _ALLOWED_MODULES = [
+            ("src.models.schemas", "RetrievedChunk"),
+            ("src.models.schemas", "GraderDecision"),
+            ("src.config.tracing", "QueryTrace"),
+        ]
+        serde = JsonPlusSerializer()
+        existing: list = getattr(serde, "allowed_msgpack_modules", []) or []
+        for entry in _ALLOWED_MODULES:
+            if entry not in existing:
+                existing.append(entry)
+        serde.allowed_msgpack_modules = existing  # type: ignore[attr-defined]
+    except Exception:
+        serde = None  # type: ignore[assignment]
+
     try:
         import sqlite3
 
@@ -69,14 +98,19 @@ def _make_checkpointer():
         _CONVERSATIONS_DB.parent.mkdir(parents=True, exist_ok=True)
         if _QUERY_GRAPH_CHECKPOINT_CONN is None:
             _QUERY_GRAPH_CHECKPOINT_CONN = sqlite3.connect(str(_CONVERSATIONS_DB), check_same_thread=False)
-        return SqliteSaver(_QUERY_GRAPH_CHECKPOINT_CONN)
-    except ImportError:
+        kwargs = {"serde": serde} if serde is not None else {}
+        return SqliteSaver(_QUERY_GRAPH_CHECKPOINT_CONN, **kwargs)
+    except (ImportError, TypeError):
         from langgraph.checkpoint.memory import MemorySaver
         logger.warning(
             "langgraph-checkpoint-sqlite not installed — using in-memory checkpointer. "
             "Run: pip install langgraph-checkpoint-sqlite"
         )
-        return MemorySaver()
+        kwargs = {"serde": serde} if serde is not None else {}
+        try:
+            return MemorySaver(**kwargs)
+        except TypeError:
+            return MemorySaver()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
