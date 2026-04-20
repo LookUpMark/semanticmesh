@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # ── Neo4j ──────────────────────────────────────────────────────────────────
     neo4j_uri: str = DEFAULT_CONFIG.neo4j_uri
     neo4j_user: str = DEFAULT_CONFIG.neo4j_user
-    neo4j_password: SecretStr = SecretStr("neo4j")
+    neo4j_password: SecretStr = SecretStr("")
 
     # ── LLM ─────────────────────────────────────────────────────────────────────
     lmstudio_base_url: str = DEFAULT_CONFIG.lmstudio_base_url
@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
     llm_max_tokens_extraction: int = DEFAULT_CONFIG.llm_max_tokens_extraction
     llm_max_tokens_reasoning: int = DEFAULT_CONFIG.llm_max_tokens_reasoning
+    llm_request_timeout: int = DEFAULT_CONFIG.llm_request_timeout
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = DEFAULT_CONFIG.embedding_model
@@ -115,6 +116,9 @@ class Settings(BaseSettings):
     trace_compress_large_fields: bool = DEFAULT_CONFIG.trace_compress_large_fields
     trace_truncate_length: int = DEFAULT_CONFIG.trace_truncate_length
     trace_max_items: int = DEFAULT_CONFIG.trace_max_items
+
+    # ── Checkpointing ───────────────────────────────────────────────────────────
+    sqlite_checkpoint_path: str = ":memory:"
 
 
 @lru_cache(maxsize=1)

@@ -266,7 +266,7 @@ Campaign results across 126 runs (21 studies x 6 datasets). All scores are AI Ju
 
 ### 7.2 Run Procedure
 
-The ablation runner (`scripts/run_ablation_full.py`) automates the full campaign:
+The ablation runner (`scripts/run_pipeline.py`) automates the full campaign:
 
 1. For each study ID in `ABLATION_MATRIX`:
    a. Override environment variables per `env_overrides`
@@ -280,10 +280,10 @@ The ablation runner (`scripts/run_ablation_full.py`) automates the full campaign
 
 ```bash
 # Single study on one dataset
-python -m scripts.run_ablation_full --study AB-10 --dataset DS01
+python -m scripts.run_pipeline --study AB-10 --dataset tests/fixtures/01_basics_ecommerce/gold_standard.json
 
 # Full campaign (all studies, all datasets)
-python -m scripts.run_ablation_full --all
+python -m scripts.run_pipeline --all-studies --all-datasets
 
 # AI Judge evaluation
 python -m scripts.run_ai_judge --study AB-10 --dataset DS01

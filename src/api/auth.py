@@ -26,11 +26,21 @@ route each user to their own Neo4j database or namespace.
 
 from __future__ import annotations
 
+import logging
 import os
 import secrets
+import time
+from collections import defaultdict
 
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader
+
+_logger = logging.getLogger(__name__)
+
+_auth_warning_logged = False
+_auth_attempts: dict[str, list[float]] = defaultdict(list)
+_MAX_ATTEMPTS = 5
+_WINDOW_SECONDS = 60
 
 _API_KEY_HEADER = APIKeyHeader(
     name="X-API-Key",
@@ -49,7 +59,9 @@ def _get_configured_key() -> str | None:
     return key if key else None
 
 
-def require_api_key(api_key: str | None = Security(_API_KEY_HEADER)) -> str | None:
+def require_api_key(
+    request: Request, api_key: str | None = Security(_API_KEY_HEADER)
+) -> str | None:
     """FastAPI dependency that validates the X-API-Key header.
 
     - If ``API_KEY`` env var is **not set**: auth is disabled, all requests pass.
@@ -59,7 +71,13 @@ def require_api_key(api_key: str | None = Security(_API_KEY_HEADER)) -> str | No
     """
     configured = _get_configured_key()
     if configured is None:
-        # Auth disabled — dev/local mode
+        global _auth_warning_logged
+        if not _auth_warning_logged:
+            _logger.warning(
+                "API_KEY not set — authentication disabled. "
+                "All endpoints (including destructive ones) are unprotected."
+            )
+            _auth_warning_logged = True
         return None
 
     if api_key is None:
@@ -69,8 +87,19 @@ def require_api_key(api_key: str | None = Security(_API_KEY_HEADER)) -> str | No
             headers={"WWW-Authenticate": "ApiKey"},
         )
 
+    # Rate limiting
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+    _auth_attempts[client_ip] = [t for t in _auth_attempts[client_ip] if now - t < _WINDOW_SECONDS]
+    if len(_auth_attempts[client_ip]) >= _MAX_ATTEMPTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many authentication attempts. Try again later.",
+        )
+
     # constant-time comparison to prevent timing attacks
     if not secrets.compare_digest(api_key, configured):
+        _auth_attempts[client_ip].append(now)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid API key.",

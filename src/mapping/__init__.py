@@ -1,1 +1,1 @@
-# src.mapping — RAG semantic mapping and validation.
+"""Schema-to-ontology mapping with Actor-Critic validation."""

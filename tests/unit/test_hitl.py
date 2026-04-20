@@ -127,12 +127,12 @@ class TestHitlNode:
 
     def test_pass_through_on_high_confidence(self) -> None:
         cmd = hitl_node(self._state_high_conf())
-        assert cmd.goto == "Generate_Cypher"
+        assert cmd.goto == "generate_cypher"
 
     def test_approve_routes_to_generate_cypher(self) -> None:
         with patch("src.mapping.hitl.interrupt", return_value={"action": "approve"}):
             cmd = hitl_node(self._state_low_conf())
-        assert cmd.goto == "Generate_Cypher"
+        assert cmd.goto == "generate_cypher"
 
     def test_correct_updates_proposal(self) -> None:
         with patch(
@@ -140,29 +140,29 @@ class TestHitlNode:
             return_value={"action": "correct", "mapped_concept": "Account"},
         ):
             cmd = hitl_node(self._state_low_conf())
-        assert cmd.goto == "Generate_Cypher"
+        assert cmd.goto == "generate_cypher"
         assert cmd.update["mapping_proposal"].mapped_concept == "Account"
         assert cmd.update["mapping_proposal"].confidence == 1.0
 
-    def test_reject_routes_to_end(self) -> None:
+    def test_reject_routes_to_save_trace(self) -> None:
         with patch("src.mapping.hitl.interrupt", return_value={"action": "reject"}):
             cmd = hitl_node(self._state_low_conf())
-        assert cmd.goto == "End"
+        assert cmd.goto == "save_trace"
         assert cmd.update["rejected"] is True
 
     def test_unknown_action_defaults_to_approve(self) -> None:
         with patch("src.mapping.hitl.interrupt", return_value={"action": "???"}):
             cmd = hitl_node(self._state_low_conf())
-        assert cmd.goto == "Generate_Cypher"
+        assert cmd.goto == "generate_cypher"
 
-    def test_none_proposal_routes_to_end(self) -> None:
+    def test_none_proposal_routes_to_save_trace(self) -> None:
         state: BuilderState = {"hitl_flag": True, "mapping_proposal": None, "current_entities": []}  # type: ignore
         cmd = hitl_node(state)
-        assert cmd.goto == "End"
+        assert cmd.goto == "save_trace"
 
     def test_correct_without_concept_treats_as_approve(self) -> None:
         with patch("src.mapping.hitl.interrupt", return_value={"action": "correct"}):
             cmd = hitl_node(self._state_low_conf())
-        assert cmd.goto == "Generate_Cypher"
+        assert cmd.goto == "generate_cypher"
         # Should not update the proposal (update is None or doesn't contain mapping_proposal)
         assert cmd.update is None or "mapping_proposal" not in cmd.update

@@ -14,6 +14,7 @@ OpenAPI:     http://127.0.0.1:8000/openapi.json
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 
@@ -23,7 +24,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--host", default="127.0.0.1", help="Bind address.")
-    parser.add_argument("--port", type=int, default=8000, help="Bind port.")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("API_PORT", "8000")),
+        help="Bind port (default: API_PORT env var or 8000).",
+    )
     parser.add_argument(
         "--reload",
         action="store_true",

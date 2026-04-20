@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from src.config.config import LMSTUDIO_PLACEHOLDER_KEY
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 
@@ -63,7 +64,7 @@ class _LMStudioEmbedder:
         from openai import OpenAI  # noqa: PLC0415
 
         base_url: str = get_settings().lmstudio_base_url
-        self._client = OpenAI(api_key="lm-studio", base_url=base_url)
+        self._client = OpenAI(api_key=LMSTUDIO_PLACEHOLDER_KEY, base_url=base_url)
         self._model = model_name
 
     def encode(self, texts: list[str], batch_size: int = 32, **_kwargs) -> np.ndarray:

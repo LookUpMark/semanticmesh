@@ -2,14 +2,20 @@
 
 EP-02: loads PDF pages or plain text files into Document objects, then splits
 them into fixed-size Chunks using RecursiveCharacterTextSplitter. No LLM involved.
+
+PDF extraction uses opendataloader-pdf (Java-backed) which provides structured
+JSON output with page numbers, element types, and heading levels.
 """
 
 from __future__ import annotations
 
+import json
 import logging
+import tempfile
 from pathlib import Path
+from typing import Any
 
-import fitz  # pymupdf
+import opendataloader_pdf
 import tiktoken
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -22,9 +28,108 @@ logger: logging.Logger = get_logger(__name__)
 _settings = get_settings()
 _TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
+# Element types to skip (noise for KG construction).
+_SKIP_TYPES = frozenset({"header", "footer"})
+
 
 class IngestionError(Exception):
     """Raised when a document (PDF or text file) cannot be loaded."""
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+
+def _load_text_file(path: Path) -> list[Document]:
+    """Load a .txt or .md file into a single Document."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read().strip()
+        if not text:
+            logger.debug("Empty text file: %s — skipping", path.name)
+            return []
+        logger.info("Loaded text file '%s'", path.name)
+        return [
+            Document(text=text, metadata={"source": path.name, "page": "1"}),
+        ]
+    except Exception as exc:
+        raise IngestionError(f"Failed to read text file: {path}") from exc
+
+
+def _parse_odl_json(
+    doc_json: dict[str, Any],
+    source_name: str,
+) -> list[Document]:
+    """Convert opendataloader JSON elements into page-level Document objects.
+
+    The JSON ``kids`` array is a flat list of elements (heading, paragraph,
+    table, list, image, caption, etc.) each carrying a ``page number`` and
+    ``content`` field.  Elements are grouped by page and joined with ``\\n\\n``.
+    Header/footer elements are filtered out.
+    """
+    kids = doc_json.get("kids", [])
+
+    # Group content by page number, filtering noise.
+    pages: dict[int, list[str]] = {}
+    for element in kids:
+        if element.get("type") in _SKIP_TYPES:
+            continue
+        content = element.get("content", "").strip()
+        if not content:
+            continue
+        page_num = element.get("page number", 1)
+        pages.setdefault(page_num, []).append(content)
+
+    if not pages:
+        return []
+
+    documents: list[Document] = []
+    for page_num in sorted(pages.keys()):
+        combined_text = "\n\n".join(pages[page_num])
+        documents.append(
+            Document(
+                text=combined_text,
+                metadata={"source": source_name, "page": str(page_num)},
+            )
+        )
+
+    return documents
+
+
+def _load_pdf_via_opendataloader(path: Path) -> list[Document]:
+    """Extract text from a PDF using opendataloader-pdf with JSON output.
+
+    Calls ``opendataloader_pdf.convert()`` which spawns a JVM, converts the PDF
+    to structured JSON, and writes results to a temporary directory.
+    """
+    with tempfile.TemporaryDirectory(prefix="odl_") as output_dir:
+        opendataloader_pdf.convert(
+            input_path=[str(path)],
+            output_dir=output_dir,
+            format="json",
+        )
+
+        json_files = list(Path(output_dir).glob("*.json"))
+        if not json_files:
+            raise IngestionError(f"No output from opendataloader-pdf for: {path}")
+
+        with open(json_files[0], encoding="utf-8") as f:
+            doc_json: dict[str, Any] = json.load(f)
+
+    documents = _parse_odl_json(doc_json, path.name)
+
+    if not documents:
+        logger.debug("All pages empty in %s — skipping", path.name)
+        return []
+
+    logger.info("Loaded %d pages from '%s'", len(documents), path.name)
+    return documents
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 
 def load_pdf(path: Path) -> list[Document]:
@@ -37,54 +142,85 @@ def load_pdf(path: Path) -> list[Document]:
         List of ``Document`` objects, one per page for PDFs, one document for text files.
 
     Raises:
-        IngestionError: If the file does not exist, is encrypted, or is corrupt.
+        IngestionError: If the file does not exist or cannot be processed.
     """
     if not path.exists():
         raise IngestionError(f"File not found: {path}")
 
     if path.suffix.lower() in (".txt", ".md"):
-        try:
-            with open(path, encoding="utf-8") as f:
-                text = f.read().strip()
-            if not text:
-                logger.debug("Empty text file: %s — skipping", path.name)
-                return []
-            documents = [
-                Document(
-                    text=text,
-                    metadata={"source": path.name, "page": "1"},
-                )
-            ]
-            logger.info("Loaded text file '%s'", path.name)
-            return documents
-        except Exception as exc:
-            raise IngestionError(f"Failed to read text file: {path}") from exc
+        return _load_text_file(path)
 
     try:
-        pdf = fitz.open(str(path))
-    except fitz.FileDataError as exc:
-        raise IngestionError(f"Corrupt or unsupported PDF: {path}") from exc
+        return _load_pdf_via_opendataloader(path)
+    except IngestionError:
+        raise
+    except Exception as exc:
+        raise IngestionError(f"Failed to process PDF: {path}") from exc
 
-    if pdf.is_encrypted:
-        raise IngestionError(f"PDF is password-protected: {path}")
 
-    documents: list[Document] = []
-    for page_index in range(len(pdf)):
-        page = pdf.load_page(page_index)
-        text = page.get_text("text").strip()
-        if not text:
-            logger.debug("Empty page %d in %s — skipping", page_index + 1, path.name)
-            continue
-        documents.append(
-            Document(
-                text=text,
-                metadata={"source": path.name, "page": str(page_index + 1)},
+def load_pdfs_batch(paths: list[Path]) -> list[Document]:
+    """Load multiple files in a single opendataloader-pdf call.
+
+    Batches all PDFs into one ``convert()`` call to amortise JVM startup cost.
+    Plain text files (.txt, .md) are loaded individually outside the batch.
+
+    Args:
+        paths: List of file paths (PDFs, .txt, or .md files).
+
+    Returns:
+        Concatenated list of ``Document`` objects from all files.
+
+    Raises:
+        IngestionError: If any file is not found or cannot be processed.
+    """
+    pdf_paths: list[Path] = []
+    text_paths: list[Path] = []
+    for p in paths:
+        if not p.exists():
+            raise IngestionError(f"File not found: {p}")
+        if p.suffix.lower() in (".txt", ".md"):
+            text_paths.append(p)
+        else:
+            pdf_paths.append(p)
+
+    all_docs: list[Document] = []
+
+    # Load text files individually (no JVM needed).
+    for tp in text_paths:
+        all_docs.extend(_load_text_file(tp))
+
+    # Batch all PDFs into one convert() call.
+    if pdf_paths:
+        with tempfile.TemporaryDirectory(prefix="odl_") as output_dir:
+            opendataloader_pdf.convert(
+                input_path=[str(p) for p in pdf_paths],
+                output_dir=output_dir,
+                format="json",
             )
-        )
 
-    pdf.close()
-    logger.info("Loaded %d pages from '%s'", len(documents), path.name)
-    return documents
+            # Build a mapping from PDF stem to its parsed documents.
+            for pdf_path in pdf_paths:
+                stem = pdf_path.stem
+                # opendataloader names output as <stem>.json
+                json_file = Path(output_dir) / f"{stem}.json"
+                if not json_file.exists():
+                    logger.warning("No JSON output for '%s' — skipping", pdf_path.name)
+                    continue
+                with open(json_file, encoding="utf-8") as f:
+                    doc_json: dict[str, Any] = json.load(f)
+                docs = _parse_odl_json(doc_json, pdf_path.name)
+                if docs:
+                    logger.info("Loaded %d pages from '%s'", len(docs), pdf_path.name)
+                    all_docs.extend(docs)
+                else:
+                    logger.debug("All pages empty in %s — skipping", pdf_path.name)
+
+    return all_docs
+
+
+# ---------------------------------------------------------------------------
+# Chunking (unchanged — operates on Document objects regardless of source)
+# ---------------------------------------------------------------------------
 
 
 def chunk_documents(docs: list[Document]) -> list[Chunk]:

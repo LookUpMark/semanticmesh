@@ -90,7 +90,7 @@ Use **Neo4j** as the single storage backend, leveraging its native **vector inde
 ### Consequences
 
 - **Positive:** Single storage layer for topology, vectors, and BM25 — simplifies ops, no sync issues. Cypher enables multi-hop graph traversal for context expansion in the Query Graph.
-- **Negative:** Requires a running Neo4j instance (local Docker or AuraDB). Vector index dimension must match embedding model (BGE-M3 = 1024 dims).
+- **Negative:** Requires a running Neo4j instance (Docker or AuraDB). Vector index dimension must match embedding model (BGE-M3 = 1024 dims).
 - **Constraint for agent:** All queries must use the official `neo4j` Python driver. Do not introduce additional database clients. Vector index name: `businessconcept_embedding`. All write operations use `MERGE` (see ADR-06).
 
 ---

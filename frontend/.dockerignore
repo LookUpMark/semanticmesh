@@ -1,9 +1,0 @@
-# Exclude large dirs that don't belong in the Docker build context
-node_modules/
-dist/
-.vite/
-frontend/
-coverage/
-*.log
-.env
-.env.*

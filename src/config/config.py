@@ -9,6 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Placeholder API key for local LM Studio (localhost-only, not a real secret).
+LMSTUDIO_PLACEHOLDER_KEY = "lm-studio"
+
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -35,6 +38,7 @@ class AppConfig:
     llm_model_reasoning: str = "gpt-5.4-2026-03-05"
     llm_model_extraction: str = "gpt-5.4-nano-2026-03-17"
     llm_model_midtier: str = "gpt-5.4-mini-2026-03-17"
+    azure_openai_api_version: str = "2024-11-01-preview"
 
     # Temperature: extraction/reasoning at 0.0 for deterministic JSON, generation at 0.3 for fluency
     llm_temperature_extraction: float = 0.0
@@ -43,6 +47,7 @@ class AppConfig:
 
     llm_max_tokens_extraction: int = 8192
     llm_max_tokens_reasoning: int = 4096
+    llm_request_timeout: int = 120
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = "BAAI/bge-m3"
@@ -115,7 +120,7 @@ class AppConfig:
 
     # ── Debug Tracing ───────────────────────────────────────────────────────────
     enable_debug_trace: bool = False
-    trace_output_dir: str = "notebooks/ablation/ablation_results/traces/debug"
+    trace_output_dir: str = "outputs/ablation/traces/debug"
     trace_compress_large_fields: bool = True
     trace_truncate_length: int = 500
     trace_max_items: int = 100

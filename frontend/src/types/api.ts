@@ -86,6 +86,7 @@ export interface BuildResultResponse {
 export interface QueryRequest {
   question: string;
   config?: PipelineConfig | null;
+  session_id?: string | null;
 }
 
 export interface QueryResponse {
@@ -96,6 +97,7 @@ export interface QueryResponse {
   gate_decision: string;
   grounded: boolean;
   context_previews: string[];
+  session_id?: string | null;
 }
 
 export interface PipelineRequest {
@@ -240,6 +242,60 @@ export interface AblationMatrixEntry {
 // ── Health ──────────────────────────────────────────────────────────────────
 export interface HealthResponse {
   status: string;
+}
+
+// ── KG Snapshots ─────────────────────────────────────────────────────────────
+export interface KGSnapshotMeta {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  node_count: number;
+  edge_count: number;
+  is_active: boolean;
+}
+
+export interface SaveSnapshotRequest {
+  name: string;
+  description?: string;
+}
+
+export interface RenameSnapshotRequest {
+  name: string;
+  description?: string | null;
+}
+
+// ── Conversations ─────────────────────────────────────────────────────────────
+export interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+  metadata?: QueryResponse | null;
+}
+
+export interface ConversationMeta {
+  id: string;
+  title: string;
+  session_id: string;
+  preview: string;
+  message_count: number;
+  active_snapshot_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationDetail extends ConversationMeta {
+  messages: ConversationMessage[];
+}
+
+export interface SaveConversationRequest {
+  session_id: string;
+  title?: string;
+  messages: ConversationMessage[];
+  active_snapshot_id?: string | null;
+}
+
+export interface RenameConversationRequest {
+  title: string;
 }
 
 // ── AI Judge ────────────────────────────────────────────────────────────────

@@ -5,7 +5,6 @@ All fixtures available to unit, integration, and evaluation tests.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -93,13 +92,6 @@ def neo4j_client(neo4j_container: Neo4jContainer) -> Neo4jClient:
     yield client
 
 
-def _load_mock_response(name: str) -> dict[str, Any]:
-    """Load a mock LLM response from the fixtures directory."""
-    path = Path(__file__).parent / "fixtures" / "00_legacy" / "mock_responses" / f"{name}.json"
-    with open(path) as f:
-        return json.load(f)
-
-
 @pytest.fixture
 def mock_llm():
     """Mock LLM that returns fixed JSON responses.
@@ -146,42 +138,6 @@ def mock_llm_sequence():
 
 
 @pytest.fixture
-def mock_extraction_response():
-    """Mock LLM response for triplet extraction."""
-    return _load_mock_response("extraction_response")
-
-
-@pytest.fixture
-def mock_mapping_response():
-    """Mock LLM response for schema mapping."""
-    return _load_mock_response("mapping_high_confidence")
-
-
-@pytest.fixture
-def mock_critic_approved():
-    """Mock LLM response for critic approval."""
-    return _load_mock_response("critic_approved")
-
-
-@pytest.fixture
-def mock_critic_rejected():
-    """Mock LLM response for critic rejection."""
-    return _load_mock_response("critic_rejected")
-
-
-@pytest.fixture
-def mock_grader_faithful():
-    """Mock LLM response for faithful grader."""
-    return _load_mock_response("grader_faithful")
-
-
-@pytest.fixture
-def mock_grader_hallucinated():
-    """Mock LLM response for hallucinated grader."""
-    return _load_mock_response("grader_hallucinated")
-
-
-@pytest.fixture
 def mock_embeddings():
     """Mock embeddings that return fixed 1024-dim vectors.
 
@@ -211,27 +167,27 @@ def mock_embeddings():
 @pytest.fixture
 def sample_simple_schema() -> Path:
     """Path to the simple schema DDL file."""
-    return Path(__file__).parent / "fixtures" / "00_legacy" / "sample_ddl" / "simple_schema.sql"
+    return Path(__file__).parent / "fixtures" / "01_basics_ecommerce" / "schema.sql"
 
 
 @pytest.fixture
 def sample_complex_schema() -> Path:
     """Path to the complex schema DDL file."""
-    return Path(__file__).parent / "fixtures" / "00_legacy" / "sample_ddl" / "complex_schema.sql"
+    return Path(__file__).parent / "fixtures" / "02_intermediate_finance" / "schema.sql"
 
 
 @pytest.fixture
 def sample_business_glossary() -> Path:
     """Path to the business glossary text file."""
     return (
-        Path(__file__).parent / "fixtures" / "00_legacy" / "sample_docs" / "business_glossary.txt"
+        Path(__file__).parent / "fixtures" / "01_basics_ecommerce" / "business_glossary.txt"
     )
 
 
 @pytest.fixture
 def sample_data_dictionary() -> Path:
     """Path to the data dictionary text file."""
-    return Path(__file__).parent / "fixtures" / "00_legacy" / "sample_docs" / "data_dictionary.txt"
+    return Path(__file__).parent / "fixtures" / "01_basics_ecommerce" / "data_dictionary.txt"
 
 
 @pytest.fixture

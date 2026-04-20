@@ -310,8 +310,13 @@ class TestResolveEntities:
         result = resolve_entities([], emb, llm)
         assert result == []
 
-    def test_all_singletons_llm_called_for_definitions(self) -> None:
+    @patch("src.resolution.entity_resolver.get_settings")
+    def test_all_singletons_llm_called_for_definitions(self, mock_get_settings) -> None:
         """Orthogonal embeddings → no clusters → LLM called for singleton definition synthesis."""
+        mock_get_settings.return_value = MagicMock(
+            enable_singleton_llm_definitions=True,
+            extraction_concurrency=5,
+        )
         triplets = [
             _make_triplet_full("Customer", "Product"),
             _make_triplet_full("Order", "Invoice"),
@@ -326,14 +331,22 @@ class TestResolveEntities:
         assert llm.invoke.call_count >= 1
         assert len(result) == 4
 
-    def test_cluster_resolved_to_single_entity(self) -> None:
+    @patch("src.resolution.entity_resolver.get_settings")
+    @patch("src.config.llm_factory.get_midtier_llm")
+    def test_cluster_resolved_to_single_entity(self, mock_get_midtier, mock_get_settings) -> None:
         """Identical embeddings → one big cluster → LLM merges to 'Customer'."""
+        mock_get_settings.return_value = MagicMock(
+            extraction_concurrency=5,
+            enable_singleton_llm_definitions=False,
+        )
+        judge_llm = _make_llm_merge("Customer")
+        mock_get_midtier.return_value = judge_llm
         triplets = [
             _make_triplet_full("Customer", "CUST"),
             _make_triplet_full("Customers", "Product"),
         ]
         emb = _make_embeddings_identical(["Customer", "CUST", "Customers", "Product"])
-        llm = _make_llm_merge("Customer")
+        llm = MagicMock()  # passed but not used for judge (code uses get_midtier_llm)
         result = resolve_entities(triplets, emb, llm)
         assert any(e.name == "Customer" for e in result)
 

@@ -24,7 +24,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from pathlib import Path
-from typing import Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from src.graph.neo4j_client import Neo4jClient
@@ -62,7 +62,7 @@ def compute_file_sha(path: str | Path) -> str:
     return h.hexdigest()
 
 
-def check_file_status(client: "Neo4jClient", path: str, sha: str) -> FileStatus:
+def check_file_status(client: Neo4jClient, path: str, sha: str) -> FileStatus:
     """Compare *sha* against the stored digest for *path*.
 
     Args:
@@ -86,7 +86,7 @@ def check_file_status(client: "Neo4jClient", path: str, sha: str) -> FileStatus:
 
 
 def register_file(
-    client: "Neo4jClient",
+    client: Neo4jClient,
     path: str,
     sha: str,
     chunk_count: int,
@@ -121,7 +121,7 @@ def register_file(
     logger.debug("SourceFile registered: path=%s sha=%s…", path, sha[:12])
 
 
-def get_orphaned_files(client: "Neo4jClient", current_paths: set[str]) -> list[str]:
+def get_orphaned_files(client: Neo4jClient, current_paths: set[str]) -> list[str]:
     """Return paths of SourceFile nodes **not** in *current_paths*.
 
     These represent files that were ingested in a previous run but are no longer
@@ -146,7 +146,7 @@ def get_orphaned_files(client: "Neo4jClient", current_paths: set[str]) -> list[s
     return orphans
 
 
-def purge_file_data(client: "Neo4jClient", source_doc: str) -> int:
+def purge_file_data(client: Neo4jClient, source_doc: str) -> int:
     """Delete all Neo4j data derived from *source_doc*.
 
     Removes, in order:

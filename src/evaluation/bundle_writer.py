@@ -81,18 +81,13 @@ def _build_bundle(
     }
 
     # ── Dataset Info ──────────────────────────────────────────────────────
-    pairs = (
-        dataset_info.get("pairs")
-        or dataset_info.get("qa_pairs")
-        or dataset_info.get("questions")
-        or []
-    )
+    # Derive type/difficulty distributions from per_question (always available).
     query_types: dict[str, int] = {}
     difficulties: dict[str, int] = {}
-    for p in pairs:
-        qt = p.get("query_type", "unknown")
+    for pq in per_question:
+        qt = pq.get("query_type", "unknown")
         query_types[qt] = query_types.get(qt, 0) + 1
-        diff = p.get("difficulty", "unknown")
+        diff = pq.get("difficulty", "unknown")
         difficulties[diff] = difficulties.get(diff, 0) + 1
 
     ds_info = {
@@ -100,7 +95,7 @@ def _build_bundle(
         "dataset_name": dataset_info.get("dataset_name", ""),
         "domain": dataset_info.get("domain", ""),
         "complexity": dataset_info.get("complexity", ""),
-        "total_pairs": len(pairs),
+        "total_pairs": len(per_question),
         "query_type_distribution": query_types,
         "difficulty_distribution": difficulties,
     }

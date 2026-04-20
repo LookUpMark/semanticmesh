@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from src.models.state import BuilderState
 
 logger: logging.Logger = get_logger(__name__)  # type: ignore[valid-type]
-_settings = get_settings()
 
 HumanAction = Literal["approve", "correct", "reject"]
 
@@ -38,7 +37,8 @@ def should_interrupt(state: BuilderState) -> bool:
     if state.get("hitl_flag", False):
         return True
     proposal: MappingProposal | None = state.get("mapping_proposal")
-    return proposal is not None and proposal.confidence < _settings.confidence_threshold
+    settings = get_settings()
+    return proposal is not None and proposal.confidence < settings.confidence_threshold
 
 
 def build_interrupt_payload(
@@ -81,7 +81,7 @@ def hitl_node(state: BuilderState) -> Command:
     """LangGraph node that suspends execution pending human review.
 
     If ``should_interrupt`` is False the node skips the interrupt and returns a
-    ``Command(goto="Generate_Cypher")`` immediately (pass-through).
+    ``Command(goto="generate_cypher")`` immediately (pass-through).
 
     When interrupted, the graph resumes only after a human sends a ``Command``
     resumption value with structure::
@@ -91,10 +91,10 @@ def hitl_node(state: BuilderState) -> Command:
             "mapped_concept": "<str>"   # only required for "correct"
         }
 
-    On ``"approve"`` — routes to ``"Generate_Cypher"`` unchanged.
+    On ``"approve"`` — routes to ``"generate_cypher"`` unchanged.
     On ``"correct"`` — patches ``mapping_proposal.mapped_concept`` and routes
-    to ``"Generate_Cypher"``.
-    On ``"reject"``  — marks ``rejected=True`` and routes to ``"End"``.
+    to ``"generate_cypher"``.
+    On ``"reject"``  — marks ``rejected=True`` and routes to ``"save_trace"``.
 
     Args:
         state: Current ``BuilderState`` snapshot.
@@ -109,13 +109,13 @@ def hitl_node(state: BuilderState) -> Command:
         logger.debug(
             "HITL pass-through: confidence=%.2f ≥ %.2f",
             proposal.confidence if proposal else 0.0,
-            _settings.confidence_threshold,
+            get_settings().confidence_threshold,
         )
-        return Command(goto="Generate_Cypher")
+        return Command(goto="generate_cypher")
 
     if proposal is None:
-        logger.warning("HITL triggered but mapping_proposal is None — routing to End.")
-        return Command(update={"rejected": True}, goto="End")
+        logger.warning("HITL triggered but mapping_proposal is None — routing to save_trace.")
+        return Command(update={"rejected": True}, goto="save_trace")
 
     payload = build_interrupt_payload(proposal, entities)
     logger.info(
@@ -130,13 +130,13 @@ def hitl_node(state: BuilderState) -> Command:
 
     if action == "approve":
         logger.info("HITL: human approved mapping '%s'.", proposal.mapped_concept)
-        return Command(goto="Generate_Cypher")
+        return Command(goto="generate_cypher")
 
     if action == "correct":
         corrected_concept: str | None = human_response.get("mapped_concept")
         if not corrected_concept:
             logger.warning("HITL 'correct' action has no mapped_concept — treating as approve.")
-            return Command(goto="Generate_Cypher")
+            return Command(goto="generate_cypher")
 
         corrected_proposal = proposal.model_copy(
             update={"mapped_concept": corrected_concept, "confidence": 1.0}
@@ -148,12 +148,12 @@ def hitl_node(state: BuilderState) -> Command:
         )
         return Command(
             update={"mapping_proposal": corrected_proposal},
-            goto="Generate_Cypher",
+            goto="generate_cypher",
         )
 
     if action == "reject":
         logger.info("HITL: human rejected mapping for table '%s'.", proposal.table_name)
-        return Command(update={"rejected": True}, goto="End")
+        return Command(update={"rejected": True}, goto="save_trace")
 
     logger.warning("Unknown HITL action '%s' — treating as approve.", action)
-    return Command(goto="Generate_Cypher")
+    return Command(goto="generate_cypher")

@@ -1,24 +1,17 @@
-"""Context distillation and lazy expansion nodes.
+"""Context distillation nodes.
 
 Nodes:
 - _node_context_distillation: LLM-based chunk filtering for query relevance
-- _node_lazy_expansion: On-demand FK relationship fetching
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from src.config.logging import get_logger
-from src.config.settings import get_settings
+from src.config.logging import NodeTimer, get_logger, log_node_event
 from src.generation.context_distiller import distill_context_chunks
-from src.generation.lazy_expander import (
-    collect_seed_names_for_expansion,
-)
-from src.graph.neo4j_client import Neo4jClient
 from src.models.schemas import RetrievedChunk
 from src.models.state import QueryState
-from src.retrieval.hybrid_retriever import fetch_fk_relationships, graph_traversal
 
 if TYPE_CHECKING:
     import logging
@@ -82,60 +75,20 @@ def _node_context_distillation(state: QueryState) -> dict[str, Any]:
     Reduces context window by filtering out chunks that don't contribute
     to answering the specific query, improving focus and reducing hallucination risk.
     """
-    query: str = state["user_query"]
-    chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
+    with NodeTimer() as timer:
+        query: str = state["user_query"]
+        chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
 
-    from src.generation.nodes.generation_nodes import _compose_generation_chunks
+        from src.generation.nodes.generation_nodes import _compose_generation_chunks
 
-    composed = _compose_generation_chunks(query, chunks)
-    distilled = distill_context_chunks(query, composed, max_chunks=len(composed) or 0)
-    if distilled:
-        logger.info(
-            "Context distillation: composed=%d -> distilled=%d chunk(s).",
-            len(composed),
-            len(distilled),
-        )
-    return {"generation_chunks": distilled or composed}
-
-
-def _node_lazy_expansion(state: QueryState) -> dict[str, Any]:
-    """Lazy expansion: fetch FK relationships on-demand when needed.
-
-    Triggered when:
-    1. Query contains relationship keywords
-    2. Current chunks lack FK edge evidence
-    3. Lazy expansion is enabled in settings
-    """
-    settings = get_settings()
-    if not getattr(settings, "enable_lazy_expansion", False):
-        return {}
-
-    query: str = state["user_query"]
-    chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
-
-    if not _should_fetch_fk_edges(query, chunks):
-        return {}
-
-    logger.info("Lazy expansion triggered: fetching FK relationships for query.")
-    with Neo4jClient() as client:
-        seeds = collect_seed_names_for_expansion(chunks, limit=8)
-        if not seeds:
-            return {}
-
-        fk_chunks = fetch_fk_relationships(client)
-
-        expanded = graph_traversal(
-            seed_names=seeds,
-            client=client,
-            depth=max(1, settings.retrieval_graph_depth + 1),
-        )
-
-        new_chunks = _combine_chunks(chunks, fk_chunks, expanded)
-
-        logger.info(
-            "Lazy expansion: added %d FK chunks + %d graph traversal chunks.",
-            len(fk_chunks),
-            len(expanded),
-        )
-
-        return {"reranked_chunks": new_chunks}
+        composed = _compose_generation_chunks(query, chunks)
+        distilled = distill_context_chunks(query, composed, max_chunks=len(composed) or 0)
+        if distilled:
+            logger.info(
+                "Context distillation: composed=%d -> distilled=%d chunk(s).",
+                len(composed),
+                len(distilled),
+            )
+        result_chunks = distilled or composed
+        log_node_event(logger, "context_distillation", f"{len(composed)} composed", f"{len(result_chunks)} distilled", timer.elapsed_ms)
+        return {"generation_chunks": result_chunks}

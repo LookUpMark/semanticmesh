@@ -1,1 +1,1 @@
-# src.config — Application configuration and settings
+"""Infrastructure: configuration, logging, LLM factory."""

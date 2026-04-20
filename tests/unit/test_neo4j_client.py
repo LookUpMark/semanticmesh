@@ -6,7 +6,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.graph.neo4j_client import _SCHEMA_STATEMENTS, Neo4jClient, setup_schema
+from src.graph.neo4j_client import (
+    _SCHEMA_STATEMENTS,
+    Neo4jClient,
+    close_shared_driver,
+    setup_schema,
+)
 
 
 def _make_client(driver_mock: MagicMock) -> Neo4jClient:
@@ -46,28 +51,24 @@ def _make_session_mock(records: list[dict] | None = None) -> MagicMock:
 
 
 class TestNeo4jClientLifecycle:
-    def test_enter_creates_driver(self) -> None:
-        with patch("src.graph.neo4j_client.GraphDatabase.driver") as mock_driver_ctor:
+    def test_enter_creates_shared_driver(self) -> None:
+        with patch("src.graph.neo4j_client._get_shared_driver") as mock_get:
             mock_driver = MagicMock()
-            mock_driver_ctor.return_value = mock_driver
-            with patch("src.graph.neo4j_client.get_settings") as mock_settings:
-                mock_settings.return_value = MagicMock(
-                    neo4j_uri="bolt://localhost:7687",
-                    neo4j_user="neo4j",
-                    neo4j_password=MagicMock(get_secret_value=lambda: "pass"),
-                )
-                client = Neo4jClient()
-                client.__enter__()
-                mock_driver.verify_connectivity.assert_called_once()
-                client._driver = mock_driver
-                client.__exit__(None, None, None)
-                mock_driver.close.assert_called_once()
+            mock_get.return_value = mock_driver
+            client = Neo4jClient(uri="bolt://localhost:7687", username="neo4j", password="test")
+            client.__enter__()
+            mock_get.assert_called_once()
+            assert client._driver is mock_driver
 
-    def test_exit_closes_driver(self) -> None:
+    def test_exit_does_not_close_shared_driver(self) -> None:
         driver_mock = MagicMock()
         client = _make_client(driver_mock)
         client.__exit__(None, None, None)
-        driver_mock.close.assert_called_once()
+        driver_mock.close.assert_not_called()
+
+    def test_close_shared_driver(self) -> None:
+        with patch("src.graph.neo4j_client._singleton_driver", MagicMock()):
+            close_shared_driver()  # Should not raise
 
     def test_execute_cypher_without_context_raises(self) -> None:
         client = Neo4jClient(uri="bolt://localhost:7687", username="neo4j", password="test")

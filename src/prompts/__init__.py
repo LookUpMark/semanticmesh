@@ -1,1 +1,1 @@
-# src.prompts — Centralised prompt templates.
+"""LLM prompt templates and few-shot loaders."""

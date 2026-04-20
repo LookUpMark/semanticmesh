@@ -1,1 +1,1 @@
-# src.retrieval — Hybrid retrieval and reranking for the Query Graph.
+"""Hybrid retrieval: dense, BM25, graph traversal."""
