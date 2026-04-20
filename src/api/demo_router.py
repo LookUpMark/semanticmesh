@@ -2,27 +2,34 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 import tempfile
+import threading
 from pathlib import Path
 from typing import Any
 
-import threading
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running, set_step
-from src.evaluation.ablation_runner import _settings_override as _settings_override
+from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running
 from src.api.models import (
     BuildRequest,
     BuildResultResponse,
+    ConversationDetail,
+    ConversationMeta,
     GraphStatsResponse,
-    PipelineConfig,
+    KGSnapshotMeta,
     PipelineJobResponse,
     PipelineRequest,
     PipelineResultResponse,
     QueryRequest,
     QueryResponse,
+    RenameConversationRequest,
+    RenameSnapshotRequest,
+    SaveConversationRequest,
+    SaveSnapshotRequest,
 )
+from src.evaluation.ablation_runner import _settings_override as _settings_override
 
 router = APIRouter(prefix="/demo", tags=["E2E Demo"])
 
@@ -33,8 +40,10 @@ _ROOT = Path(__file__).parent.parent.parent  # repo root
 
 
 def _to_abs(path: str) -> str:
-    p = Path(path)
-    return str(p if p.is_absolute() else _ROOT / p)
+    p = Path(path).resolve()
+    if not str(p).startswith(str(_ROOT.resolve())):
+        raise ValueError(f"Path '{path}' is outside the allowed directory.")
+    return str(p)
 
 
 _MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB per file
@@ -79,7 +88,7 @@ async def _save_uploads(files: list[UploadFile]) -> list[str]:
             )
 
         temp_file = temp_dir / safe_name
-        temp_file.write_bytes(content)
+        await asyncio.to_thread(temp_file.write_bytes, content)
         paths.append(str(temp_file))
 
     return paths
@@ -309,6 +318,7 @@ async def stream_build_status(job_id: str):
     """SSE endpoint — yields JSON events until the job reaches a terminal state."""
     import asyncio
     import json as _json
+
     from fastapi.responses import StreamingResponse
 
     async def _event_generator():
@@ -364,8 +374,18 @@ def post_query(req: QueryRequest) -> QueryResponse:
 
         env_overrides = req.config.to_env_overrides() if req.config else {}
         with _settings_override(env_overrides):
-            result = run_query(req.question)
-        return _query_result_to_response(result)
+            result = run_query(req.question, session_id=req.session_id)
+        r = _query_result_to_response(result)
+        return QueryResponse(
+            answer=r.answer,
+            sources=r.sources,
+            retrieval_quality_score=r.retrieval_quality_score,
+            retrieval_chunk_count=r.retrieval_chunk_count,
+            gate_decision=r.gate_decision,
+            grounded=r.grounded,
+            context_previews=r.context_previews,
+            session_id=req.session_id,
+        )
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -505,7 +525,7 @@ def delete_graph() -> dict[str, int]:
             client.execute_cypher("MATCH (n) DETACH DELETE n")
         return {"nodes_deleted": total}
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+        raise HTTPException(status_code=503, detail="Neo4j unavailable.") from exc
 
 
 @router.get(
@@ -563,7 +583,20 @@ def get_graph_stats() -> GraphStatsResponse:
             total_relationships=int(row.get("total_relationships", 0) or 0),
         )
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+        raise HTTPException(status_code=503, detail="Neo4j unavailable.") from exc
+
+
+def _sanitize_neo4j_value(v: Any) -> Any:
+    """Convert Neo4j-native types to JSON-serializable Python primitives."""
+    # neo4j.time types: DateTime, Date, Time, Duration
+    type_name = type(v).__module__ + "." + type(v).__qualname__
+    if "neo4j" in type_name:
+        return str(v)
+    if isinstance(v, list):
+        return [_sanitize_neo4j_value(i) for i in v]
+    if isinstance(v, dict):
+        return {k2: _sanitize_neo4j_value(v2) for k2, v2 in v.items()}
+    return v
 
 
 @router.get(
@@ -629,7 +662,7 @@ def get_graph_data() -> dict:
                 if row.get("confidence") is not None
                 else None,
                 "properties": {
-                    k: v
+                    k: _sanitize_neo4j_value(v)
                     for k, v in (row.get("props") or {}).items()
                     if k not in ("embedding",)  # omit large vectors
                 },
@@ -652,5 +685,204 @@ def get_graph_data() -> dict:
 
         return {"nodes": nodes, "edges": edges}
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=503, detail=f"Neo4j unavailable: {exc}") from exc
+        raise HTTPException(status_code=503, detail="Neo4j unavailable.") from exc
+
+
+# ── KG Snapshot endpoints ─────────────────────────────────────────────────────
+
+@router.get(
+    "/kg/snapshots",
+    response_model=list[KGSnapshotMeta],
+    summary="List saved Knowledge Graph snapshots",
+    description="Returns all named KG snapshots stored in the local registry.",
+)
+def list_kg_snapshots() -> list[KGSnapshotMeta]:
+    from src.graph.kg_registry import list_snapshots
+    return [KGSnapshotMeta(**s) for s in list_snapshots()]
+
+
+@router.get(
+    "/kg/snapshots/active",
+    response_model=KGSnapshotMeta | None,
+    summary="Get the currently loaded KG snapshot",
+    description="Returns metadata of the active snapshot, or null if none is loaded.",
+)
+def get_active_kg_snapshot() -> KGSnapshotMeta | None:
+    from src.graph.kg_registry import get_active_snapshot
+    snap = get_active_snapshot()
+    return KGSnapshotMeta(**snap) if snap else None
+
+
+@router.post(
+    "/kg/snapshots",
+    response_model=KGSnapshotMeta,
+    summary="Save the current KG as a named snapshot",
+    description=(
+        "Exports the live Neo4j graph to a JSON file and registers it with the given name. "
+        "The snapshot can be loaded later via **POST /demo/kg/snapshots/{id}/load**."
+    ),
+)
+def save_kg_snapshot(req: SaveSnapshotRequest) -> KGSnapshotMeta:
+    try:
+        from src.graph.kg_registry import save_snapshot
+        snap = save_snapshot(name=req.name, description=req.description)
+        return KGSnapshotMeta(**snap)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.post(
+    "/kg/snapshots/{snapshot_id}/load",
+    response_model=KGSnapshotMeta,
+    summary="Load a saved KG snapshot into Neo4j",
+    description=(
+        "Clears the current Neo4j graph and restores the selected snapshot. "
+        "Equivalent to 'loading a model' — only one KG can be active at a time. "
+        "Runs synchronously (may take a few seconds for large graphs)."
+    ),
+)
+def load_kg_snapshot(snapshot_id: str) -> KGSnapshotMeta:
+    try:
+        from src.graph.kg_registry import load_snapshot
+        snap = load_snapshot(snapshot_id)
+        return KGSnapshotMeta(**snap)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=410, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.post(
+    "/kg/snapshots/eject",
+    summary="Eject the active KG snapshot",
+    description=(
+        "Clears the active-snapshot pointer without modifying Neo4j. "
+        "Use this to signal that no named snapshot is currently loaded."
+    ),
+)
+def eject_kg_snapshot() -> dict[str, str]:
+    from src.graph.kg_registry import eject_snapshot
+    eject_snapshot()
+    return {"status": "ejected"}
+
+
+@router.delete(
+    "/kg/snapshots/{snapshot_id}",
+    summary="Delete a saved KG snapshot",
+    description="Removes the snapshot file and its registry entry. Cannot be undone.",
+)
+def delete_kg_snapshot(snapshot_id: str) -> dict[str, str]:
+    try:
+        from src.graph.kg_registry import delete_snapshot
+        delete_snapshot(snapshot_id)
+        return {"status": "deleted", "id": snapshot_id}
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.patch(
+    "/kg/snapshots/{snapshot_id}",
+    response_model=KGSnapshotMeta,
+    summary="Rename / update a KG snapshot",
+    description="Update the name and/or description of an existing snapshot.",
+)
+def rename_kg_snapshot(snapshot_id: str, req: RenameSnapshotRequest) -> KGSnapshotMeta:
+    try:
+        from src.graph.kg_registry import rename_snapshot
+        snap = rename_snapshot(snapshot_id, req.name, req.description)
+        return KGSnapshotMeta(**snap)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+# ── Conversation endpoints ────────────────────────────────────────────────────
+
+@router.get(
+    "/conversations",
+    response_model=list[ConversationMeta],
+    summary="List saved conversations",
+    description="Returns all saved chat conversations ordered by last update.",
+)
+def list_conversations() -> list[ConversationMeta]:
+    from src.graph.conversation_registry import list_conversations as _list
+    return [ConversationMeta(**c) for c in _list()]
+
+
+@router.get(
+    "/conversations/{conversation_id}",
+    response_model=ConversationDetail,
+    summary="Get a saved conversation",
+    description="Returns the full message history for a saved conversation.",
+)
+def get_conversation(conversation_id: str) -> ConversationDetail:
+    from pydantic import ValidationError
+
+    from src.graph.conversation_registry import get_conversation as _get
+    try:
+        conv = _get(conversation_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    try:
+        return ConversationDetail(**conv)
+    except ValidationError as exc:
+        raise HTTPException(status_code=500, detail="Stored conversation data is corrupted.") from exc
+
+
+@router.post(
+    "/conversations",
+    response_model=ConversationMeta,
+    summary="Save a conversation",
+    description="Persist a chat conversation (session ID + messages) for later retrieval.",
+)
+def save_conversation(req: SaveConversationRequest) -> ConversationMeta:
+    from src.graph.conversation_registry import save_conversation as _save
+    try:
+        conv = _save(
+            session_id=req.session_id,
+            title=req.title,
+            messages=[m.model_dump() for m in req.messages],
+            active_snapshot_id=req.active_snapshot_id,
+        )
+        return ConversationMeta(**conv)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.patch(
+    "/conversations/{conversation_id}",
+    response_model=ConversationMeta,
+    summary="Rename a conversation",
+    description="Update the title of a saved conversation.",
+)
+def rename_conversation(conversation_id: str, req: RenameConversationRequest) -> ConversationMeta:
+    from src.graph.conversation_registry import rename_conversation as _rename
+    try:
+        conv = _rename(conversation_id, req.title)
+        return ConversationMeta(**conv)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.delete(
+    "/conversations/{conversation_id}",
+    summary="Delete a conversation",
+    description="Remove a saved conversation permanently.",
+)
+def delete_conversation(conversation_id: str) -> dict[str, str]:
+    from src.graph.conversation_registry import delete_conversation as _delete
+    try:
+        _delete(conversation_id)
+        return {"status": "deleted", "id": conversation_id}
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 

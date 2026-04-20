@@ -27,7 +27,7 @@ For full details, see [CHANGELOG.md](CHANGELOG.md).
 - [Abstract](#abstract)
 - [Architecture](#architecture)
 - [Key Features](#key-features)
-- [Quick Start (Docker)](#quick-start-docker)
+- [Quick Start](#quick-start)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Configuration](#configuration)
@@ -147,20 +147,28 @@ Business Docs (PDF/TXT)         DDL Schemas (SQL)
 
 ---
 
-## Quick Start (Docker)
-
-The fastest way to run the entire system is via Docker Compose.
-A single command starts Neo4j, the FastAPI server (Swagger UI), and all required services.
+## Quick Start
 
 ```bash
 # 1. Clone and configure
 git clone <repo-url>
 cd thesis
-cp .env.docker .env
+cp .env.example .env
 # Edit .env — add at least one LLM API key (OPENAI_API_KEY, OPENROUTER_API_KEY, etc.)
 
-# 2. Start everything
-docker compose up --build
+# 2. Install
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
+# 3. Start Neo4j (Docker)
+docker run -d --name neo4j-thesis \
+  -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/your_password_here \
+  neo4j:5
+
+# 4. Start the API
+python -m scripts.serve_api
 ```
 
 Once running:
@@ -171,10 +179,6 @@ Once running:
 | ReDoc           | http://localhost:8000/redoc  |
 | Health check    | http://localhost:8000/health |
 | Neo4j Browser   | http://localhost:7474        |
-
-To stop: `docker compose down`. Data is persisted in Docker volumes (`neo4j_data`, `hf_cache`).
-
-To reset the graph database: `docker compose down -v` (removes volumes).
 
 ---
 
@@ -302,10 +306,13 @@ python -m scripts.neo4j_lifecycle --help  # Clear database, setup schema
 
 ```bash
 # Run a single ablation study
-python -m scripts.run_ablation_full --study AB-10 --dataset DS01
+python -m scripts.run_pipeline --study AB-10 --dataset tests/fixtures/01_basics_ecommerce/gold_standard.json
+
+# Run best known config
+python -m scripts.run_pipeline --best --all-datasets
 
 # Run full campaign (21 studies x 6 datasets)
-python -m scripts.run_ablation_full --all
+python -m scripts.run_pipeline --all-studies --all-datasets --ragas
 ```
 
 ---
@@ -362,7 +369,7 @@ Key findings:
 - The hallucination grader provides substantial quality improvement (-0.80 when disabled)
 - Larger extraction token budgets improve triplet richness (+0.31)
 
-Full results in `docs/draft/ABLATION.md` and `notebooks/ablation/ablation_results/ABLATION_ANALYSIS_COMPLETE.md`.
+Full results in `docs/draft/ABLATION.md` and `outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md`.
 
 ---
 

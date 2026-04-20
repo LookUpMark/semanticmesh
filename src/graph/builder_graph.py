@@ -19,7 +19,7 @@ from src.config.llm_factory import (
     get_lightweight_llm,
     get_midtier_llm,
 )
-from src.config.logging import get_logger
+from src.config.logging import NodeTimer, get_logger, log_node_event
 from src.config.settings import get_settings
 from src.config.tracing import BuilderTrace
 from src.extraction.heuristic_extractor import extract_all_triplets_heuristic
@@ -40,7 +40,7 @@ from src.ingestion.file_registry import (
     purge_file_data,
     register_file,
 )
-from src.ingestion.pdf_loader import chunk_documents_hierarchical, load_pdf
+from src.ingestion.pdf_loader import chunk_documents_hierarchical, load_pdfs_batch
 from src.ingestion.schema_enricher import enrich_all
 from src.mapping.hitl import hitl_node
 from src.mapping.rag_mapper import propose_mapping, propose_mapping_heuristic
@@ -61,112 +61,124 @@ logger: logging.Logger = get_logger(__name__)
 
 def _node_extract_triplets(state: BuilderState) -> dict[str, Any]:
     """Extract semantic triplets from document chunks."""
-    settings = get_settings()
-    use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
-    chunks = state.get("chunks") or []
+    with NodeTimer() as timer:
+        settings = get_settings()
+        use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
+        chunks = state.get("chunks") or []
 
-    if use_lazy:
-        logger.info("Lazy extraction enabled — using heuristic triplet extractor.")
-        triplets = extract_all_triplets_heuristic(chunks)
-    else:
-        llm = get_extraction_llm()
-        triplets = extract_all_triplets(chunks, llm)
+        if use_lazy:
+            logger.info("Lazy extraction enabled — using heuristic triplet extractor.")
+            triplets = extract_all_triplets_heuristic(chunks)
+        else:
+            llm = get_extraction_llm()
+            triplets = extract_all_triplets(chunks, llm)
 
-    return {"triplets": triplets}
+        log_node_event(logger, "extract_triplets", f"{len(chunks)} chunks", f"{len(triplets)} triplets", timer.elapsed_ms)
+        return {"triplets": triplets}
 
 
 def _node_entity_resolution(state: BuilderState) -> dict[str, Any]:
     """Resolve extracted triplets into canonical entities."""
-    embeddings = get_embeddings()
-    llm = get_lightweight_llm()  # kept for singleton definition synthesis (when enabled)
-    triplets = state.get("triplets") or []
-    source_doc = state.get("source_doc", "unknown")
-    # ER judge itself uses midtier internally (see entity_resolver.resolve_entities)
-    entities = resolve_entities(triplets, embeddings, llm, source_doc)
-    return {"entities": entities}
+    with NodeTimer() as timer:
+        embeddings = get_embeddings()
+        llm = get_lightweight_llm()  # kept for singleton definition synthesis (when enabled)
+        triplets = state.get("triplets") or []
+        source_doc = state.get("source_doc", "unknown")
+        # ER judge itself uses midtier internally (see entity_resolver.resolve_entities)
+        entities = resolve_entities(triplets, embeddings, llm, source_doc)
+        log_node_event(logger, "entity_resolution", f"{len(triplets)} triplets", f"{len(entities)} entities", timer.elapsed_ms)
+        return {"entities": entities}
 
 
 def _node_parse_ddl(state: BuilderState) -> dict[str, Any]:
     """Parse DDL files into TableSchema objects."""
-    ddl_paths: list[str] = state.get("ddl_paths") or []
-    tables = []
-    for path in ddl_paths:
-        tables.extend(parse_ddl_file(Path(path)))
-    return {"tables": tables}
+    with NodeTimer() as timer:
+        ddl_paths: list[str] = state.get("ddl_paths") or []
+        tables = []
+        for path in ddl_paths:
+            tables.extend(parse_ddl_file(Path(path)))
+        log_node_event(logger, "parse_ddl", f"{len(ddl_paths)} DDL files", f"{len(tables)} tables", timer.elapsed_ms)
+        return {"tables": tables}
 
 
 def _node_enrich_schema(state: BuilderState) -> dict[str, Any]:
     """Enrich table schemas with acronym expansion and descriptions."""
-    settings = get_settings()
-    if not settings.enable_schema_enrichment:
+    with NodeTimer() as timer:
+        settings = get_settings()
+        if not settings.enable_schema_enrichment:
+            tables = state.get("tables") or []
+            logger.info("Schema enrichment disabled — promoting raw parsed tables.")
+            promoted = [EnrichedTableSchema.from_table_schema(t) for t in tables]
+            log_node_event(logger, "enrich_schema", f"{len(tables)} tables (skipped)", f"{len(promoted)} promoted", timer.elapsed_ms)
+            return {"enriched_tables": promoted}
+        llm = get_lightweight_llm()
         tables = state.get("tables") or []
-        logger.info("Schema enrichment disabled — promoting raw parsed tables.")
-        promoted = [EnrichedTableSchema.from_table_schema(t) for t in tables]
-        return {"enriched_tables": promoted}
-    llm = get_lightweight_llm()
-    tables = state.get("tables") or []
-    enriched = enrich_all(tables, llm)
-    return {"enriched_tables": enriched}
+        enriched = enrich_all(tables, llm)
+        log_node_event(logger, "enrich_schema", f"{len(tables)} tables", f"{len(enriched)} enriched", timer.elapsed_ms)
+        return {"enriched_tables": enriched}
 
 
 def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
     """Generate RAG-augmented mapping proposal for current table."""
-    settings = get_settings()
-    use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
-    llm = get_midtier_llm()
-    embeddings = get_embeddings()
-    enriched_tables = state.get("enriched_tables") or []
-    entities: list[Entity] = state.get("entities") or []
-    reflection_prompt: str | None = state.get("reflection_prompt")
+    with NodeTimer() as timer:
+        settings = get_settings()
+        use_lazy = bool(state.get("use_lazy_extraction", settings.use_lazy_extraction))
+        llm = get_midtier_llm()
+        embeddings = get_embeddings()
+        enriched_tables = state.get("enriched_tables") or []
+        entities: list[Entity] = state.get("entities") or []
+        reflection_prompt: str | None = state.get("reflection_prompt")
 
-    # Process next table from remaining queue, or retry current on reflection
-    if reflection_prompt and state.get("current_table"):
-        current_table = state["current_table"]
-        remaining = list(state.get("pending_tables") or [])
-    else:
-        pending: list = list(state.get("pending_tables") or enriched_tables)
-        if not pending:
-            return {"pending_tables": [], "current_table": None}
-        current_table = pending[0]
-        remaining = pending[1:]
+        # Process next table from remaining queue, or retry current on reflection
+        if reflection_prompt and state.get("current_table"):
+            current_table = state["current_table"]
+            remaining = list(state.get("pending_tables") or [])
+        else:
+            pending: list = list(state.get("pending_tables") or enriched_tables)
+            if not pending:
+                log_node_event(logger, "rag_mapping", "no pending tables", "empty state", timer.elapsed_ms)
+                return {"pending_tables": [], "current_table": None}
+            current_table = pending[0]
+            remaining = pending[1:]
 
-    query = build_retrieval_query(current_table)
-    top_entities = retrieve_top_entities(
-        query, entities, embeddings, top_k=settings.retrieval_vector_top_k
-    )
-
-    if use_lazy:
-        proposal = propose_mapping_heuristic(
-            current_table,
-            entities,
-            embeddings,
-            top_k=settings.retrieval_vector_top_k,
-            min_confidence=settings.heuristic_mapping_confidence_threshold,
-        )
+        query = build_retrieval_query(current_table)
         top_entities = retrieve_top_entities(
-            build_retrieval_query(current_table),
-            entities,
-            embeddings,
-            top_k=settings.retrieval_vector_top_k,
-        )
-    else:
-        # If coming from a reflection retry, inject the critique into the proposal call
-        proposal = propose_mapping(
-            current_table,
-            top_entities,
-            llm,
-            few_shot_examples=format_mapping_examples(load_mapping_examples()),
-            reflection_prompt=reflection_prompt,
+            query, entities, embeddings, top_k=settings.retrieval_vector_top_k
         )
 
-    return {
-        "mapping_proposal": proposal,
-        "current_table": current_table,
-        "current_entities": top_entities,
-        "pending_tables": remaining,
-        "reflection_prompt": None,  # reset after use
-        "reflection_attempts": state.get("reflection_attempts", 0),
-    }
+        if use_lazy:
+            proposal = propose_mapping_heuristic(
+                current_table,
+                entities,
+                embeddings,
+                top_k=settings.retrieval_vector_top_k,
+                min_confidence=settings.heuristic_mapping_confidence_threshold,
+            )
+            top_entities = retrieve_top_entities(
+                build_retrieval_query(current_table),
+                entities,
+                embeddings,
+                top_k=settings.retrieval_vector_top_k,
+            )
+        else:
+            # If coming from a reflection retry, inject the critique into the proposal call
+            proposal = propose_mapping(
+                current_table,
+                top_entities,
+                llm,
+                few_shot_examples=format_mapping_examples(load_mapping_examples()),
+                reflection_prompt=reflection_prompt,
+            )
+
+        log_node_event(logger, "rag_mapping", f"table={getattr(current_table, 'table_name', '?')}", f"concept={getattr(proposal, 'mapped_concept', '?')}", timer.elapsed_ms)
+        return {
+            "mapping_proposal": proposal,
+            "current_table": current_table,
+            "current_entities": top_entities,
+            "pending_tables": remaining,
+            "reflection_prompt": None,  # reset after use
+            "reflection_attempts": state.get("reflection_attempts", 0),
+        }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -266,10 +278,13 @@ def build_builder_graph(*, production: bool = False):
     # Checkpointer
     if production:
         try:
+            import sqlite3
+
             from langgraph.checkpoint.sqlite import SqliteSaver
 
             settings = get_settings()
-            checkpointer = SqliteSaver.from_conn_string(settings.sqlite_checkpoint_path)
+            conn = sqlite3.connect(settings.sqlite_checkpoint_path, check_same_thread=False)
+            checkpointer = SqliteSaver(conn)
         except ImportError:
             logger.warning("SqliteSaver not available — falling back to MemorySaver.")
             checkpointer = MemorySaver()
@@ -404,17 +419,11 @@ def run_builder(
     # ── Load and chunk only the files that need (re-)ingestion ───────────────
     # Load all documents first, then chunk in one pass so parent_chunk_index is
     # globally unique across all source files (avoids index collisions in Neo4j).
-    # PDF loading is I/O-bound so we parallelise across files.
+    # opendataloader-pdf spawns a JVM per convert() call, so we batch all PDFs
+    # into a single call to amortise startup cost.
     all_docs: list = []
-    if len(docs_to_ingest) > 1:
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        with ThreadPoolExecutor(max_workers=min(4, len(docs_to_ingest))) as _pool:
-            futures = {_pool.submit(load_pdf, Path(p)): p for p in docs_to_ingest}
-            for fut in as_completed(futures):
-                all_docs.extend(fut.result())
-    else:
-        for doc_path in docs_to_ingest:
-            all_docs.extend(load_pdf(Path(doc_path)))
+    if docs_to_ingest:
+        all_docs = load_pdfs_batch([Path(p) for p in docs_to_ingest])
     all_parents, all_children = chunk_documents_hierarchical(all_docs)
 
     # Triplet extraction and MENTIONS edges operate on parents (richer 512-tok context).
@@ -600,6 +609,8 @@ def run_builder(
             )
             bc_names: list[str] = [r["name"] for r in bc_rows if r.get("name")]
             mentions_count = 0
+            # Build batch of (concept, chunk_index) pairs for UNWIND
+            mentions_pairs: list[dict[str, Any]] = []
             for bc_name in bc_names:
                 concept_lower = bc_name.lower()
                 chunk_indexes: set[int] = set()
@@ -610,24 +621,24 @@ def run_builder(
                     ):
                         chunk_indexes.add(t.source_chunk_index)
                 for idx in chunk_indexes:
-                    try:
-                        repair_client.execute_cypher(
-                            "MATCH (ch:Chunk {chunk_index: $idx}) "
-                            "WHERE ch.source_doc IN $srcs "
-                            "MATCH (bc:BusinessConcept {name: $concept}) "
-                            "MERGE (ch)-[:MENTIONS]->(bc)",
-                            {
-                                "idx": idx,
-                                "concept": bc_name,
-                                "srcs": list(new_basenames),
-                            },
-                        )
-                        mentions_count += 1
-                    except Exception as exc:  # noqa: BLE001
-                        logger.warning(
-                            "MENTIONS repair: could not link chunk %d → '%s': %s",
-                            idx, bc_name, exc,
-                        )
+                    mentions_pairs.append({
+                        "idx": idx,
+                        "concept": bc_name,
+                        "srcs": list(new_basenames),
+                    })
+            if mentions_pairs:
+                try:
+                    repair_client.execute_cypher(
+                        "UNWIND $pairs AS p "
+                        "MATCH (ch:Chunk {chunk_index: p.idx}) "
+                        "WHERE ch.source_doc IN p.srcs "
+                        "MATCH (bc:BusinessConcept {name: p.concept}) "
+                        "MERGE (ch)-[:MENTIONS]->(bc)",
+                        {"pairs": mentions_pairs},
+                    )
+                    mentions_count = len(mentions_pairs)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("MENTIONS repair failed: %s", exc)
             logger.info("MENTIONS repair: created %d edge(s).", mentions_count)
 
     # Invalidate BM25 cache — graph contents may have changed

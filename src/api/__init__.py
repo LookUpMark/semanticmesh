@@ -1,1 +1,1 @@
-"""FastAPI application package — Ablation & Demo REST APIs."""
+"""REST API built with FastAPI."""

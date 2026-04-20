@@ -23,11 +23,11 @@ The fastest way to get started:
 # 1. Start Neo4j with Docker
 docker run -d --name neo4j-thesis \
   -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/test_password \
+  -e NEO4J_AUTH=neo4j/changeme \
   neo4j:5
 
 # 2. Configure environment
-cp .env.docker .env
+cp .env.example .env
 # Edit .env with your OPENROUTER_API_KEY
 
 # 3. Install dependencies
@@ -48,7 +48,7 @@ The Multi-Agent Framework uses Neo4j as its knowledge graph storage because:
 - **Cypher query language** - Powerful, SQL-like language for graphs
 - **Vector indexing** - Supports hybrid vector + graph queries
 
-### Option 1: Docker (Recommended)
+### Option 1: Docker
 
 #### Start a new Neo4j container:
 
@@ -96,6 +96,8 @@ docker start neo4j-thesis
 docker rm -f neo4j-thesis
 ```
 
+> **Note:** Docker is used here only for Neo4j. The backend API and frontend run natively.
+
 ### Option 2: Neo4j Desktop
 
 1. Download [Neo4j Desktop](https://neo4j.com/download/)
@@ -123,7 +125,7 @@ docker rm -f neo4j-thesis
 Copy the example environment file and add your credentials:
 
 ```bash
-cp .env.docker .env
+cp .env.example .env
 ```
 
 ### Edit `.env` with your values:
@@ -288,20 +290,6 @@ pytest tests/ -v
 2. Verify you're in the project root directory
 3. Check Python path includes the project directory
 
-### Docker Issues
-
-**Problem:** `docker.errors.DockerException: Error while fetching server API version`
-
-**Solutions:**
-1. Verify Docker is installed: `docker --version`
-2. Start Docker Desktop (on Windows/Mac)
-3. Check Docker service is running: `sudo systemctl status docker` (Linux)
-4. Add your user to docker group (Linux):
-   ```bash
-   sudo usermod -aG docker $USER
-   # Log out and back in for changes to take effect
-   ```
-
 ### Memory Issues
 
 **Problem:** Out of memory errors during graph construction
@@ -309,8 +297,7 @@ pytest tests/ -v
 **Solutions:**
 1. Reduce batch size in settings
 2. Process smaller documents
-3. Increase Docker memory limit (Docker Desktop → Settings → Resources → Memory)
-4. Use smaller LLM models
+3. Use smaller LLM models
 
 ---
 

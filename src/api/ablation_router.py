@@ -84,9 +84,9 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
         from src.generation.query_graph import run_query
         from src.graph.builder_graph import run_builder
 
-        dataset_path = Path(req.dataset)
-        if not dataset_path.is_absolute():
-            dataset_path = _ROOT / dataset_path
+        dataset_path = Path(req.dataset).resolve()
+        if not str(dataset_path).startswith(str(_ROOT.resolve())):
+            raise ValueError(f"Dataset path '{req.dataset}' is outside the allowed directory.")
         if not dataset_path.exists():
             raise FileNotFoundError(f"Dataset not found: {dataset_path}")
 
@@ -264,7 +264,7 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
             bundle_dir = (
-                _ROOT / "notebooks" / "ablation" / "ablation_results" / req.study_id / dataset_id
+                _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
             )
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
@@ -317,9 +317,9 @@ def _run_ablation_task_with_preset(
         from src.generation.query_graph import run_query
         from src.graph.builder_graph import run_builder
 
-        dataset_path = Path(req.dataset)
-        if not dataset_path.is_absolute():
-            dataset_path = _ROOT / dataset_path
+        dataset_path = Path(req.dataset).resolve()
+        if not str(dataset_path).startswith(str(_ROOT.resolve())):
+            raise ValueError(f"Dataset path '{req.dataset}' is outside the allowed directory.")
         if not dataset_path.exists():
             raise FileNotFoundError(f"Dataset not found: {dataset_path}")
 
@@ -471,7 +471,7 @@ def _run_ablation_task_with_preset(
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
             bundle_dir = (
-                _ROOT / "notebooks" / "ablation" / "ablation_results" / req.study_id / dataset_id
+                _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
             )
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
@@ -733,7 +733,7 @@ def _bundle_path(study_id: str, dataset_id: str) -> Path:
         _ROOT
         / "notebooks"
         / "ablation"
-        / "ablation_results"
+        / "outputs" / "ablation"
         / study_id
         / dataset_id
         / "evaluation_bundle.json"

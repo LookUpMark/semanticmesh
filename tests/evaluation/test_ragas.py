@@ -56,11 +56,13 @@ class TestLoadDataset:
         assert len(data) == 2
         assert data[0]["question"] == _SAMPLE["question"]
 
-    def test_load_invalid_json_raises(self, tmp_path: Path) -> None:
+    def test_load_dict_without_recognized_keys_returns_empty(self, tmp_path: Path) -> None:
+        """Dict without recognized wrapper keys returns empty list (not an error)."""
         p = tmp_path / "bad.json"
         p.write_text(json.dumps({"not": "a list"}))
-        with pytest.raises(ValueError, match="Expected a JSON array"):
-            _load_dataset(p)
+        data = _load_dataset(p)
+        assert isinstance(data, list)
+        assert len(data) == 0
 
 
 # ─────────────────────────────────────────────────────────────────────────────

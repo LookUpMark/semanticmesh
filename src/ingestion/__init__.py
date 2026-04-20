@@ -1,1 +1,1 @@
-# src.ingestion — Document and DDL ingestion pipeline.
+"""Document loading (PDF, text) and DDL parsing."""

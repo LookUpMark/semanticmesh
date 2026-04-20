@@ -8,8 +8,8 @@ EP-09 / US-09-02 and US-09-03:
 
 from __future__ import annotations
 
-import re
 import logging
+import re
 
 import neo4j.exceptions
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -19,9 +19,9 @@ from src.config.llm_client import LLMProtocol
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.graph.cypher_generator import _fix_apostrophes_in_cypher, strip_cypher_fence
-from src.utils.json_utils import extract_text_content
 from src.models.schemas import MappingProposal
 from src.prompts.templates import CYPHER_FIX_USER, CYPHER_SYSTEM
+from src.utils.json_utils import extract_text_content
 
 logger: logging.Logger = get_logger(__name__)
 

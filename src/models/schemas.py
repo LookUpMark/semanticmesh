@@ -175,7 +175,7 @@ class GraderDecision(BaseModel):
 
     grounded: bool
     critique: str | None = None
-    action: Literal["pass", "regenerate", "web_search"]
+    action: Literal["pass", "regenerate"]
     timeout_occurred: bool = False
     parse_attempts: int = 1
     consistency_corrections: int = 0

@@ -29,8 +29,6 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from langchain_openai import ChatOpenAI
-
 from src.config.llm_client import FallbackLLM, InstrumentedLLM, LLMProtocol
 from src.config.model_builders import (
     _build_anthropic_chat,
@@ -324,13 +322,12 @@ def get_extraction_llm() -> LLMProtocol:
 
     if effective_provider == "lmstudio":
         return _instrument(
-            ChatOpenAI(
+            make_llm(
                 model=s.llm_model_extraction,
                 temperature=s.llm_temperature_extraction,
                 max_tokens=s.llm_max_tokens_extraction,
-                base_url=s.lmstudio_base_url,
-                api_key="lm-studio",
-                model_kwargs={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
+                role="extraction",
+                provider="lmstudio",
             ),
             "extraction",
         )

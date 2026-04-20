@@ -1,1 +1,1 @@
-# src — Main application package
+"""Multi-Agent Framework for Semantic Discovery & GraphRAG."""

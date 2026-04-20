@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
-from src.config.logging import get_logger
+from src.config.logging import NodeTimer, get_logger, log_node_event
 from src.config.settings import get_settings
 from src.graph.neo4j_client import Neo4jClient
 from src.models.schemas import RetrievedChunk
@@ -71,33 +71,8 @@ def _has_structural_relationship_evidence(chunks: list[RetrievedChunk]) -> bool:
 
 
 def _query_terms(query: str) -> set[str]:
-    stop = {
-        "what",
-        "which",
-        "where",
-        "when",
-        "how",
-        "does",
-        "the",
-        "this",
-        "that",
-        "with",
-        "into",
-        "from",
-        "each",
-        "for",
-        "and",
-        "are",
-        "table",
-        "database",
-        "business",
-        "concept",
-        "information",
-        "schema",
-        "knowledge",
-        "graph",
-    }
-    return {t.lower() for t in _TOKEN_RE.findall(query) if len(t) > 2 and t.lower() not in stop}
+    from src.utils.query_utils import query_terms as _qt
+    return _qt(query)
 
 
 def _is_noise_chunk(chunk: RetrievedChunk) -> bool:
@@ -173,80 +148,82 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
     - "bm25": Keyword search only
     - "hybrid" (default): Vector + BM25 + graph traversal with lazy expansion
     """
-    settings = get_settings()
-    query: str = state["user_query"]
-    model = get_embeddings()
+    with NodeTimer() as timer:
+        settings = get_settings()
+        query: str = state["user_query"]
+        model = get_embeddings()
 
-    retrieval_mode = (settings.retrieval_mode or "hybrid").lower()
-    with Neo4jClient() as client:
-        all_nodes = build_node_index(client)
-        if retrieval_mode == "vector":
-            vec_results = vector_search(
-                query, client, top_k=settings.retrieval_vector_top_k, model=model
-            )
-            merged = vec_results
-        elif retrieval_mode == "bm25":
-            bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
-            merged = bm25_results
-        else:
-            # Compute embedding once; reuse for both vector indices.
-            from src.retrieval.embeddings import embed_text as _embed
-            shared_qv = _embed(query, model=model)
-            vec_results = vector_search(
-                query, client, top_k=settings.retrieval_vector_top_k, model=model,
-                query_vector=shared_qv,
-            )
-            chunk_vec_results = chunk_vector_search(
-                query, client, top_k=settings.retrieval_vector_top_k, model=model,
-                query_vector=shared_qv,
-            )
-            trav_results = graph_traversal(
-                seed_names=[c.node_id for c in vec_results[:5]],
-                client=client,
-                depth=settings.retrieval_graph_depth,
-            )
-            all_concepts = fetch_all_concepts(client)
-            fk_chunks = fetch_fk_relationships(client)
-            mapping_chunks = fetch_concept_table_mappings(client)
-            bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
-            merged = merge_results(
-                vec_results + chunk_vec_results,
-                bm25_results,
-                trav_results + all_concepts + fk_chunks + mapping_chunks,
-            )
-
-            if getattr(settings, "enable_lazy_expansion", False):
-                from src.generation.lazy_expander import (
-                    collect_seed_names_for_expansion,
-                    should_trigger_lazy_expansion,
+        retrieval_mode = (settings.retrieval_mode or "hybrid").lower()
+        with Neo4jClient() as client:
+            all_nodes = build_node_index(client)
+            if retrieval_mode == "vector":
+                vec_results = vector_search(
+                    query, client, top_k=settings.retrieval_vector_top_k, model=model
+                )
+                merged = vec_results
+            elif retrieval_mode == "bm25":
+                bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
+                merged = bm25_results
+            else:
+                # Compute embedding once; reuse for both vector indices.
+                from src.retrieval.embeddings import embed_text as _embed
+                shared_qv = _embed(query, model=model)
+                vec_results = vector_search(
+                    query, client, top_k=settings.retrieval_vector_top_k, model=model,
+                    query_vector=shared_qv,
+                )
+                chunk_vec_results = chunk_vector_search(
+                    query, client, top_k=settings.retrieval_vector_top_k, model=model,
+                    query_vector=shared_qv,
+                )
+                trav_results = graph_traversal(
+                    seed_names=[c.node_id for c in vec_results[:5]],
+                    client=client,
+                    depth=settings.retrieval_graph_depth,
+                )
+                all_concepts = fetch_all_concepts(client)
+                fk_chunks = fetch_fk_relationships(client)
+                mapping_chunks = fetch_concept_table_mappings(client)
+                bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
+                merged = merge_results(
+                    vec_results + chunk_vec_results,
+                    bm25_results,
+                    trav_results + all_concepts + fk_chunks + mapping_chunks,
                 )
 
-                top_score = float(merged[0].score) if merged else 0.0
-                if should_trigger_lazy_expansion(
-                    top_score,
-                    len(merged),
-                    float(getattr(settings, "lazy_expansion_confidence_threshold", 0.40)),
-                ):
-                    seeds = collect_seed_names_for_expansion(merged, limit=8)
-                    extra = graph_traversal(
-                        seed_names=seeds,
-                        client=client,
-                        depth=max(1, settings.retrieval_graph_depth + 1),
+                if getattr(settings, "enable_lazy_expansion", False):
+                    from src.generation.lazy_expander import (
+                        collect_seed_names_for_expansion,
+                        should_trigger_lazy_expansion,
                     )
-                    merged = merge_results(
-                        vec_results + chunk_vec_results,
-                        bm25_results,
-                        trav_results + extra + all_concepts + fk_chunks,
-                    )
-    logger.info(
-        "Retrieval complete: %d merged chunks (mode=%s).",
-        len(merged),
-        retrieval_mode,
-    )
-    if not merged:
-        logger.warning("Retrieval returned 0 chunks for query: %.80s", query)
 
-    return {"retrieved_chunks": merged}
+                    top_score = float(merged[0].score) if merged else 0.0
+                    if should_trigger_lazy_expansion(
+                        top_score,
+                        len(merged),
+                        float(getattr(settings, "lazy_expansion_confidence_threshold", 0.40)),
+                    ):
+                        seeds = collect_seed_names_for_expansion(merged, limit=8)
+                        extra = graph_traversal(
+                            seed_names=seeds,
+                            client=client,
+                            depth=max(1, settings.retrieval_graph_depth + 1),
+                        )
+                        merged = merge_results(
+                            vec_results + chunk_vec_results,
+                            bm25_results,
+                            trav_results + extra + all_concepts + fk_chunks,
+                        )
+        logger.info(
+            "Retrieval complete: %d merged chunks (mode=%s).",
+            len(merged),
+            retrieval_mode,
+        )
+        if not merged:
+            logger.warning("Retrieval returned 0 chunks for query: %.80s", query)
+
+        log_node_event(logger, "retrieve", f"query mode={retrieval_mode}", f"{len(merged)} chunks", timer.elapsed_ms)
+        return {"retrieved_chunks": merged}
 
 
 def _node_rerank(state: QueryState) -> dict[str, Any]:
@@ -255,45 +232,46 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
     Applies pre-filtering to remove noise and prioritize structural evidence,
     then optionally applies cross-encoder reranking (bge-reranker-large).
     """
-    settings = get_settings()
-    query: str = state["user_query"]
-    chunks: list[RetrievedChunk] = state.get("retrieved_chunks") or []
-    max_pool = max(settings.reranker_top_k * 4, settings.reranker_top_k)
-    pool = _pre_filter_rerank_pool(chunks, query=query, max_candidates=max_pool)
+    with NodeTimer() as timer:
+        settings = get_settings()
+        query: str = state["user_query"]
+        chunks: list[RetrievedChunk] = state.get("retrieved_chunks") or []
+        max_pool = max(settings.reranker_top_k * 4, settings.reranker_top_k)
+        pool = _pre_filter_rerank_pool(chunks, query=query, max_candidates=max_pool)
 
-    if not settings.enable_reranker:
-        candidates = pool[: settings.reranker_top_k]
-    else:
-        candidates = rerank(query, pool, top_k=settings.reranker_top_k)
+        if not settings.enable_reranker:
+            candidates = pool[: settings.reranker_top_k]
+        else:
+            candidates = rerank(query, pool, top_k=settings.reranker_top_k)
 
-    valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
-    if not valid:
-        logger.warning(
-            "Rerank produced 0 valid chunks (pool=%d, candidates=%d) for query: %.80s",
-            len(pool),
-            len(candidates),
-            query,
-        )
+        valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
+        if not valid:
+            logger.warning(
+                "Rerank produced 0 valid chunks (pool=%d, candidates=%d) for query: %.80s",
+                len(pool),
+                len(candidates),
+                query,
+            )
+            log_node_event(logger, "rerank", f"pool={len(pool)}", "0 valid chunks", timer.elapsed_ms)
+            return {
+                "reranked_chunks": [],
+                "retrieval_quality_score": 0.0,
+                "retrieval_chunk_count": 0,
+                "retrieval_filtered_by_threshold": False,
+                "context_sufficiency": "insufficient",
+            }
+
+        top_score = float(valid[0].score)
+        if len(valid) == 1 and top_score < 0.15:
+            sufficiency = "sparse"
+        else:
+            sufficiency = "adequate"
+
+        log_node_event(logger, "rerank", f"pool={len(pool)} candidates={len(candidates)}", f"{len(valid)} chunks score={top_score:.4f}", timer.elapsed_ms)
         return {
-            "reranked_chunks": [],
-            "retrieval_quality_score": 0.0,
-            "retrieval_chunk_count": 0,
+            "reranked_chunks": valid,
+            "retrieval_quality_score": top_score,
+            "retrieval_chunk_count": len(valid),
             "retrieval_filtered_by_threshold": False,
-            "context_sufficiency": "insufficient",
+            "context_sufficiency": sufficiency,
         }
-
-    top_score = float(valid[0].score)
-    if len(valid) == 1 and top_score < 0.15:
-        sufficiency = "sparse"
-    elif len(valid) >= 2 or top_score >= 0.15:
-        sufficiency = "adequate"
-    else:
-        sufficiency = "sparse"
-
-    return {
-        "reranked_chunks": valid,
-        "retrieval_quality_score": top_score,
-        "retrieval_chunk_count": len(valid),
-        "retrieval_filtered_by_threshold": False,
-        "context_sufficiency": sufficiency,
-    }

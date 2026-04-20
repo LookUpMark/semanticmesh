@@ -321,7 +321,7 @@ class CustomAblationRequest(BaseModel):
     )
     study_id: str = Field(
         default="custom-run",
-        description="Output directory prefix under notebooks/ablation/ablation_results/.",
+        description="Output directory prefix under outputs/ablation/.",
     )
     max_samples: int | None = Field(
         default=None,
@@ -617,6 +617,99 @@ class BuildResultResponse(BaseModel):
     )
 
 
+# ── KG Snapshot models ────────────────────────────────────────────────────────
+
+class KGSnapshotMeta(BaseModel):
+    """Metadata for a saved Knowledge Graph snapshot."""
+
+    id: str = Field(description="UUID of the snapshot.")
+    name: str = Field(description="Human-readable snapshot name.")
+    description: str = Field(default="", description="Optional description.")
+    created_at: str = Field(description="ISO-8601 UTC creation timestamp.")
+    node_count: int = Field(description="Number of nodes in the snapshot.")
+    edge_count: int = Field(description="Number of edges in the snapshot.")
+    is_active: bool = Field(description="Whether this snapshot is currently loaded in Neo4j.")
+
+
+class SaveSnapshotRequest(BaseModel):
+    """Request to save the current KG as a named snapshot."""
+
+    name: str = Field(
+        description="Human-readable name for this snapshot.",
+        examples=["E-Commerce v1", "Finance schema — April 2026"],
+    )
+    description: str = Field(
+        default="",
+        description="Optional longer description.",
+    )
+
+
+class RenameSnapshotRequest(BaseModel):
+    """Request to rename/update an existing KG snapshot."""
+
+    name: str = Field(description="New human-readable name for the snapshot.")
+    description: str | None = Field(
+        default=None,
+        description="New description. If omitted, the existing description is preserved.",
+    )
+
+
+# ── Conversation models ────────────────────────────────────────────────────────
+
+class ConversationMessage(BaseModel):
+    """A single chat message stored in a conversation."""
+
+    role: str = Field(description='"user" or "assistant".')
+    content: str = Field(description="Message text content.")
+    metadata: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional QueryResponse metadata attached to assistant messages.",
+    )
+
+
+class ConversationMeta(BaseModel):
+    """Metadata for a saved conversation (no messages)."""
+
+    id: str = Field(description="UUID of the conversation.")
+    title: str = Field(description="Human-readable title.")
+    session_id: str = Field(description="LangGraph thread_id tied to this conversation.")
+    preview: str = Field(description="First user question (truncated to 80 chars).")
+    message_count: int = Field(description="Total number of messages.")
+    active_snapshot_id: str | None = Field(
+        default=None,
+        description="KG snapshot that was active when the conversation was saved.",
+    )
+    created_at: str = Field(description="ISO-8601 UTC creation timestamp.")
+    updated_at: str = Field(description="ISO-8601 UTC last-update timestamp.")
+
+
+class ConversationDetail(ConversationMeta):
+    """Full conversation including all messages."""
+
+    messages: list[ConversationMessage] = Field(description="Ordered list of chat messages.")
+
+
+class SaveConversationRequest(BaseModel):
+    """Request to persist a conversation."""
+
+    session_id: str = Field(description="Client session UUID (LangGraph thread_id).")
+    title: str = Field(
+        description="Human-readable title (defaults to first user message if empty).",
+        default="",
+    )
+    messages: list[ConversationMessage] = Field(description="Full message list to persist.")
+    active_snapshot_id: str | None = Field(
+        default=None,
+        description="ID of the KG snapshot that was active during this conversation.",
+    )
+
+
+class RenameConversationRequest(BaseModel):
+    """Request to rename a conversation."""
+
+    title: str = Field(description="New title for the conversation.")
+
+
 class QueryRequest(BaseModel):
     """Query the Knowledge Graph with a natural-language question."""
 
@@ -631,6 +724,12 @@ class QueryRequest(BaseModel):
         default=None,
         description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
     )
+    session_id: str | None = Field(
+        default=None,
+        description="Client-generated session UUID. The server uses it as LangGraph thread_id "
+                    "so the MemorySaver checkpoint carries the full conversation history "
+                    "server-side — no need to replay history in the request body.",
+    )
 
 
 class QueryResponse(BaseModel):
@@ -642,6 +741,10 @@ class QueryResponse(BaseModel):
     grounded: bool = Field(description="Whether the answer is verifiably grounded in context.")
     context_previews: list[str] = Field(
         description="First 3 context chunks (first 300 chars each).",
+    )
+    session_id: str | None = Field(
+        default=None,
+        description="Echo of the request session_id for client-side correlation.",
     )
 
 

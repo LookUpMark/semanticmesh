@@ -54,11 +54,11 @@ class TestGradeAnswer:
         assert decision.action == "regenerate"
         assert "TB_ORDERS" in decision.critique
 
-    def test_web_search_verdict(self) -> None:
-        verdict = {"grounded": False, "critique": "No relevant context.", "action": "web_search"}
+    def test_ungrounded_verdict_defaults_to_regenerate(self) -> None:
+        verdict = {"grounded": False, "critique": "No relevant context.", "action": "regenerate"}
         llm = _make_llm(verdict)
         decision = grade_answer("Obscure query?", "I don't know.", [], llm)
-        assert decision.action == "web_search"
+        assert decision.action == "regenerate"
 
     def test_llm_failure_defaults_to_pass(self) -> None:
         llm = MagicMock()

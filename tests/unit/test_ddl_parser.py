@@ -119,7 +119,12 @@ class TestParseDdlErrorCases:
 
 class TestParseDdlFile:
     def test_parses_simple_schema_fixture(self) -> None:
-        path = Path("tests/fixtures/00_legacy/sample_ddl/simple_schema.sql")
+        path = (
+            Path(__file__).resolve().parent.parent
+            / "fixtures"
+            / "01_basics_ecommerce"
+            / "schema.sql"
+        )
         tables = parse_ddl_file(path)
         assert len(tables) >= 1
         table_names = {t.table_name for t in tables}
