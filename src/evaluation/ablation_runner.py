@@ -162,10 +162,14 @@ ABLATION_DESC: dict[str, dict[str, str]] = {
         "affected_components": "Query graph: hallucination grader node",
     },
     "AB-BEST": {
-        "title": "Best known configuration",
+        "title": "Data-driven best configuration (AI-Judge, DS01)",
         "group": "Optimised",
-        "hypothesis": "Aggressive ER + generous token limits + all features enabled should maximise quality.",
-        "affected_components": "All (optimised)",
+        "hypothesis": (
+            "Per-dimension AI-Judge winner: hybrid retrieval, reranker ON top_k=20, "
+            "chunk 128/16, ER threshold=0.65 top_k=5, HITL=0.85, grader OFF — "
+            "derived from 22 ablation studies on DS01 (2026-04-21)."
+        ),
+        "affected_components": "All (data-driven optimised)",
     },
 }
 
@@ -315,24 +319,47 @@ ABLATION_MATRIX: dict[str, dict[str, Any]] = {
         "primary_metric": "faithfulness",
         "run_ragas": False,  # Disables the component being measured
     },
-    # AB-BEST: Best known configuration — all features enabled, aggressive ER
+    # AB-BEST: Data-driven best config — derived from AI-Judge scores on DS01 (2026-04-21)
+    # Per-dimension winners (AI Judge /5):
+    #   Retrieval mode:       hybrid        (AB-00=4.25 > AB-01=3.80, AB-02=4.10)
+    #   Reranker:             ON + top_k=20 (AB-05=4.65 > AB-03 OFF=4.35 > AB-00 top_k=12=4.25)
+    #   Chunk size:           128/16        (AB-06=4.65, tied AB-08 512/64=4.65; 128 favours top_k=20 diversity)
+    #   Extraction tokens:    4096          (AB-09=4.35 > baseline=4.25 > AB-10=4.25)
+    #   ER threshold:         0.65          (AB-11=4.65 > baseline=4.25)
+    #   ER blocking top_k:    5             (AB-13=4.55 > baseline=4.25 = AB-14=4.25)
+    #   Schema enrichment:    ON            (tie; keep ON)
+    #   Actor-Critic:         ON            (AB-16 OFF=3.90, worst outcome)
+    #   HITL threshold:       0.85          (AB-18=4.75, highest overall score)
+    #   Cypher healing:       ON            (0.05 margin vs OFF; keep ON for resilience)
+    #   Hallucination grader: OFF           (AB-20=4.65 > AB-00 ON=4.25)
     "AB-BEST": {
-        "description": "Best config — hybrid retrieval, reranker ON, aggressive ER (0.65), all features enabled",
+        "description": (
+            "Data-driven best config (AI-Judge DS01, 2026-04-21): "
+            "hybrid retrieval, reranker ON top_k=20, chunk 128/16, "
+            "ER threshold=0.65 top_k=5, HITL=0.85, grader OFF"
+        ),
         "env_overrides": {
-            "ER_SIMILARITY_THRESHOLD": "0.65",
-            "RETRIEVAL_VECTOR_TOP_K": "20",
-            "RETRIEVAL_BM25_TOP_K": "10",
-            "RERANKER_TOP_K": "10",
-            "ENABLE_SCHEMA_ENRICHMENT": "true",
-            "ENABLE_CYPHER_HEALING": "true",
-            "ENABLE_CRITIC_VALIDATION": "true",
+            # Retrieval
+            "RETRIEVAL_MODE": "hybrid",
             "ENABLE_RERANKER": "true",
-            "ENABLE_HALLUCINATION_GRADER": "true",
+            "RERANKER_TOP_K": "20",
+            # Chunking
+            "CHUNK_SIZE": "128",
+            "CHUNK_OVERLAP": "16",
+            # Extraction
+            "LLM_MAX_TOKENS_EXTRACTION": "4096",
+            # Entity Resolution
+            "ER_SIMILARITY_THRESHOLD": "0.65",
+            "ER_BLOCKING_TOP_K": "5",
+            # Pipeline components
+            "ENABLE_SCHEMA_ENRICHMENT": "true",
+            "ENABLE_CRITIC_VALIDATION": "true",
+            "CONFIDENCE_THRESHOLD": "0.85",
+            "ENABLE_CYPHER_HEALING": "true",
+            "ENABLE_HALLUCINATION_GRADER": "false",
             "ENABLE_RETRIEVAL_QUALITY_GATE": "true",
             "ENABLE_GRADER_CONSISTENCY_VALIDATOR": "true",
             "ENABLE_LAZY_EXPANSION": "true",
-            "LLM_MAX_TOKENS_REASONING": "16384",
-            "LLM_MAX_TOKENS_EXTRACTION": "16384",
         },
         "primary_metric": "faithfulness",
         "run_ragas": True,

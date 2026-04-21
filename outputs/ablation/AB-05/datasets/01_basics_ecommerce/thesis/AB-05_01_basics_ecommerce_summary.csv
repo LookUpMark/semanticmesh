@@ -1,2 +1,2 @@
 study_id,dataset_id,run_tag,timestamp,extraction_mode,reasoning_model,embedding_model,retrieval_mode,enable_reranker,reranker_top_k,chunk_size,chunk_overlap,er_similarity_threshold,triplets,entities,tables_parsed,tables_completed,builder_elapsed_s,total_questions,grounded_count,grounded_rate,avg_gt_coverage,avg_top_score,avg_chunk_count,abstained_count
-AB-05,01_basics_ecommerce,run-20260421_110728,2026-04-21T11:20:30.981682+00:00,LLM (openai/gpt-4.1-nano),openai/gpt-oss-120b,BAAI/bge-m3,hybrid,True,20,256,32,0.75,94,54,7,7,433.5,15,15,1.0,1.0,0.42601785906030304,20.0,0
+AB-05,01_basics_ecommerce,,2026-04-21T11:20:31.005226+00:00,LLM (openai/gpt-4.1-nano),openai/gpt-oss-120b,BAAI/bge-m3,hybrid,True,20,256,32,0.75,0,0,7,7,0,15,15,1.0,1.0,0.42601785906030304,20.0,0
