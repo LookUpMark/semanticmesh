@@ -2,7 +2,7 @@
   "meta": {
     "study_id": "AB-BEST",
     "dataset_id": "01_basics_ecommerce",
-    "timestamp": "2026-04-21T17:27:38.933350+00:00",
+    "timestamp": "2026-04-21T18:14:26.690484+00:00",
     "bundle_version": "1.0"
   },
   "config": {
@@ -10,12 +10,12 @@
     "embedding_model": "BAAI/bge-m3",
     "reasoning_model": "openai/gpt-oss-120b",
     "extraction_model": "openai/gpt-4.1-nano",
-    "chunk_size": 256,
-    "chunk_overlap": 32,
+    "chunk_size": 128,
+    "chunk_overlap": 16,
     "retrieval_mode": "hybrid",
     "enable_reranker": true,
     "reranker_model": "BAAI/bge-reranker-v2-m3",
-    "reranker_top_k": 10,
+    "reranker_top_k": 20,
     "er_similarity_threshold": 0.65
   },
   "dataset_info": {
@@ -36,8 +36,8 @@
     }
   },
   "builder_report": {
-    "triplets_extracted": 93,
-    "entities_resolved": 51,
+    "triplets_extracted": 109,
+    "entities_resolved": 17,
     "tables_parsed": 7,
     "tables_completed": 7,
     "cypher_failed": false,
@@ -55,8 +55,8 @@
     "grounded_rate": 1.0,
     "abstained_count": 0,
     "avg_gt_coverage": 1.0,
-    "avg_top_score": 0.48820172003447465,
-    "avg_chunk_count": 10.0,
+    "avg_top_score": 0.49647150215513675,
+    "avg_chunk_count": 20.0,
     "elapsed_s": 0
   },
   "per_question": [
@@ -70,30 +70,34 @@
         "Customer",
         "CUSTOMER_MASTER"
       ],
-      "generated_answer": "Each customer is represented by a single row in the **CUSTOMER_MASTER** table. For every customer the database stores the following six attributes:\n\n- a unique integer identifier (**CUST_ID**),  \n- the customer’s full name (**FULL_NAME**),  \n- the unique email address used for login (**EMAIL**),  \n- an optional geographic region code for tax purposes (**REGION_CODE**),  \n- the timestamp when the account was created (**CREATED_AT**), and  \n- a Boolean flag indicating whether the customer is currently allowed to place orders (**IS_ACTIVE**)【4†L1-L2】.",
+      "generated_answer": "The database stores each customer in the **CUSTOMER_MASTER** table. For every customer the following fields are captured:\n\n* **CUST_ID** – integer, auto‑increment primary key that uniquely identifies the customer.  \n* **FULL_NAME** – VARCHAR(200), the customer’s full name.  \n* **EMAIL** – VARCHAR(150), the unique email address used for login.  \n* **REGION_CODE** – VARCHAR(10), the geographic region (used for tax calculation); this column is nullable.  \n* **CREATED_AT** – DATETIME, the timestamp when the customer account was created.  \n* **IS_ACTIVE** – BOOLEAN, flag indicating whether the customer is currently allowed to place orders.  \n\nThese six columns constitute the complete set of information stored for each customer in the schema【3†L1-L2】【4†L1-L2】.",
       "sources_retrieved": [
-        "Line Item→ORDER_LINE_ITEM",
-        "Sales Order→SALES_ORDER_HDR",
-        "Customer Items Payment→PAYMENT",
+        "Order Line Item→ORDER_LINE_ITEM",
+        "Customer→CUSTOMER_MASTER",
         "parent_chunk_data_dictionary.txt_4",
         "parent_chunk_business_glossary.txt_0",
-        "Customer→CUSTOMER_MASTER",
-        "Line Item",
-        "Sales Order",
-        "Customer Items Payment",
-        "Customer"
+        "parent_chunk_business_glossary.txt_1",
+        "SALES_ORDER_HDR→CUSTOMER_MASTER",
+        "parent_chunk_business_glossary.txt_2",
+        "parent_chunk_data_dictionary.txt_5",
+        "parent_chunk_data_dictionary.txt_6",
+        "Sales Order→SALES_ORDER_HDR",
+        "Shipment→SHIPMENT",
+        "Product→TB_PRODUCT"
       ],
       "contexts_retrieved": [
-        "Business concept 'Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
-        "Business concept 'Sales Order' — A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Business concept 'Customer' — An Order is a formal transaction document created when a customer completes a purchase, encompassing details about the customer, items, payment, and delivery information. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
         "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
-        "Business concept 'Customer' — A formal transaction document recording the agreement between the platform and a Customer to supply Products. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
-        "Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts.",
-        "Sales Order: A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status.",
-        "Customer Items Payment: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information.",
-        "Customer: A formal transaction document recording the agreement between the platform and a Customer to supply Products."
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
+        "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
+        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Business concept 'Shipment' — This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Business concept 'Product' — This table stores information about products available in the inventory, including identifiers, names, categories, pricing, and active status. is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE)."
       ],
       "covered_sources": [
         "Customer",
@@ -102,8 +106,8 @@
       "gt_coverage": 1.0,
       "grounded": true,
       "gate_decision": "proceed",
-      "retrieval_quality_score": 0.675336511217513,
-      "chunk_count": 10,
+      "retrieval_quality_score": 0.6032308448845886,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -120,30 +124,34 @@
         "TB_PRODUCT",
         "TB_CATEGORY"
       ],
-      "generated_answer": "Products are organized through a **hierarchical product‑category tree** that is captured in the database schema:\n\n* The physical table **TB_PRODUCT** (the implementation of the “Product” business concept) contains a column **CATEGORY_ID**.  \n* **CATEGORY_ID** is a foreign key that points to **TB_CATEGORY.CATEGORY_ID** (see the relationship “TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID”).  \n* The **TB_CATEGORY** table defines each category and includes a **PARENT_CATEGORY_ID** column that references another row in the same TB_CATEGORY table (self‑reference). This self‑reference creates a nested tree of categories and sub‑categories.\n\nThus, a product’s categorization is determined by the value stored in **TB_PRODUCT.CATEGORY_ID**, which links the product to a node in the hierarchical **TB_CATEGORY** structure, allowing categories to be nested (category → sub‑category → …) for organizing the product catalogue on the platform.",
+      "generated_answer": "Products are classified by linking each product record to a row in the **category table**:\n\n* The physical table **TB_PRODUCT** (the implementation of the “Product” business concept) contains a column **CATEGORY_ID**.  \n* **CATEGORY_ID** is a foreign‑key that points to **TB_CATEGORY.CATEGORY_ID** (see the relationship “TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID”).  \n* The business rule “Valid Category Before” states that a product must belong to a valid category before it can be sold, which is enforced by the TB_CATEGORY table.\n\nTherefore, a product’s categorization on the platform is determined by the value stored in **TB_PRODUCT.CATEGORY_ID**, which ties the product to a specific category record in **TB_CATEGORY**. This relationship ensures every product is assigned to a valid category for inventory, browsing, and sales processing",
       "sources_retrieved": [
         "parent_chunk_business_glossary.txt_0",
         "parent_chunk_data_dictionary.txt_4",
         "parent_chunk_business_glossary.txt_1",
-        "Customer→CUSTOMER_MASTER",
+        "Product→TB_PRODUCT",
         "parent_chunk_data_dictionary.txt_5",
-        "Customer",
-        "Hierarchical Product Category Tree→TB_PRODUCT",
+        "Product",
         "TB_PRODUCT→TB_CATEGORY",
-        "parent_chunk_data_dictionary.txt_6",
-        "Hierarchical Product Category Tree"
+        "ORDER_LINE_ITEM→TB_PRODUCT",
+        "Order Line Item→ORDER_LINE_ITEM",
+        "Valid Category Before→TB_CATEGORY",
+        "Shipment→SHIPMENT",
+        "Shipment"
       ],
       "contexts_retrieved": [
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
         "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
-        "Business concept 'Customer' — A formal transaction document recording the agreement between the platform and a Customer to supply Products. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "Business concept 'Product' — This table stores information about products available in the inventory, including identifiers, names, categories, pricing, and active status. is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE).",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Customer: A formal transaction document recording the agreement between the platform and a Customer to supply Products.",
-        "Business concept 'Hierarchical Product Category Tree' — This document describes the physical database schema for the simplified e-commerce test dataset. is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE).",
+        "Product: This table stores information about products available in the inventory, including identifiers, names, categories, pricing, and active status.",
         "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_",
-        "Hierarchical Product Category Tree: This document describes the physical database schema for the simplified e-commerce test dataset."
+        "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Business concept 'Valid Category Before' — - Must belong to a valid category before being sold is implemented by physical table TB_CATEGORY.",
+        "Business concept 'Shipment' — This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Shipment: This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status."
       ],
       "covered_sources": [
         "Product",
@@ -155,7 +163,7 @@
       "grounded": true,
       "gate_decision": "proceed_with_warning",
       "retrieval_quality_score": 0.1589561227143433,
-      "chunk_count": 10,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -172,30 +180,34 @@
         "CUSTOMER_MASTER",
         "SALES_ORDER_HDR"
       ],
-      "generated_answer": "The model defines a **one‑to‑many** relationship from Customer to Sales Order:\n\n* **Business rule** – “A Sales Order is placed by exactly one Customer” (Chunk [1]).  \n* **Foreign‑key link** – The column **SALES_ORDER_HDR.CUST_ID** references **CUSTOMER_MASTER.CUST_ID** (Chunk [7] and also shown in the table‑relationship diagram of Chunk [10]).  \n* **Concept‑to‑table mapping** – The business concept **Customer** is implemented by the table **CUSTOMER_MASTER**, and the concept **Sales Order** is implemented by **SALES_ORDER_HDR** (Chunk [10]).\n\nThus, each **Sales Order** (a row in **SALES_ORDER_HDR**) is associated with exactly one **Customer** (a row in **CUSTOMER_MASTER**), while a single **Customer** can have zero, one, or many related **Sales Orders**.",
+      "generated_answer": "The model defines a **one‑to‑many** relationship from Customer to Sales Order:\n\n* The business rule in the “Sales Order Relationships” chunk states that **“A Sales Order is placed by exactly one Customer.”**【1】  \n* The foreign‑key definition shows that **SALES_ORDER_HDR.CUST_ID** references **CUSTOMER_MASTER.CUST_ID**, linking each sales‑order record to a single customer record【5】【11】.  \n* Concept‑to‑table mappings confirm that the business concept **Customer** is implemented by the table **CUSTOMER_MASTER**, and the concept **Sales Order** is implemented by **SALES_ORDER_HDR**【6】【11】.\n\nTherefore, each **Sales Order** (a row in **SALES_ORDER_HDR**) is associated with exactly one **Customer** (a row in **CUSTOMER_MASTER**), while a single **Customer** can be associated with zero, one, or many **Sales Orders**.",
       "sources_retrieved": [
         "parent_chunk_business_glossary.txt_2",
-        "Sales Order→SALES_ORDER_HDR",
         "parent_chunk_business_glossary.txt_0",
         "parent_chunk_business_glossary.txt_1",
         "parent_chunk_data_dictionary.txt_5",
-        "Customer Items Payment→PAYMENT",
         "SALES_ORDER_HDR→CUSTOMER_MASTER",
-        "Sales Order",
-        "Customer Items Payment",
-        "parent_chunk_data_dictionary.txt_6"
+        "Sales Order→SALES_ORDER_HDR",
+        "Payment→PAYMENT",
+        "Order Line Item→ORDER_LINE_ITEM",
+        "PAYMENT→SALES_ORDER_HDR",
+        "ORDER_LINE_ITEM→SALES_ORDER_HDR",
+        "parent_chunk_data_dictionary.txt_6",
+        "Order Line Item"
       ],
       "contexts_retrieved": [
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
-        "Business concept 'Sales Order' — A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
         "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
-        "Sales Order: A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status.",
-        "Customer Items Payment: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_"
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Business concept 'Payment' — This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_",
+        "Order Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts."
       ],
       "covered_sources": [
         "Customer",
@@ -207,7 +219,7 @@
       "grounded": true,
       "gate_decision": "proceed",
       "retrieval_quality_score": 0.9846936454393053,
-      "chunk_count": 10,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -224,30 +236,34 @@
         "Product",
         "SalesOrder"
       ],
-      "generated_answer": "An order line item stores the details of a single product that belongs to a sales order. According to the business concept and its physical table definition, each line item contains the following columns:\n\n* **LINE_ID** – a unique line identifier (primary key).  \n* **ORDER_ID** – the identifier of the parent sales order, linking the line to exactly one Sales Order.  \n* **PRODUCT_ID** – a reference to exactly one Product that is being ordered.  \n* **QUANTITY** – the number of units ordered.  \n* **UNIT_PRICE** – the price of the product at the moment the order was placed (a historical price that does not change later).  \n* **LINE_AMT** – the extended amount for the line, calculated as quantity × unit price.  \n\nThese fields together capture the product reference, the ordered quantity, the locked‑in price, and the resulting line total, and they are linked via foreign keys to the related Sales Order and Product records【1†L1-L1】【2†L1-L5】【3†L1-L1】【4†L1-L1】【6†L1-L5】.",
+      "generated_answer": "An **order line item** stores the details of a single product that belongs to a sales order. According to the business concept and its physical table definition, each line item contains:\n\n- **LINE_ID** – a unique line identifier (primary key)【1†L1-L1】  \n- **ORDER_ID** – the identifier of the parent sales order, linking the line to exactly one Sales Order【4†L1-L1】  \n- **PRODUCT_ID** – a reference to exactly one Product that is being ordered【3†L1-L1】  \n- **QUANTITY** – the number of units ordered【2†L1-L5】  \n- **UNIT_PRICE** – the price of the product at the moment the order was placed (a historical price that does not change later)【2†L1-L5】  \n- **LINE_AMT** – the extended amount for the line, calculated as quantity × unit price【2†L1-L5】\n\nThese columns together capture the product reference, ordered quantity, locked‑in price, and the resulting line total, and they are linked via foreign keys to the related **Sales Order** (ORDER_ID) and **Product** (PRODUCT_ID) records【5†L1-L1】.",
       "sources_retrieved": [
-        "Line Item→ORDER_LINE_ITEM",
+        "Order Line Item→ORDER_LINE_ITEM",
         "parent_chunk_business_glossary.txt_1",
         "ORDER_LINE_ITEM→TB_PRODUCT",
         "ORDER_LINE_ITEM→SALES_ORDER_HDR",
         "parent_chunk_business_glossary.txt_2",
         "parent_chunk_data_dictionary.txt_5",
+        "Customer→CUSTOMER_MASTER",
         "Sales Order→SALES_ORDER_HDR",
-        "Line Item",
-        "parent_chunk_data_dictionary.txt_6",
-        "Sales Order"
+        "Shipment→SHIPMENT",
+        "Shipment",
+        "parent_chunk_business_glossary.txt_0",
+        "parent_chunk_data_dictionary.txt_4"
       ],
       "contexts_retrieved": [
-        "Business concept 'Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
         "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
         "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Business concept 'Sales Order' — A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
-        "Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_",
-        "Sales Order: A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status."
+        "Business concept 'Customer' — An Order is a formal transaction document created when a customer completes a purchase, encompassing details about the customer, items, payment, and delivery information. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Business concept 'Shipment' — This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Shipment: This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status.",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------"
       ],
       "covered_sources": [
         "OrderLineItem",
@@ -258,8 +274,8 @@
       "gt_coverage": 1.0,
       "grounded": true,
       "gate_decision": "proceed",
-      "retrieval_quality_score": 0.9472835978632691,
-      "chunk_count": 10,
+      "retrieval_quality_score": 0.97369471946558,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -275,30 +291,34 @@
         "PAYMENT",
         "SalesOrder"
       ],
-      "generated_answer": "Payments are linked to orders through a foreign‑key relationship: the **PAYMENT** table contains the column **ORDER_ID**, which references **SALES_ORDER_HDR.ORDER_ID**【1†L1-L1】.  \n\nBecause of this key:\n\n* each payment record is for exactly one sales order (“A Payment is for exactly one Sales Order”)【4†L7-L9】, and  \n* a sales order can have one or more associated payment records (“A Sales Order has one or more Payments”)【4†L2-L4】.  \n\nThus the link is the **PAYMENT.ORDER_ID → SALES_ORDER_HDR.ORDER_ID** foreign key, creating a many‑to‑one relationship from payments to their corresponding order.",
+      "generated_answer": "Payments are linked to orders through a foreign‑key relationship.  \nThe **PAYMENT** table contains the column **ORDER_ID**, which references the **ORDER_ID** primary key in the **SALES_ORDER_HDR** (sales‑order) table【1†L1-L1】.  \n\nBecause of this reference, a payment record is for exactly one sales order, while a sales order can have one or more associated payment records【4†L7-L9】【4†L2-L4】.  \n\nThus the link is **PAYMENT.ORDER_ID → SALES_ORDER_HDR.ORDER_ID**, creating a many‑to‑one relationship from payments to their corresponding order.",
       "sources_retrieved": [
         "PAYMENT→SALES_ORDER_HDR",
-        "Customer Items Payment→PAYMENT",
+        "Payment→PAYMENT",
         "parent_chunk_business_glossary.txt_1",
         "parent_chunk_business_glossary.txt_2",
         "SHIPMENT→SALES_ORDER_HDR",
-        "Customer Items Payment",
+        "ORDER_LINE_ITEM→SALES_ORDER_HDR",
         "Sales Order→SALES_ORDER_HDR",
-        "parent_chunk_data_dictionary.txt_5",
-        "Sales Order",
-        "parent_chunk_data_dictionary.txt_6"
+        "SALES_ORDER_HDR→CUSTOMER_MASTER",
+        "parent_chunk_business_glossary.txt_0",
+        "parent_chunk_data_dictionary.txt_4",
+        "Payment",
+        "Sales Order"
       ],
       "contexts_retrieved": [
         "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Business concept 'Payment' — This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
         "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
-        "Customer Items Payment: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information.",
-        "Business concept 'Sales Order' — A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
-        "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Sales Order: A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_"
+        "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
+        "Payment: This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation.",
+        "Sales Order: This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps."
       ],
       "covered_sources": [
         "Payment",
@@ -309,7 +329,7 @@
       "grounded": true,
       "gate_decision": "proceed",
       "retrieval_quality_score": 0.9231777955470523,
-      "chunk_count": 10,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -324,30 +344,34 @@
         "SalesOrder",
         "SALES_ORDER_HDR"
       ],
-      "generated_answer": "The schema shows that a sales order’s current state is stored in the **STATUS_CODE** column of the **SALES_ORDER_HDR** table (the physical implementation of the “Sales Order” business concept)【1】.  \n\nThe retrieved material does not list the concrete values that can appear in this column (e.g., “Pending”, “Confirmed”, “Shipped”, etc.). Therefore, an order can have any status represented by the values stored in **SALES_ORDER_HDR.STATUS_CODE**, but the specific set of possible order‑status codes is not provided in the available context.",
+      "generated_answer": "The only place the retrieved material defines a status for an **order** is the **STATUS_CODE** column in the **SALES_ORDER_HDR** table, which implements the “Sales Order” business concept:\n\n- **SALES_ORDER_HDR** (the physical table for a sales order) includes the column **STATUS_CODE** that records the current status of the order【1】.\n\nThe context does not list the concrete values that can appear in this column (e.g., “Pending”, “Confirmed”, “Shipped”, etc.). Therefore, an order can have any status represented by the values stored in **SALES_ORDER_HDR.STATUS_CODE**, but the specific set of possible order‑status codes is not provided in the available information.",
       "sources_retrieved": [
         "Sales Order→SALES_ORDER_HDR",
+        "Payment→PAYMENT",
         "parent_chunk_business_glossary.txt_0",
         "parent_chunk_business_glossary.txt_1",
-        "Customer Items Payment→PAYMENT",
         "Shipment→SHIPMENT",
+        "Customer→CUSTOMER_MASTER",
         "Shipment",
         "parent_chunk_business_glossary.txt_2",
         "parent_chunk_data_dictionary.txt_5",
-        "Sales Order",
-        "Customer Items Payment"
+        "parent_chunk_data_dictionary.txt_4",
+        "Order Line Item→ORDER_LINE_ITEM",
+        "SALES_ORDER_HDR→CUSTOMER_MASTER"
       ],
       "contexts_retrieved": [
-        "Business concept 'Sales Order' — A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Business concept 'Payment' — This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
-        "Business concept 'Shipment' — This table records details about shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking information, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
-        "Shipment: This table records details about shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking information, and current shipment status.",
+        "Business concept 'Shipment' — This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Business concept 'Customer' — An Order is a formal transaction document created when a customer completes a purchase, encompassing details about the customer, items, payment, and delivery information. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "Shipment: This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status.",
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Sales Order: A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status.",
-        "Customer Items Payment: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information."
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID."
       ],
       "covered_sources": [
         "SalesOrder",
@@ -356,8 +380,8 @@
       "gt_coverage": 1.0,
       "grounded": true,
       "gate_decision": "proceed",
-      "retrieval_quality_score": 0.3259495159352553,
-      "chunk_count": 10,
+      "retrieval_quality_score": 0.25091278688527247,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -372,30 +396,34 @@
         "Product",
         "TB_PRODUCT"
       ],
-      "generated_answer": "The product SKU is stored in the **TB_PRODUCT** table, which implements the “Product” business concept and includes a column named SKU【1】【8】.",
+      "generated_answer": "The product SKU is stored in the **TB_PRODUCT** table, which implements the “Product” business concept and includes a column named SKU【1】.",
       "sources_retrieved": [
-        "Hierarchical Product Category Tree→TB_PRODUCT",
-        "Line Item→ORDER_LINE_ITEM",
-        "parent_chunk_data_dictionary.txt_4",
-        "Sales Order→SALES_ORDER_HDR",
-        "ORDER_LINE_ITEM→TB_PRODUCT",
-        "Customer→CUSTOMER_MASTER",
-        "Line Item",
-        "parent_chunk_data_dictionary.txt_6",
+        "Product→TB_PRODUCT",
         "Shipment",
-        "Shipment→SHIPMENT"
+        "Order Line Item→ORDER_LINE_ITEM",
+        "Shipment→SHIPMENT",
+        "Sales Order→SALES_ORDER_HDR",
+        "parent_chunk_data_dictionary.txt_4",
+        "ORDER_LINE_ITEM→TB_PRODUCT",
+        "parent_chunk_business_glossary.txt_0",
+        "TB_PRODUCT→TB_CATEGORY",
+        "parent_chunk_data_dictionary.txt_5",
+        "Product",
+        "parent_chunk_data_dictionary.txt_6"
       ],
       "contexts_retrieved": [
-        "Business concept 'Hierarchical Product Category Tree' — This document describes the physical database schema for the simplified e-commerce test dataset. is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE).",
-        "Business concept 'Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Business concept 'Product' — This table stores information about products available in the inventory, including identifiers, names, categories, pricing, and active status. is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE).",
+        "Shipment: This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status.",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Business concept 'Shipment' — This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
         "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
-        "Business concept 'Sales Order' — A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
         "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
-        "Business concept 'Customer' — A formal transaction document recording the agreement between the platform and a Customer to supply Products. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
-        "Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_",
-        "Shipment: This table records details about shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking information, and current shipment status.",
-        "Business concept 'Shipment' — This table records details about shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking information, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE)."
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
+        "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
+        "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
+        "Product: This table stores information about products available in the inventory, including identifiers, names, categories, pricing, and active status.",
+        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_"
       ],
       "covered_sources": [
         "Product",
@@ -404,8 +432,8 @@
       "gt_coverage": 1.0,
       "grounded": true,
       "gate_decision": "proceed",
-      "retrieval_quality_score": 0.6983294529100605,
-      "chunk_count": 10,
+      "retrieval_quality_score": 0.9362850057480346,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -422,30 +450,34 @@
         "CUSTOMER_MASTER",
         "SALES_ORDER_HDR"
       ],
-      "generated_answer": "To get every sales order that belongs to a particular customer you follow the foreign‑key link between **CUSTOMER_MASTER** and **SALES_ORDER_HDR**.\n\n**Schema facts**\n\n* **CUSTOMER_MASTER** holds the master record for each platform customer; its primary key is **CUST_ID** (INT)【1†L1-L4】.  \n* **SALES_ORDER_HDR** implements the *Sales Order* concept and contains a column **CUST_ID** that records the customer who placed the order【4†L1-L3】.  \n* The column **CUST_ID** in **SALES_ORDER_HDR** is defined as a foreign key that references **CUSTOMER_MASTER(CUST_ID)**【5†L1-L1】.  \n* Business rule: “A Sales Order is placed by exactly one Customer”【2†L1-L2】.\n\n**Query pattern (schema‑level)**  \n\n```sql\nSELECT\n    so.ORDER_ID,\n    so.ORDER_DATE,\n    so.TOTAL_AMT,\n    so.STATUS_CODE,\n    so.PAYMENT_CONFIRMED_AT,\n    so.DELIVERED_AT,\n    so.CREATED_AT\nFROM\n    SALES_ORDER_HDR AS so\nJOIN\n    CUSTOMER_MASTER AS cm\n      ON so.CUST_ID = cm.CUST_ID\nWHERE\n    cm.CUST_ID = <desired_customer_id>          -- or cm.EMAIL = 'user@example.com'\n;\n```\n\n* The **JOIN** uses the foreign‑key `SALES_ORDER_HDR.CUST_ID → CUSTOMER_MASTER.CUST_ID`.  \n* The **WHERE** clause identifies the specific customer, either by the primary key `CUST_ID` or by a unique attribute such as `EMAIL` from `CUSTOMER_MASTER`.\n\nIf you only need the order identifiers (or other order columns) you can skip the join and filter directly on the foreign‑key column:\n\n```sql\nSELECT ORDER_ID, ORDER_DATE, TOTAL_AMT\nFROM SALES_ORDER_HDR\nWHERE CUST_ID = <desired_customer_id>;\n```\n\nThus, by following the relationship `CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID` you can retrieve all orders placed by any specific customer. The knowledge graph provides only the schema definitions; it does not contain the actual order or customer records.",
+      "generated_answer": "To locate every order that belongs to a particular customer you use the foreign‑key link between **CUSTOMER_MASTER** and **SALES_ORDER_HDR**.\n\n**Schema elements that define the link**\n\n* **CUSTOMER_MASTER** – the physical table that stores the master record for each platform customer; its primary key is **CUST_ID** (INT)【1†L1-L4】.  \n* **SALES_ORDER_HDR** – the physical table that stores the header information for sales orders; it contains a column **CUST_ID** that records the customer who placed the order【9†L1-L4】.  \n* The relationship is defined as a foreign key: **SALES_ORDER_HDR.CUST_ID → CUSTOMER_MASTER.CUST_ID**【7†L1-L1】.  \n* Business rule: “A Sales Order is placed by exactly one Customer”【2†L1-L2】.\n\n**Typical query (schema‑level)**  \n\n```sql\nSELECT\n    so.ORDER_ID,\n    so.ORDER_DATE,\n    so.TOTAL_AMT,\n    so.STATUS_CODE,\n    so.PAYMENT_CONFIRMED_AT,\n    so.DELIVERED_AT,\n    so.CREATED_AT\nFROM\n    SALES_ORDER_HDR AS so\nJOIN\n    CUSTOMER_MASTER AS cm\n      ON so.CUST_ID = cm.CUST_ID\nWHERE\n    cm.CUST_ID = <desired_customer_id>          -- or cm.EMAIL = 'user@example.com'\n;\n```\n\n* The **JOIN** uses the foreign‑key `SALES_ORDER_HDR.CUST_ID → CUSTOMER_MASTER.CUST_ID`.  \n* The **WHERE** clause identifies the specific customer, either by the primary key `CUST_ID` or by a unique attribute such as `EMAIL` from `CUSTOMER_MASTER`.\n\nIf you only need the order identifiers (or other order columns) you can filter directly on the foreign‑key column without the join:\n\n```sql\nSELECT ORDER_ID, ORDER_DATE, TOTAL_AMT\nFROM SALES_ORDER_HDR\nWHERE CUST_ID = <desired_customer_id>;\n```\n\nThus, by following the relationship `CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID` you can retrieve all orders placed by any specific customer. The knowledge graph provides only the schema definitions; it does not contain the actual order or customer records.",
       "sources_retrieved": [
         "parent_chunk_data_dictionary.txt_4",
         "parent_chunk_business_glossary.txt_2",
         "parent_chunk_business_glossary.txt_0",
-        "Sales Order→SALES_ORDER_HDR",
         "parent_chunk_data_dictionary.txt_5",
-        "Line Item→ORDER_LINE_ITEM",
-        "Customer Items Payment→PAYMENT",
-        "Line Item",
-        "Sales Order",
-        "Customer Items Payment"
+        "Customer→CUSTOMER_MASTER",
+        "Order Line Item→ORDER_LINE_ITEM",
+        "SALES_ORDER_HDR→CUSTOMER_MASTER",
+        "parent_chunk_business_glossary.txt_1",
+        "Sales Order→SALES_ORDER_HDR",
+        "Payment→PAYMENT",
+        "Order Line Item",
+        "Sales Order"
       ],
       "contexts_retrieved": [
         "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
-        "Business concept 'Sales Order' — A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Business concept 'Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
-        "Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts.",
-        "Sales Order: A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status.",
-        "Customer Items Payment: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information."
+        "Business concept 'Customer' — An Order is a formal transaction document created when a customer completes a purchase, encompassing details about the customer, items, payment, and delivery information. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Business concept 'Payment' — This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Order Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts.",
+        "Sales Order: This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps."
       ],
       "covered_sources": [
         "Customer",
@@ -457,7 +489,7 @@
       "grounded": true,
       "gate_decision": "proceed_with_warning",
       "retrieval_quality_score": 0.14282864911055923,
-      "chunk_count": 10,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -476,30 +508,34 @@
         "ORDER_LINE_ITEM",
         "TB_PRODUCT"
       ],
-      "generated_answer": "The schema ties a sales order to each product that appears on that order through a **foreign‑key relationship** between the order‑header table and the line‑item table.\n\n* **SALES_ORDER_HDR** stores the order header; its primary key is **ORDER_ID**.  \n* **ORDER_LINE_ITEM** stores each product line in an order; it has its own primary key **LINE_ID** and a column **ORDER_ID** that is defined as a foreign key pointing to **SALES_ORDER_HDR.ORDER_ID**【3†source】.\n\nBecause **ORDER_LINE_ITEM.ORDER_ID → SALES_ORDER_HDR.ORDER_ID**, each row in **ORDER_LINE_ITEM** (one product line) is linked to exactly one sales order, while a single sales order can have many line‑item rows—a one‑to‑many relationship. This is reflected in the business relationship description: “A Sales Order has one or more Order Line Items” and “An Order Line Item is part of exactly one Sales Order”【6†source】.  \n\nThus, the schema connects orders to their individual product line items via the **ORDER_ID** foreign key in the **ORDER_LINE_ITEM** table.",
+      "generated_answer": "The link is made through a **foreign‑key relationship** between the order‑header table and the line‑item table.\n\n* **SALES_ORDER_HDR** stores each sales order and defines the primary key **ORDER_ID**.  \n* **ORDER_LINE_ITEM** stores the individual product lines for an order; it has its own primary key **LINE_ID** and a column **ORDER_ID** that is declared as a foreign key pointing to **SALES_ORDER_HDR.ORDER_ID**【3†source】【4†source】.\n\nBecause **ORDER_LINE_ITEM.ORDER_ID → SALES_ORDER_HDR.ORDER_ID**, each line‑item row is tied to exactly one sales order, while a single sales order can have many line‑item rows—a one‑to‑many relationship. This is reflected in the business relationship description: “A Sales Order has one or more Order Line Items” and “An Order Line Item is part of exactly one Sales Order”【6†source】. Thus the schema links orders to their individual product line items via the **ORDER_ID** foreign key in the **ORDER_LINE_ITEM** table.",
       "sources_retrieved": [
         "ORDER_LINE_ITEM→TB_PRODUCT",
         "parent_chunk_business_glossary.txt_1",
         "ORDER_LINE_ITEM→SALES_ORDER_HDR",
         "parent_chunk_data_dictionary.txt_5",
-        "Line Item→ORDER_LINE_ITEM",
+        "Order Line Item→ORDER_LINE_ITEM",
         "parent_chunk_business_glossary.txt_2",
         "parent_chunk_data_dictionary.txt_4",
         "parent_chunk_business_glossary.txt_0",
-        "Line Item",
-        "parent_chunk_data_dictionary.txt_6"
+        "PAYMENT→SALES_ORDER_HDR",
+        "SHIPMENT→SALES_ORDER_HDR",
+        "Customer→CUSTOMER_MASTER",
+        "SALES_ORDER_HDR→CUSTOMER_MASTER"
       ],
       "contexts_retrieved": [
         "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
         "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Business concept 'Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
         "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
-        "Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_"
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Business concept 'Customer' — An Order is a formal transaction document created when a customer completes a purchase, encompassing details about the customer, items, payment, and delivery information. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID."
       ],
       "covered_sources": [
         "SalesOrder",
@@ -513,7 +549,7 @@
       "grounded": true,
       "gate_decision": "proceed",
       "retrieval_quality_score": 0.7433543601649092,
-      "chunk_count": 10,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -530,30 +566,34 @@
         "OrderLineItem",
         "Product"
       ],
-      "generated_answer": "The hierarchy that connects a customer to the individual line items of an order is defined by three tables and two foreign‑key relationships:\n\n**Tables and keys**\n\n1. **Customer** – stored in **CUSTOMER_MASTER**. Its primary key is **CUST_ID** (see the foreign‑key line “CUST_ID → CUSTOMER_MASTER(CUST_ID)” in chunk [2]).\n\n2. **Sales Order** – stored in **SALES_ORDER_HDR** (the physical table that implements the *SalesOrder* concept, shown in the concept‑to‑table mapping of chunk [8]).  \n   *Link to the customer*: **SALES_ORDER_HDR.CUST_ID** is a foreign key that references **CUSTOMER_MASTER(CUST_ID)** (chunk [2]).  \n   *Order identifier*: **ORDER_ID** (used as the primary key of SALES_ORDER_HDR and referenced by other tables, as shown in chunk [8]).\n\n3. **Order Line Item** – stored in **ORDER_LINE_ITEM** (the table that implements the *Line Item* concept, described in chunks [2], [3] and [4]).  \n   *Primary key*: **LINE_ID** (chunk [2]).  \n   *Link to the sales order*: **ORDER_LINE_ITEM.ORDER_ID** is a foreign key that references **SALES_ORDER_HDR.ORDER_ID** (chunks [2] and [6]).\n\n**Business‑rule summary (from the relationship description in chunk [1])**  \n- “A Sales Order is placed by exactly one Customer.”  \n- “An Order Line Item is part of exactly one Sales Order.”\n\n**Join path that represents the hierarchy**\n\n```sql\nCUSTOMER_MASTER.CUST_ID = SALES_ORDER_HDR.CUST_ID\nJOIN\nSALES_ORDER_HDR.ORDER_ID = ORDER_LINE_ITEM.ORDER_ID\n```\n\nThus, a **Customer** (record in CUSTOMER_MASTER) places a **Sales Order** (record in SALES_ORDER_HDR) identified by ORDER_ID, and each sales order is composed of one or more **Order Line Items** (records in ORDER_LINE_ITEM) that reference the same ORDER_ID. This chain constitutes the requested “customer → order → line items” hierarchy.",
+      "generated_answer": "The hierarchy that links a customer to the line‑items of an order is defined by three tables and two foreign‑key relationships:\n\n1. **CUSTOMER_MASTER** – the physical table that implements the *Customer* concept. Its primary key is **CUST_ID**【9】.  \n\n2. **SALES_ORDER_HDR** – the table that implements the *Sales Order* concept. It contains a column **CUST_ID** that is a foreign key referencing **CUSTOMER_MASTER(CUST_ID)**【10】, so each sales order is placed by exactly one customer (as described in the relationship summary【1】). The order’s unique identifier is **ORDER_ID**.  \n\n3. **ORDER_LINE_ITEM** – the table that implements the *Order Line Item* concept. It contains a column **ORDER_ID** that is a foreign key referencing **SALES_ORDER_HDR(ORDER_ID)**【6】, so each line item belongs to exactly one sales order (also stated in the relationship summary【1】). The line‑item primary key is **LINE_ID**【2】.\n\n**Join path that represents the hierarchy**\n\n```\nCUSTOMER_MASTER.CUST_ID = SALES_ORDER_HDR.CUST_ID\nJOIN\nSALES_ORDER_HDR.ORDER_ID = ORDER_LINE_ITEM.ORDER_ID\n```\n\nThus, a **Customer** (record in CUSTOMER_MASTER) places a **Sales Order** (record in SALES_ORDER_HDR) identified by ORDER_ID, and each sales order is composed of one or more **Order Line Items** (records in ORDER_LINE_ITEM) that reference the same ORDER_ID. This chain constitutes the requested “customer → order → line items” hierarchy.",
       "sources_retrieved": [
         "parent_chunk_business_glossary.txt_2",
         "parent_chunk_data_dictionary.txt_5",
-        "Line Item→ORDER_LINE_ITEM",
+        "Order Line Item→ORDER_LINE_ITEM",
         "parent_chunk_business_glossary.txt_1",
         "ORDER_LINE_ITEM→TB_PRODUCT",
         "ORDER_LINE_ITEM→SALES_ORDER_HDR",
-        "Customer Items Payment→PAYMENT",
-        "parent_chunk_data_dictionary.txt_6",
-        "Line Item",
-        "Customer Items Payment"
+        "Customer→CUSTOMER_MASTER",
+        "parent_chunk_business_glossary.txt_0",
+        "parent_chunk_data_dictionary.txt_4",
+        "SALES_ORDER_HDR→CUSTOMER_MASTER",
+        "Sales Order→SALES_ORDER_HDR",
+        "Sales Order"
       ],
       "contexts_retrieved": [
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Business concept 'Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
         "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
         "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_",
-        "Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts.",
-        "Customer Items Payment: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information."
+        "Business concept 'Customer' — An Order is a formal transaction document created when a customer completes a purchase, encompassing details about the customer, items, payment, and delivery information. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Sales Order: This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps."
       ],
       "covered_sources": [
         "Customer",
@@ -565,7 +605,7 @@
       "grounded": true,
       "gate_decision": "proceed",
       "retrieval_quality_score": 0.3719347138931014,
-      "chunk_count": 10,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -582,30 +622,34 @@
         "PAYMENT",
         "SALES_ORDER_HDR"
       ],
-      "generated_answer": "The **PAYMENT** table stores the payment‑confirmation information in two columns:\n\n* **STATUS_CODE** – a code that indicates the current status of the payment (e.g., pending, confirmed, failed).  \n* **CONFIRMED_AT** – a timestamp that is filled in when the payment is confirmed.  \n\nThese columns model the *confirmation state* of a payment【2】.\n\nThe link to the order is made with the **ORDER_ID** column in **PAYMENT**. A foreign‑key constraint ties this column to the primary key of the sales‑order header, so each payment is associated with exactly one sales order, while a sales order can have many payments【7】【6】.",
+      "generated_answer": "The schema captures a payment’s confirmation information in the **PAYMENT** table. Two columns are dedicated to the confirmation state:\n\n* **STATUS_CODE** – a code that records the current status of the payment (e.g., pending, confirmed, failed).  \n* **CONFIRMED_AT** – a timestamp that is populated when the payment is confirmed.  \n\nThese columns are listed in the definition of the *Payment* concept (chunk [2]).\n\nThe link between a payment and the order it settles is expressed by the **ORDER_ID** column in **PAYMENT**. A foreign‑key constraint ties this column to the primary key of the sales‑order header:\n\n```\nPAYMENT.ORDER_ID → SALES_ORDER_HDR.ORDER_ID\n```\n\nThis relationship is described in the foreign‑key mapping (chunk [8]) and reinforced by the relationship description that “A Payment is for exactly one Sales Order” (chunk [7]). Consequently, each payment belongs to a single sales order, while a sales order can have one or more associated payment rows.",
       "sources_retrieved": [
         "parent_chunk_business_glossary.txt_1",
-        "Customer Items Payment→PAYMENT",
+        "Payment→PAYMENT",
         "Sales Order→SALES_ORDER_HDR",
         "parent_chunk_data_dictionary.txt_5",
+        "Customer→CUSTOMER_MASTER",
         "parent_chunk_data_dictionary.txt_4",
         "parent_chunk_business_glossary.txt_2",
         "PAYMENT→SALES_ORDER_HDR",
-        "Customer Items Payment",
-        "Sales Order",
-        "parent_chunk_data_dictionary.txt_6"
+        "Shipment→SHIPMENT",
+        "Shipment",
+        "Order Line Item→ORDER_LINE_ITEM",
+        "Sales Order"
       ],
       "contexts_retrieved": [
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
-        "Business concept 'Sales Order' — A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Business concept 'Payment' — This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
+        "Business concept 'Customer' — An Order is a formal transaction document created when a customer completes a purchase, encompassing details about the customer, items, payment, and delivery information. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
         "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
         "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
-        "Customer Items Payment: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information.",
-        "Sales Order: A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_"
+        "Business concept 'Shipment' — This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Shipment: This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status.",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Sales Order: This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps."
       ],
       "covered_sources": [
         "Payment",
@@ -617,7 +661,7 @@
       "grounded": true,
       "gate_decision": "proceed_with_warning",
       "retrieval_quality_score": 0.11279540628289322,
-      "chunk_count": 10,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -634,30 +678,34 @@
         "SHIPMENT",
         "SALES_ORDER_HDR"
       ],
-      "generated_answer": "Shipments are stored in the **SHIPMENT** table (see [1]), which contains the columns **ORDER_ID** and **WAREHOUSE_CODE**.\n\n* **Relation to orders** – The column **ORDER_ID** in SHIPMENT is a foreign key that points to **SALES_ORDER_HDR.ORDER_ID** (shown in the FK definition [8] and the relationship diagram [9]). According to the sales‑order relationship description [3], “A Shipment is for exactly one Sales Order.” Thus each shipment record is linked to a single sales order.\n\n* **Relation to warehouses** – The column **WAREHOUSE_CODE** identifies the warehouse from which the shipment originates. The relationship list [3] states “A Shipment comes from exactly one Warehouse,” establishing a one‑to‑one association between a shipment and its source warehouse.",
+      "generated_answer": "In the model a **Shipment** is stored in the **SHIPMENT** table (see [1]), which includes the columns **ORDER_ID** and **WAREHOUSE_CODE**.\n\n* **Relation to orders** – The relationship list in [3] states “A Shipment is for exactly one Sales Order.” The **ORDER_ID** column in SHIPMENT therefore points to a single sales‑order record (the header in **SALES_ORDER_HDR**), linking each shipment to the order it fulfills.\n\n* **Relation to warehouses** – The same list in [3] says “A Shipment comes from exactly one Warehouse.” The **WAREHOUSE_CODE** column in SHIPMENT identifies the warehouse that supplies the goods, so each shipment is associated with one source warehouse.\n\nThus, a shipment is tied to one specific sales order via **ORDER_ID** and to one specific warehouse via **WAREHOUSE_CODE**.",
       "sources_retrieved": [
         "Shipment→SHIPMENT",
         "Shipment",
         "parent_chunk_business_glossary.txt_2",
         "parent_chunk_business_glossary.txt_0",
         "parent_chunk_business_glossary.txt_1",
-        "Customer Items Payment→PAYMENT",
-        "Customer Items Payment",
-        "SHIPMENT→SALES_ORDER_HDR",
-        "parent_chunk_data_dictionary.txt_6",
-        "Sales Order"
+        "Payment→PAYMENT",
+        "Sales Order→SALES_ORDER_HDR",
+        "parent_chunk_data_dictionary.txt_4",
+        "Order Line Item→ORDER_LINE_ITEM",
+        "Sales Order",
+        "Payment",
+        "Order Line Item"
       ],
       "contexts_retrieved": [
-        "Business concept 'Shipment' — This table records details about shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking information, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
-        "Shipment: This table records details about shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking information, and current shipment status.",
+        "Business concept 'Shipment' — This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Shipment: This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status.",
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
-        "Customer Items Payment: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information.",
-        "Relationship: SHIPMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_",
-        "Sales Order: A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status."
+        "Business concept 'Payment' — This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Sales Order: This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps.",
+        "Payment: This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation.",
+        "Order Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts."
       ],
       "covered_sources": [
         "Shipment",
@@ -668,8 +716,8 @@
       "gt_coverage": 1.0,
       "grounded": true,
       "gate_decision": "proceed",
-      "retrieval_quality_score": 0.7190878215999804,
-      "chunk_count": 10,
+      "retrieval_quality_score": 0.6829967608364195,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -685,30 +733,34 @@
         "Category",
         "TB_PRODUCT"
       ],
-      "generated_answer": "The schema links a product to a category through a single foreign‑key column:\n\n- **TB_PRODUCT** contains the column **CATEGORY_ID** (together with PRODUCT_ID, SKU, PRODUCT_NAME, UNIT_PRICE, IS_ACTIVE) [3].\n- A foreign‑key relationship is defined: **TB_PRODUCT.CATEGORY_ID → TB_CATEGORY.CATEGORY_ID** [2] (shown also in the relationship diagram [8]).\n\nBecause each product row can store only one value in the CATEGORY_ID column and there is no junction table or additional foreign‑key columns, a product can be associated with **exactly one** category. The hierarchical relationship exists only among categories themselves (TB_CATEGORY references itself via PARENT_CATEGORY_ID) [10], not for assigning multiple categories to a product. Therefore, within this e‑commerce data model a product cannot belong to multiple categories.",
+      "generated_answer": "No. In this data model a product can be linked to only one category.\n\n- The **Product** concept is stored in **TB_PRODUCT**, which includes the column **CATEGORY_ID** [4].\n- A foreign‑key relationship is defined: **TB_PRODUCT.CATEGORY_ID → TB_CATEGORY.CATEGORY_ID** [3].\n\nBecause each product row can hold just a single value in the CATEGORY_ID column and there is no junction table or additional foreign‑key columns, a product can be associated with exactly one category",
       "sources_retrieved": [
         "parent_chunk_business_glossary.txt_0",
+        "Valid Category Before→TB_CATEGORY",
         "TB_PRODUCT→TB_CATEGORY",
-        "Hierarchical Product Category Tree→TB_PRODUCT",
+        "Product→TB_PRODUCT",
         "parent_chunk_business_glossary.txt_1",
         "parent_chunk_data_dictionary.txt_4",
         "parent_chunk_data_dictionary.txt_5",
         "ORDER_LINE_ITEM→TB_PRODUCT",
-        "parent_chunk_data_dictionary.txt_6",
-        "Hierarchical Product Category Tree",
-        "TB_CATEGORY→TB_CATEGORY"
+        "parent_chunk_business_glossary.txt_2",
+        "Order Line Item→ORDER_LINE_ITEM",
+        "Shipment→SHIPMENT",
+        "Shipment"
       ],
       "contexts_retrieved": [
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
+        "Business concept 'Valid Category Before' — - Must belong to a valid category before being sold is implemented by physical table TB_CATEGORY.",
         "Relationship: TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID.",
-        "Business concept 'Hierarchical Product Category Tree' — This document describes the physical database schema for the simplified e-commerce test dataset. is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE).",
+        "Business concept 'Product' — This table stores information about products available in the inventory, including identifiers, names, categories, pricing, and active status. is implemented by physical table TB_PRODUCT (columns: PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE).",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
         "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
         "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_",
-        "Hierarchical Product Category Tree: This document describes the physical database schema for the simplified e-commerce test dataset.",
-        "Relationship: TB_CATEGORY references TB_CATEGORY via foreign key PARENT_CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID."
+        "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Business concept 'Shipment' — This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Shipment: This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status."
       ],
       "covered_sources": [
         "Product",
@@ -719,7 +771,7 @@
       "grounded": true,
       "gate_decision": "proceed",
       "retrieval_quality_score": 0.3612773864465049,
-      "chunk_count": 10,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
@@ -736,30 +788,34 @@
         "SALES_ORDER_HDR",
         "PAYMENT"
       ],
-      "generated_answer": "The retrieved documentation defines a **Sales Order** and a **Payment** as related entities:\n\n* The relationship description says **“A Sales Order has one or more Payments”** and **“A Payment is for exactly one Sales Order”** [3].\n* The physical mapping shows the **PAYMENT** table (columns PAYMENT_ID, ORDER_ID, …) linked to **SALES_ORDER_HDR** through the foreign‑key **PAYMENT.ORDER_ID** [10].\n\nThese statements establish that, in the data model, each sales‑order record is expected to be associated with at least one payment record at some point, and that a payment record must reference an existing order.\n\nThe context does **not** contain any rule that specifies when the payment must be created relative to the moment the order is placed (e.g., “payment required before order creation”). It only describes the existence of the relationship, not its timing.\n\nTherefore, based solely on the provided information:\n\n* The schema requires a sales order to have one or more linked payments, but it does not state whether a payment must exist before the order is placed. Consequently, we cannot definitively answer whether a customer is allowed to place an order without a payment at the time of placement; the timing rule is not defined in the retrieved context.",
+      "generated_answer": "The schema defines a **Sales Order** and a **Payment** as linked entities:\n\n* “A Sales Order has one or more Payments” and “A Payment is for exactly one Sales Order” [4].\n* The **PAYMENT** table contains an **ORDER_ID** foreign key that points to **SALES_ORDER_HDR.ORDER_ID** [8].\n\nThese statements mean that, in the data model, every sales‑order record is expected to be associated with at least one payment record. However, the retrieved material does not include any rule that specifies **when** the payment must be created relative to the moment the order is placed. It only describes the existence of the relationship, not its timing.\n\n**Therefore:**  \n- The model requires a payment to be linked to a sales order at some point in its lifecycle.  \n- The context does not state whether a payment must exist before the order is created, so we cannot definitively say that a customer can place an order without a payment at the time of placement. The timing rule is not defined in the provided information.",
       "sources_retrieved": [
         "parent_chunk_data_dictionary.txt_4",
+        "Customer→CUSTOMER_MASTER",
         "parent_chunk_business_glossary.txt_1",
         "parent_chunk_business_glossary.txt_2",
-        "Customer Items Payment→PAYMENT",
         "parent_chunk_business_glossary.txt_0",
-        "Sales Order→SALES_ORDER_HDR",
         "parent_chunk_data_dictionary.txt_5",
-        "Customer Items Payment",
-        "Sales Order",
-        "parent_chunk_data_dictionary.txt_6"
+        "Payment→PAYMENT",
+        "PAYMENT→SALES_ORDER_HDR",
+        "Sales Order→SALES_ORDER_HDR",
+        "Order Line Item→ORDER_LINE_ITEM",
+        "SALES_ORDER_HDR→CUSTOMER_MASTER",
+        "Payment"
       ],
       "contexts_retrieved": [
         "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER_MASTER\n────────────────────────────────────────────────────────────\n**Description**: Master record for all registered platform customers. **Primary Key**: CUST_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------",
+        "Business concept 'Customer' — An Order is a formal transaction document created when a customer completes a purchase, encompassing details about the customer, items, payment, and delivery information. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
-        "Business concept 'Sales Order' — A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Customer Items Payment: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information.",
-        "Sales Order: A Sales Order is a formal document that records a customer\"s request to purchase products, including details such as customer information, order items, payment, and delivery status.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_"
+        "Business concept 'Payment' — This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Relationship: PAYMENT references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
+        "Business concept 'Sales Order' — This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps. is implemented by physical table SALES_ORDER_HDR (columns: ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, STATUS_CODE, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT).",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Relationship: SALES_ORDER_HDR references CUSTOMER_MASTER via foreign key CUST_ID -> CUSTOMER_MASTER.CUST_ID.",
+        "Payment: This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation."
       ],
       "covered_sources": [
         "SalesOrder",
@@ -770,9 +826,9 @@
       "gt_coverage": 1.0,
       "grounded": true,
       "gate_decision": "proceed_with_warning",
-      "retrieval_quality_score": 0.07185126674951936,
-      "chunk_count": 10,
-      "grader_rejection_count": 2,
+      "retrieval_quality_score": 0.1147647802656337,
+      "chunk_count": 20,
+      "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
     },
@@ -788,30 +844,34 @@
         "SALES_ORDER_HDR",
         "ORDER_LINE_ITEM"
       ],
-      "generated_answer": "The retrieved schema records monetary values in two tables that together cover an order and each of its line items:\n\n* **ORDER_LINE_ITEM** – stores the price information for every product line.  \n  * **UNIT_PRICE** (DECIMAL 10,2) – the price of a single unit at the moment the order is placed (historical, fixed).  \n  * **LINE_AMT** (DECIMAL 12,2) – the extended amount for the line, calculated as `QUANTITY × UNIT_PRICE`. Because each line row is linked to its parent order through **ORDER_ID**, the total monetary value of a sales order can be derived by summing **LINE_AMT** for all rows that share the same **ORDER_ID**.\n\n* **PAYMENT** – records the amount actually paid for the order.  \n  * **AMOUNT** (DECIMAL…) – the monetary amount paid for the associated sales order (linked by **ORDER_ID**).\n\nThese three columns (**UNIT_PRICE**, **LINE_AMT**, and **PAYMENT.AMOUNT**) are the only schema fields in the provided context that directly support monetary‑value tracking across orders and their line items. No additional order‑level subtotal or total columns are defined in the excerpts.",
+      "generated_answer": "The retrieved schema records monetary values in the following columns:\n\n* **ORDER_LINE_ITEM.UNIT_PRICE** – a DECIMAL(10,2) column that stores the price of a single unit at the moment the order is placed. This value is historic and never changes after the order is confirmed.\n\n* **ORDER_LINE_ITEM.LINE_AMT** – a DECIMAL(12,2) column that stores the extended amount for the line ( QUANTITY × UNIT_PRICE ). By joining ORDER_LINE_ITEM to its parent order through **ORDER_ID**, the total monetary value of a sales order can be derived by summing all **LINE_AMT** rows that share the same **ORDER_ID**.\n\n* **PAYMENT.AMOUNT** – a DECIMAL column (type shown in the PAYMENT table definition) that records the amount actually paid for the associated sales order (linked by **ORDER_ID**).\n\nThese three fields—**UNIT_PRICE**, **LINE_AMT**, and **PAYMENT.AMOUNT**—are the only schema elements in the provided context that directly support monetary‑value tracking for orders and their line items. No additional order‑level subtotal or total columns are defined in the excerpts.",
       "sources_retrieved": [
         "parent_chunk_business_glossary.txt_1",
         "parent_chunk_data_dictionary.txt_5",
-        "Line Item→ORDER_LINE_ITEM",
+        "Order Line Item→ORDER_LINE_ITEM",
         "ORDER_LINE_ITEM→TB_PRODUCT",
         "ORDER_LINE_ITEM→SALES_ORDER_HDR",
-        "Customer Items Payment→PAYMENT",
         "parent_chunk_business_glossary.txt_2",
         "parent_chunk_business_glossary.txt_0",
-        "Line Item",
-        "parent_chunk_data_dictionary.txt_6"
+        "Payment→PAYMENT",
+        "Shipment→SHIPMENT",
+        "Customer→CUSTOMER_MASTER",
+        "parent_chunk_data_dictionary.txt_6",
+        "Sales Order"
       ],
       "contexts_retrieved": [
         "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering. **Key Attributes**: - Unique line identifier - References exactly one Product - Quantity of units ordered - Unit price at time of order (historical, not current) - Extended amount = quantity × unit price **Business Rules**: - A Sales Order must contain at least one line item - Cannot be modified after order confirmation - Unit price is fixed and does not change",
         "**Foreign Keys**: - CUST_ID → CUSTOMER_MASTER(CUST_ID) **Business Concept Mapping**: SalesOrder ──────────────────────────────────────────────────────────── ORDER_LINE_ITEM ──────────────────────────────────────────────────────────── **Description**: Individual product lines within a sales order. **Primary Key**: LINE_ID (INT, auto-increment) **Column Details**: | Column | Type | Description | Nullable | |--------|------|-------------|----------| | LINE_ID | INT | Unique line identifier | NO | |",
-        "Business concept 'Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
+        "Business concept 'Order Line Item' — This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts. is implemented by physical table ORDER_LINE_ITEM (columns: LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT).",
         "Relationship: ORDER_LINE_ITEM references TB_PRODUCT via foreign key PRODUCT_ID -> TB_PRODUCT.PRODUCT_ID.",
         "Relationship: ORDER_LINE_ITEM references SALES_ORDER_HDR via foreign key ORDER_ID -> SALES_ORDER_HDR.ORDER_ID.",
-        "Business concept 'Customer Items Payment' — Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
         "Sales Order Relationships: - A Sales Order is placed by exactly one Customer - A Sales Order has one or more Order Line Items - A Sales Order has one or more Payments - A Sales Order has one or more Shipments Order Line Item Relationships: - An Order Line Item is part of exactly one Sales Order - An Order Line Item references exactly one Product Payment Relationships: - A Payment is for exactly one Sales Order Shipment Relationships: - A Shipment is for exactly one Sales Order - A Shipment comes",
         "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n────────────────────────────────────────────────────────────\nCUSTOMER\n────────────────────────────────────────────────────────────\n**Definition**: An individual or entity registered on the platform who has made at least one purchase. **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and",
-        "Line Item: This table stores detailed information about each product line item within customer orders, including quantities, prices, and total amounts.",
-        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_"
+        "Business concept 'Payment' — This table records details of payments made for sales orders, including payment methods, amounts, statuses, and timestamps of confirmation and creation. is implemented by physical table PAYMENT (columns: PAYMENT_ID, ORDER_ID, PAYMENT_METHOD, AMOUNT, STATUS_CODE, CONFIRMED_AT, CREATED_AT).",
+        "Business concept 'Shipment' — This table stores information about product shipments, including shipment identifiers, associated order references, warehouse locations, shipment dates, tracking details, and current shipment status. is implemented by physical table SHIPMENT (columns: SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, SHIPPED_AT, TRACKING_NUMBER, STATUS_CODE).",
+        "Business concept 'Customer' — An Order is a formal transaction document created when a customer completes a purchase, encompassing details about the customer, items, payment, and delivery information. is implemented by physical table CUSTOMER_MASTER (columns: CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE).",
+        "CUSTOMER_MASTER.CUST_ID └── SALES_ORDER_HDR.CUST_ID TB_PRODUCT.PRODUCT_ID └── ORDER_LINE_ITEM.PRODUCT_ID TB_CATEGORY.CATEGORY_ID ├── TB_PRODUCT.CATEGORY_ID └── TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) SALES_ORDER_HDR.ORDER_ID ├── ORDER_LINE_ITEM.ORDER_ID ├── PAYMENT.ORDER_ID └── SHIPMENT.ORDER_ID BUSINESS CONCEPT TO TABLE MAPPING ═════════════════════════════════════════════════════════════ Customer → CUSTOMER_MASTER Product → TB_PRODUCT SalesOrder → SALES_ORDER_HDR OrderLineItem → ORDER_",
+        "Sales Order: This table stores header information for sales orders, including order details, status, payment confirmation, and delivery timestamps."
       ],
       "covered_sources": [
         "SalesOrder",
@@ -823,14 +883,14 @@
       "grounded": true,
       "gate_decision": "proceed_with_warning",
       "retrieval_quality_score": 0.0861695546428533,
-      "chunk_count": 10,
+      "chunk_count": 20,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"
     }
   ],
   "pipeline_health": {
-    "total_grader_rejections": 2,
+    "total_grader_rejections": 0,
     "grader_inconsistencies": 0,
     "gate_abstentions": 0,
     "questions_with_low_retrieval_score": 5,
