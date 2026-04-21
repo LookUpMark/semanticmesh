@@ -1,0 +1,155 @@
+study_id,dataset_id,run_tag,query_id,question,query_type,difficulty,grounded,gt_coverage,retrieval_quality_score,retrieval_chunk_count,retrieval_gate_decision,context_sufficiency,grader_rejection_count,grader_consistency_valid,expected_answer,generated_answer
+AB-14,01_basics_ecommerce,run-20260421_184402,Q001,What information is stored for each customer?,direct_mapping,easy,True,1.0,0.586108336688044,12,proceed,adequate,0,True,"Each customer has a unique ID, full name, email address, geographic region code, creation date, and active status. The email must be unique across all customers.","The customer record is stored in the **CUSTOMER_MASTER** table. For each customer the following columns are captured:
+
+* **CUST_ID** – the unique integer identifier for the customer.  
+* **FULL_NAME** – the customer’s full name.  
+* **EMAIL** – the customer’s email address (used for login).  
+* **REGION_CODE** – a code indicating the geographic region (used for tax calculation).  
+* **CREATED_AT** – the date‑time when the customer account was created.  
+* **IS_ACTIVE** – a Boolean flag indicating whether the customer is currently allowed to place orders.
+
+These fields together provide the core information stored for every customer in the schema【2†L1-L2】【4†L1-L2】."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q002,How are products categorized on the platform?,direct_mapping,easy,True,1.0,0.1589561227143433,12,proceed_with_warning,adequate,0,True,"Products belong to categories which can have a parent category, forming a hierarchical tree structure. Each product references exactly one category through its CATEGORY_ID.","Products are linked to a **hierarchical category structure**:
+
+* The physical table **TB_PRODUCT** stores each product (PRODUCT_ID, SKU, PRODUCT_NAME, … ) and includes a **CATEGORY_ID** column.  
+* **CATEGORY_ID** is a foreign‑key that points to **TB_CATEGORY.CATEGORY_ID** (see the relationship “TB_PRODUCT references TB_CATEGORY via foreign key CATEGORY_ID -> TB_CATEGORY.CATEGORY_ID”).  
+* The **TB_CATEGORY** table is organized as a tree: each category record has a **PARENT_CATEGORY_ID** that references another row in the same TB_CATEGORY table (self‑reference), allowing categories to be nested under parent categories.
+
+Thus, a product’s category is defined by the value in TB_PRODUCT.CATEGORY_ID, and that category is part of the hierarchical “Product Category Tree” defined in TB_CATEGORY. This structure enables the platform to classify products into categories and sub‑categories for browsing, tax calculation, and reporting."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q003,What is the relationship between customers and sales orders?,direct_mapping,easy,True,1.0,0.9846936454393053,12,proceed,adequate,0,True,"Each sales order is placed by exactly one customer, referenced through the CUST_ID foreign key. A customer can place zero or more orders over time.","The model defines a **one‑to‑many** relationship:
+
+* **Business rule (Chunk [1])** – “A Sales Order is placed by exactly one Customer.”
+* **Physical schema (Chunk [6] & [9])** – The table **SALES_ORDER_HDR** contains the column **CUST_ID**, which is a foreign key that references **CUSTOMER_MASTER.CUST_ID**. This links each sales‑order record to a single customer record.
+* Consequently, a single **Customer** (record in **CUSTOMER_MASTER**) can be associated with zero or many **Sales Orders** (records in **SALES_ORDER_HDR**), while each **Sales Order** is linked to exactly one **Customer**."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q004,What does an order line item contain?,direct_mapping,easy,True,1.0,0.9763105287006256,12,proceed,adequate,0,True,"An order line item specifies a product, the quantity ordered, the unit price at time of purchase, and the calculated extended amount. Each line item belongs to exactly one sales order.","An **order line item** records the details of a single product that belongs to a sales order. According to the business concept and its physical table definition, each line item stores:
+
+* a unique line identifier ( LINE_ID ),  
+* the identifier of the parent sales order ( ORDER_ID ),  
+* the identifier of the product being purchased ( PRODUCT_ID ),  
+* the number of units ordered ( QUANTITY ),  
+* the unit price that was in effect at the moment the order was placed ( UNIT_PRICE ), and  
+* the extended amount for the line, calculated as quantity × unit price (LINE_AMT) 【1†L1-L1】【6†L1-L9】.  
+
+These fields together capture the product, its quantity, the price locked in at order time, and the resulting line total, and they are linked to the related Product and Sales Order records via foreign‑key relationships【3†L1-L1】【4†L1-L1】."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q005,How are payments linked to orders?,direct_mapping,easy,True,1.0,0.9231777955470523,12,proceed,adequate,0,True,"Each payment is associated with exactly one sales order through the ORDER_ID foreign key. Payments track the payment method, amount, status, and confirmation timestamp.","Payments are linked to orders through a foreign‑key relationship.  
+The **PAYMENT** table contains an **ORDER_ID** column that references the **ORDER_ID** primary key in the **SALES_ORDER_HDR** (Sales Order) table — `PAYMENT.ORDER_ID → SALES_ORDER_HDR.ORDER_ID`【1†L1-L1】.  
+
+Because of this reference:
+
+* each payment record is associated with exactly one sales order (the “Payment is for exactly one Sales Order” rule)【4†L7-L9】, and  
+* a sales order can have one or more related payment records (“A Sales Order has one or more Payments”)【4†L2-L4】.  
+
+Thus the link is the ORDER_ID foreign key from PAYMENT to SALES_ORDER_HDR, establishing a many‑to‑one relationship from payments to their corresponding order."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q006,What statuses can an order have?,attribute_lookup,easy,True,1.0,0.21883627123404897,12,proceed,adequate,0,True,"Orders can have one of five statuses defined via CHECK constraint on SALES_ORDER_HDR.STATUS_CODE: PENDING (initial state when order is created), CONFIRMED (payment has been received), SHIPPED (dispatched to customer), DELIVERED (received by customer), or CANCELLED. The business glossary describes the same lifecycle under Sales Order.","The schema defines an **order status** column, but it does not list the possible values.
+
+- The **Sales Order** concept is implemented by the physical table **SALES_ORDER_HDR**. Its columns include **STATUS_CODE**, which records the current status of the order (the table also contains ORDER_ID, CUST_ID, ORDER_DATE, TOTAL_AMT, PAYMENT_CONFIRMED_AT, DELIVERED_AT, CREATED_AT)【4】.  
+
+- The retrieved business glossary and data‑dictionary excerpts describe the relationships of a sales order (to a customer, line items, payments, and shipments) but they do not enumerate the specific status codes that can appear in **STATUS_CODE**【6】.
+
+**Therefore:** an order can have any status represented by the values stored in the **STATUS_CODE** column of **SALES_ORDER_HDR**, but the concrete list of status values (e.g., “Pending”, “Confirmed”, “Shipped”, etc.) is not provided in the available context."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q007,Which table stores the product SKU information?,direct_mapping,easy,True,1.0,0.5931969400258474,12,proceed,adequate,0,True,"The TB_PRODUCT table stores the SKU (Stock Keeping Unit) code for each product, along with product name, category, price, and active status.","The product SKU is stored in the **TB_PRODUCT** table (its columns include PRODUCT_ID, SKU, PRODUCT_NAME, CATEGORY_ID, UNIT_PRICE, IS_ACTIVE)【1】."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q008,How can I find all orders placed by a specific customer?,multi_hop,medium,True,1.0,0.14282864911055923,12,proceed_with_warning,adequate,0,True,"Query the SALES_ORDER_HDR table filtering by CUST_ID. Each order has a foreign key reference to CUSTOMER_MASTER.CUST_ID, so joining these tables on CUST_ID will show all orders for a customer along with their details.","To retrieve every sales order that belongs to a given customer you follow the foreign‑key link between **CUSTOMER_MASTER** and **SALES_ORDER_HDR**.
+
+**Schema relationship**
+
+* **CUSTOMER_MASTER** – primary key **CUST_ID** (INT)  
+* **SALES_ORDER_HDR** – column **CUST_ID** (BIGINT) that is a foreign key to **CUSTOMER_MASTER.CUST_ID** (see chunk 6).
+
+Because a sales order is placed by exactly one customer (chunk 2) and a customer can have many orders, the query is a simple filter (or an inner join if you also need customer attributes).
+
+**Typical query pattern**
+
+```sql
+SELECT
+    so.ORDER_ID,
+    so.ORDER_DATE,
+    so.TOTAL_AMT,
+    so.STATUS_CODE,
+    so.PAYMENT_CONFIRMED_AT,
+    so.DELIVERED_AT,
+    so.CREATED_AT
+FROM
+    SALES_ORDER_HDR AS so
+JOIN
+    CUSTOMER_MASTER AS cm
+    ON so.CUST_ID = cm.CUST_ID
+WHERE
+    cm.CUST_ID = <desired_customer_id>          -- or cm.EMAIL = 'customer@example.com'
+;
+```
+
+* The **WHERE** clause identifies the specific customer (by `CUST_ID` or any other unique attribute such as `EMAIL` from `CUSTOMER_MASTER`).  
+* The result set returns all rows from **SALES_ORDER_HDR** that reference that customer, i.e., every order the customer has placed.
+
+If you only need the order identifiers, you can omit the join and filter directly on `SALES_ORDER_HDR.CUST_ID`:
+
+```sql
+SELECT ORDER_ID, ORDER_DATE, TOTAL_AMT
+FROM SALES_ORDER_HDR
+WHERE CUST_ID = <desired_customer_id>;
+```
+
+Thus, using the foreign‑key relationship `SALES_ORDER_HDR.CUST_ID → CUSTOMER_MASTER.CUST_ID` you can locate all orders for any specific customer."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q009,How does the schema link orders to their individual product line items?,multi_hop,medium,True,1.0,0.7433543601649092,12,proceed,adequate,0,True,"The ORDER_LINE_ITEM table is the junction entity between SALES_ORDER_HDR and TB_PRODUCT. It contains ORDER_ID (foreign key to SALES_ORDER_HDR) and PRODUCT_ID (foreign key to TB_PRODUCT), allowing a single order to have multiple line items. Each line item also records QUANTITY (constrained to be > 0), UNIT_PRICE, and LINE_AMT.","The link is made through a **foreign‑key relationship** between the order header table and the line‑item table:
+
+* **Table SALES_ORDER_HDR** (the physical table for the *Sales Order* concept) holds the order’s primary key **ORDER_ID**.  
+* **Table ORDER_LINE_ITEM** (the physical table for the *Order Line Item* concept) contains a column **ORDER_ID** that is defined as a foreign key pointing to **SALES_ORDER_HDR.ORDER_ID**【3†source】.
+
+Because **ORDER_LINE_ITEM.ORDER_ID → SALES_ORDER_HDR.ORDER_ID**, each row in **ORDER_LINE_ITEM** (identified by its own primary key **LINE_ID**) is tied to exactly one sales order, while a single sales order can have many line‑item rows – a one‑to‑many relationship. The business rules reinforce this: a Sales Order must contain at least one line item, and a line item cannot belong to more than one order【2†source】【7†source】. This foreign‑key link is the schema mechanism that connects orders to their individual product line"
+AB-14,01_basics_ecommerce,run-20260421_184402,Q010,Show me the order hierarchy from customer to line items.,multi_hop,medium,True,0.75,0.3719347138931014,12,proceed,adequate,2,True,"The hierarchy is: Customer (CUSTOMER_MASTER) → SalesOrder (SALES_ORDER_HDR) → OrderLineItem (ORDER_LINE_ITEM) → Product (TB_PRODUCT). Each customer has orders, each order has line items, and each line item references a product.","The order hierarchy is built from three physical tables that are each mapped to a business concept:
+
+1. **Customer** – stored in **CUSTOMER_MASTER**.  
+   *Primary key*: **CUST_ID** (INT, auto‑increment) 【9】.  
+
+2. **Sales Order** – stored in **SALES_ORDER_HDR** (the table that implements the *SalesOrder* concept).  
+   *Link to the customer*: **CUST_ID** in SALES_ORDER_HDR is a foreign key that references **CUSTOMER_MASTER(CUST_ID)** 【10】.  
+   *Order identifier*: the column **ORDER_ID** in SALES_ORDER_HDR is used as the order’s unique identifier and is the target of foreign‑key references from the line‑item, payment and shipment tables 【10】.
+
+3. **Order Line Item** – stored in **ORDER_LINE_ITEM**.  
+   *Primary key*: **LINE_ID** (INT, auto‑increment) 【2】.  
+   *Link to the sales order*: **ORDER_ID** in ORDER_LINE_ITEM is a foreign key that references **SALES_ORDER_HDR(ORDER_ID)** 【2】【7】.  
+   *Link to the product*: **PRODUCT_ID** in ORDER_LINE_ITEM references **TB_PRODUCT(PRODUCT_ID)** 【6】.
+
+**Join path that represents the hierarchy**
+
+```
+CUSTOMER_MASTER.CUST_ID = SALES_ORDER_HDR.CUST_ID
+JOIN
+SALES_ORDER_HDR.ORDER_ID = ORDER_LINE_ITEM.ORDER_ID
+```
+
+Thus, a customer (CUSTOMER_MASTER) places a sales order (SALES_ORDER_HDR) identified by ORDER_ID, and each sales order is composed of one or more order line items (ORDER_LINE_ITEM) that reference the same ORDER_ID. This chain reflects the “customer → sales order → line items” hierarchy described in the relationship summary 【1】."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q011,How does the schema model the confirmation state of a payment and its relationship to the order?,multi_hop,medium,True,1.0,0.11279540628289322,12,proceed_with_warning,adequate,0,True,"Payment confirmation is tracked through two schema fields: PAYMENT.CONFIRMED_AT (nullable DATETIME — NULL means not yet confirmed) and PAYMENT.STATUS_CODE constrained to PENDING, CONFIRMED, FAILED, or REFUNDED. At the order level, SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT is a nullable datetime that mirrors this event. The order STATUS_CODE defaults to PENDING and its lifecycle is defined by the CHECK constraint: PENDING, CONFIRMED, SHIPPED, DELIVERED, or CANCELLED.","The schema records a payment’s confirmation information in the **PAYMENT** table. This table contains two columns that together model the confirmation state:
+
+* **STATUS_CODE** – a code that indicates the current status of the payment (e.g., pending, confirmed, failed).  
+* **CONFIRMED_AT** – a timestamp that is populated when the payment is confirmed.
+
+Each payment is linked to the order it settles through the **ORDER_ID** column in PAYMENT. A foreign‑key constraint ( `PAYMENT.ORDER_ID → SALES_ORDER_HDR.ORDER_ID` ) enforces that a payment must reference exactly one row in **SALES_ORDER_HDR** (the sales‑order header).  
+
+Consequently, a sales order can have one or more related payment rows (as described in the “Sales Order Relationships” chunk), and the payment’s confirmation status is captured by its STATUS_CODE and CONFIRMED_AT fields while the ORDER_ID field ties the payment to the specific order."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q012,How are shipments related to orders and warehouses?,multi_hop,medium,True,1.0,0.7401743620390163,12,proceed,adequate,0,True,Each shipment is for exactly one sales order (ORDER_ID in SHIPMENT references SALES_ORDER_HDR). The shipment also specifies the source warehouse code and includes tracking information and delivery status.,"Shipments are stored in the **SHIPMENT** table (columns SHIPMENT_ID, ORDER_ID, WAREHOUSE_CODE, …).
+
+* **Order relationship** – The column **ORDER_ID** in SHIPMENT is a foreign key that points to **SALES_ORDER_HDR.ORDER_ID** (see the FK relationship in chunk [9] and the mapping in chunk [12]). Thus each shipment is linked to exactly one sales order; a shipment “is for” a single order.
+
+* **Warehouse relationship** – The column **WAREHOUSE_CODE** in SHIPMENT identifies the warehouse from which the shipment originates. Chunk [2] states “A Shipment comes from exactly one Warehouse,” and the same column appears in the SHIPMENT table definition in chunk [1]. Therefore each shipment is associated with one warehouse (the source of the goods)."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q013,Can a product belong to multiple categories?,negative,easy,True,1.0,0.3612773864465049,12,proceed,adequate,0,True,"No, each product belongs to exactly one category. The TB_PRODUCT table has a CATEGORY_ID foreign key referencing TB_CATEGORY, which stores a single category value per product.","Based on the schema described in the retrieved context, a product can be linked to **only one** category.
+
+- The **TB_PRODUCT** table contains a single foreign‑key column **CATEGORY_ID** that references **TB_CATEGORY.CATEGORY_ID** ([2]).  
+- This one‑to‑many relationship (many products → one category) means each product row can store just one category identifier.  
+- No junction table or additional foreign‑key columns are defined that would allow a product to be associated with multiple categories.
+
+Therefore, within this e‑commerce data model a product cannot belong to multiple categories; it is assigned to a single category (which may itself be part of a hierarchical category tree)."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q014,Is it possible for a customer to place an order without payment?,negative,medium,True,1.0,0.07185126674951936,12,proceed_with_warning,adequate,2,True,"Yes, an order can exist without payment. SALES_ORDER_HDR has STATUS_CODE defaulting to PENDING and PAYMENT_CONFIRMED_AT is nullable (NULL when no payment yet). The PAYMENT table links via ORDER_ID foreign key but nothing prevents an order from existing without a payment row. However, the business glossary states that an order cannot be shipped until payment is confirmed, so orders are created first and require payment confirmation before fulfillment.","The data model for the e‑commerce test dataset links a **Sales Order** to **Payment** records:
+
+* “A Sales Order has one or more Payments” [3]  
+* “A Payment is for exactly one Sales Order” [3]  
+
+These statements describe the **relationship** between the two entities, but the retrieved documentation does not say anything about **when** the payment must be created relative to the order‑placement process. In other words, the schema requires that a sales order be associated with at least one payment at some point, but it does not explicitly state that a payment record must exist **before** the order can be placed.
+
+Therefore, based solely on the provided context we can note that every sales order is expected to have at least one payment, but we cannot definitively conclude whether a customer is **allowed** or **disallowed** to place an order before a payment record is created. The timing of the payment relative to order creation is not specified in the retrieved material."
+AB-14,01_basics_ecommerce,run-20260421_184402,Q015,What schema fields support monetary value tracking across orders and their line items?,multi_hop,easy,True,1.0,0.0861695546428533,12,proceed_with_warning,adequate,0,True,"SALES_ORDER_HDR stores the header-level order amount in TOTAL_AMT (DECIMAL(12,2) NOT NULL). ORDER_LINE_ITEM provides the per-product breakdown: UNIT_PRICE (price locked at time of order, not updated with future changes), QUANTITY (constrained to > 0), and LINE_AMT (= QUANTITY × UNIT_PRICE). Both tables are linked via the ORDER_ID foreign key, enabling reconciliation between header totals and line-level amounts.","The schema captures monetary values for an order through the **ORDER_LINE_ITEM** table:
+
+* **UNIT_PRICE** (DECIMAL 10,2) – the price of a single unit at the moment the order is placed; this value never changes after the order is confirmed.  
+* **LINE_AMT** (DECIMAL 12,2) – the extended amount for the line, calculated as `QUANTITY × UNIT_PRICE`.
+
+These two columns store the price information for each product line. The **ORDER_ID** column in the same table links each line‑item record to its parent **SALES_ORDER_HDR** record, where the order‑level total can be derived by summing the **LINE_AMT** values of all associated line items. No other monetary‑tracking fields are defined in the provided schema excerpts."
