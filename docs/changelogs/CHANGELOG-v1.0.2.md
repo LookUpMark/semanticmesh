@@ -1,4 +1,4 @@
-# Changelog — v1.1.0
+# Changelog — v1.0.2
 
 **Date:** 2026-04-17
 
