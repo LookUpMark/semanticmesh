@@ -24,7 +24,10 @@ import os
 
 CONTAINER_NAME = "neo4j-thesis"
 IMAGE = "neo4j:5"
-NEO4J_AUTH = f"{os.getenv('NEO4J_USER', 'neo4j')}/{os.getenv('NEO4J_PASSWORD', 'thesis_password')}"  # format: "user/password"
+_password = os.getenv("NEO4J_PASSWORD")
+if not _password:
+    raise SystemExit("NEO4J_PASSWORD env var is required. Set it before running this script.")
+NEO4J_AUTH = f"{os.getenv('NEO4J_USER', 'neo4j')}/{_password}"
 HTTP_PORT = 7474
 BOLT_PORT = 7687
 VOLUME_NAME = "neo4j-thesis-data"

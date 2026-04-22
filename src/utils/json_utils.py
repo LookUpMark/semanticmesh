@@ -73,11 +73,15 @@ def clean_json(raw: str) -> str:
         '{"key": "value"}'
     """
     cleaned = _FENCE_RE.sub("", raw).strip()
-    # Extract JSON object from within larger text
-    start = cleaned.find("{")
-    end = cleaned.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        return cleaned[start : end + 1]
+    # Extract JSON object or array from within larger text
+    obj_start = cleaned.find("{")
+    obj_end = cleaned.rfind("}")
+    if obj_start != -1 and obj_end != -1 and obj_end > obj_start:
+        return cleaned[obj_start : obj_end + 1]
+    arr_start = cleaned.find("[")
+    arr_end = cleaned.rfind("]")
+    if arr_start != -1 and arr_end != -1 and arr_end > arr_start:
+        return cleaned[arr_start : arr_end + 1]
     return cleaned
 
 

@@ -645,7 +645,7 @@ def run_builder(
     try:
         invalidate_bm25_cache()
     except Exception:  # noqa: BLE001
-        pass
+        logger.warning("BM25 cache invalidation failed", exc_info=True)
 
     # Populate trace with final state data
     if trace_enabled and builder_trace:

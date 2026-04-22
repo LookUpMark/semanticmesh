@@ -146,7 +146,7 @@ Business Docs (PDF/TXT)         DDL Schemas (SQL)
 ```bash
 # 1. Clone the repository
 git clone <repo-url>
-cd semanticmesh
+cd thesis
 
 # 2. Create and activate a virtual environment
 python -m venv .venv
@@ -164,10 +164,10 @@ cp .env.example .env
 ### Start Neo4j
 
 ```bash
-docker run -d --name neo4j-semanticmesh \
+docker run -d --name neo4j-thesis \
   -p 7474:7474 -p 7687:7687 \
   -e NEO4J_AUTH=neo4j/your_password_here \
-  -v neo4j-semanticmesh-data:/data \
+  -v neo4j-thesis-data:/data \
   neo4j:5
 ```
 
@@ -227,7 +227,7 @@ The factory auto-detects the provider from the model name:
 | Pattern | Provider |
 |---------|----------|
 | `provider/model` (contains `/`) | OpenRouter |
-| `gpt-*`, `o1-*`, `o3-*`, `o4-*`, `gpt-5*` | OpenAI direct |
+| `gpt-*`, `o1-*`, `o2-*`, `o3-*`, `o4-*`, `text-*`, `gpt-5*` | OpenAI direct |
 | `claude-*` | Anthropic direct |
 | `ollama/*` | Ollama |
 | `google/*`, `vertex_ai/*` | Google Gemini/Vertex AI |

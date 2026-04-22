@@ -230,13 +230,13 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
     """Rerank retrieved chunks using cross-encoder with quality filtering.
 
     Applies pre-filtering to remove noise and prioritize structural evidence,
-    then optionally applies cross-encoder reranking (bge-reranker-large).
+    then optionally applies cross-encoder reranking (bge-reranker-v2-m3).
     """
     with NodeTimer() as timer:
         settings = get_settings()
         query: str = state["user_query"]
         chunks: list[RetrievedChunk] = state.get("retrieved_chunks") or []
-        max_pool = max(settings.reranker_top_k * 4, settings.reranker_top_k)
+        max_pool = settings.reranker_top_k * 4
         pool = _pre_filter_rerank_pool(chunks, query=query, max_candidates=max_pool)
 
         if not settings.enable_reranker:

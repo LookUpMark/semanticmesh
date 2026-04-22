@@ -125,6 +125,9 @@ class AppConfig:
     trace_truncate_length: int = 500
     trace_max_items: int = 100
 
+    # ── Checkpointing ────────────────────────────────────────────────────────────
+    sqlite_checkpoint_path: str = ":memory:"
+
 
 # Default configuration instance
 DEFAULT_CONFIG = AppConfig()

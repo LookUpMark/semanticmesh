@@ -118,7 +118,10 @@ class Settings(BaseSettings):
     trace_max_items: int = DEFAULT_CONFIG.trace_max_items
 
     # ── Checkpointing ───────────────────────────────────────────────────────────
-    sqlite_checkpoint_path: str = ":memory:"
+    sqlite_checkpoint_path: str = DEFAULT_CONFIG.sqlite_checkpoint_path
+
+    # ── Azure OpenAI ────────────────────────────────────────────────────────────
+    azure_openai_api_version: str = DEFAULT_CONFIG.azure_openai_api_version
 
 
 @lru_cache(maxsize=1)

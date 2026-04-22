@@ -387,7 +387,7 @@ def post_query(req: QueryRequest) -> QueryResponse:
             session_id=req.session_id,
         )
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
 
 
 @router.post(
@@ -512,10 +512,15 @@ def get_demo_jobs() -> list[dict]:
     summary="Wipe the Knowledge Graph",
     description=(
         "Deletes ALL nodes and relationships from Neo4j (``MATCH (n) DETACH DELETE n``). "
-        "This action is irreversible. Returns the number of nodes removed."
+        "This action is irreversible. Requires ``?confirm=true`` query parameter."
     ),
 )
-def delete_graph() -> dict[str, int]:
+def delete_graph(confirm: bool = False) -> dict[str, int]:
+    if not confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="Destructive operation — add ?confirm=true to proceed.",
+        )
     try:
         from src.graph.neo4j_client import Neo4jClient
 
@@ -728,7 +733,7 @@ def save_kg_snapshot(req: SaveSnapshotRequest) -> KGSnapshotMeta:
         snap = save_snapshot(name=req.name, description=req.description)
         return KGSnapshotMeta(**snap)
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
 
 
 @router.post(
@@ -751,7 +756,7 @@ def load_kg_snapshot(snapshot_id: str) -> KGSnapshotMeta:
     except FileNotFoundError as exc:
         raise HTTPException(status_code=410, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
 
 
 @router.post(
@@ -781,7 +786,7 @@ def delete_kg_snapshot(snapshot_id: str) -> dict[str, str]:
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
 
 
 @router.patch(
@@ -798,7 +803,7 @@ def rename_kg_snapshot(snapshot_id: str, req: RenameSnapshotRequest) -> KGSnapsh
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
 
 
 # ── Conversation endpoints ────────────────────────────────────────────────────
@@ -851,7 +856,7 @@ def save_conversation(req: SaveConversationRequest) -> ConversationMeta:
         )
         return ConversationMeta(**conv)
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
 
 
 @router.patch(
@@ -868,7 +873,7 @@ def rename_conversation(conversation_id: str, req: RenameConversationRequest) ->
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
 
 
 @router.delete(
@@ -884,5 +889,5 @@ def delete_conversation(conversation_id: str) -> dict[str, str]:
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
 

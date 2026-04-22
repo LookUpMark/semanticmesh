@@ -298,14 +298,18 @@ class TestMergeResults:
         names = [c.node_id for c in merged]
         assert names.count("Customer") == 1
 
-    def test_keeps_highest_score(self) -> None:
+    def test_rrf_score_summed_across_sources(self) -> None:
+        # Customer appears in both vector (rank 0) and bm25 (rank 0)
         v = [_chunk("Customer", 0.9, "vector")]
         b = [_chunk("Customer", 0.7, "bm25")]
         merged = merge_results(v, b, [])
-        assert merged[0].score == pytest.approx(0.9)
+        # RRF score = 1/(60+0) + 1/(60+0) = 2/60 ≈ 0.03333
+        assert len(merged) == 1
+        assert merged[0].score == pytest.approx(2 / 60)
 
-    def test_sorted_descending(self) -> None:
-        v = [_chunk("B", 0.6), _chunk("A", 0.9)]
+    def test_sorted_descending_by_rrf(self) -> None:
+        # A at rank 0 → 1/60 ≈ 0.01667; B at rank 1 → 1/61 ≈ 0.01639
+        v = [_chunk("A", 0.9), _chunk("B", 0.6)]
         merged = merge_results(v, [], [])
         assert merged[0].node_id == "A"
 

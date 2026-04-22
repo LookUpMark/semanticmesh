@@ -96,13 +96,15 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
         if not decision.approved:
             critique = decision.critique or "Mapping rejected by critic."
             if attempts >= settings.max_reflection_attempts:
+                concept = best_proposal.mapped_concept if best_proposal else validated.table_name
+                conf = best_proposal.confidence if best_proposal else 0.0
                 logger.warning(
                     "Critic rejected mapping for '%s' after %d attempts — accepting best proposal "
                     "(concept='%s', confidence=%.2f).",
                     validated.table_name,
                     attempts,
-                    best_proposal.mapped_concept,
-                    best_proposal.confidence or 0.0,
+                    concept,
+                    conf,
                 )
                 log_node_event(logger, "validate_mapping", f"table={validated.table_name}", "best proposal accepted", timer.elapsed_ms)
                 return {

@@ -74,8 +74,11 @@ def require_api_key(
         global _auth_warning_logged
         if not _auth_warning_logged:
             _logger.warning(
-                "API_KEY not set — authentication disabled. "
-                "All endpoints (including destructive ones) are unprotected."
+                "╔══════════════════════════════════════════════════════════╗\n"
+                "║  API_KEY not set — authentication DISABLED.             ║\n"
+                "║  All endpoints (including DELETE /graph) are UNPROTECTED.║\n"
+                "║  Set API_KEY env var before deploying to production.     ║\n"
+                "╚══════════════════════════════════════════════════════════╝"
             )
             _auth_warning_logged = True
         return None

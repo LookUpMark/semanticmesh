@@ -6,6 +6,7 @@ All operations are thread-safe via a Lock.
 
 from __future__ import annotations
 
+import copy
 import time
 import uuid
 from threading import Lock
@@ -66,7 +67,7 @@ def set_failed(job_id: str, error: str) -> None:
 
 def get_job(job_id: str) -> dict[str, Any] | None:
     with _lock:
-        return dict(_store[job_id]) if job_id in _store else None
+        return copy.deepcopy(_store[job_id]) if job_id in _store else None
 
 
 def list_jobs() -> list[dict[str, Any]]:

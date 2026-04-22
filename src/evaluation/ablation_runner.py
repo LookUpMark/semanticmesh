@@ -14,6 +14,7 @@ See docs/draft/ABLATION.md for the full experiment plan.
 from __future__ import annotations
 
 import os
+import threading
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -372,27 +373,32 @@ ABLATION_MATRIX: dict[str, dict[str, Any]] = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+_settings_lock = threading.Lock()
+
+
 @contextmanager
 def _settings_override(
     env_overrides: dict[str, str],
 ) -> Generator[None, None, None]:
     """Context manager that temporarily overrides env vars and clears the
-    Settings lru_cache before and after the block.
+    Settings lru_cache before and after the block.  Thread-safe via a
+    global lock to prevent concurrent env-var races from the API layer.
     """
-    saved: dict[str, str | None] = {k: os.environ.get(k) for k in env_overrides}
-    try:
-        os.environ.update(env_overrides)
-        get_settings.cache_clear()
-        reconfigure_from_env()
-        yield
-    finally:
-        for k, v in saved.items():
-            if v is None:
-                os.environ.pop(k, None)
-            else:
-                os.environ[k] = v
-        get_settings.cache_clear()
-        reconfigure_from_env()
+    with _settings_lock:
+        saved: dict[str, str | None] = {k: os.environ.get(k) for k in env_overrides}
+        try:
+            os.environ.update(env_overrides)
+            get_settings.cache_clear()
+            reconfigure_from_env()
+            yield
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+            get_settings.cache_clear()
+            reconfigure_from_env()
 
 
 # ─────────────────────────────────────────────────────────────────────────────

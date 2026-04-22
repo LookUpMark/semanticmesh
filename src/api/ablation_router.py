@@ -87,6 +87,10 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
         dataset_path = Path(req.dataset).resolve()
         if not str(dataset_path).startswith(str(_ROOT.resolve())):
             raise ValueError(f"Dataset path '{req.dataset}' is outside the allowed directory.")
+        _ALLOWED_DATASET_DIRS = {"tests/fixtures", "data"}
+        rel = dataset_path.relative_to(_ROOT.resolve())
+        if not any(str(rel).startswith(d) for d in _ALLOWED_DATASET_DIRS):
+            raise ValueError(f"Dataset must reside under tests/fixtures/ or data/. Got: {rel}")
         if not dataset_path.exists():
             raise FileNotFoundError(f"Dataset not found: {dataset_path}")
 

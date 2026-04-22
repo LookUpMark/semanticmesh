@@ -28,6 +28,7 @@ class BuilderState(TypedDict, total=False):
     use_lazy_extraction: bool
     documents: list[Document]
     chunks: list[Chunk]
+    parent_chunks: list[Chunk]
     triplets: list[Triplet]
     entities: list[Entity]
     tables: list[TableSchema]
@@ -39,6 +40,7 @@ class BuilderState(TypedDict, total=False):
     best_proposal: MappingProposal | None
     reflection_prompt: str | None
     reflection_attempts: int
+    validation_error: str | None
     current_cypher: str | None
     healing_attempts: int
     cypher_failed: bool

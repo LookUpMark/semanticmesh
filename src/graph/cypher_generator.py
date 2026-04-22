@@ -64,14 +64,19 @@ def _fix_apostrophes_in_cypher(cypher: str) -> str:
                         break
                 else:
                     j += 1
-            if has_double_apostrophe:
+            if has_double_apostrophe and j < n:
                 content = cypher[i + 1 : j - 1]
                 content = content.replace("''", "'")
                 content = content.replace('"', '\\"')
                 result.append(f'"{content}"')
-            else:
+                i = j
+            elif j < n:
                 result.append(cypher[i:j])
-            i = j
+                i = j
+            else:
+                # Unmatched quote — append rest of string unchanged
+                result.append(cypher[i:])
+                break
         else:
             result.append(cypher[i])
             i += 1

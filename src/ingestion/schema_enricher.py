@@ -124,8 +124,9 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
                     enriched_name=entry.get("enriched", entry.get("original", "")),
                 )
             )
-        except (KeyError, TypeError, ValidationError):
-            continue  # skip malformed column entries silently
+        except (KeyError, TypeError, ValidationError) as exc:
+            logger.debug("Skipping malformed column entry: %s", exc)
+            continue
 
     enriched = EnrichedTableSchema.from_table_schema(table)
     enriched.enriched_table_name = data.get("enriched_table_name")

@@ -442,27 +442,56 @@ def merge_results(
     vector: list[RetrievedChunk],
     bm25: list[RetrievedChunk],
     graph: list[RetrievedChunk],
+    rrf_k: int = 60,
 ) -> list[RetrievedChunk]:
-    """Deduplicate and merge retrieval results from all three strategies.
+    """Merge retrieval results via Reciprocal Rank Fusion (RRF).
 
-    Deduplication by ``node_id`` — keep the highest score per node across
-    all sources. Graph traversal results are included even at lower scores.
+    Each source list contributes ``1 / (rrf_k + rank)`` per unique
+    ``node_id``, where *rank* is the 0-based position in that source
+    list.  Scores are summed across sources so that a document appearing
+    high in multiple lists receives the highest combined RRF score.
 
     Args:
-        vector: Results from ``vector_search``.
-        bm25: Results from ``bm25_search``.
-        graph: Results from ``graph_traversal``.
+        vector: Results from ``vector_search`` (pre-sorted by score desc).
+        bm25: Results from ``bm25_search`` (pre-sorted by score desc).
+        graph: Results from ``graph_traversal`` (pre-sorted by score desc).
+        rrf_k: RRF constant (default 60). Higher k dampens rank differences.
 
     Returns:
-        Deduplicated list sorted by score descending.
+        Deduplicated list sorted by RRF score descending.
     """
-    best: dict[str, RetrievedChunk] = {}
-    for chunk in vector + bm25 + graph:
-        if not chunk.node_id.strip() or not chunk.text.strip():
-            continue
+    rrf_scores: dict[str, float] = {}
+    representative: dict[str, RetrievedChunk] = {}
+
+    for rank, chunk in enumerate(vector):
         nid = chunk.node_id
-        if nid not in best or chunk.score > best[nid].score:
-            best[nid] = chunk
-    merged = sorted(best.values(), key=lambda c: c.score, reverse=True)
-    logger.debug("merge_results: %d unique nodes.", len(merged))
+        if not nid.strip() or not chunk.text.strip():
+            continue
+        rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
+        if nid not in representative:
+            representative[nid] = chunk
+
+    for rank, chunk in enumerate(bm25):
+        nid = chunk.node_id
+        if not nid.strip() or not chunk.text.strip():
+            continue
+        rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
+        if nid not in representative:
+            representative[nid] = chunk
+
+    for rank, chunk in enumerate(graph):
+        nid = chunk.node_id
+        if not nid.strip() or not chunk.text.strip():
+            continue
+        rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
+        if nid not in representative:
+            representative[nid] = chunk
+
+    merged = [
+        representative[nid].model_copy(update={"score": score})
+        for nid, score in rrf_scores.items()
+        if nid in representative
+    ]
+    merged.sort(key=lambda c: c.score, reverse=True)
+    logger.debug("merge_results (RRF k=%d): %d unique nodes.", rrf_k, len(merged))
     return merged

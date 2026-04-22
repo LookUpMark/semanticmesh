@@ -81,8 +81,7 @@ Run, monitor, and compare ablation experiments:
     openapi_url="/openapi.json",
 )
 
-# Allow all origins in development (tighten for production if needed)
-_cors_origins = os.environ.get("CORS_ORIGINS", "*").split(",")
+_cors_origins = os.environ.get("CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
@@ -90,6 +89,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+if _cors_origins == ["*"]:
+    _logger.warning("CORS_ORIGINS='*' — all origins allowed. Set CORS_ORIGINS for production.")
 
 # All /api/v1/* routes require an API key (no-op when API_KEY env var is not set)
 app.include_router(demo_router, prefix="/api/v1", dependencies=[Depends(require_api_key)])
@@ -171,20 +172,23 @@ def set_config(req: ServerConfigRequest) -> dict[str, object]:
     """Apply runtime env-var overrides to the running server (no restart needed).
 
     Overrides are applied in-process via os.environ and the settings cache is
-    reloaded.  Sensitive keys are accepted but never echoed back.
+    reloaded.  Only keys that correspond to known ``Settings`` fields are accepted.
     """
-    blocked_keys = frozenset({
-        "API_KEY", "PATH", "PYTHONPATH", "LD_LIBRARY_PATH",
-        "NEO4J_PASSWORD", "OPENROUTER_API_KEY", "OPENAI_API_KEY",
-        "ANTHROPIC_API_KEY", "GOOGLE_API_KEY",
-    })
+    from src.config.settings import Settings
+
+    allowed_keys = frozenset(Settings.model_fields)
+    allowed_env_aliases = frozenset(f.upper() for f in allowed_keys)
     applied: list[str] = []
     blocked: list[str] = []
     for key, value in req.overrides.items():
-        if key in blocked_keys:
+        if key not in allowed_keys and key not in allowed_env_aliases:
             blocked.append(key)
             continue
-        if value:  # ignore empty strings (skip clearing)
+        # Never allow runtime override of secrets
+        if key in _SENSITIVE_KEYS or key.upper() in {k.upper() for k in _SENSITIVE_KEYS}:
+            blocked.append(key)
+            continue
+        if value:
             os.environ[key] = value
             applied.append(key)
 
@@ -194,7 +198,6 @@ def set_config(req: ServerConfigRequest) -> dict[str, object]:
         reload_settings()
         reconfigure_from_env()
 
-    # Return applied keys but mask sensitive values
     return {
         "applied": applied,
         "blocked": blocked,
