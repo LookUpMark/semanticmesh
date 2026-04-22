@@ -129,8 +129,10 @@ def _evaluate_bundles(
     sep = "|-----|:---:|:---:|:---:|:---:|:---:|\n"
     rows = ""
     for m in bundle_metas:
+        gt_cov = m['avg_gt_coverage']
+        gt_str = f"**{gt_cov:.3f}**" if gt_cov is not None else "N/A"
         rows += (
-            f"| {m['label']} | {m['grounded_rate']:.3f} | **{m['avg_gt_coverage']:.3f}** "
+            f"| {m['label']} | {m['grounded_rate']:.3f} | {gt_str} "
             f"| {m['avg_top_score']:.3f} | {m['triplets']} | {m['entities']} |\n"
         )
 
