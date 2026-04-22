@@ -135,15 +135,19 @@ class TestRunAblation:
             )
             return dict(_ZERO_METRICS)
 
-        with patch(_PATCH_RAGAS, side_effect=capture_metrics):
-            run_ablation("AB-06")
+        # AB-20 sets ENABLE_HALLUCINATION_GRADER=false
+        with patch(_PATCH_RAGAS, side_effect=capture_metrics), \
+             patch(_PATCH_BUILDER, return_value=_MOCK_BUILDER_STATE):
+            run_ablation("AB-20")
 
         assert captured["ENABLE_HALLUCINATION_GRADER"] == "false"
 
     def test_env_restored_after_run(self) -> None:
+        # AB-20 sets ENABLE_HALLUCINATION_GRADER=false; verify it is restored after
         before = os.environ.get("ENABLE_HALLUCINATION_GRADER", "NOT_SET")
-        with patch(_PATCH_RAGAS, side_effect=lambda *a, **kw: dict(_ZERO_METRICS)):
-            run_ablation("AB-06")
+        with patch(_PATCH_RAGAS, side_effect=lambda *a, **kw: dict(_ZERO_METRICS)), \
+             patch(_PATCH_BUILDER, return_value=_MOCK_BUILDER_STATE):
+            run_ablation("AB-20")
         after = os.environ.get("ENABLE_HALLUCINATION_GRADER", "NOT_SET")
         assert before == after
 
