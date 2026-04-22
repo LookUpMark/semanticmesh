@@ -14,11 +14,21 @@ from src.evaluation.ablation_runner import (
 )
 
 _PATCH_RAGAS = "src.evaluation.ablation_runner.run_ragas_evaluation"
+_PATCH_BUILDER = "src.graph.builder_graph.run_builder"
 _ZERO_METRICS = {
     "faithfulness": 0.0,
     "answer_relevancy": 0.0,
     "context_precision": 0.0,
     "context_recall": 0.0,
+}
+# Immutable snapshot of the RAGAS-only keys (before any mutation by run_ablation)
+_RAGAS_KEYS = tuple(_ZERO_METRICS)
+_MOCK_BUILDER_STATE = {
+    "triplets": [f"t{i}" for i in range(5)],
+    "entities": [f"e{i}" for i in range(3)],
+    "tables": ["tbl1", "tbl2"],
+    "completed_tables": ["tbl1", "tbl2"],
+    "cypher_failed": False,
 }
 
 
@@ -100,19 +110,30 @@ class TestRunAblation:
             run_ablation("AB-99")
 
     def test_returns_dict_of_floats(self) -> None:
-        with patch(_PATCH_RAGAS, return_value=_ZERO_METRICS):
+        # Use side_effect (not return_value) so run_ablation gets a fresh copy
+        # each call — prevents _ZERO_METRICS from being mutated in-place.
+        with patch(_PATCH_RAGAS, side_effect=lambda *a, **kw: dict(_ZERO_METRICS)):
             result = run_ablation("AB-06")
         assert isinstance(result, dict)
-        assert all(isinstance(v, float) for v in result.values())
+        # RAGAS metrics are floats; builder metrics are int/bool — all numeric
+        assert all(isinstance(v, (int, float)) for v in result.values())
+        # Core RAGAS keys must be present as floats (use pre-mutation snapshot)
+        for key in _RAGAS_KEYS:
+            assert key in result
+            assert isinstance(result[key], float), f"{key!r} should be float"
+        # Pipeline metrics must be present
+        assert "triplets" in result
+        assert "cypher_failed" in result
 
     def test_env_override_applied_during_run(self) -> None:
         captured: dict[str, str] = {}
 
-        def capture_metrics(dataset_path=None):
+        # run_ragas_evaluation is called as (dataset_path, run_ragas=bool)
+        def capture_metrics(dataset_path=None, run_ragas=True, **kwargs):
             captured["ENABLE_HALLUCINATION_GRADER"] = os.environ.get(
                 "ENABLE_HALLUCINATION_GRADER", "NOT_SET"
             )
-            return _ZERO_METRICS
+            return dict(_ZERO_METRICS)
 
         with patch(_PATCH_RAGAS, side_effect=capture_metrics):
             run_ablation("AB-06")
@@ -121,13 +142,18 @@ class TestRunAblation:
 
     def test_env_restored_after_run(self) -> None:
         before = os.environ.get("ENABLE_HALLUCINATION_GRADER", "NOT_SET")
-        with patch(_PATCH_RAGAS, return_value=_ZERO_METRICS):
+        with patch(_PATCH_RAGAS, side_effect=lambda *a, **kw: dict(_ZERO_METRICS)):
             run_ablation("AB-06")
         after = os.environ.get("ENABLE_HALLUCINATION_GRADER", "NOT_SET")
         assert before == after
 
     def test_all_experiments_run_without_error(self) -> None:
-        with patch(_PATCH_RAGAS, return_value=_ZERO_METRICS):
+        # Mock both RAGAS and the builder so the test validates ablation_runner
+        # routing logic for all 21 experiments without real LLM/Neo4j calls.
+        with patch(_PATCH_RAGAS, side_effect=lambda *a, **kw: dict(_ZERO_METRICS)), \
+             patch(_PATCH_BUILDER, return_value=_MOCK_BUILDER_STATE):
             for exp_id in ABLATION_MATRIX:
                 result = run_ablation(exp_id)
                 assert isinstance(result, dict), f"{exp_id} returned non-dict"
+                for key in _RAGAS_KEYS:
+                    assert key in result, f"{exp_id}: missing RAGAS key {key!r}"
