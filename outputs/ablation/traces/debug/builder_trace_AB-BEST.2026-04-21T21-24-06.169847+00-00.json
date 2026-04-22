@@ -1,0 +1,841 @@
+{
+  "study_id": "AB-BEST",
+  "timestamp": "2026-04-21T21:24:06.169847+00:00",
+  "trace_id": "AB-BEST.2026-04-21T21-24-06.169847+00-00",
+  "config": {
+    "llm_model_reasoning": "openai/gpt-oss-120b",
+    "llm_model_extraction": "openai/gpt-4.1-nano",
+    "chunk_size": 128,
+    "chunk_overlap": 16,
+    "er_similarity_threshold": 0.65,
+    "er_blocking_top_k": 5,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+  ],
+  "ddl_files": [
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Enterprise ERP Business Glossary\n\n## Sales & Customer Management\n\n### Customer\n**Definition**: An individual or organization that purchases goods or services from the company. Customers can be classified as retail (B2C) or business (B2B) with different credit terms and pricing structures.\n\n**Attributes**: customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, status\n\n**Related Concepts**: Sales Order, Invoice, Payment, Customer Address, Credit Score\n... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "537"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Inventory & Warehousing\n\n### Warehouse\n**Definition**: A physical location where inventory is stored. Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory.\n\n**Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status\n\n**Related Concepts**: Inventory Transaction, Bin Location, Warehouse Zone, Stock Transfer\n\n### Inventory Transaction\n**Definition**: A record of any movem... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "724"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Human Resources\n\n### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id\n\n**Related Concepts**: Department, Position, Employee Compensation, Time Entry, Performance Review\n\n### Department\n**Definition**: An... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "647"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## Quality & Compliance\n\n### Quality Inspection\n**Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping).\n\n**Attributes**: inspection_id, inspection_type, reference_type, reference_id, product_id, inspection_date, inspector_id, result, defects_found, status\n\n**Related Concepts**: Product, Supplier, Purchase Receipt, Work Order, Quality Standar... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "668"
+    },
+    {
+      "chunk_id": 4,
+      "text": "## Reporting & Analytics\n\n### Key Performance Indicator (KPI)\n**Definition**: A quantifiable metric used to evaluate performance against strategic objectives. KPIs can be financial, operational, customer-facing, or employee-related.\n\n**Common KPIs**: Order fulfillment rate, Inventory turnover, Supplier on-time delivery, Customer satisfaction, Employee productivity, Production yield\n\n### Financial Statement\n**Definition**: Formal reports summarizing financial performance and position. Primary sta... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "494"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 5,
+    "total_tokens": 3070,
+    "avg_tokens": 614.0
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Customers",
+      "predicate": "can be classified as",
+      "object": "retail (B2C) or business (B2B)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales orders",
+      "predicate": "can be in",
+      "object": "draft, confirmed, shipped, or cancelled status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "indicates",
+      "object": "types, quantities, and agreed prices for products or services",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "can be",
+      "object": "finished goods, raw materials, or services",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Suppliers",
+      "predicate": "are evaluated on",
+      "object": "quality, delivery performance, and cost",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase orders",
+      "predicate": "go through",
+      "object": "approval workflows",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "has",
+      "object": "a credit rating and payment terms",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Contracts",
+      "predicate": "can be",
+      "object": "fixed-price, cost-plus, or rate-based",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "is",
+      "object": "a physical location where inventory is stored",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouses",
+      "predicate": "can be",
+      "object": "company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "is",
+      "object": "a record of any movement or change in inventory quantity",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "includes",
+      "object": "receipts, issues, transfers, adjustments, and cycle counts",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "is",
+      "object": "a specific storage location within a warehouse",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin locations",
+      "predicate": "are organized into",
+      "object": "zones, aisles, shelves, and positions for efficient picking and put-away",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "is",
+      "object": "the movement of inventory between warehouses or locations",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock transfers",
+      "predicate": "can be",
+      "object": "planned (inter-warehouse transfers) or ad-hoc (emergency replenishment)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "is",
+      "object": "a chronological record of all financial transactions for a specific account type",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "is",
+      "object": "a recording of a financial transaction in double-entry bookkeeping",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "is",
+      "object": "Money owed to the company by customers for goods or services delivered on credit",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "is",
+      "object": "Money owed by the company to suppliers for goods or services received on credit",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "is",
+      "object": "A financial plan that allocates resources to departments, projects, or accounts for a specific perio... [TRUNCATED]",
+      "confidence": 1.0
+    }
+  ],
+  "extraction_summary": {
+    "total_triplets": 21,
+    "avg_confidence": 1.0,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "General Ledger Account",
+      "definition": "A general ledger account is a record of all financial transactions for a specific account type within a company's accounting system.",
+      "synonyms": [
+        "Accounts Payable",
+        "Accounts Receivable"
+      ],
+      "provenance_text": "Definition: A chronological record of all financial transactions for a specific account type. | Definition: Money owed by the company to suppliers for goods or services received on credit. | Definition: Money owed to the company by customers for goods or services delivered on credit.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bin Location",
+      "definition": "A bin location is a designated storage position within a warehouse, organized into zones, aisles, shelves, and positions for inventory management.",
+      "synonyms": [
+        "Bin locations"
+      ],
+      "provenance_text": "Definition: A specific storage location within a warehouse. | Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Company Owned Third",
+      "definition": "Inventory Management is the business process of overseeing and controlling stock levels, locations, movements, and related transactions to ensure efficient storage, retrieval, and tracking of inventory assets.",
+      "synonyms": [
+        "Contracts",
+        "Customers",
+        "Inventory Transaction",
+        "Product",
+        "Purchase orders",
+        "Sales Order",
+        "Sales orders",
+        "Stock Transfer",
+        "Stock transfers",
+        "Supplier",
+        "Suppliers",
+        "Warehouse",
+        "Warehouses",
+        "a chronological record of all financial transactions for a specific account type",
+        "a physical location where inventory is stored",
+        "a record of any movement or change in inventory quantity",
+        "a recording of a financial transaction in double-entry bookkeeping",
+        "a specific storage location within a warehouse",
+        "planned (inter-warehouse transfers) or ad-hoc (emergency replenishment)",
+        "the movement of inventory between warehouses or locations"
+      ],
+      "provenance_text": "Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory. | Contracts can be be fixed-price, cost-plus, or rate-based. | Customers can be classified as retail (B2C) or business (B2B) with different credit terms and pricing structures. | Definition: A record of any movement or change in inventory quantity. | Transactions include receipts, issues, transfers, adjustments, and cycle counts. | Products can be finished goods, raw materials, or services with different pricing and inventory tracking requirements. | Purchase orders go through approval workflows before being sent to suppliers. | A commercial document issued by a seller to a buyer indicating types, quantities, and agreed prices for products or services. | Sales orders can be in draft, confirmed, shipped, or cancelled status. | Definition: The movement of inventory between warehouses or locations. | Stock transfers can be planned (inter-warehouse transfers) or ad-hoc (emer",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Money Owed To",
+      "definition": "Accounts payable are amounts the company owes to suppliers for goods or services received on credit; accounts receivable are amounts owed to the company by customers for goods or services delivered on credit.",
+      "synonyms": [
+        "Money owed by the company to suppliers for goods or services received on credit"
+      ],
+      "provenance_text": "Definition: Money owed to the company by customers for goods or services delivered on credit. | Definition: Money owed by the company to suppliers for goods or services received on credit.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Receipts Issues Transfers",
+      "definition": "Order status states such as draft, confirmed, shipped, or cancelled, indicating the current processing stage of a sales order.",
+      "synonyms": [
+        "draft, confirmed, shipped, or cancelled status"
+      ],
+      "provenance_text": "Transactions include receipts, issues, transfers, adjustments, and cycle counts. | Sales orders can be in draft, confirmed, shipped, or cancelled status.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Types Quantities And",
+      "definition": "An overarching concept encompassing the specifications, pricing, and contractual details of products and services in a business context.",
+      "synonyms": [
+        "finished goods, raw materials, or services",
+        "fixed-price, cost-plus, or rate-based"
+      ],
+      "provenance_text": "A commercial document issued by a seller to a buyer indicating types, quantities, and agreed prices for products or services. | Products can be finished goods, raw materials, or services with different pricing and inventory tracking requirements. | Contracts can be be fixed-price, cost-plus, or rate-based.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Financial Plan That",
+      "definition": "Definition: A financial plan that allocates resources to departments, projects, or accounts for a specific period.",
+      "synonyms": [],
+      "provenance_text": "Definition: A financial plan that allocates resources to departments, projects, or accounts for a specific period.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Budget",
+      "definition": "Definition: A financial plan that allocates resources to departments, projects, or accounts for a specific period.",
+      "synonyms": [],
+      "provenance_text": "Definition: A financial plan that allocates resources to departments, projects, or accounts for a specific period.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Journal Entry",
+      "definition": "Definition: A recording of a financial transaction in double-entry bookkeeping.",
+      "synonyms": [],
+      "provenance_text": "Definition: A recording of a financial transaction in double-entry bookkeeping.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Credit Rating And",
+      "definition": "Each supplier has a credit rating and payment terms.",
+      "synonyms": [],
+      "provenance_text": "Each supplier has a credit rating and payment terms.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Approval Workflows",
+      "definition": "Purchase orders go through approval workflows before being sent to suppliers.",
+      "synonyms": [],
+      "provenance_text": "Purchase orders go through approval workflows before being sent to suppliers.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Quality Delivery Performance",
+      "definition": "Suppliers are evaluated on quality, delivery performance, and cost.",
+      "synonyms": [],
+      "provenance_text": "Suppliers are evaluated on quality, delivery performance, and cost.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "B2C",
+      "definition": "Customers can be classified as retail (B2C) or business (B2B) with different credit terms and pricing structures.",
+      "synonyms": [],
+      "provenance_text": "Customers can be classified as retail (B2C) or business (B2B) with different credit terms and pricing structures.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Zones Aisles Shelves",
+      "definition": "Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away.",
+      "synonyms": [],
+      "provenance_text": "Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 14
+  },
+  "tables_parsed": [
+    {
+      "name": "CUSTOMER_TYPE",
+      "columns": 5
+    },
+    {
+      "name": "CUSTOMER",
+      "columns": 16
+    },
+    {
+      "name": "CUSTOMER_ADDRESS",
+      "columns": 11
+    },
+    {
+      "name": "CUSTOMER_CONTACT",
+      "columns": 8
+    },
+    {
+      "name": "PRODUCT_CATEGORY",
+      "columns": 6
+    },
+    {
+      "name": "PRODUCT",
+      "columns": 17
+    },
+    {
+      "name": "PRICE_LIST",
+      "columns": 6
+    },
+    {
+      "name": "PRODUCT_PRICE",
+      "columns": 7
+    },
+    {
+      "name": "SALES_ORDER",
+      "columns": 20
+    },
+    {
+      "name": "SALES_ORDER_LINE",
+      "columns": 14
+    },
+    {
+      "name": "INVOICE",
+      "columns": 15
+    },
+    {
+      "name": "INVOICE_LINE",
+      "columns": 10
+    },
+    {
+      "name": "PAYMENT",
+      "columns": 12
+    },
+    {
+      "name": "SUPPLIER",
+      "columns": 16
+    },
+    {
+      "name": "SUPPLIER_ADDRESS",
+      "columns": 11
+    },
+    {
+      "name": "SUPPLIER_CONTACT",
+      "columns": 8
+    },
+    {
+      "name": "SUPPLIER_CONTRACT",
+      "columns": 12
+    },
+    {
+      "name": "PURCHASE_ORDER",
+      "columns": 21
+    },
+    {
+      "name": "PURCHASE_ORDER_LINE",
+      "columns": 14
+    },
+    {
+      "name": "PURCHASE_RECEIPT",
+      "columns": 11
+    },
+    {
+      "name": "PURCHASE_RECEIPT_LINE",
+      "columns": 12
+    },
+    {
+      "name": "WAREHOUSE",
+      "columns": 12
+    },
+    {
+      "name": "WAREHOUSE_ZONE",
+      "columns": 6
+    },
+    {
+      "name": "BIN_LOCATION",
+      "columns": 11
+    },
+    {
+      "name": "INVENTORY_ON_HAND",
+      "columns": 11
+    },
+    {
+      "name": "INVENTORY_TRANSACTION",
+      "columns": 14
+    },
+    {
+      "name": "STOCK_TRANSFER",
+      "columns": 10
+    },
+    {
+      "name": "STOCK_TRANSFER_LINE",
+      "columns": 9
+    },
+    {
+      "name": "PRODUCTION_LINE",
+      "columns": 9
+    },
+    {
+      "name": "BILL_OF_MATERIALS",
+      "columns": 9
+    },
+    {
+      "name": "WORK_ORDER",
+      "columns": 16
+    },
+    {
+      "name": "WORK_ORDER_MATERIAL",
+      "columns": 8
+    },
+    {
+      "name": "PRODUCTION_SCHEDULE",
+      "columns": 10
+    },
+    {
+      "name": "QUALITY_STANDARD",
+      "columns": 8
+    },
+    {
+      "name": "QUALITY_INSPECTION",
+      "columns": 17
+    },
+    {
+      "name": "NON_CONFORMANCE_REPORT",
+      "columns": 15
+    },
+    {
+      "name": "ACCOUNT_TYPE",
+      "columns": 4
+    },
+    {
+      "name": "GENERAL_LEDGER_ACCOUNT",
+      "columns": 9
+    },
+    {
+      "name": "ACCOUNTING_PERIOD",
+      "columns": 8
+    },
+    {
+      "name": "JOURNAL_ENTRY",
+      "columns": 16
+    },
+    {
+      "name": "JOURNAL_ENTRY_LINE",
+      "columns": 10
+    },
+    {
+      "name": "ACCOUNTS_RECEIVABLE",
+      "columns": 13
+    },
+    {
+      "name": "ACCOUNTS_PAYABLE",
+      "columns": 14
+    },
+    {
+      "name": "BUDGET",
+      "columns": 13
+    },
+    {
+      "name": "DEPARTMENT",
+      "columns": 9
+    },
+    {
+      "name": "POSITION",
+      "columns": 12
+    },
+    {
+      "name": "EMPLOYEE",
+      "columns": 17
+    },
+    {
+      "name": "TIME_ENTRY",
+      "columns": 12
+    },
+    {
+      "name": "CARRIER",
+      "columns": 10
+    },
+    {
+      "name": "SHIPPING_ROUTE",
+      "columns": 12
+    },
+    {
+      "name": "SHIPMENT",
+      "columns": 17
+    },
+    {
+      "name": "SHIPMENT_LINE",
+      "columns": 9
+    },
+    {
+      "name": "PROJECT",
+      "columns": 14
+    },
+    {
+      "name": "PROJECT_TASK",
+      "columns": 15
+    },
+    {
+      "name": "APP_USER",
+      "columns": 15
+    },
+    {
+      "name": "ROLE",
+      "columns": 7
+    },
+    {
+      "name": "USER_ROLE",
+      "columns": 7
+    },
+    {
+      "name": "AUDIT_LOG",
+      "columns": 11
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customer Type",
+      "description": "This table stores information about different customer types, including their identifiers, names, descriptions, whether credit checks are required, and default payment terms."
+    },
+    {
+      "name": "Customer",
+      "description": "This table stores detailed information about customers, including their identification, contact details, financial status, and industry classification, to support customer relationship management and ... [TRUNCATED]"
+    },
+    {
+      "name": "Customer Address",
+      "description": "This table stores address information associated with customers, including address details and default address status."
+    },
+    {
+      "name": "Customer Contact",
+      "description": "This table stores contact information for customers, including primary contacts and their roles within the organization."
+    },
+    {
+      "name": "Product Category",
+      "description": "This table stores information about product categories, including their identifiers, names, hierarchical relationships, descriptions, and creation timestamps."
+    },
+    {
+      "name": "Product",
+      "description": "This table stores detailed information about products, including identifiers, categories, pricing, physical attributes, storage conditions, and status for inventory management."
+    },
+    {
+      "name": "Price List",
+      "description": "This table stores information about different price lists used for product pricing, including their validity periods and current status."
+    },
+    {
+      "name": "Product Price",
+      "description": "This table stores pricing information for products, including applicable discounts and effective dates for different price lists."
+    },
+    {
+      "name": "Sales Order",
+      "description": "This table stores detailed information about customer sales orders, including order identifiers, dates, shipping, payment details, and status updates."
+    },
+    {
+      "name": "Sales Order Line",
+      "description": "This table stores detailed information about individual items within sales orders, including quantities, pricing, discounts, taxes, and shipping dates."
+    },
+    {
+      "name": "Invoice",
+      "description": "This table stores detailed information about invoices issued to customers, including amounts, dates, and payment status."
+    },
+    {
+      "name": "Invoice Line",
+      "description": "This table stores detailed information about each line item on an invoice, including product details, quantities, pricing, and tax information."
+    },
+    {
+      "name": "Payment",
+      "description": "This table stores records of payments made by customers, including details such as payment amount, method, date, and status."
+    },
+    {
+      "name": "Supplier",
+      "description": "This table stores information about suppliers, including their identification details, contact information, performance ratings, and contractual terms."
+    },
+    {
+      "name": "Supplier Address",
+      "description": "This table stores address information for suppliers, including location details and address type, to facilitate supplier contact and logistics management."
+    },
+    {
+      "name": "Supplier Contact",
+      "description": "This table stores contact information for suppliers, including primary contacts and their roles within the supplier organization."
+    },
+    {
+      "name": "Supplier Contract",
+      "description": "This table stores information about contracts with suppliers, including contract details, durations, payment terms, and status."
+    },
+    {
+      "name": "Purchase Order",
+      "description": "This table stores information about purchase orders, including details about suppliers, order dates, delivery requirements, financial amounts, and approval status."
+    },
+    {
+      "name": "Purchase Order Line",
+      "description": "This table stores detailed information about each line item within purchase orders, including product details, quantities, pricing, discounts, taxes, and delivery status."
+    },
+    {
+      "name": "Purchase Receipt",
+      "description": "This table stores records of purchase receipts, including details about the receipt identification, associated purchase order, supplier, warehouse, receipt date, receiver, shipping carrier, tracking i... [TRUNCATED]"
+    },
+    {
+      "name": "Purchase Receipt Line",
+      "description": "This table records detailed information about each line item in purchase receipts, including product details, quantities, costs, and inspection requirements."
+    },
+    {
+      "name": "Warehouse",
+      "description": "This table stores information about warehouse facilities, including their locations, capacities, types, and management details."
+    },
+    {
+      "name": "Warehouse Zone",
+      "description": "This table stores information about different zones within warehouses, including their identifiers, names, types, and temperature control status."
+    },
+    {
+      "name": "Bin Location",
+      "description": "This table stores information about the physical locations of storage bins within warehouses, including their identifiers, positions, capacities, and current status."
+    },
+    {
+      "name": "Inventory On Hand",
+      "description": "This table stores data about the current inventory levels of products stored in various warehouses, including quantities, costs, and expiration information."
+    },
+    {
+      "name": "Inventory Transaction",
+      "description": "This table records detailed information about inventory transactions, including movement types, quantities, costs, and references for tracking inventory changes across warehouses and bins."
+    },
+    {
+      "name": "Stock Transfer",
+      "description": "This table records details of stock transfer transactions between warehouses, including transfer identifiers, dates, shipment methods, and statuses."
+    },
+    {
+      "name": "Stock Transfer Line",
+      "description": "This table records individual line items for stock transfer transactions, including product details, source and destination bins, quantities involved, and transfer status."
+    },
+    {
+      "name": "Production Line",
+      "description": "This table stores information about the various production lines used in manufacturing, including their identifiers, types, locations, capacities, setup times, and operational status."
+    },
+    {
+      "name": "Bill of Materials",
+      "description": "This table stores the detailed composition of products, including their component parts, quantities, measurement units, and effective date ranges for manufacturing or assembly purposes."
+    },
+    {
+      "name": "Work Order",
+      "description": "This table stores information about manufacturing work orders, including their identifiers, associated products, production lines, warehouse locations, quantities, key dates, status, priority, and cre... [TRUNCATED]"
+    },
+    {
+      "name": "Work Order Material",
+      "description": "This table stores information about the materials required and issued for specific work orders in the manufacturing or maintenance process."
+    },
+    {
+      "name": "Production Schedule",
+      "description": "This table stores the scheduling information for production activities, including planned and actual start and end times, status, and priority of each production schedule entry."
+    },
+    {
+      "name": "Quality Standard",
+      "description": "This table stores information about quality standards, including their identifiers, codes, names, types, versions, issue dates, statuses, and descriptions."
+    },
+    {
+      "name": "Quality Inspection",
+      "description": "This table stores records of quality inspections performed on products, including inspection details, results, and related reference information."
+    },
+    {
+      "name": "Non-Conformance Report",
+      "description": "This table stores records of non-conformance reports, detailing issues identified in products or processes, their causes, corrective and preventive actions, and resolution status."
+    },
+    {
+      "name": "Account Type",
+      "description": "This table stores information about different types of accounts, including their identifiers, codes, names, and balance classifications."
+    },
+    {
+      "name": "General Ledger Account",
+      "description": "This table stores information about general ledger accounts used in financial accounting, including account identifiers, types, hierarchy, currency, and status."
+    },
+    {
+      "name": "Accounting Period",
+      "description": "This table stores information about accounting periods, including their identifiers, names, date ranges, fiscal years, and closure status."
+    },
+    {
+      "name": "Journal Entry",
+      "description": "This table records financial journal entries, including details about the entry, associated documents, amounts, and approval status for accounting purposes."
+    },
+    {
+      "name": "Journal Entry Line",
+      "description": "This table stores detailed line items for journal entries, including account details, debit and credit amounts, and references for financial transactions."
+    },
+    {
+      "name": "Accounts Receivable",
+      "description": "This table stores information related to outstanding customer receivables, including invoice details, amounts owed, and collection activities."
+    },
+    {
+      "name": "Accounts Payable",
+      "description": "This table stores records of amounts payable to suppliers, including invoice details, payment terms, and status updates for managing accounts payable processes."
+    },
+    {
+      "name": "Budget",
+      "description": "This table stores financial budget data, including planned and actual amounts, for different departments and accounts within a fiscal year."
+    },
+    {
+      "name": "Department",
+      "description": "This table stores information about organizational departments, including their identifiers, hierarchical relationships, management, budgeting, location, status, and creation timestamp."
+    },
+    {
+      "name": "Position",
+      "description": "This table stores information about various job positions within the organization, including their codes, titles, salary ranges, and related departmental data."
+    },
+    {
+      "name": "Employee",
+      "description": "This table stores detailed information about employees, including personal details, employment status, compensation, and organizational relationships."
+    },
+    {
+      "name": "Time Entry",
+      "description": "This table records individual time entries logged by employees for various projects, including details about work hours, approval status, and timestamps for submission and approval."
+    },
+    {
+      "name": "Carrier",
+      "description": "This table stores information about different carriers, including their contact details, service levels, and operational status."
+    },
+    {
+      "name": "Shipping Route",
+      "description": "This table stores information about shipping routes, including origin and destination locations, distances, estimated travel times, carriers, service levels, costs, and status updates."
+    },
+    {
+      "name": "Shipment",
+      "description": "This table stores information about shipments, including their identifiers, types, origin and destination locations, associated references, dates, carrier details, route information, tracking, costs, ... [TRUNCATED]"
+    },
+    {
+      "name": "Shipment Line Items",
+      "description": "This table stores detailed information about each line item within a shipment, including product details, quantities, and weights."
+    },
+    {
+      "name": "Project",
+      "description": "This table stores information about various projects, including their identifiers, types, associated customers and managers, timelines, budgets, costs, status, priority, and descriptions."
+    },
+    {
+      "name": "Project Task",
+      "description": "This table stores information about tasks associated with projects, including scheduling, status, and priority details."
+    },
+    {
+      "name": "Application User",
+      "description": "This table stores information about users of the application, including their login details, account status, and associated roles such as employee, customer, or supplier."
+    },
+    {
+      "name": "Role",
+      "description": "This table stores information about different roles within the organization, including their identifiers, codes, names, types, descriptions, statuses, and creation timestamps."
+    },
+    {
+      "name": "User Role",
+      "description": "This table stores information about the roles assigned to users, including assignment dates, expiration, and current status."
+    },
+    {
+      "name": "Audit Log",
+      "description": "This table records detailed logs of user actions and system events for auditing and tracking purposes."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 58,
+    "tables_enriched": 58,
+    "total_columns": 671
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 144,
+    "total_relationships": 104,
+    "completed_tables": 58
+  },
+  "stage_timings": {}
+}

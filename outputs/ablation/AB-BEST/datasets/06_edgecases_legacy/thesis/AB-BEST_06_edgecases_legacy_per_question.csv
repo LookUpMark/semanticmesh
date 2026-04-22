@@ -1,0 +1,212 @@
+study_id,dataset_id,run_tag,query_id,question,query_type,difficulty,grounded,gt_coverage,retrieval_quality_score,retrieval_chunk_count,retrieval_gate_decision,context_sufficiency,grader_rejection_count,grader_consistency_valid,expected_answer,generated_answer
+AB-BEST,06_edgecases_legacy,run-20260421_221024,1,What is the purpose of the tblCustomer table?,unknown,unknown,True,,0.9921232932834126,20,proceed,adequate,0,True,"The tblCustomer table stores customer master data including customer codes, names, email addresses, and region information. It uses Hungarian notation with the str prefix for string fields and contains both legacy fields (strCustID, strFullName) and new migration compatibility fields (cust_id, customer_name).","The **tblCustomer** table is the legacy customer‑master table. Its purpose is to hold the master data for every customer that comes from the legacy CRM system – the core identifier, name and other key attributes that are needed to process orders. In the data dictionary it is described as:
+
+*“Purpose: Stores customer master data from the legacy CRM system.”*【1†L1-L2】
+
+Because orders reference this table (e.g., the sales‑order header view joins to it), the migration plan also lists **tblCustomer** as the first‑priority object that must be migrated before any order data can be loaded【5†L1-L3】."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,2,How are customers identified in the legacy system?,unknown,unknown,True,,0.8294920001731195,20,proceed,adequate,0,True,"Customers are identified by strCustID, which is a VARCHAR(50) field containing alphanumeric customer codes inherited from an AS/400 system. These codes follow formats like C-XXXXX or REG-XXXX and can contain letters, numbers, and hyphens.","In the legacy CustomerMaster system each customer is identified by the **alphanumeric customer code stored in the column `strCustID`** of the **`tblCustomer`** table.  
+
+* `strCustID` is the primary key of `tblCustomer` and is defined as **VARCHAR(50)**.  
+* The code follows a format such as **“C‑XXXXX”** or **“REG‑XXXX”**, reflecting the original AS/400 customer number.  
+* Business rules require this value to be **unique and not null**, and it is the identifier used throughout the legacy database (e.g., in foreign‑key relationships such as the link from `VW_SALESORDERHDR` to `TBLCUSTOMER`).  
+
+Thus, the legacy system identifies customers by the unique `strCustID` string code."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,3,What table stores order header information and what is its primary key?,unknown,unknown,True,,0.7123322507714482,20,proceed,adequate,0,True,"Order header information is stored in the vw_SalesOrderHdr table despite the vw_ prefix suggesting it's a view. The primary key is lngOrderID, which is an INT field using the lng (long integer) Hungarian notation prefix.","The order‑header data is kept in the view **VW_SALESORDERHDR** (the physical object that implements the “Sales Order” business concept). Its key column is **lngOrderID**, which is used as the identifier for the header and is referenced as the foreign‑key target by both the order‑line table (ORD_LINE_ITEM) and the payment table (TBLPAYMENT)【1†L1-L3】【9†L1-L2】【10†L1-L2】."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,4,Which table in the schema uses a SQL reserved word as its name?,unknown,unknown,True,,0.5119301082968213,20,proceed,adequate,0,True,The schema includes two tables that use SQL reserved words: 'Group' (for product categories) and 'User' (for system users). These require square bracket quoting [Group] and [User] in SQL queries to avoid syntax errors.,"The schema includes tables whose names are SQL reserved words—specifically:
+
+* **Group** – used for product categories (must be quoted as `[Group]`).  
+* **User** – used for system users (must be quoted as `[User]`).  
+
+These tables are identified in the “Reserved Words as Names” section of the legacy system description【1†L1-L5】."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,5,What is the relationship between vw_SalesOrderHdr and tblCustomer?,unknown,unknown,True,,0.9939964042034285,20,proceed,adequate,0,True,"vw_SalesOrderHdr has a foreign key relationship with tblCustomer through the intCustID field, which references strCustID. Despite the int prefix suggesting an integer, intCustID is actually a VARCHAR(50) field matching the strCustID data type.","The **vw_SalesOrderHdr** view (implemented by the physical table **VW_SALESORDERHDR**) contains a column **intCustID** that is defined as a foreign‑key to the **TBLCUSTOMER** table’s primary‑key column **strCustID**【1†L1-L1】.  
+
+Because of this foreign‑key:
+
+* each sales‑order header row points to exactly one customer record (the order’s buyer), and  
+* a single customer can be referenced by many sales‑order header rows (a one‑to‑many relationship from **TBLCUSTOMER** to **VW_SALESORDERHDR**)【10†L1-L1】【12†L1-L1】.  
+
+Thus, the relationship between **vw_SalesOrderHdr** and **tblCustomer** (TBLCUSTOMER) is a parent‑child link where **vw_SalesOrderHdr.intCustID → TBLCUSTOMER.strCustID**."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,6,What naming convention is used for the inventory transaction log table?,unknown,unknown,True,,0.9305845275935024,20,proceed,adequate,0,True,"The inventory transaction log table is named 'inv_txn_log' using abbreviated naming with underscore separators. Field names within this table are also heavily abbreviated: txn_id (transaction ID), txn_dt (transaction date), txn_type (transaction type), and prod_id (product ID).","The inventory‑transaction log table is named **inv_txn_log**. Its naming follows the system’s “heavily abbreviated” convention, using the **inv_** prefix to denote inventory‑related tables."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,7,What data quality issue exists in the tblProduct unit_cost field?,unknown,unknown,True,,0.8594279560667432,20,proceed,adequate,0,True,"The tblProduct.unit_cost field has an inappropriate data type - it's defined as VARCHAR(20) instead of DECIMAL. This field contains currency symbols like '$19.99' which require parsing before calculations can be performed, making it unusable for mathematical operations without transformation.","The **unit_cost** column in **tblProduct** is a data‑quality problem because it is stored as a **VARCHAR(20)** string instead of a numeric type. The field contains currency symbols (e.g., “$19.99”) and other non‑numeric characters, so the values cannot be used directly for calculations and must be parsed and converted to a proper **DECIMAL** type. This mismatch is flagged as a bug in the source data."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,8,How does the ord_line_item table handle product data redundancy?,unknown,unknown,True,,0.660281916209228,20,proceed,adequate,0,True,The ord_line_item table contains redundant copies of product data (product_code and item_name) that are denormalized for reporting performance and to snapshot product information at the time of order. These fields may become out of sync with the tblProduct master and should not be updated from product master changes.,"The **ORD_LINE_ITEM** table keeps a copy of key product attributes in addition to the foreign‑key reference to the product master.  
+
+* It has a **prod_id** column that points to the product record (via the FK `PROD_ID -> TBLPRODUCT.INTPRODID`).  
+* It also stores **product_code** and **item_name** directly in the line‑item row. According to the schema notes, **product_code** is a redundant copy of the product’s SKU (`tblProduct.strSKU`) and **item_name** is a redundant copy of the product’s name at the time the order was created. These fields are denormalized for reporting performance and are “snapshotted” – they do not change if the master product record is later updated【5†L1-L4】【7†L1-L8】.  
+
+Thus, product data redundancy in **ORD_LINE_ITEM** is handled by duplicating the SKU and product name into the line‑item record (product_code, item_name) while still maintaining the relational link via **prod_id**. This provides a historical snapshot of the product information for each order line, even though it can become out‑of‑sync with the master product table."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,9,What are the valid values for the strOrderStatus field in vw_SalesOrderHdr?,unknown,unknown,True,,0.9130583432721083,20,proceed,adequate,0,True,"The strOrderStatus field accepts three values enforced by a CHECK constraint: 'PENDING' (order received but not shipped), 'SHIPPED' (order has been shipped to customer), and 'CANCELLED' (order cancelled before shipping).","The **vw_SalesOrderHdr** view includes a column named **strOrderStatus** that holds the current status of a sales order (the view’s column list is: lngOrderID, intCustID, dtmOrderDate, dtmShipDate, dtmRequiredDate, **strOrderStatus**, fltSubTotal, fltTaxAmount, fltTotalAmount, strShippingMethod, strTrackingNumber)【2†source】.  
+
+Order‑status changes are recorded in the audit table **tblOrderStatusHistory**, which stores the previous and new status values in the columns **OldStatus** and **NewStatus** (both VARCHAR 20)【3†source】. This shows that the system expects status values to be represented as short text strings, but the retrieved documentation does **not** enumerate the specific set of permissible values (e.g., “Pending”, “Shipped”, “Cancelled”, etc.).  
+
+**What is missing:** The context provides no list or definition of the valid values that may appear in **strOrderStatus** (or in the OldStatus/NewStatus columns). Therefore, the exact allowed status codes cannot be supplied from the available information."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,10,Which table stores payment information and what security issue does it have?,unknown,unknown,True,,0.9147487668762402,20,proceed,adequate,0,True,"Payment information is stored in the tblPayment table. The table has a critical security issue: the CardNumberText field stores full unencrypted credit card numbers as VARCHAR(100), which is a PCI compliance violation. The system also lacks proper tokenization and encryption at rest.","The payment data are kept in the **TBLPAYMENT** table (the physical table that implements the Business concept “Payment”). Its columns include PaymentID, OrderID, PaymentMethod, PaymentDate, Amount, PaymentStatus, CardNumberText, CardHolderName, AuthorizationCode【1】.
+
+**Security issue:** The **CardNumberText** column stores the full, unencrypted primary account number (PAN). Because the card number is kept as plain‑text, it violates PCI‑DSS requirements and represents a critical security risk【4】."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,11,What is the purpose of the bolActive field in tblCustomer and tblProduct?,unknown,unknown,True,,0.9645892699236761,20,proceed,adequate,0,True,"The bolActive field (using Hungarian notation 'bol' for boolean/bit) is a flag indicating whether a record is active. In tblCustomer, it marks whether customers are included in marketing (1=active, 0=inactive). In tblProduct, it indicates product availability (1=available for sale, 0=discontinued).","The **bolActive** column is a Boolean flag used to indicate whether a record is currently “active” in the system.
+
+* In **tblCustomer** (the legacy customer master table) the flag is referenced in the business glossary: customers can be marked as inactive (`bolActive = 0`) but are never deleted. Thus, **bolActive** tells you whether a customer is presently active (1) or has been de‑activated (0). The column appears in the physical table definition for TBLCUSTOMER (which implements the Customer concept)【5】.
+
+* In **tblProduct** (the product master table) the flag appears in the “Product Active Status Flags” concept: the attribute indicates whether a product is currently active, available, or in circulation within the business system. Therefore, **bolActive** on TBLPRODUCT marks a product as active (1) or inactive/discontinued (0).【3】
+
+So, in both tables **bolActive** serves the same purpose—a simple true/false indicator of the record’s active status—applied to customers in **tblCustomer** and to products in **tblProduct**."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,12,How are inventory transactions tracked in the system?,unknown,unknown,True,,0.3856638374201088,20,proceed,adequate,0,True,"Inventory transactions are tracked in the inv_txn_log table, which records all stock movements. Each transaction has a type (txn_type): 'IN' for receipts, 'OUT' for shipments, and 'ADJ' for corrections. The table uses heavily abbreviated field names and references products via prod_id.","Inventory movements are recorded in the **INV_TXN_LOG** table. Each row represents a single inventory transaction and stores the following fields:
+
+* **txn_id** – the unique transaction identifier (primary key).  
+* **prod_id** – foreign‑key to the product being adjusted (references **TBLPRODUCT.INTPRODID** – see the FK relationship in chunk [11]).  
+* **txn_type** – indicates the nature of the transaction (e.g., “IN” for receipts, “OUT” for issues).  
+* **qty** – the quantity added or removed.  
+* **txn_dt** – the date/time the transaction occurred.  
+* **ref_num** – an optional reference number (e.g., purchase order, shipment ID).  
+* **user_id** – the user who performed the transaction.  
+* **notes** – free‑form comments.
+
+The business concept definition (chunk [1]) states that **inventory quantity is calculated as the sum of all “IN” transactions minus all “OUT” transactions** using this log table. Thus, every receipt, issue, adjustment, or transfer is captured as a row in **INV_TXN_LOG**, and the current on‑hand quantity for any product can be derived by aggregating the **qty** values, adding those with `txn_type = 'IN'` and subtracting those with `txn_type = 'OUT'`."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,13,What is the self-referencing relationship in the Group table?,unknown,unknown,True,,0.31447144537827953,20,proceed,adequate,0,True,"The Group table has a self-referencing foreign key where ParentGroupID references GroupID, creating a hierarchical structure for product categories. A NULL ParentGroupID indicates a top-level group, while non-NULL values create nested category levels.","The **Group** table contains a self‑referencing foreign‑key that models a hierarchy of groups:
+
+- The column **ParentGroupID** in the **GROUP** table is defined as a foreign key that points back to the primary‑key column **GroupID** of the same **GROUP** table.  
+
+This relationship is described as “GROUP references GROUP via foreign key **PARENTGROUPID → GROUP.GROUPID**” [1] and is reflected in the table’s definition, which includes the columns **GroupID**, **GroupName**, **ParentGroupID**, **Description**, and **IsActive** [4].
+
+Thus, the self‑referencing relationship allows each group to have a parent group, enabling a hierarchical structure within the **GROUP** table."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,14,What migration compatibility columns exist in tblCustomer?,unknown,unknown,True,,0.6606104176951485,20,proceed,adequate,0,True,The tblCustomer table includes cust_id (INT) and customer_name (VARCHAR 255) as migration compatibility columns alongside the legacy strCustID and strFullName fields. These are intended for the new ERP system that will use integer IDs and standardized naming conventions.,"The **tblCustomer** table (the legacy customer master) is defined with the following columns, which are the fields that need to be carried over during migration:
+
+- **strCustID** – the legacy alphanumeric customer code (primary key)  
+- **strFullName** – the customer’s full name  
+- **strEmail** – email address (optional)  
+- **strRegion** – geographic sales region  
+- **strCountry** – country of the customer  
+- **dtmCreated** – timestamp when the record was created  
+- **dtmLastModified** – timestamp of the last update  
+- **bolActive** – Boolean flag indicating whether the customer is active  
+- **cust_id** – an additional internal identifier (present in the physical table)  
+- **customer_name** – duplicate/alternative name field  
+- **txtNotes** – free‑text notes about the customer  
+
+These column definitions are taken from the business‑concept mapping for **Customer** (implemented by the physical table **TBLCUSTOMER**) in the retrieved context."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,15,How does the system handle order status history tracking?,unknown,unknown,True,,0.31331470498652875,20,proceed,adequate,0,True,"Order status changes are tracked in the tblOrderStatusHistory table, which creates an audit record for each status transition. Each history record includes OrderID, OldStatus, NewStatus, ChangedByUser, ChangedDate, and ChangeReason fields, providing a complete audit trail of order workflow.","The system records every change in a sales‑order’s status in a dedicated audit table called **tblOrderStatusHistory**.
+
+**What is stored**
+
+* Each status change creates one row in **tblOrderStatusHistory**.  
+* Columns capture the full context of the change:  
+  * **HistoryID** – auto‑increment primary key.  
+  * **OrderID** – foreign key that points to the order header in **vw_SalesOrderHdr** (the view’s column **lngOrderID**).  
+  * **OldStatus** – the status value before the change (NULL for the initial status).  
+  * **NewStatus** – the status value after the change (the current status).  
+  * **ChangedByUser** – the user name that performed the update (references the User table’s UserName).  
+  * **ChangedDate** – timestamp of the change, defaulting to GETDATE().  
+  * **ChangeReason** – free‑text field where the operator can record why the status was altered (e.g., cancellation reason).
+
+**How it is linked**
+
+* The **OrderID** column is defined as a foreign‑key to **vw_SalesOrderHdr.lngOrderID** (see the FK relationship in chunk [4]), ensuring every status‑history record is tied to an existing sales order.
+
+**Resulting behavior**
+
+* Whenever an order’s status field (e.g., `strOrderStatus` in the sales‑order view) is updated, the application inserts a new row into **tblOrderStatusHistory** with the values above.  
+* Because the table is a physical audit log, the history is immutable – the row is never updated or deleted (only soft‑deleted if the system implements such a policy).  
+* Users can query the table to reconstruct the full lifecycle of any order, filter by date, user, or reason, and audit compliance or troubleshooting activities.
+
+In summary, order‑status tracking is handled by an audit‑log table (**tblOrderStatusHistory**) that records each transition (old → new status), who made it, when, and why, linked directly to the order header via a foreign key to **vw_SalesOrderHdr**."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,16,What is the inconsistent naming pattern between order tables?,unknown,unknown,True,,0.2868679643269601,20,proceed,adequate,0,True,"The schema shows inconsistent naming: order headers use 'vw_SalesOrderHdr' with Hungarian notation, while line items use 'ord_line_item' with abbreviated underscore notation. Additionally, the line item table references lngOrderID but names its foreign key 'ord_id' instead of 'order_id' or 'lngOrderID'.","The legacy schema does not use a single, consistent naming convention for the tables that belong to the order domain. According to the “Table Naming Inconsistency” notes (Chunk [1]) the order‑related objects are named with three different prefixes:
+
+* **vw_** – e.g., `vw_SalesOrderHdr` (the sales‑order header is called a “view” even though it is a physical table).  
+* **ord_** – e.g., `ord_line_item` (the line‑item table uses an “ord” prefix).  
+* **tbl** – e.g., `tblOrderStatusHistory` (the order‑status audit table follows the generic “tbl” prefix used for many other entities).
+
+Thus the order tables are inconsistently prefixed as **vw_**, **ord_**, and **tbl**, rather than following a single pattern. This mixed‑prefix naming is highlighted as a legacy quirk in the retrieved context."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,17,What deprecated fields exist in tblProduct and why should they be avoided?,unknown,unknown,True,,0.6636689470737326,20,proceed,adequate,0,True,"The tblProduct table contains three deprecated fields: prod_num (superseded by strSKU), item_desc (superseded by strDescription), and unit_cost (wrong data type with VARCHAR instead of DECIMAL). These fields should not be used in new code as they represent outdated design decisions.","The **tblProduct** table still contains three legacy columns that are marked as deprecated:
+
+1. **`prod_num`** – a legacy product‑number field. It has been superseded by the newer **`strSKU`** column, so the old value is kept only for historical reporting. Using it for any current business logic can lead to mismatches with the authoritative SKU.
+
+2. **`item_desc`** – a truncated description field. The current, full‑length description is stored in **`strDescription`**. Because `item_desc` is limited to 500 characters and is no longer maintained, it may be incomplete or out‑of‑date.
+
+3. **`unit_cost`** – a cost field stored as a **VARCHAR** that includes currency symbols (e.g., “$19.99”). The proper numeric cost column is **`fltPrice`** (a decimal). `unit_cost` must be parsed before any calculation and is prone to errors, so it is considered a bug‑prone legacy field.
+
+**Why they should be avoided**
+
+- They are **legacy/obsolete** – newer, correctly typed columns (`strSKU`, `strDescription`, `fltPrice`) replace them, so relying on the deprecated fields can produce inconsistent or inaccurate data.  
+- **Data quality issues** – `unit_cost` stores currency symbols as text, requiring parsing and risking calculation errors; `item_desc` is truncated and may not reflect the current product description; `prod_num` may no longer be unique or aligned with the active SKU set.  
+- **Maintenance risk** – because they are not part of the current data model, they are not guaranteed to be kept in sync with other tables (e.g., inventory, orders), and they are listed explicitly as “Legacy Deprecated Fields” in the schema documentation.
+
+Therefore, any new code, reports, or migrations should reference the modern columns (`strSKU`, `strDescription`, `fltPrice`) and ignore the deprecated `prod_num`, `item_desc`, and `unit_cost` fields."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,18,How are shipping carriers configured in the system?,unknown,unknown,True,,0.26133092567451033,20,proceed,adequate,0,True,"Shipping carriers are stored in the tblShippingCarrier table with CarrierID, CarrierName, CarrierCode (for API integration), TrackingURL (with {TRACKING_NUM} placeholder), and bolActive flag. Only carriers with bolActive=1 should be offered during checkout.","Shipping carriers are stored as reference data in the **tblShippingCarrier** (implemented by the physical table **TBLSHIPPINGCARRIER**). Each carrier record contains the following fields:
+
+* **CarrierID** – the unique identifier for the carrier.  
+* **CarrierName** – the carrier’s display name.  
+* **CarrierCode** – a short code used to reference the carrier in other tables or integrations.  
+* **TrackingURL** – the URL template that can be used to generate a tracking link for shipments.  
+* **bolActive** – a Boolean flag (BIT) that indicates whether the carrier’s bill‑of‑lading process is currently active.
+
+These columns together define how the system knows which carriers are available, how they are identified, and whether they are active for shipping and tracking purposes. (Source: Business concept “Parcel Service Carrier” – TBLSHIPPINGCARRIER columns CarrierID, CarrierName, CarrierCode, TrackingURL, bolActive)."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,19,What is the relationship between User table passwords and security?,unknown,unknown,True,,0.06394842065123192,20,proceed_with_warning,adequate,0,True,"The User table stores password hashes in the PasswordHash field, but uses SHA-256 without salt, making it vulnerable to rainbow table attacks. This is identified as a security issue in the data dictionary. Additionally, the table name 'User' is a SQL reserved word requiring square bracket quoting.","The **USER** table (the physical implementation of the business concept “User”) contains a column named **PasswordHash** that holds each user’s login credential in hashed form.  
+
+According to the migration‑quality notes, the hash is generated with **SHA‑256 but without a salt**. This makes the stored passwords **vulnerable to rainbow‑table attacks**, i.e., an attacker who obtains the hash could more easily reverse‑engineer the original password because the hash lacks the random data (salt) that would normally protect against pre‑computed lookup tables.  
+
+Thus, the relationship is that the **PasswordHash** field is intended to secure user passwords, but the chosen hashing method (unsalted SHA‑256) creates a **security weakness** in the system."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,20,What fields in vw_SalesOrderHdr use the 'flt' Hungarian notation prefix and what do they store?,unknown,unknown,True,,0.9084555967245085,20,proceed,adequate,0,True,"The vw_SalesOrderHdr table uses the 'flt' (float) prefix for three monetary fields: fltSubTotal (line item subtotal before tax), fltTaxAmount (calculated tax), and fltTotalAmount (final total including tax and shipping). Despite the 'flt' prefix suggesting floating-point, these are defined as DECIMAL(12,2) for proper currency handling.","In the **vw_SalesOrderHdr** view the columns that begin with the Hungarian‑notation prefix **`flt`** (which denotes a floating‑point or money value) are:
+
+- **`fltSubTotal`** – the subtotal amount for the order (the sum of line‑item amounts before tax).  
+- **`fltTaxAmount`** – the total tax calculated for the order.  
+- **`fltTotalAmount`** – the final order total (subtotal + tax, the amount the customer must pay).  
+
+These three “flt” fields store the financial totals that appear in the sales‑order header."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,21,How does the schema handle the different date/time field naming conventions?,unknown,unknown,True,,0.1756794508874588,20,proceed_with_warning,adequate,0,True,"The schema uses 'dtm' (datetime) Hungarian notation prefix consistently: dtmCreated and dtmLastModified in tblCustomer, dtmOrderDate/dtmShipDate/dtmRequiredDate in vw_SalesOrderHdr, dtmIntroduced/dtmDiscontinued in tblProduct, and txn_dt in inv_txn_log (abbreviated exception). The User table breaks convention with LastLogin and CreatedDate.","The schema mixes two naming styles for date‑/time columns:
+
+1. **Hungarian‑style “dtm” prefix** – the legacy convention marks a DATETIME column with the prefix `dtm`. Examples appear in several objects:  
+   * `dtmIntroduced` and `dtmDiscontinued` in the product definition (Chunk [1])  
+   * `dtmOrderDate`, `dtmShipDate`, `dtmRequiredDate` in the sales‑order header view `VW_SALESORDERHDR` (Chunk [8])  
+
+2. **Pascal‑case or “*Date*” suffix** – other tables use a more natural naming without the prefix. Examples include:  
+   * `LastLogin` and `CreatedDate` in the `USER` table (Chunk [5])  
+   * `ChangedDate` in `tblOrderStatusHistory` (Chunk [5])  
+
+The **legacy system’s documentation** (Chunk [2]) notes that Hungarian notation is the intended convention (`dtm = datetime (DATETIME)`) but also calls out that the prefixes are **inconsistent** across the database (e.g., `intCustID` is actually a VARCHAR). This explains why some date fields follow the `dtm` prefix while others use a different naming style.
+
+So, the schema handles date/time fields primarily with the `dtm` prefix, but because of legacy inconsistencies and mixed naming conventions, many datetime columns are also defined with plain “*Date*” or Pascal‑case names."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,22,What table prefix patterns exist in the schema and what do they indicate?,unknown,unknown,True,,0.09073548763985105,20,proceed_with_warning,adequate,0,True,"The schema uses multiple inconsistent table prefixes: 'tbl' for standard tables (tblCustomer, tblProduct, tblPayment, tblShippingCarrier, tblOrderStatusHistory), 'vw_' for a misnamed table (vw_SalesOrderHdr), and domain-specific prefixes 'ord_' (ord_line_item) and 'inv_' (inv_txn_log). Two tables (Group, User) use reserved words with no prefix.","The schema uses a handful of **table‑name prefixes** that signal the logical area or the original naming convention of each object:
+
+1. **`tbl`** – the classic “table” prefix.  All core master‑data objects use it, e.g. `tblCustomer`, `tblProduct`, `tblPayment`.  It indicates a regular relational table that stores the canonical record for an entity.
+
+2. **`vw_`** – a “view”‑style prefix, although in this legacy database the objects are actually physical tables (e.g., `vw_SalesOrderHdr`).  The prefix was meant to denote a read‑only, denormalized or reporting‑oriented structure that aggregates header‑level sales‑order data.
+
+3. **`ord_`** – the **order** prefix.  Objects that belong to the order‑processing subsystem carry it, such as `ord_line_item`.  It signals that the table stores line‑item or transactional details tied to a sales order.
+
+4. **`inv_`** – the **inventory** prefix.  Tables that record inventory movements use this, for example `inv_txn_log`.  The prefix groups together all inventory‑transaction logs and related data.
+
+5. **No prefix** – a few tables are defined without any prefix, most notably the reserved‑word tables `Group` (product categories) and `User` (system users).  Because they lack a prefix, they must be quoted in SQL (`[Group]`, `[User]`) to avoid conflicts with SQL keywords.
+
+These patterns are documented in the “Legacy System Quirks” section and reinforced in the migration priority list, where the same prefixes are used to group objects for migration sequencing."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,23,What foreign key relationships exist for the vw_SalesOrderHdr table?,unknown,unknown,True,,0.9901782070803069,20,proceed,adequate,0,True,"The vw_SalesOrderHdr table has one explicit foreign key constraint: intCustID references tblCustomer.strCustID. Implicit relationships (not enforced by FK constraints) include tblPayment.OrderID, tblOrderStatusHistory.OrderID, and ord_line_item.ord_id all referencing vw_SalesOrderHdr.lngOrderID.","The **vw_SalesOrderHdr** view (implemented by the physical table VW_SALESORDERHDR) participates in the following foreign‑key relationships, as described in the retrieved context:
+
+1. **Outgoing (references)**
+   * **VW_SALESORDERHDR → TBLCUSTOMER** – the column **INTCUSTID** in VW_SALESORDERHDR points to **TBLCUSTOMER.STRCUSTID**.  
+   * This is the only foreign key that vw_SalesOrderHdr itself defines.
+
+2. **Incoming (referenced by)**
+   * **ORD_LINE_ITEM → VW_SALESORDERHDR** – the column **ORD_ID** in ORD_LINE_ITEM references **VW_SALESORDERHDR.LNGORDERID**.  
+   * **TBLPAYMENT → VW_SALESORDERHDR** – the column **ORDERID** in TBLPAYMENT references **VW_SALESORDERHDR.LNGORDERID**.  
+   * **TBLORDERSTATUSHISTORY → VW_SALESORDERHDR** – the column **ORDERID** in TBLORDERSTATUSHISTORY references **VW_SALESORDERHDR.LNGORDERID**.
+
+So, vw_SalesOrderHdr has one foreign key to **TBLCUSTOMER** and is the target of three foreign keys from **ORD_LINE_ITEM**, **TBLPAYMENT**, and **TBLORDERSTATUSHISTORY**."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,24,How does the legacy system handle product SKU format and uniqueness?,unknown,unknown,True,,0.3256277624366692,20,proceed,adequate,0,True,"Product SKUs are stored in the strSKU field with a UNIQUE constraint. The format follows Category-Color-Size pattern (e.g., 'SHIRT-BLU-L'). The deprecated prod_num field also exists but should not be used. SKUs are used in foreign key references from ord_line_item through the denormalized product_code field.","The legacy **CustomerMaster** database stores product information in the table **TBLPRODUCT**. Within that table the SKU is kept in the column **strSKU** (see the Business‑Concept mapping in chunk [6]). The column is defined as a string (VARCHAR) that holds the product’s stock‑keeping unit.
+
+The retrieved documentation does **not** specify any additional business rule or database constraint that enforces a particular SKU format (e.g., pattern, prefix) or that declares **strSKU** to be unique. Only the column’s existence and its data type are described; uniqueness or format validation would have to be inferred from other (non‑provided) rules or implemented in application logic."
+AB-BEST,06_edgecases_legacy,run-20260421_221024,25,What are the critical data quality issues identified for migration?,unknown,unknown,True,,0.9662197710315901,20,proceed,adequate,0,True,"Critical issues include: (1) PCI compliance violation - unencrypted card numbers in tblPayment.CardNumberText, (2) inappropriate data types - unit_cost as VARCHAR instead of DECIMAL, (3) missing foreign key constraints - inv_txn_log.user_id has no FK to User table, (4) security vulnerability - User.PasswordHash uses unsalted SHA-256, (5) misleading Hungarian notation - intCustID is VARCHAR not INT, and (6) reserved words as table names requiring quoting.","The migration assessment flagged several data‑quality problems that must be addressed before moving the data. According to the **Data Quality Issues Identified** section ([1]) the critical issues are:
+
+1. **Referential‑integrity gaps** – some foreign‑key relationships are broken:  
+   * `ord_line_item.prod_id` points to product records that no longer exist (deleted products).  
+   * Orders reference customers that are marked as inactive.  
+   * `inv_txn_log.user_id` has no foreign‑key constraint, so user references may be invalid.
+
+2. **Data inconsistencies** – values that do not conform to expected business rules:  
+   * `tblProduct` contains both active and discontinued products that share the same SKU pattern, making it impossible to distinguish current from obsolete items.  
+   * Several rows in `vw_SalesOrderHdr` have `fltTotalAmount = 0`, indicating failed or missing total calculations.  
+   * `tblPayment.CardNumberText` stores a mix of full card numbers and tokenized values, leading to inconsistent representation of payment data.
+
+3. **Security and compliance violations** – issues that affect data quality from a governance perspective:  
+   * `tblPayment.CardNumberText` holds unencrypted primary account numbers (PAN), a **CRITICAL** breach of PCI‑DSS requirements.  
+   * `User.PasswordHash` uses unsalted SHA‑256, making password data vulnerable to rainbow‑table attacks.  
+   * Payment records lack required PCI‑DSS fields such as tokenization and encryption‑at‑rest.
+
+These gaps in referential integrity, inconsistent attribute values, and serious security/compliance flaws constitute the critical data‑quality issues that need to be resolved before the migration can proceed."

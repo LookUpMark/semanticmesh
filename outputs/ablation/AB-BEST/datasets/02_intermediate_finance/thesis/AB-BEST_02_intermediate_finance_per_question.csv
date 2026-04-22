@@ -1,0 +1,234 @@
+study_id,dataset_id,run_tag,query_id,question,query_type,difficulty,grounded,gt_coverage,retrieval_quality_score,retrieval_chunk_count,retrieval_gate_decision,context_sufficiency,grader_rejection_count,grader_consistency_valid,expected_answer,generated_answer
+AB-BEST,02_intermediate_finance,run-20260421_221024,1,What is a checking account?,direct_mapping,Easy,True,1.0,0.6476868057700992,20,proceed,adequate,0,True,"A checking account is one of five account types (Checking, Savings, MoneyMarket, CD, Investment) defined by the CHECK constraint on the accounts table. According to the business glossary, accounts are financial arrangements for deposit, withdrawal, and management of funds. The schema tracks current_balance, available_balance, minimum_balance, monthly_fee, and interest_rate (nullable for non-interest accounts). Checking accounts can have subtypes like Premium or Standard via the account_subtype column. Debit cards can be linked to checking accounts for direct spending, as noted in the Card business rules.","A **checking account** is one of the deposit‑account types recorded in the **ACCOUNTS** master table. In the schema the table stores a column named **account_type** whose allowed values include “Checking” (alongside Savings, MoneyMarket, CD, Investment). Thus a checking account is a deposit account whose account_type = ‘Checking’. It is part of the broader account master that tracks balances, interest accrual, fees, and lifecycle status for each account【1†L1-L3】."
+AB-BEST,02_intermediate_finance,run-20260421_221024,2,What is the difference between a savings account and a money market account?,direct_mapping,Easy,True,1.0,0.6600628294854518,20,proceed,adequate,0,True,"Both savings and money market are account types defined in the accounts table CHECK constraint. The business glossary Interest section provides example rates: Standard Savings earns 0.25% APY (with monthly compounding), Premium Savings earns 0.50% APY (with daily compounding), while Money Market earns 0.75% APY tiered by balance. Both account types have interest_rate, minimum_balance, and monthly_fee columns in the schema. The glossary examples show savings accounts with varying balances and subtypes (Standard, Premium), while money market accounts are listed alongside checking and savings as deposit products.","The only information the retrieved context provides about **savings** and **money‑market** accounts is their classification in the **ACCOUNTS** (or `accounts`) table:
+
+* The **account_type** column of the **ACCOUNTS** table can contain the values **“Savings”** or **“MoneyMarket”** (along with Checking, CD, Investment, etc.).  
+* Each row in **ACCOUNTS** represents a single bank account, and the **account_type** value determines which product category the account belongs to.
+
+The context does **not** include any further business‑rule definitions, feature lists, interest‑rate rules, balance‑minimum requirements, or other attributes that would distinguish a savings account from a money‑market account. Therefore, based on the available schema metadata, the difference is simply that they are recorded as two distinct values in the **account_type** field; any additional functional or regulatory distinctions are not described in the provided information."
+AB-BEST,02_intermediate_finance,run-20260421_221024,3,What is APR versus APY?,direct_mapping,Easy,True,0.6667,0.9608783531246672,20,proceed,adequate,0,True,"APR (Annual Percentage Rate) is the annual cost of a loan including interest and fees, used for loan products. APY (Annual Percentage Yield) is the effective annual rate including compounding effects for deposit products. APY is higher than the nominal rate when compounding is more frequent than annually. For example, a savings account might quote 0.25% APY reflecting daily compounding, while a loan quotes 5.5% APR including origination fees.","APR (Annual Percentage Rate) and APY (Annual Percentage Yield) are two different ways of expressing interest:
+
+* **APR** – the annual rate used for **loans**. It shows the nominal cost of borrowing over a year but does **not** incorporate the effect of compounding【2】.  
+* **APY** – the annual rate used for **deposits**. It reflects the **effective** return after accounting for how often interest is compounded (e.g., daily, monthly, annually)【2】.
+
+So, APR tells a borrower the yearly interest charge on a loan, while APY tells a depositor the yearly earnings on a deposit, including the impact of compounding."
+AB-BEST,02_intermediate_finance,run-20260421_221024,4,What is KYC Level 2?,direct_mapping,Easy,True,1.0,0.6105115237967107,20,proceed,adequate,0,True,"The customers table has a kyc_status column with a CHECK constraint allowing Level1, Level2, and Level3. The business glossary states that Level1 is the minimum requirement for account opening, Level3 is required for high-value accounts and international transfers, and risk_profile determines eligibility for products. KYC levels represent increasing verification requirements for regulatory compliance. Level2 falls between basic identity verification (Level1) and high-value account access (Level3), though the specific documentation requirements for each level are not detailed in the source documents.","KYC Level 2 is one of the three permitted KYC (“Know Your Customer”) levels defined in the data model. The business rules state that KYC levels must be **Level1, Level2, or Level3**【1†L1-L1】. Thus, Level 2 represents a valid, mid‑tier KYC classification for a customer (the kyc_status field in the CUSTOMERS table stores this value)."
+AB-BEST,02_intermediate_finance,run-20260421_221024,5,How does the schema support different account subtypes and their varying requirements?,direct_mapping,Easy,True,1.0,0.18907149226772618,20,proceed_with_warning,adequate,0,True,"The accounts table has an account_subtype column (VARCHAR 30, nullable) that stores values like Premium or Standard to differentiate within each account_type. Combined with the minimum_balance and monthly_fee columns, each account can have different requirements configured per subtype. The account_type CHECK constraint defines the broad categories (Checking, Savings, MoneyMarket, CD, Investment) while account_subtype provides finer differentiation. The business glossary confirms that minimum balance requirements may trigger monthly fees if not met.","The schema captures account sub‑types directly in the **ACCOUNTS** table. It includes a column named **account_subtype** (VARCHAR 30) whose description notes that it stores values such as *Premium*, *Student*, *Standard*, etc. Together with the **account_type** column (Checking, Savings, MoneyMarket, CD, Investment), this lets the database distinguish both the broad product family and the specific variant of each account【1†L1-L1】.  
+
+Because the physical **ACCOUNTS** table also contains many operational fields—**minimum_balance**, **monthly_fee**, **interest_rate**, **interest_earned**, **status**, **current_balance**, **available_balance**, and dates for opening/closing—it can store the different numeric or status requirements that each subtype may impose (e.g., a Student checking account might have a lower minimum balance and fee than a Premium checking account). The business concept description for “Bank Account” lists all of these columns, showing that the schema is designed to hold the varying parameters that different sub‑types need【3†L1-L1】.  
+
+In addition, the schema enforces general account‑level rules that apply across sub‑types:
+
+* **Unique account numbers** – the **account_number** column is required to be unique.  
+* **Parent‑child hierarchy** – the **parent_account_id** foreign key (self‑reference) allows investment portfolios to aggregate child accounts while preventing circular references (parent ≠ child).  
+
+Thus, the combination of the **account_subtype** attribute and the flexible set of balance‑, fee‑, and status‑related columns provides a structural foundation for representing each sub‑type’s specific business requirements within a single unified table."
+AB-BEST,02_intermediate_finance,run-20260421_221024,6,What types of loan products does the bank offer?,direct_mapping,Easy,True,1.0,0.40203990856835936,20,proceed,adequate,0,True,"The bank offers five loan types defined by the CHECK constraint on loans.loan_type: (1) Mortgage — secured by real estate, glossary example shows $350,000 at 5.50% APR for 360 months; (2) Personal Loan — unsecured, example $15,000 at 8.50% APR for 48 months; (3) Auto Loan — secured by vehicle, example $35,000 at 6.50% APR for 60 months; (4) HELOC — revolving home equity credit line at variable rates, example $50,000 at 8.50% APR; (5) Credit Card — revolving credit, example $10,000 limit at 18.50% APR. The glossary notes that rates vary by type and creditworthiness, mortgages require collateral, and defaulted loans trigger collections.","The bank’s loan portfolio includes the following product types, as defined by the **loan_type** column in the **LOANS** (or “loans”) table:
+
+- Mortgage  
+- Personal  
+- Auto  
+- HELOC (Home Equity Line of Credit)  
+- Credit Card  
+
+These are the loan product categories recorded in the loan data model."
+AB-BEST,02_intermediate_finance,run-20260421_221024,7,What is the daily ATM withdrawal limit for standard customers?,direct_mapping,Easy,True,1.0,0.37433314757091174,20,proceed,adequate,0,True,"The cards table has an atm_daily_limit column with a default value of $500. The business glossary Card Examples confirm this: a standard Debit Card has a $500 ATM limit, while a Premium Debit card has a $2,000 ATM limit. The daily_limit column (default $3,000) controls POS spending separately. These limits are per-card, not per-customer, so different card types can have different limits. The glossary states that daily limits prevent fraud and control exposure.","The schema that can hold a daily ATM‑withdrawal limit is the **CARDS** table (the physical table that implements the business concept “Card”). According to the concept‑to‑table mapping, this table includes a column named **`atm_daily_limit`** that stores the per‑card (and therefore per‑customer) daily ATM withdrawal allowance【2】.
+
+The retrieved context, however, does not contain any rows, policy rules, or additional metadata that specify what value the `atm_daily_limit` column has for “standard customers.” Consequently, the exact daily ATM withdrawal limit for that customer segment cannot be determined from the information provided."
+AB-BEST,02_intermediate_finance,run-20260421_221024,8,What is the difference between a parent account and a child account?,direct_mapping,Easy,True,1.0,0.3097540193443018,20,proceed,adequate,0,True,"The accounts table supports parent-child hierarchies through the parent_account_id self-referencing foreign key, with a CHECK constraint preventing circular references (parent_account_id != account_id). The data dictionary describes this as supporting portfolio aggregation where parent accounts (typically Investment type) contain child accounts. The business glossary states accounts may be organized into hierarchical portfolio structures for relationship management purposes. Child accounts set parent_account_id to reference their parent, while top-level accounts have parent_account_id as NULL.","A **parent account** is an account that can serve as a container for other accounts; it is the record whose **ACCOUNT_ID** is referenced by the **PARENT_ACCOUNT_ID** column of another row.  
+A **child account** is the subordinate record that stores a value in **PARENT_ACCOUNT_ID**, pointing to the **ACCOUNT_ID** of its parent.  
+
+The schema implements a **parent‑child hierarchy** for portfolio aggregation (investment accounts can contain child accounts)【1†L1-L4】, and the foreign‑key definition makes this explicit: **ACCOUNTS.PARENT_ACCOUNT_ID → ACCOUNTS.ACCOUNT_ID**【3†L1-L1】.  
+
+Business rules enforce that the hierarchy cannot be circular—i.e., a parent cannot reference itself as a child【2†L1-L2】—so a parent is always a distinct, higher‑level account, while a child is a distinct, lower‑level account linked to that parent."
+AB-BEST,02_intermediate_finance,run-20260421_221024,9,What does the status 'Frozen' mean for a card?,direct_mapping,Easy,True,1.0,0.06301947157511502,20,proceed_with_warning,adequate,0,True,"The cards table has a status column with four states defined by CHECK constraint: Active, Frozen, Blocked, and Expired. The business glossary states that lost or stolen cards must be immediately blocked to prevent fraud, and that expired cards are automatically renewed. The glossary distinguishes Frozen from Blocked as separate statuses, suggesting Frozen is a temporary or reversible suspension. The Account concept also supports a Frozen status alongside Active, Dormant, and Closed, indicating the bank uses Frozen consistently to mean a temporary restriction on the entity.","The retrieved context shows that the **CARDS** table (and the “Card” business concept) includes a **status** column, but it does not provide a definition of the possible status values or what “Frozen” specifically means for a card. Therefore, the meaning of the “Frozen” status for a card is not described in the available knowledge graph."
+AB-BEST,02_intermediate_finance,run-20260421_221024,10,How does the transactions table track the impact of each transaction on account balances?,direct_mapping,Easy,True,1.0,0.7230162096979416,20,proceed,adequate,0,True,"The transactions table includes a balance_after column (DECIMAL 15,2) that records the account balance after each transaction is applied. Combined with the amount column, transaction_type (Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee), and status (Pending/Posted/Failed/Cancelled/OnHold), this allows tracking how each transaction affects the account. The business glossary states that debit transactions reduce account balance, credit transactions increase it, posted transactions are final and cannot be modified (only reversed with a new transaction), and failed transactions are logged for audit but do not affect the balance.","The **TRANSACTIONS** fact table records the effect of every transaction on the related account by storing a **calculated “balance_after” field**. Each row contains the `account_id` (FK to ACCOUNTS) so the transaction is tied to a specific account, and the `balance_after` column holds the account’s balance **after** that debit, credit, transfer, etc., is applied. Thus, by reading the `balance_after` value you can see the net impact of the transaction on the account’s balance. (See the table description in chunk [1] and the column list in the business‑concept mapping in chunk [3].)"
+AB-BEST,02_intermediate_finance,run-20260421_221024,11,How does the customer_account junction table support multiple ownership types?,direct_mapping,Medium,True,1.0,0.9865198970247337,20,proceed,adequate,0,True,"The customer_account table implements a many-to-many relationship between customers and accounts with a composite primary key (customer_id, account_id). It supports four relationship types via CHECK constraint: Owner, JointOwner, AuthorizedSigner, and Custodian. The is_primary flag designates the primary owner for billing and legal purposes, while ownership_percentage (DECIMAL 0-100, default 100) tracks proportional ownership. This allows a single account to have multiple customers with different roles, and a single customer to own multiple accounts.","The **customer_account** junction table is designed to capture a many‑to‑many link between customers and accounts while also recording the nature of each customer’s stake in an account.
+
+* **relationship_type** – a VARCHAR(20) column that stores the ownership role for the record. The allowed values include **Owner**, **JointOwner**, **AuthorizedSigner**, and **Custodian**. By storing one of these codes on each row, the table can represent any of the different ownership arrangements that a customer may have with an account【1】.  
+* **is_primary** – a Boolean flag that marks whether the customer is the primary owner for billing or legal purposes.  
+* **ownership_percentage** – a decimal field (0.00‑100.00) that records the percentage of the account that the customer owns, enabling joint‑ownership scenarios where multiple customers share an account proportionally【1】.  
+
+Together, these columns let the junction table represent multiple ownership types (sole owner, joint owner, authorized signer, custodian) and quantify each customer’s share, while still enforcing the composite primary key (`customer_id`, `account_id`) that guarantees a unique link per customer‑account pair【1】."
+AB-BEST,02_intermediate_finance,run-20260421_221024,12,What is the difference between current_balance and available_balance in the accounts table?,direct_mapping,Easy,True,1.0,0.8327813311689884,20,proceed,adequate,0,True,"The accounts table tracks two separate balance fields: current_balance includes all transactions including pending ones, while available_balance excludes holds and pending transactions and represents what the customer can actually withdraw. The business glossary confirms this distinction, stating that available balance may be less than current balance due to holds or pending transactions. Both are DECIMAL(15,2) fields with a default of 0.00.","In the **ACCOUNTS** table the two balance columns capture different views of an account’s money:
+
+* **current_balance** – the total amount recorded for the account at a given point in time. It reflects the full ledger balance, including all posted transactions.
+
+* **available_balance** – the portion of that total that the customer can actually use or withdraw. It is the balance that remains after any holds, pending transactions, or other restrictions are taken into account.
+
+The retail‑banking glossary (see the “Account” entry in the retrieved context) lists “Current Balance vs. Available Balance” as a key attribute pair, indicating that the current balance shows the overall account total, while the available balance shows the usable amount."
+AB-BEST,02_intermediate_finance,run-20260421_221024,13,How are loans linked to both customers and accounts in the schema?,multi_hop,Medium,True,1.0,0.8104789086703224,20,proceed,adequate,0,True,"The loans table has a customer_id foreign key referencing the customers table (the borrower) and an optional account_id foreign key referencing the accounts table (for linked payment accounts). Each loan belongs to exactly one customer, and can optionally be connected to an account for automatic payment drafting. The loan tracks principal_amount, interest_rate (APR), term_months, monthly_payment, balance_due, origination_date, maturity_date, and status. The loan_type CHECK constraint defines the product types: Mortgage, Personal, Auto, HELOC, and CreditCard.","In the schema the **LOANS** table connects a loan to both a borrower (customer) and, when applicable, to an account:
+
+* **Customer link** – the column **customer_id** in **LOANS** is a foreign‑key that points to **CUSTOMERS.CUSTOMER_ID** ([2]). This ties each loan record to the customer who originated the loan.
+
+* **Account link** – the column **account_id** in **LOANS** is a foreign‑key that points to **ACCOUNTS.ACCOUNT_ID** ([3]). This optional field lets a loan be associated with a specific account (for example, a linked checking or savings account).
+
+Thus, a loan row is identified by its primary key **loan_id** and is related to a customer through **customer_id → CUSTOMERS**, and optionally to an account through **account_id → ACCOUNTS**. The loan table’s definition (columns, primary key, and descriptions) is given in the “loans” chunk ([4]), confirming these two foreign‑key relationships."
+AB-BEST,02_intermediate_finance,run-20260421_221024,14,What types of transactions does the system support and how does their status lifecycle work?,direct_mapping,Easy,True,1.0,0.3393895823048515,20,proceed,adequate,0,True,"The transactions table supports seven transaction types via CHECK constraint: Debit, Credit, Transfer, Payment, Withdrawal, Deposit, and Fee. Each transaction also has a status lifecycle with five states: Pending (initial default), Posted (final), Failed, Cancelled, and OnHold. The business glossary explains that debit transactions reduce account balance, credit transactions increase it, posted transactions are final and cannot be modified (only reversed with a new transaction), and failed transactions are logged for audit but do not affect balance. POS transactions include location data for fraud detection.","The data model defines a **Financial Transaction** (implemented by the table TRANSACTIONS) that can represent several kinds of activity. The **transaction_type** column is limited to the following values:
+
+- Debit  
+- Credit  
+- Transfer  
+- Payment  
+- Withdrawal  
+- Deposit  
+- Fee  
+
+These types are listed in the column description of the **transactions** fact table [1] and are reiterated in the business‑concept description of a **Transaction** [11].
+
+Each transaction also carries a **status** that reflects where it is in its processing lifecycle. The business‑concept definition of a Transaction specifies the status values and the typical flow:
+
+- **Pending** – the transaction has been recorded but not yet finalized.  
+- **Posted** – the transaction has been successfully applied to the account balance (the normal next step after Pending).  
+- **Failed** – the transaction could not be completed (e.g., due to insufficient funds or validation error).  
+- **Cancelled** – the transaction was intentionally aborted before posting.  
+- **OnHold** – the transaction is temporarily suspended pending further action.
+
+Thus, the lifecycle generally proceeds **Pending → Posted**, while a transaction may also move to **Failed**, **Cancelled**, or **OnHold** depending on business rules and error conditions [11]."
+AB-BEST,02_intermediate_finance,run-20260421_221024,15,How does the schema support joint account ownership between multiple customers?,multi_hop,Medium,True,1.0,0.48696431947084423,20,proceed,adequate,0,True,"Joint ownership is implemented through the customer_account junction table, which creates a many-to-many relationship between customers and accounts. Each row has a relationship_type CHECK constraint allowing Owner, JointOwner, AuthorizedSigner, or Custodian. The ownership_percentage field (DECIMAL 5,2) tracks each customer's share of the account, and the is_primary flag designates the primary account holder. Multiple customers can be linked to the same account with different roles and ownership percentages, and each link tracks linked_date and optional unlinked_date.","The schema models joint ownership through the **CUSTOMER_ACCOUNT** junction table.
+
+* **Table purpose** – It implements the many‑to‑many link between **CUSTOMERS** and **ACCOUNTS**, allowing any number of customers to be associated with a single account and any account to be linked to multiple customers. (see chunk [1] and the relationship summary in chunk [2]).
+
+* **Key columns that enable joint ownership**  
+  * **customer_id** – FK to **CUSTOMERS** (chunk [6]).  
+  * **account_id** – FK to **ACCOUNTS** (chunk [7]).  
+  * **relationship_type** (VARCHAR 20) – stores the role of the customer for that account; values include **Owner**, **JointOwner**, **AuthorizedSigner**, **Custodian**. This is how the system distinguishes a joint‑owner from a sole owner.  
+  * **ownership_percentage** (DECIMAL 5,2) – records each customer’s share of the account (0.00‑100.00), enabling precise billing and legal allocation.  
+  * **is_primary** (BOOLEAN) – flags which linked customer is the primary owner for purposes such as statements or notifications.  
+
+* **Primary key** – Composite (`customer_id`, `account_id`) ensures each customer‑account pairing is unique while still permitting multiple rows for the same account (i.e., multiple customers).
+
+Together, these columns and foreign‑key relationships let the database represent joint‑account scenarios: an account can have several rows in **CUSTOMER_ACCOUNT**, each with `relationship_type = 'JointOwner'` (or other roles), a defined ownership percentage, and an optional primary‑owner flag. This structure supports joint ownership, authorized signers, and custodial relationships as described in the table’s description (chunk [1])."
+AB-BEST,02_intermediate_finance,run-20260421_221024,16,What information does the cards table track and how are cards linked to customers and accounts?,direct_mapping,Medium,True,1.0,0.9527502864985101,20,proceed,adequate,0,True,"The cards table links to both accounts (account_id FK) and customers (customer_id FK), tracking card_type (Debit/Credit/ATM), card_network (Visa/Mastercard/Discover/AmericanExpress), card_number, cardholder name, expiration_date, and CVV. For spending controls it stores credit_limit (nullable, for credit cards), daily_limit (default $3,000 for POS), and atm_daily_limit (default $500). Security features include has_chip (EMV), contactless_enabled (tap-to-pay), and pin_set. Card status follows a lifecycle: Active, Frozen, Blocked, or Expired. The glossary states that debit cards deduct from linked checking accounts and ATM cards only work at ATMs.","The **CARDS** table stores the full set of attributes for every payment card that the institution issues. According to the schema it records  
+
+* the primary key **card_id**  
+* the **account_id** and **customer_id** that identify the linked account and card‑holder (both are foreign keys)  
+* the card’s PAN (**card_number**), type (**card_type** – debit, credit or ATM), and network (**card_network** – Visa, Mastercard, Discover, Amex)  
+* card‑specific details such as **card_name**, **expiration_date**, **cvv**, **credit_limit**, **daily_limit**, **atm_daily_limit**  
+* security features: **pin_set**, **has_chip**, **contactless_enabled**  
+* operational status fields: **status**, **issued_date**, **last_used_date**, **created_at**  
+
+The link to customers and accounts is enforced by foreign‑key relationships:  
+
+* **CARDS.CUSTOMER_ID → CUSTOMERS.CUSTOMER_ID** (see relationship [2])  
+* **CARDS.ACCOUNT_ID → ACCOUNTS.ACCOUNT_ID** (see relationship [3])  
+
+Thus the table both tracks the card’s identifying, security, limit and usage information and ties each card to the specific customer who owns it and the account to which it is attached."
+AB-BEST,02_intermediate_finance,run-20260421_221024,17,How does the schema handle interest rates across deposit and loan products?,multi_hop,Hard,True,0.8,0.0573875346753933,20,proceed_with_warning,adequate,0,True,"Interest rates are stored differently for deposits and loans. The accounts table has an interest_rate column (nullable DECIMAL 5,4) and interest_earned for year-to-date tracking. The loans table has its own interest_rate column representing APR. The business glossary explains that APR (Annual Percentage Rate) applies to loans and includes fees, while APY (Annual Percentage Yield) applies to deposits and accounts for compounding. Deposit interest is credited monthly, loan interest is amortized. Promotional rates may be temporary such as CD bonus rates, and penalty rates may apply for early withdrawal.","The data model records the applicable rate for each product directly in the product’s master table.
+
+* **Deposit (bank‑account) products** – The **ACCOUNTS** table (the physical implementation of the “Bank Account” concept) contains an **`interest_rate`** column that stores the annual rate applied to that account, and an **`interest_earned`** column that holds the amount of interest that has been credited. This allows the system to keep a per‑account rate and to calculate the monthly credit (the business rule in the *Interest* definition notes that deposit interest is credited monthly).
+
+* **Loan products** – The **LOANS** table (the physical implementation of the “LoanAmortizationSchedule” concept) also includes an **`interest_rate`** column. That rate is used in the amortization schedule to compute the monthly payment, the portion of each payment that is interest, and the remaining **`balance_due`**. The business rules for interest state that loan interest is amortized, meaning the stored rate drives the interest‑first portion of early payments.
+
+Thus, the schema handles interest rates by storing a dedicated **`interest_rate`** field in each product’s primary table (accounts for deposits, loans for borrowing), enabling separate rate management and calculation logic for the two product families while keeping the rates tied to the individual account or loan record."
+AB-BEST,02_intermediate_finance,run-20260421_221024,18,What types of branches does the bank operate and how do they differ in capabilities?,direct_mapping,Easy,True,0.5,0.15559099407709326,20,proceed_with_warning,adequate,0,True,"The branches table supports three types via CHECK constraint: FullService, Satellite, and ATMOnly. The business glossary details each: FullService branches offer complete banking services including loan origination, financial advisors, and safe deposit boxes; Satellite branches have limited hours and staff with no loan officers; ATMOnly locations have no staff, only cash machines with 24/7 access. Each branch tracks branch_code (unique 4-digit identifier), physical address, operating hours, teller_count, atm_count, manager_name, and status (Active/TemporarilyClosed/PermanentlyClosed).","The **BRANCHES** table defines a column `branch_type` whose allowed values are:
+
+* **FullService** – a full‑service branch.  
+* **Satellite** – a smaller, satellite office.  
+* **ATMOnly** – a location that hosts only an ATM.
+
+These three values indicate how the bank classifies its physical locations. A **FullService** branch is intended to provide the complete range of banking services, a **Satellite** branch offers a reduced set of services at a secondary site, and an **ATMOnly** location provides only automated teller‑machine functionality. (Source: branches table description, column `branch_type`"
+AB-BEST,02_intermediate_finance,run-20260421_221024,19,How are ATMs related to branches in the schema and what types of ATMs exist?,multi_hop,Medium,True,0.75,0.6183772176019395,20,proceed,adequate,0,True,"The atms table has an optional branch_id foreign key referencing branches. When branch_id is NULL, the ATM is standalone and not affiliated with any branch. ATM types are defined by CHECK constraint: Branch (on-premises), DriveThrough (vehicle-accessible), and Standalone (independent locations). Each ATM tracks atm_code (unique), operational status (Operational/OutOfService/OutOfCash), cash_balance, last_replenished timestamp, and feature flags for deposit support and cardless withdrawal. The glossary states that cash replenishment is triggered when balance falls below a threshold, and OutOfCash ATMs may still allow balance inquiries.","In the data model the **ATMS** table is linked to the **BRANCHES** table through the column **branch_id**. The foreign‑key relationship is defined as `ATMS.branch_id → BRANCHES.branch_id` (Chunk [1]), so a branch can have many ATMs (one‑to‑many) and an ATM may reference a branch (Chunk [3]).
+
+The ATM type is stored in the **atm_type** column of ATMS (and described in the “Atm Location” business concept, Chunk [4]). According to the ATM definition (Chunk [8]), the supported types are:
+
+* **Standalone** – not affiliated with any branch (branch_id is NULL).  
+* **Branch** – located on a branch premises (branch_id points to the owning branch).  
+* **DriveThrough** – a drive‑through unit that serves vehicles only.
+
+Thus, ATMs are related to branches via the optional branch_id foreign key, and the schema distinguishes three ATM categories: Standalone, Branch, and DriveThrough."
+AB-BEST,02_intermediate_finance,run-20260421_221024,20,What is the lifecycle of a loan from application to completion?,direct_mapping,Medium,True,1.0,0.0066669319312806586,20,proceed_with_warning,adequate,0,True,"The loans table tracks loan status through five states defined by CHECK constraint: Pending (application submitted, default), Approved (credit approved but not yet funded), Active (loan funded and being repaid), PaidOff (fully repaid), and Defaulted (borrower failed to repay). Each loan records origination_date, maturity_date, term_months, monthly_payment, and balance_due for progress tracking. The business glossary adds that defaulted loans trigger collections and credit reporting, early payoff may incur prepayment penalties, and HELOC allows revolving access to equity with no fixed payoff schedule.","The loan‑management data model defines the **LOANS** table as the physical representation of a loan’s life‑cycle. By looking at the columns that are stored for each loan and the relationships that link a loan to a borrower (CUSTOMERS) and, optionally, to a deposit account (ACCOUNTS), we can outline the typical stages that a loan moves through from the moment it is applied for until it is closed.
+
+**1. Application / Origination**  
+* When a borrower submits a loan request, a new row is created in **LOANS**.  
+* The row is populated with the borrower’s identifier (`customer_id`), the type of loan (`loan_type`), the original principal (`principal_amount`), the agreed‑upon interest rate (`interest_rate`), the term in months (`term_months`) and the calculated monthly payment (`monthly_payment`).  
+* The date the loan is opened is recorded in `origination_date`.  
+* At this point the loan’s `status` column is set to the initial state (e.g., “Pending” or “Approved” – the exact enumeration is not listed in the context, but the column exists to capture the loan’s current phase).
+
+**2. Funding / Disbursement**  
+* Once the loan is approved, the bank funds the borrower. The loan’s `balance_due` is initialized to the full `principal_amount`.  
+* If the loan is linked to a deposit account (e.g., a line of credit that draws against an account), the foreign key `account_id` points to the corresponding row in **ACCOUNTS**.
+
+**3. Amortization (Repayment) Phase**  
+* The **LoanAmortizationSchedule** concept is implemented by the same **LOANS** table; the schedule is implicit in the columns `monthly_payment`, `balance_due`, `interest_rate`, `term_months`, and the dates.  
+* Each month the borrower makes a payment that is recorded against the loan (the model does not show a separate payment table, but the payment amount would be applied to reduce `balance_due`).  
+* Because loan interest is “amortized” (see the **Interest** concept), early payments consist largely of interest, while later payments apply more toward principal. The remaining balance after each payment can be derived from `balance_due`.
+
+**4. Monitoring / Status Updates**  
+* Throughout the repayment period the `status` column is updated to reflect the loan’s condition (e.g., “Current”, “Delinquent”, “Re‑structured”).  
+* The `maturity_date` column indicates the date on which the loan is scheduled to be fully repaid if all payments are made as planned.
+
+**5. Completion / Closure**  
+* When `balance_due` reaches zero (or a final payoff is recorded), the loan is considered complete.  
+* The `status` is changed to a terminal value such as “Closed” or “Paid‑off”.  
+* The loan record remains in **LOANS** for historical and reporting purposes, preserving the original terms, the `origination_date`, the `maturity_date`, and the final `status`.
+
+**Key Data Elements that Support the Lifecycle**
+
+| Column | Role in the lifecycle |
+|--------|----------------------|
+| `loan_id` | Unique identifier for the loan record |
+| `customer_id` | Links the loan to the borrower (CUSTOMERS) |
+| `account_id` | Optional link to a deposit account (ACCOUNTS) |
+| `principal_amount` | Original amount borrowed |
+| `interest_rate` | Rate used to calculate amortized payments |
+| `term_months` | Length of the loan in months |
+| `monthly_payment` | Fixed payment amount derived from principal, rate, and term |
+| `balance_due` | Current outstanding principal (driven down by payments) |
+| `origination_date` | Date the loan was created/ funded |
+| `maturity_date` | Scheduled payoff date |
+| `status` | Current lifecycle stage (e.g., Pending, Active, Delinquent, Closed) |
+| `created_at` / `updated_at` | Audit timestamps for record creation and changes |
+
+**Relationships that Influence the Process**
+
+* **LOANS → CUSTOMERS** (`customer_id` → `CUSTOMERS.CUSTOMER_ID`) ties each loan to its borrower.  
+* **LOANS → ACCOUNTS** (`account_id` → `ACCOUNTS.ACCOUNT_ID`) optionally ties a loan to a specific deposit account, which can be used for disbursement or repayment routing.  
+
+**What the model does not specify**
+
+The retrieved context does not list the exact enumeration of values stored in the `status` column, nor does it describe a separate “loan application” table, underwriting rules, or payment transaction tables. Therefore, the answer can describe the logical phases that are implied by the columns and relationships, but it cannot provide a detailed step‑by‑step procedural workflow beyond what is captured in the schema."
+AB-BEST,02_intermediate_finance,run-20260421_221024,21,What does preferred customer status mean and how is it tracked in the schema?,direct_mapping,Medium,True,1.0,0.5128831951464482,20,proceed,adequate,0,True,"Preferred status is tracked via the is_preferred boolean flag in the customers table (default: false). The business glossary states that preferred customers receive waived fees, preferred interest rates, and priority service. The glossary examples show preferred customers with longer tenure and higher balances. Additionally, the customer risk_profile (Conservative/Moderate/Aggressive) determines eligibility for investment products and credit limits, while kyc_status (Level1/Level2/Level3) determines which products and services a customer can access.","The schema records a customer’s “preferred” flag with the **`is_preferred`** column in the **`CUSTOMERS`** table (the physical implementation of the Business concept **Customer**). That column is a Boolean field (non‑nullable) that indicates whether a given customer is marked as a preferred customer.  
+
+The retrieved context does not contain a textual definition of what “preferred customer” means in business terms; it only shows that the flag is stored in the `is_preferred` attribute of the `CUSTOMERS` table. Consequently, the knowledge graph can tell you that the status is tracked by this Boolean column, but it does not provide a further description of the criteria or implications of being a preferred customer."
+AB-BEST,02_intermediate_finance,run-20260421_221024,22,How does the accounts table support interest tracking and what business rules govern interest?,direct_mapping,Medium,True,0.75,0.30435172533855,20,proceed,adequate,0,True,"The accounts table has interest_rate (nullable DECIMAL for the annual rate) and interest_earned (DECIMAL for year-to-date interest credited). The business glossary states that deposit interest is credited monthly (typically the first day of the month) and that APY accounts for compounding effects. Promotional rates may be temporary (e.g., 12-month CD bonus rates), and penalty rates may apply for rule violations such as early CD withdrawal. The interest_rate column is nullable because not all account types earn interest — non-interest-bearing checking accounts would have NULL for this field.","The **ACCOUNTS** table records interest information in two dedicated columns:
+
+* **interest_rate** – the rate that applies to the account (e.g., the annual percentage used to calculate earnings).  
+* **interest_earned** – the amount of interest that has been accrued to date for the account.
+
+These columns allow the table to store both the parameter used for calculation (the rate) and the result of that calculation (the accrued interest), fulfilling the “interest accrual” function mentioned in the accounts description.
+
+The retrieved context does not list any specific business‑rule constraints that apply only to interest (such as minimum rates, caps, or calculation frequency). The only business rules that are enumerated relate to uniqueness of identifiers, hierarchy integrity, and other general data‑quality constraints (e.g., account numbers must be unique, parent‑child hierarchy cannot be circular). Therefore, while the schema supports interest tracking through the two columns above, the document does not provide additional interest‑specific business rules."
+AB-BEST,02_intermediate_finance,run-20260421_221024,23,Can an account exist without any customer linked to it?,negative,Medium,True,1.0,0.13939637966532398,20,proceed_with_warning,adequate,0,True,"Looking at the schema, there is no database-level constraint that forces every account to have a customer_account row. The accounts table has no direct foreign key to customers — the relationship is through the customer_account junction table with a composite primary key (customer_id, account_id). However, the business glossary states that accounts cannot exist without customer ownership, so this is a business rule enforced at the application level rather than a schema constraint. The junction table's relationship_type defaults to Owner, and the business rule ensures at least one Owner relationship exists per account.","Yes. In this data model an **account** can exist without any customer linked to it.
+
+**Why the model allows it**
+
+1. **Linkage is optional and performed through the junction table**  
+   - The many‑to‑many relationship between **customers** and **accounts** is implemented by the **customer_account** table (see chunk [1]).  
+   - **customer_account** contains the foreign keys `customer_id` → CUSTOMERS and `account_id` → ACCOUNTS (chunks [2] and [4]), but the **accounts** table itself has no foreign‑key column that points back to **customers**.
+
+2. **No mandatory constraint requiring a link**  
+   - The only rule stated for the junction table is that it “requires both customer and account to exist” (Entity Relationship Summary, chunk [3]), meaning that a row can be inserted only if the referenced customer **and** account already exist.  
+   - There is no rule that an account must have at least one row in **customer_account**; therefore an account can be created and remain unlinked.
+
+3. **Cascade behavior**  
+   - All foreign keys have “NO CASCADE by default” (chunk [3]), so deleting a customer does not automatically delete the related account, further indicating that accounts are not dependent on customers for their existence.
+
+**Conclusion**  
+Because the relationship to customers is mediated only by the optional **customer_account** junction table and there is no mandatory foreign‑key or business rule forcing a link, an account can be present in the **accounts** table without any associated customer record."
+AB-BEST,02_intermediate_finance,run-20260421_221024,24,How does the schema handle failed or cancelled transactions?,negative,Medium,True,1.0,0.2041831701075589,20,proceed,adequate,0,True,"The transactions table has a status column with CHECK constraint allowing Pending, Posted, Failed, Cancelled, and OnHold states. The business glossary explains that failed transactions are logged for audit but do not affect the account balance — the balance_after field would reflect no change. Posted transactions are final and cannot be modified, only reversed with a new transaction. The transaction record preserves all fields (description, reference_number, location, amount) regardless of status, maintaining a complete audit trail for regulatory compliance.","The **TRANSACTIONS** fact table includes a **status** column (see the Business‑Concept mapping in chunk [5]).  
+That column is defined to hold the life‑cycle state of each transaction, and the business definition of a transaction (chunk [6]) lists the possible values as **Pending, Posted, Failed, Cancelled, OnHold**.  
+
+Because the status is stored directly on the transaction row, a transaction that cannot be completed is simply recorded with the status value **“Failed”** (or **“Cancelled”** if it is intentionally stopped). The schema therefore handles such cases by:
+
+* persisting the transaction record with its original details (amount, currency, account_id, etc.) and a status flag indicating the outcome, and  
+* allowing downstream queries or business processes to filter on `status = 'Failed'` or `status = 'Cancelled'` to apply any corrective actions, reporting, or audit trails.
+
+No cascade rules or automatic deletions are defined for these status values; the handling of the financial impact (e.g., not adjusting balances) is expected to be enforced by the application logic that interprets the status field"
+AB-BEST,02_intermediate_finance,run-20260421_221024,25,What operational states can an ATM have and what do they mean for available services?,direct_mapping,Easy,True,1.0,0.4506917891452081,20,proceed,adequate,0,True,"ATMs have three operational states defined by CHECK constraint: Operational (fully functional for all supported transactions), OutOfService (technical issue preventing all transactions), and OutOfCash (cash depleted, preventing withdrawals). The business glossary explains that cash replenishment is triggered when balance falls below a threshold, OutOfCash ATMs may still allow deposit transactions if supports_deposit is true, and cardless transactions require mobile app authentication. The atms table tracks cash_balance and last_replenished timestamp for operational management.","The ATM table (implemented by the **ATMS** physical table) defines a **status** column whose allowed values are:
+
+1. **Operational** – the machine is functioning normally; all services that the ATM supports (cash dispensing, deposits, card‑less withdrawals, etc.) are available to customers.
+
+2. **OutOfService** – the machine is not usable; none of its services are offered because the ATM is down for maintenance, a fault, or any other condition that makes it unavailable.
+
+3. **OutOfCash** – the machine is online but has no cash on hand; cash‑withdrawal transactions cannot be completed, while any other capabilities that do not require cash (e.g., deposits, card‑less withdrawals) may still be offered."

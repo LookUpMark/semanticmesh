@@ -1,0 +1,852 @@
+{
+  "study_id": "AB-BEST",
+  "timestamp": "2026-04-21T20:28:41.774682+00:00",
+  "trace_id": "AB-BEST.2026-04-21T20-28-41.774682+00-00",
+  "config": {
+    "llm_model_reasoning": "openai/gpt-oss-120b",
+    "llm_model_extraction": "openai/gpt-4.1-nano",
+    "chunk_size": 128,
+    "chunk_overlap": 16,
+    "er_similarity_threshold": 0.65,
+    "er_blocking_top_k": 5,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md",
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+  ],
+  "ddl_files": [
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Business Glossary - Advanced Healthcare Management System\n\n## Patient Management\n\n**Patient**\nAn individual receiving medical care, treatment, or services from the healthcare organization. Each patient has a unique medical record number and may have multiple episodes of care across different time periods. Patients can be identified by their medical record number (MRN), which is distinct from any external insurance identifiers.\n\n**Patient Registration**\nThe process of capturing essential demogr... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "664"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Financial & Administrative\n\n**Insurance**\nA third-party payer contract that provides coverage for medical services. Insurance types include private commercial plans, Medicare (federal), Medicaid (state), and TRICARE (military). Each insurance plan has specific coverage policies, prior authorization requirements, and cost-sharing structures.\n\n**Prior Authorization**\nThe process of obtaining advance approval from an insurance payer before certain services, treatments, or medications can be prov... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "793"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Billing & Revenue Cycle\n\n**Charge Capture**\nThe process of recording services and procedures for billing purposes. Charges must be captured at the time of service and linked to appropriate billing codes.\n\n**Claim Scrubbing**\nAutomated validation of claims against payer-specific rules, coding guidelines, and regulatory requirements before submission. Scrubbing reduces claim rejections and denials.\n\n**Denial Management**\nThe systematic process of tracking, analyzing, and appealing claim denials... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "267"
+    },
+    {
+      "chunk_id": 3,
+      "text": "# Data Dictionary - Advanced Healthcare Management System\n\n## Database Overview\n**Database Name**: `advanced_healthcare_db`\n**Schema Version**: `3.2.1`\n**Environment**: Production\n**Last Updated**: 2025-03-15\n\n---\n\n## PATIENTS Table\n**Purpose**: Store current and historical patient demographic and administrative information.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| patient_id | INTEGER | PRIMARY KEY | Surrogate key for patie... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "498"
+    },
+    {
+      "chunk_id": 4,
+      "text": "## DIAGNOSES Table\n**Purpose**: Store patient diagnosis records with ICD-10 coding and temporal tracking.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| diagnosis_id | INTEGER | PRIMARY KEY | Surrogate key for diagnosis records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving the diagnosis |\n| icd_10_code | VARCHAR(10) | NOT NULL | ICD-10-CM diagnosis code (e.g., I10, E11.9) |\n| diagnosis_name | VA... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "426"
+    },
+    {
+      "chunk_id": 5,
+      "text": "## TREATMENTS Table\n**Purpose**: Store medical treatments and procedures performed on patients.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| treatment_id | INTEGER | PRIMARY KEY | Surrogate key for treatment records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving treatment |\n| diagnosis_id | INTEGER | FK \u2192 diagnoses.diagnosis_id | Primary diagnosis indication for treatment |\n| treatment_name | V... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "450"
+    },
+    {
+      "chunk_id": 6,
+      "text": "## MEDICATIONS Table\n**Purpose**: Store patient medication prescriptions and administrations.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| medication_id | INTEGER | PRIMARY KEY | Surrogate key for medication records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving medication |\n| medication_name | VARCHAR(255) | NOT NULL | Generic or brand medication name |\n| ndc_code | VARCHAR(11) | National Drug... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "463"
+    },
+    {
+      "chunk_id": 7,
+      "text": "## LAB_RESULTS Table\n**Purpose**: Store diagnostic laboratory test results for patients.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| lab_result_id | INTEGER | PRIMARY KEY | Surrogate key for lab result records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient associated with result |\n| test_name | VARCHAR(255) | NOT NULL | Name of laboratory test performed |\n| loinc_code | VARCHAR(10) | Logical Observation... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "440"
+    },
+    {
+      "chunk_id": 8,
+      "text": "## PROVIDERS Table\n**Purpose**: Store healthcare provider information and credentials.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| provider_id | INTEGER | PRIMARY KEY | Surrogate key for provider records |\n| npi | VARCHAR(10) | UNIQUE NOT NULL | National Provider Identifier |\n| first_name | VARCHAR(50) | NOT NULL | Provider's first name |\n| last_name | VARCHAR(50) | NOT NULL | Provider's last name |\n| provider_type | VARCHAR(50... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "747"
+    },
+    {
+      "chunk_id": 9,
+      "text": "## APPOINTMENTS Table\n**Purpose**: Store patient appointment scheduling and encounter information.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| appointment_id | INTEGER | PRIMARY KEY | Surrogate key for appointment records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient scheduled for appointment |\n| provider_id | INTEGER | FK \u2192 providers.provider_id, NOT NULL | Provider conducting appointment |\n| departme... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "788"
+    },
+    {
+      "chunk_id": 10,
+      "text": "## CLAIMS Table\n**Purpose**: Store insurance claims and billing information for services rendered.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| claim_id | INTEGER | PRIMARY KEY | Surrogate key for claim records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient associated with claim |\n| insurance_plan_id | INTEGER | FK \u2192 insurance_plans.plan_id, NOT NULL | Insurance plan billed |\n| claim_number | VARCHAR(50)... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "788"
+    },
+    {
+      "chunk_id": 11,
+      "text": "## General Conventions\n\n### Temporal Validity Pattern\nAll major tables use `valid_from` and `valid_to` timestamps for historization:\n- Current records have `valid_to = NULL`\n- Historical records have non-NULL `valid_to`\n- Queries must include `WHERE valid_to IS NULL` to retrieve current data\n- Historical analysis possible by querying all records\n\n### Soft Delete Pattern\nAll tables include `is_deleted` flag:\n- `is_deleted = FALSE` for active records\n- `is_deleted = TRUE` for logically deleted rec... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "236"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 12,
+    "total_tokens": 6560,
+    "avg_tokens": 546.6666666666666
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Patient",
+      "predicate": "has",
+      "object": "a unique medical record number",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Patient",
+      "predicate": "may have",
+      "object": "multiple episodes of care",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Patient",
+      "predicate": "can be identified by",
+      "object": "their medical record number (MRN)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Patient Registration",
+      "predicate": "includes",
+      "object": "personal details, emergency contacts, insurance information, and consent forms",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Diagnosis",
+      "predicate": "is the identification of",
+      "object": "a disease, condition, or injury",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Diagnoses",
+      "predicate": "are coded using",
+      "object": "ICD-10-CM (International Classification of Diseases, 10th Revision, Clinical Modification)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "A patient",
+      "predicate": "may have",
+      "object": "multiple concurrent diagnoses",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Principal Diagnosis",
+      "predicate": "is the primary condition identified after study",
+      "object": "as chiefly responsible for admission of the patient to the healthcare facility",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Principal Diagnosis",
+      "predicate": "determines",
+      "object": "the primary diagnosis-related group (DRG) for billing purposes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Comorbidity",
+      "predicate": "is",
+      "object": "any additional diagnosis that exists simultaneously with the principal diagnosis",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Comorbidities",
+      "predicate": "affect",
+      "object": "patient complexity scores and reimbursement levels under risk-adjusted payment models",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Treatment",
+      "predicate": "is",
+      "object": "any medical intervention, therapeutic procedure, or clinical action taken to address a diagnosed con... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Treatments",
+      "predicate": "range from",
+      "object": "medication administration to surgical procedures and behavioral therapies",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Each treatment",
+      "predicate": "is linked to",
+      "object": "specific diagnoses through clinical justification",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Medication",
+      "predicate": "includes",
+      "object": "prescription drugs, over-the-counter medications, and controlled substances",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Each medication record",
+      "predicate": "includes",
+      "object": "dosage, route of administration, frequency, and prescribing provider",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Medication Reconciliation",
+      "predicate": "is the process of",
+      "object": "comparing a patient's medication orders to all medications the patient has been taking to avoid erro... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Provider",
+      "predicate": "is a",
+      "object": "licensed healthcare professional authorized to deliver medical services within their scope of practi... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Provider types",
+      "predicate": "include",
+      "object": "physicians (MD/DO), nurse practitioners (NP), physician assistants (PA), registered nurses (RN), and... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Each provider",
+      "predicate": "has",
+      "object": "unique NPI numbers and hospital credentialing status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Attending Physician",
+      "predicate": "is the primary physician responsible for",
+      "object": "a patient's care during an admission or encounter",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Attending Physician",
+      "predicate": "has",
+      "object": "ultimate authority over treatment decisions and discharge planning",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Consulting Physician",
+      "predicate": "is a",
+      "object": "specialist called upon to provide expert opinion or manage specific aspects of a patient's condition... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Department",
+      "predicate": "is an",
+      "object": "organizational unit within the healthcare facility dedicated to specific medical specialties or serv... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Departments",
+      "predicate": "may be",
+      "object": "subdivided into sub-specialties",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Service Line",
+      "predicate": "is a",
+      "object": "strategic grouping of related departments focused on a specific patient population or disease contin... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Service lines",
+      "predicate": "are used for",
+      "object": "operational and financial reporting",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Charges",
+      "predicate": "must be captured at",
+      "object": "the time of service",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Charges",
+      "predicate": "linked to",
+      "object": "appropriate billing codes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Claim Scrubbing",
+      "predicate": "is",
+      "object": "Automated validation of claims against payer-specific rules, coding guidelines, and regulatory requi... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Claim Scrubbing",
+      "predicate": "reduces",
+      "object": "claim rejections and denials",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Denial Management",
+      "predicate": "is",
+      "object": "the systematic process of tracking, analyzing, and appealing claim denials from payers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Effective denial management",
+      "predicate": "identifies",
+      "object": "root causes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Effective denial management",
+      "predicate": "implements",
+      "object": "corrective actions",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Revenue Cycle Management",
+      "predicate": "contributes to",
+      "object": "the capture, management, and collection of patient service revenue",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "The cycle",
+      "predicate": "spans from",
+      "object": "patient scheduling through final payment collection",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Clinical Quality Measures",
+      "predicate": "assess",
+      "object": "the quality of care delivered across specific conditions and procedures",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Examples",
+      "predicate": "include",
+      "object": "readmission rates, mortality rates, complication rates, and adherence to evidence-based guidelines",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Value-Based Care",
+      "predicate": "rewards",
+      "object": "healthcare providers for delivering high-quality, cost-efficient care rather than volume of services",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Models",
+      "predicate": "include",
+      "object": "Accountable Care Organizations (ACOs) and bundled payments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Population health",
+      "predicate": "refers to",
+      "object": "the health outcomes of a group of individuals, including the distribution of such outcomes within th... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Population health management",
+      "predicate": "focuses on",
+      "object": "improving outcomes for defined patient panels through preventive care and chronic disease management",
+      "confidence": 1.0
+    }
+  ],
+  "extraction_summary": {
+    "total_triplets": 42,
+    "avg_confidence": 1.0,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Specialist Called Upon",
+      "definition": "A person receiving medical care or services within a healthcare setting.",
+      "synonyms": [
+        "A patient",
+        "Attending Physician",
+        "Consulting Physician",
+        "Patient",
+        "Patient Registration",
+        "a disease, condition, or injury",
+        "a patient's care during an admission or encounter",
+        "any medical intervention, therapeutic procedure, or clinical action taken to address a diagnosed condition",
+        "as chiefly responsible for admission of the patient to the healthcare facility",
+        "licensed healthcare professional authorized to deliver medical services within their scope of practice",
+        "organizational unit within the healthcare facility dedicated to specific medical specialties or services",
+        "strategic grouping of related departments focused on a specific patient population or disease continuum"
+      ],
+      "provenance_text": "A specialist called upon to provide expert opinion or manage specific aspects of a patient's condition beyond the attending physician's expertise | A patient may have multiple concurrent diagnoses with varying levels of clinical priority | The primary physician responsible for a patient's care during an admission or encounter | This physician has ultimate authority over treatment decisions and discharge planning | Each patient has a unique medical record number | and may have multiple episodes of care across different time periods | Patients can be identified by their medical record number (MRN) | This includes personal details, emergency contacts, insurance information, and consent forms | The identification of a disease, condition, or injury based on clinical evaluation, laboratory results, and diagnostic imaging | Any medical intervention, therapeutic procedure, or clinical action taken to address a diagnosed condition | The primary condition identified after study as chiefly respon",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Automated Validation Of",
+      "definition": "The process of automatically verifying claims against payer-specific rules, coding guidelines, and regulatory requirements prior to submission to ensure compliance and accuracy.",
+      "synonyms": [
+        "the systematic process of tracking, analyzing, and appealing claim denials from payers"
+      ],
+      "provenance_text": "Automated validation of claims against payer-specific rules, coding guidelines, and regulatory requirements before submission. | The systematic process of tracking, analyzing, and appealing claim denials from payers.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Comorbidities",
+      "definition": "Comorbidities are additional diagnoses that exist simultaneously with a principal diagnosis and can impact patient management and healthcare reimbursement.",
+      "synonyms": [
+        "Comorbidity"
+      ],
+      "provenance_text": "Comorbidities affect patient complexity scores and reimbursement levels under risk-adjusted payment models | Any additional diagnosis that exists simultaneously with the principal diagnosis",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Denial Management",
+      "definition": "Denial management is the systematic process of tracking, analyzing, and appealing claim denials from payers to improve revenue cycle performance.",
+      "synonyms": [
+        "Effective denial management"
+      ],
+      "provenance_text": "The systematic process of tracking, analyzing, and appealing claim denials from payers. | Effective denial management identifies root causes and implements corrective actions.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Department",
+      "definition": "A Department is an organizational unit within an institution, such as a healthcare facility, dedicated to specific functions, specialties, or services.",
+      "synonyms": [
+        "Departments"
+      ],
+      "provenance_text": "An organizational unit within the healthcare facility dedicated to specific medical specialties or services (e.g., Emergency Department, Cardiology, Oncology, Radiology) | Departments have hierarchical relationships and may be subdivided into sub-specialties",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Additional Diagnosis That",
+      "definition": "A diagnosis is the identification of a disease, condition, or injury based on clinical evaluation, laboratory results, and diagnostic imaging.",
+      "synonyms": [
+        "Diagnoses",
+        "Diagnosis",
+        "Each medication record",
+        "Each provider",
+        "Each treatment",
+        "Medication",
+        "Medication Reconciliation",
+        "Principal Diagnosis",
+        "Provider",
+        "Provider types",
+        "Treatment",
+        "Treatments",
+        "a unique medical record number",
+        "multiple concurrent diagnoses",
+        "their medical record number (MRN)",
+        "unique NPI numbers and hospital credentialing status"
+      ],
+      "provenance_text": "Any additional diagnosis that exists simultaneously with the principal diagnosis | Diagnoses are coded using ICD-10-CM (International Classification of Diseases, 10th Revision, Clinical Modification) for billing and epidemiological purposes | The identification of a disease, condition, or injury based on clinical evaluation, laboratory results, and diagnostic imaging | Each medication record includes dosage, route of administration, frequency, and prescribing provider | Each provider has unique National Provider Identifier (NPI) numbers and hospital credentialing status | Each treatment is linked to specific diagnoses through clinical justification | Medications include prescription drugs, over-the-counter medications, and controlled substances | The process of comparing a patient's medication orders to all medications the patient has been taking to avoid errors, omissions, duplications, and drug interactions | The primary condition identified after study as chiefly responsible for adm",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Examples",
+      "definition": "Models include organizational and payment frameworks such as Accountable Care Organizations (ACOs) and bundled payments.",
+      "synonyms": [
+        "Models"
+      ],
+      "provenance_text": "Examples include readmission rates, mortality rates, complication rates, and adherence to evidence-based guidelines. | Models include Accountable Care Organizations (ACOs) and bundled payments.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Population Health Management",
+      "definition": "Population health management is the strategic approach to improving health outcomes for a defined group of individuals through preventive care, chronic disease management, and coordinated healthcare efforts.",
+      "synonyms": [
+        "Population health"
+      ],
+      "provenance_text": "Population health management focuses on improving outcomes for defined patient panels through preventive care and chronic disease management. | The health outcomes of a group of individuals, including the distribution of such outcomes within the group.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Service Line",
+      "definition": "A service line is a strategic grouping of related departments or units within a healthcare organization focused on a specific patient population or disease continuum, used for operational and financial reporting.",
+      "synonyms": [
+        "Service lines"
+      ],
+      "provenance_text": "A strategic grouping of related departments focused on a specific patient population or disease continuum (e.g., Heart & Vascular, Neuroscience, Orthopedics) | Service lines are used for operational and financial reporting",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Healthcare Providers For",
+      "definition": "Healthcare quality measurement involves assessing and incentivizing the delivery of high-quality, efficient care by providers across various conditions and procedures.",
+      "synonyms": [
+        "the quality of care delivered across specific conditions and procedures"
+      ],
+      "provenance_text": "Payment models that reward healthcare providers for delivering high-quality, cost-efficient care rather than volume of services. | Standardized metrics assessing the quality of care delivered across specific conditions and procedures.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Patient Revenue Cycle Management",
+      "definition": "Patient Revenue Cycle Management encompasses the entire process of scheduling, capturing, managing, and collecting revenue from patient services.",
+      "synonyms": [
+        "patient scheduling through final payment collection",
+        "the capture, management, and collection of patient service revenue"
+      ],
+      "provenance_text": "The cycle spans from patient scheduling through final payment collection. | The administrative and clinical functions that contribute to the capture, management, and collection of patient service revenue.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Care Organizations Acos",
+      "definition": "Models include Accountable Care Organizations (ACOs) and bundled payments.",
+      "synonyms": [],
+      "provenance_text": "Models include Accountable Care Organizations (ACOs) and bundled payments.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Charges",
+      "definition": "Charges must be captured at the time of service and linked to appropriate billing codes. | Charges must be captured at the time of service and linked to appropriate billing codes.",
+      "synonyms": [],
+      "provenance_text": "Charges must be captured at the time of service and linked to appropriate billing codes. | Charges must be captured at the time of service and linked to appropriate billing codes.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Claim Scrubbing",
+      "definition": "Automated validation of claims against payer-specific rules, coding guidelines, and regulatory requirements before submission. | Scrubbing reduces claim rejections and denials.",
+      "synonyms": [],
+      "provenance_text": "Automated validation of claims against payer-specific rules, coding guidelines, and regulatory requirements before submission. | Scrubbing reduces claim rejections and denials.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Clinical Quality Measures",
+      "definition": "Standardized metrics assessing the quality of care delivered across specific conditions and procedures.",
+      "synonyms": [],
+      "provenance_text": "Standardized metrics assessing the quality of care delivered across specific conditions and procedures.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Cm International Classification",
+      "definition": "Diagnoses are coded using ICD-10-CM (International Classification of Diseases, 10th Revision, Clinical Modification) for billing and epidemiological purposes",
+      "synonyms": [],
+      "provenance_text": "Diagnoses are coded using ICD-10-CM (International Classification of Diseases, 10th Revision, Clinical Modification) for billing and epidemiological purposes",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Revenue Cycle Management",
+      "definition": "The administrative and clinical functions that contribute to the capture, management, and collection of patient service revenue.",
+      "synonyms": [],
+      "provenance_text": "The administrative and clinical functions that contribute to the capture, management, and collection of patient service revenue.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Cycle",
+      "definition": "The cycle spans from patient scheduling through final payment collection.",
+      "synonyms": [],
+      "provenance_text": "The cycle spans from patient scheduling through final payment collection.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Value Based Care",
+      "definition": "Payment models that reward healthcare providers for delivering high-quality, cost-efficient care rather than volume of services.",
+      "synonyms": [],
+      "provenance_text": "Payment models that reward healthcare providers for delivering high-quality, cost-efficient care rather than volume of services.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Appropriate Billing Codes",
+      "definition": "Charges must be captured at the time of service and linked to appropriate billing codes.",
+      "synonyms": [],
+      "provenance_text": "Charges must be captured at the time of service and linked to appropriate billing codes.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Claim Rejections And Denials",
+      "definition": "Scrubbing reduces claim rejections and denials.",
+      "synonyms": [],
+      "provenance_text": "Scrubbing reduces claim rejections and denials.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Comparing A Patient'S",
+      "definition": "The process of comparing a patient's medication orders to all medications the patient has been taking to avoid errors, omissions, duplications, and drug interactions",
+      "synonyms": [],
+      "provenance_text": "The process of comparing a patient's medication orders to all medications the patient has been taking to avoid errors, omissions, duplications, and drug interactions",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Corrective Actions",
+      "definition": "Effective denial management identifies root causes and implements corrective actions.",
+      "synonyms": [],
+      "provenance_text": "Effective denial management identifies root causes and implements corrective actions.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Dosage Route Of",
+      "definition": "Each medication record includes dosage, route of administration, frequency, and prescribing provider",
+      "synonyms": [],
+      "provenance_text": "Each medication record includes dosage, route of administration, frequency, and prescribing provider",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Improving Outcomes For",
+      "definition": "Population health management focuses on improving outcomes for defined patient panels through preventive care and chronic disease management.",
+      "synonyms": [],
+      "provenance_text": "Population health management focuses on improving outcomes for defined patient panels through preventive care and chronic disease management.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Medication Administration To",
+      "definition": "Treatments range from medication administration to surgical procedures and behavioral therapies",
+      "synonyms": [],
+      "provenance_text": "Treatments range from medication administration to surgical procedures and behavioral therapies",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Multiple Episodes Of Care",
+      "definition": "and may have multiple episodes of care across different time periods",
+      "synonyms": [],
+      "provenance_text": "and may have multiple episodes of care across different time periods",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Operational And Financial Reporting",
+      "definition": "Service lines are used for operational and financial reporting",
+      "synonyms": [],
+      "provenance_text": "Service lines are used for operational and financial reporting",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Patient Complexity Scores",
+      "definition": "Comorbidities affect patient complexity scores and reimbursement levels under risk-adjusted payment models",
+      "synonyms": [],
+      "provenance_text": "Comorbidities affect patient complexity scores and reimbursement levels under risk-adjusted payment models",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Personal Details Emergency",
+      "definition": "This includes personal details, emergency contacts, insurance information, and consent forms",
+      "synonyms": [],
+      "provenance_text": "This includes personal details, emergency contacts, insurance information, and consent forms",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Md/Do",
+      "definition": "Provider types include physicians (MD/DO), nurse practitioners (NP), physician assistants (PA), registered nurses (RN), and clinical specialists",
+      "synonyms": [],
+      "provenance_text": "Provider types include physicians (MD/DO), nurse practitioners (NP), physician assistants (PA), registered nurses (RN), and clinical specialists",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Prescription Drugs Over",
+      "definition": "Medications include prescription drugs, over-the-counter medications, and controlled substances",
+      "synonyms": [],
+      "provenance_text": "Medications include prescription drugs, over-the-counter medications, and controlled substances",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Readmission Rates Mortality",
+      "definition": "Examples include readmission rates, mortality rates, complication rates, and adherence to evidence-based guidelines.",
+      "synonyms": [],
+      "provenance_text": "Examples include readmission rates, mortality rates, complication rates, and adherence to evidence-based guidelines.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Root Causes",
+      "definition": "Effective denial management identifies root causes and implements corrective actions.",
+      "synonyms": [],
+      "provenance_text": "Effective denial management identifies root causes and implements corrective actions.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Specific Diagnoses Through",
+      "definition": "Each treatment is linked to specific diagnoses through clinical justification",
+      "synonyms": [],
+      "provenance_text": "Each treatment is linked to specific diagnoses through clinical justification",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Subdivided Into Sub Specialties",
+      "definition": "Departments have hierarchical relationships and may be subdivided into sub-specialties",
+      "synonyms": [],
+      "provenance_text": "Departments have hierarchical relationships and may be subdivided into sub-specialties",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Health Outcomes Of",
+      "definition": "The health outcomes of a group of individuals, including the distribution of such outcomes within the group.",
+      "synonyms": [],
+      "provenance_text": "The health outcomes of a group of individuals, including the distribution of such outcomes within the group.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Drg",
+      "definition": "This diagnosis determines the primary diagnosis-related group (DRG) for billing purposes",
+      "synonyms": [],
+      "provenance_text": "This diagnosis determines the primary diagnosis-related group (DRG) for billing purposes",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Time Of Service",
+      "definition": "Charges must be captured at the time of service and linked to appropriate billing codes.",
+      "synonyms": [],
+      "provenance_text": "Charges must be captured at the time of service and linked to appropriate billing codes.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    },
+    {
+      "name": "Ultimate Authority Over",
+      "definition": "This physician has ultimate authority over treatment decisions and discharge planning",
+      "synonyms": [],
+      "provenance_text": "This physician has ultimate authority over treatment decisions and discharge planning",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/03_advanced_healthcare/business_glossary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 40
+  },
+  "tables_parsed": [
+    {
+      "name": "PATIENTS",
+      "columns": 16
+    },
+    {
+      "name": "INSURANCE_PLANS",
+      "columns": 11
+    },
+    {
+      "name": "DEPARTMENTS",
+      "columns": 12
+    },
+    {
+      "name": "PROVIDERS",
+      "columns": 13
+    },
+    {
+      "name": "DIAGNOSES",
+      "columns": 13
+    },
+    {
+      "name": "TREATMENTS",
+      "columns": 15
+    },
+    {
+      "name": "MEDICATIONS",
+      "columns": 15
+    },
+    {
+      "name": "LAB_RESULTS",
+      "columns": 16
+    },
+    {
+      "name": "APPOINTMENTS",
+      "columns": 15
+    },
+    {
+      "name": "CLAIMS",
+      "columns": 18
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Patients",
+      "description": "This table stores detailed information about patients, including personal identifiers, contact details, insurance information, and record validity timestamps."
+    },
+    {
+      "name": "Insurance Plans",
+      "description": "This table stores information about different insurance plans, including their identifiers, names, payer details, types, validity periods, and status indicators."
+    },
+    {
+      "name": "Departments",
+      "description": "This table stores information about organizational departments, including their identifiers, names, hierarchical relationships, service lines, locations, and status validity periods."
+    },
+    {
+      "name": "Providers",
+      "description": "This table stores information about healthcare providers, including their identifiers, names, specialties, department affiliations, and status validity periods."
+    },
+    {
+      "name": "Diagnoses",
+      "description": "This table stores medical diagnosis records associated with patients, including diagnosis codes, types, providers, and relevant timestamps for record validity and updates."
+    },
+    {
+      "name": "Treatments",
+      "description": "This table stores information about medical treatments provided to patients, including diagnosis, provider details, treatment status, and relevant timestamps for record management."
+    },
+    {
+      "name": "Medications",
+      "description": "This table stores information about medications prescribed to patients, including details about the medication, dosage, administration route, and prescribing provider, along with validity and audit ti... [TRUNCATED]"
+    },
+    {
+      "name": "Laboratory Results",
+      "description": "This table stores detailed information about laboratory test results for patients, including test identifiers, values, reference ranges, and status indicators."
+    },
+    {
+      "name": "Appointments",
+      "description": "This table stores information about patient appointments, including scheduling details, status, and cancellation reasons, to manage healthcare appointment workflows."
+    },
+    {
+      "name": "Claims",
+      "description": "This table stores information about insurance claims, including patient details, service dates, procedural and diagnosis codes, financial amounts, claim status, and audit timestamps."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 10,
+    "tables_enriched": 10,
+    "total_columns": 144
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 113,
+    "total_relationships": 91,
+    "completed_tables": 10
+  },
+  "stage_timings": {}
+}

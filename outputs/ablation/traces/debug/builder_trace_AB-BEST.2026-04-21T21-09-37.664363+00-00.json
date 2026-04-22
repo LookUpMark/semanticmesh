@@ -1,0 +1,1456 @@
+{
+  "study_id": "AB-BEST",
+  "timestamp": "2026-04-21T21:09:37.664363+00:00",
+  "trace_id": "AB-BEST.2026-04-21T21-09-37.664363+00-00",
+  "config": {
+    "llm_model_reasoning": "openai/gpt-oss-120b",
+    "llm_model_extraction": "openai/gpt-4.1-nano",
+    "chunk_size": 128,
+    "chunk_overlap": 16,
+    "er_similarity_threshold": 0.65,
+    "er_blocking_top_k": 5,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md",
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/data_dictionary.txt"
+  ],
+  "ddl_files": [
+    "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# CustomerMaster E-Commerce System - Business Glossary\n\n## Document Overview\n**System**: CustomerMaster v3.2.1 (Legacy)\n**Last Updated**: March 2015\n**Purpose**: Business terminology definitions for data migration project\n**Target System**: New ERP Platform (Migration Q4 2015)\n\n---\n\n## Core Business Entities\n\n### Customer\n**Definition**: An individual or organization that has purchased products or services from the company. Customers are stored in the `tblCustomer` table with legacy identifiers ... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "796"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Domain-Specific Terminology\n\n### Backorder\n**Definition**: A situation where a customer orders a product that is out of stock. The order is accepted, but the line item is marked as BACKORDERED until inventory arrives.\n\n**Business Impact**: Backorders are allowed even with negative stock quantities. This is intentional to support pre-orders and special orders.\n\n---\n\n### Fulfillment\n**Definition**: The process of picking, packing, and shipping orders to customers. Managed by the warehouse team.... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "545"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Legacy System Quirks\n\n### Hungarian Notation\nThe legacy system uses Hungarian notation prefixes:\n- `str` = string (VARCHAR)\n- `int` = integer (INT)\n- `lng` = long integer (INT)\n- `flt` = float/money (DECIMAL)\n- `bol` = boolean (BIT)\n- `dtm` = datetime (DATETIME)\n\n**Migration Note**: These prefixes are inconsistent. For example, `intCustID` is actually a VARCHAR, and `lngOrderID` is a regular INT.\n\n### Table Naming Inconsistency\nDifferent parts of the system use different naming conventions:\n-... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "747"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## Migration Priority Guidelines\n\n### Critical Path (Must Migrate First)\n1. **tblCustomer** - Required for all orders\n2. **tblProduct** - Required for line items and inventory\n3. **vw_SalesOrderHdr** - Core transactional data\n4. **ord_line_item** - Order details\n\n### Secondary (Can Migrate in Parallel)\n5. **inv_txn_log** - Inventory audit trail\n6. **tblPayment** - Payment records\n7. **tblOrderStatusHistory** - Order status audit\n\n### Low Priority (Migrate Last)\n8. **tblShippingCarrier** - Refere... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "455"
+    },
+    {
+      "chunk_id": 4,
+      "text": "================================================================================\nCUSTOMERMASTER DATABASE - DATA DICTIONARY\n================================================================================\nLegacy System: CustomerMaster v3.2.1\nLast Updated: 2015-08-14\nMigration Status: PENDING to new ERP system\n\n================================================================================\nTABLE: tblCustomer\n--------------------------------------------------------------------------------\nPurpose:... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "788"
+    },
+    {
+      "chunk_id": 5,
+      "text": "strCategory (VARCHAR 100)\n    - Product category\n    - Hierarchical: \"Clothing > Shirts > Casual\"\n\nstrBrand (VARCHAR 100)\n    - Brand or manufacturer name\n    - Free text field\n\ndtmIntroduced (DATETIME)\n    - Product launch date\n    - When product was added to catalog\n\ndtmDiscontinued (DATETIME)\n    - Discontinuation date\n    - NULL if currently active\n\nLegacy Deprecated Fields:\n------------------------\nprod_num (VARCHAR 20)\n    - OLD: Legacy product number\n    - Superseded by strSKU\n    - Retai... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "788"
+    },
+    {
+      "chunk_id": 6,
+      "text": "qty (INT)\n    - Quantity ordered\n    - Must be positive integer\n\namt (DECIMAL 10,2)\n    - Line item total amount (qty * unit_price)\n    - At time of order (snapshotted, not current price)\n\ndisc_amt (DECIMAL 10,2)\n    - Discount amount applied to this line\n    - Can be zero\n\nline_status (VARCHAR 20)\n    - Line item status\n    - Values: \"PENDING\", \"PICKED\", \"SHIPPED\", \"BACKORDERED\"\n\nproduct_code (VARCHAR 50)\n    - REDUNDANT: Copy of tblProduct.strSKU\n    - Denormalized for reporting performance\n  ... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "784"
+    },
+    {
+      "chunk_id": 7,
+      "text": "Email (VARCHAR 150)\n    - User email address\n    - For notifications\n\nLastLogin (DATETIME)\n    - Last successful login timestamp\n    - NULL for new users\n\nCreatedDate (DATETIME)\n    - Account creation date\n    - DEFAULT GETDATE()\n\n================================================================================\nTABLE: tblOrderStatusHistory\n--------------------------------------------------------------------------------\nPurpose: Audit log of order status changes\nNaming Convention: Verbose (tbl pre... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "663"
+    },
+    {
+      "chunk_id": 8,
+      "text": "CardNumberText (VARCHAR 100)\n    - SECURITY ISSUE: Full card number stored as text!\n    - Should be tokenized\n    - Contains unencrypted PAN (Primary Account Number)\n\nCardHolderName (VARCHAR 100)\n    - Cardholder name\n    - As provided by customer\n\nAuthorizationCode (VARCHAR 50)\n    - Payment gateway auth code\n    - Proof of successful authorization\n\n================================================================================\nMIGRATION NOTES:\n=================================================... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "348"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 9,
+    "total_tokens": 5914,
+    "avg_tokens": 657.1111111111111
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "CustomerMaster v3.2.1 (Legacy)",
+      "predicate": "last updated",
+      "object": "March 2015",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "CustomerMaster v3.2.1 (Legacy)",
+      "predicate": "purpose",
+      "object": "Business terminology definitions for data migration project",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Target System",
+      "predicate": "is",
+      "object": "New ERP Platform (Migration Q4 2015)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has definition",
+      "object": "An individual or organization that has purchased products or services from the company",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customers",
+      "predicate": "are stored in",
+      "object": "the `tblCustomer` table",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "must have",
+      "object": "a unique customer code (strCustID)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customers",
+      "predicate": "can be marked as",
+      "object": "inactive (bolActive = 0)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customers",
+      "predicate": "are never",
+      "object": "deleted",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Email addresses",
+      "predicate": "are",
+      "object": "optional but strongly recommended for order notifications",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer region",
+      "predicate": "determines",
+      "object": "sales territory assignment and tax calculation",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Data Migration Notes",
+      "predicate": "state",
+      "object": "The new system will use integer customer IDs (cust_id) instead of alphanumeric strCustID codes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Mapping table",
+      "predicate": "will be maintained during",
+      "object": "the transition period",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order (Sales Order)",
+      "predicate": "has definition",
+      "object": "A commercial transaction request from a customer for one or more products",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Orders",
+      "predicate": "are stored in",
+      "object": "`vw_SalesOrderHdr`",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order",
+      "predicate": "must have",
+      "object": "a valid customer reference",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Orders",
+      "predicate": "move through",
+      "object": "statuses: PENDING \u2192 SHIPPED (or CANCELLED)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order totals",
+      "predicate": "are calculated from",
+      "object": "line items plus tax",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Once shipped, orders",
+      "predicate": "cannot be",
+      "object": "cancelled (must process return instead)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Data Migration Notes",
+      "predicate": "state",
+      "object": "The `lngOrderID` uses long integer format",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "New system",
+      "predicate": "will continue using",
+      "object": "integer order IDs",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product (SKU)",
+      "predicate": "has definition",
+      "object": "A sellable item in the company's catalog",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Products",
+      "predicate": "are identified by",
+      "object": "SKU (Stock Keeping Unit)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Products",
+      "predicate": "are stored in",
+      "object": "`tblProduct`",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "must have",
+      "object": "a unique SKU code",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "SKUs",
+      "predicate": "follow the format",
+      "object": "Category-Color-Size (e.g., SHIRT-BLU-L)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Products",
+      "predicate": "can be",
+      "object": "discontinued but remain in the system for historical orders",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Prices",
+      "predicate": "can",
+      "object": "change over time",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order line items",
+      "predicate": "snapshot",
+      "object": "the price at time of sale",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Line Item",
+      "predicate": "has definition",
+      "object": "An individual product within an order, specifying quantity and price",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Line items",
+      "predicate": "are stored in",
+      "object": "`ord_line_item` table",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Each line item",
+      "predicate": "references",
+      "object": "exactly one product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Each line item",
+      "predicate": "belongs to",
+      "object": "exactly one order",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Line items",
+      "predicate": "have",
+      "object": "independent status (can be backordered while others ship)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Amount",
+      "predicate": "is calculated as",
+      "object": "quantity \u00d7 unit price at time of order",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Data Migration Notes",
+      "predicate": "state",
+      "object": "The `ord_line_item` table contains redundant copies of product data (`product_code`, `item_name`) fo... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Redundant copies of product data",
+      "predicate": "should NOT be",
+      "object": "updated from the product master",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Inventory Transaction",
+      "predicate": "has definition",
+      "object": "A record of stock quantity changes for audit purposes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Inventory transactions",
+      "predicate": "are stored in",
+      "object": "`inv_txn_log` table",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "All stock movements",
+      "predicate": "must be",
+      "object": "logged",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Transaction types",
+      "predicate": "are",
+      "object": "IN (receipts), OUT (shipments), ADJ (corrections)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Inventory quantity",
+      "predicate": "is",
+      "object": "the sum of all IN transactions minus all OUT transactions",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Manual adjustments",
+      "predicate": "require",
+      "object": "supervisor approval",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "The legacy system",
+      "predicate": "uses",
+      "object": "Hungarian notation prefixes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Hungarian notation prefixes",
+      "predicate": "are",
+      "object": "inconsistent",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "intCustID",
+      "predicate": "is",
+      "object": "a VARCHAR",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "lngOrderID",
+      "predicate": "is",
+      "object": "a regular INT",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Different parts of the system",
+      "predicate": "use",
+      "object": "different naming conventions",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "tbl prefix",
+      "predicate": "is",
+      "object": "tblCustomer, tblProduct, tblPayment",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "vw_ prefix",
+      "predicate": "is",
+      "object": "vw_SalesOrderHdr",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "ord_ prefix",
+      "predicate": "is",
+      "object": "ord_line_item",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "inv_ prefix",
+      "predicate": "is",
+      "object": "inv_txn_log",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "No prefix",
+      "predicate": "applies to",
+      "object": "Group, User",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Table `Group`",
+      "predicate": "must be quoted as",
+      "object": "[Group]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Table `User`",
+      "predicate": "must be quoted as",
+      "object": "[User]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "tblProduct.unit_cost",
+      "predicate": "is",
+      "object": "VARCHAR(20)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "tblCustomer.strCustID",
+      "predicate": "is",
+      "object": "VARCHAR(50)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Foreign keys",
+      "predicate": "mix",
+      "object": "data types",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "cust_nm",
+      "predicate": "refers to",
+      "object": "Customer Name (strFullName)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "ord_dt",
+      "predicate": "refers to",
+      "object": "Order Date (dtmOrderDate)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "prod_desc",
+      "predicate": "refers to",
+      "object": "Product Description (strDescription)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "ship_meth",
+      "predicate": "refers to",
+      "object": "Shipping Method (strShippingMethod)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Orders",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Order",
+      "predicate": "has",
+      "object": "Line Items",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "Line Items",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "Inventory Transactions",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Group",
+      "predicate": "has",
+      "object": "Group (Hierarchy)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Order",
+      "predicate": "has",
+      "object": "Payments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Order",
+      "predicate": "has",
+      "object": "Status History",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "tblCustomer",
+      "predicate": "is required for",
+      "object": "all orders",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "tblProduct",
+      "predicate": "is required for",
+      "object": "line items and inventory",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "vw_SalesOrderHdr",
+      "predicate": "is core transactional data",
+      "object": "",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ord_line_item",
+      "predicate": "is order details",
+      "object": "",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "inv_txn_log",
+      "predicate": "can migrate in parallel",
+      "object": "Secondary",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "tblPayment",
+      "predicate": "can migrate in parallel",
+      "object": "Secondary",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "tblOrderStatusHistory",
+      "predicate": "can migrate in parallel",
+      "object": "Secondary",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "tblShippingCarrier",
+      "predicate": "can be migrated last",
+      "object": "Low Priority",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Group",
+      "predicate": "can be migrated last",
+      "object": "Low Priority",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "User",
+      "predicate": "can be migrated last",
+      "object": "Low Priority",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "some `ord_line_item.prod_id` values",
+      "predicate": "reference",
+      "object": "non-existent products",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "some orders",
+      "predicate": "reference",
+      "object": "customers marked as inactive",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "inv_txn_log.user_id",
+      "predicate": "has no",
+      "object": "foreign key constraint",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "tblProduct",
+      "predicate": "has",
+      "object": "both active and discontinued products with the same SKU pattern",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "vw_SalesOrderHdr",
+      "predicate": "has records with",
+      "object": "`fltTotalAmount = 0`",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "tblPayment.CardNumberText",
+      "predicate": "contains",
+      "object": "full numbers and tokens",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "tblPayment.CardNumberText",
+      "predicate": "stores",
+      "object": "unencrypted card numbers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "User.PasswordHash",
+      "predicate": "uses",
+      "object": "SHA-256 without salt",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "payment data",
+      "predicate": "lacks",
+      "object": "PCI-DSS required fields",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "no indexes",
+      "predicate": "exist on",
+      "object": "frequently queried fields",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "TEXT fields",
+      "predicate": "are used for",
+      "object": "variable-length data",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "denormalized fields in `ord_line_item`",
+      "predicate": "create",
+      "object": "update overhead",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "CustomerMaster v3.2.1",
+      "predicate": "Last Updated",
+      "object": "2015-08-14",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "CustomerMaster v3.2.1",
+      "predicate": "Migration Status",
+      "object": "PENDING to new ERP system",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "tblCustomer",
+      "predicate": "Purpose",
+      "object": "Stores customer master data from the legacy CRM system",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "strCustID",
+      "predicate": "Customer identifier in format",
+      "object": "C-XXXXX or REG-XXXX",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "strCustID",
+      "predicate": "Contains",
+      "object": "letters, numbers, hyphens",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "strCustID",
+      "predicate": "NOT NULL,",
+      "object": "",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "strFullName",
+      "predicate": "Customer's full name",
+      "object": "free text field",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "strEmail",
+      "predicate": "Primary email address for contact",
+      "object": "",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "strRegion",
+      "predicate": "Values",
+      "object": "\"North\", \"South\", \"East\", \"West\", \"International\"",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "strCountry",
+      "predicate": "Customer's country",
+      "object": "Full country name (not ISO code)",
+      "confidence": 1.0
+    },
+    "... [66 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 166,
+    "avg_confidence": 1.0,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "`Ord Line Item`",
+      "definition": "An order (sales order) is a formal request from a customer for products or services, encompassing order details, status, line items, payments, and associated data within a business transaction system.",
+      "synonyms": [
+        "\"PENDING\", \"COMPLETED\", \"FAILED\", \"REFUNDED\"",
+        "\"https://www.ups.com/track?tracknum={TRACKING_NUM}\"",
+        "A commercial transaction request from a customer for one or more products",
+        "A record of stock quantity changes for audit purposes",
+        "A sellable item in the company's catalog",
+        "Account creation date",
+        "Active carrier flag",
+        "Amount",
+        "An individual or organization that has purchased products or services from the company",
+        "An individual product within an order, specifying quantity and price",
+        "AuthorizationCode",
+        "CardHolderName",
+        "CardNumberText",
+        "Cardholder name",
+        "Carrier code for API integration",
+        "Carrier display name",
+        "Carrier identifier",
+        "CarrierCode",
+        "CarrierID",
+        "CarrierName",
+        "ChangeReason",
+        "ChangedByUser",
+        "ChangedDate",
+        "CreatedDate",
+        "Customer",
+        "Customer Name (strFullName)",
+        "Customer region",
+        "CustomerMaster v3.2.1",
+        "CustomerMaster v3.2.1 (Legacy)",
+        "Customers",
+        "E-commerce product title",
+        "Each line item",
+        "Email addresses",
+        "Foreign key to vw_SalesOrderHdr.lngOrderID",
+        "Foreign keys",
+        "Full card number",
+        "Full card number stored as text",
+        "GETDATE()",
+        "Group",
+        "Group (Hierarchy)",
+        "Group, User",
+        "History record identifier",
+        "HistoryID",
+        "Inventory Transaction",
+        "Inventory Transactions",
+        "Inventory quantity",
+        "Inventory transactions",
+        "Last successful login timestamp",
+        "Line Item",
+        "Line Items",
+        "Line items",
+        "Mapping table",
+        "New ERP Platform (Migration Q4 2015)",
+        "New status value",
+        "New system",
+        "NewStatus",
+        "OldStatus",
+        "Once shipped, orders",
+        "Order",
+        "Order (Sales Order)",
+        "Order Date (dtmOrderDate)",
+        "Order line items",
+        "Order totals",
+        "OrderID",
+        "Orders",
+        "PENDING to new ERP system",
+        "Payment amount",
+        "Payment gateway auth code",
+        "Payment identifier",
+        "Payment method type",
+        "Payment processing date",
+        "Payment processing status",
+        "PaymentDate",
+        "PaymentID",
+        "PaymentMethod",
+        "PaymentStatus",
+        "Payments",
+        "Previous status value",
+        "Prices",
+        "Product",
+        "Product (SKU)",
+        "Product Description (strDescription)",
+        "Product catalog master",
+        "Products",
+        "Reason for status change",
+        "Redundant copies of product data",
+        "Redundant with strFullName",
+        "SKU (Stock Keeping Unit)",
+        "SKUs",
+        "Status History",
+        "Table `Group`",
+        "Table `User`",
+        "The `lngOrderID` uses long integer format",
+        "The new system will use integer customer IDs (cust_id) instead of alphanumeric strCustID codes",
+        "Timestamp of status change",
+        "TrackingURL",
+        "Transaction types",
+        "URL template for tracking",
+        "Updated by inventory transactions",
+        "Updated by trigger on any field change",
+        "User",
+        "User email address",
+        "User.PasswordHash",
+        "User.UserName",
+        "Username who made the change",
+        "When product was added to catalog",
+        "[Group]",
+        "[User]",
+        "`ord_line_item` table",
+        "`tblProduct`",
+        "`vw_SalesOrderHdr`",
+        "a unique SKU code",
+        "a unique customer code (strCustID)",
+        "a valid customer reference",
+        "all orders",
+        "both active and discontinued products with the same SKU pattern",
+        "cancellation reasons, etc.",
+        "cancelled (must process return instead)",
+        "change",
+        "change over time",
+        "cust_id",
+        "cust_nm",
+        "customer",
+        "customer_name",
+        "data types",
+        "deleted",
+        "denormalized fields in `ord_line_item`",
+        "dtmCreated",
+        "dtmIntroduced",
+        "dtmLastModified",
+        "exactly one order",
+        "exactly one product",
+        "fltPrice",
+        "foreign key constraint",
+        "full numbers and tokens",
+        "inconsistent",
+        "independent status (can be backordered while others ship)",
+        "initial status",
+        "intCustID",
+        "intProdID",
+        "integer order IDs",
+        "inv_ prefix",
+        "line items and inventory",
+        "line items plus tax",
+        "lngOrderID",
+        "logged",
+        "new users",
+        "non-existent products",
+        "notifications",
+        "optional but strongly recommended for order notifications",
+        "ord_ prefix",
+        "ord_dt",
+        "ord_line_item",
+        "order total",
+        "payment data",
+        "quantity \u00d7 unit price at time of order",
+        "some `ord_line_item.prod_id` values",
+        "some orders",
+        "statuses: PENDING \u2192 SHIPPED (or CANCELLED)",
+        "strBrand",
+        "strCategory",
+        "strCountry",
+        "strCustID",
+        "strDescription",
+        "strEmail",
+        "strFullName",
+        "strName",
+        "strRegion",
+        "strSKU",
+        "successful authorization",
+        "supervisor approval",
+        "tbl prefix",
+        "tblCustomer",
+        "tblCustomer, tblProduct, tblPayment",
+        "tblCustomer.strCustID",
+        "tblPayment",
+        "tblPayment.CardNumberText",
+        "tblProduct",
+        "tblProduct.unit_cost",
+        "tblShippingCarrier",
+        "the `tblCustomer` table",
+        "the price at time of sale",
+        "the transition period",
+        "unencrypted PAN (Primary Account Number)",
+        "unencrypted card numbers",
+        "update overhead",
+        "updated from the product master",
+        "variable-length data",
+        "vw_ prefix",
+        "vw_SalesOrderHdr",
+        "{TRACKING_NUM}"
+      ],
+      "provenance_text": "The `ord_line_item` table contains redundant copies of product data (`product_code`, `item_name`) for historical accuracy. | PaymentStatus (VARCHAR 20)\n    - Payment processing status\n    - Values: \"PENDING\", \"COMPLETED\", \"FAILED\", \"REFUNDED\" | TrackingURL (VARCHAR 500)\n    - URL template for tracking\n    - Example: \"https://www.ups.com/track?tracknum={TRACKING_NUM}\" | **Definition**: A commercial transaction request from a customer for one or more products. | **Definition**: A record of stock quantity changes for audit purposes. | **Definition**: A sellable item in the company's catalog. | CreatedDate (DATETIME)\n    - Account creation date | bolActive (BIT)\n    - Active carrier flag | - Amount is calculated as quantity \u00d7 unit price at time of order | Amount (DECIMAL 12,2)\n    - Payment amount | Amount (DECIMAL 12,2)\n    - Payment amount\n    - Must match order total | **Definition**: An individual or organization that has purchased products or services from the company. | **Definition*",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Parcel Service Ups Fed",
+      "definition": "These are major parcel delivery carriers used for shipping and logistics services.",
+      "synonyms": [
+        "\"UPS\", \"FDX\", \"USPS\"",
+        "\"UPS\", \"FedEx\", \"USPS\""
+      ],
+      "provenance_text": "CarrierCode (VARCHAR 20, UNIQUE)\n    - Carrier code for API integration\n    - Examples: \"UPS\", \"FDX\", \"USPS\" | CarrierName (VARCHAR 100)\n    - Carrier display name\n    - Examples: \"UPS\", \"FedEx\", \"USPS\"",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Product Active Status Flags",
+      "definition": "An attribute indicating whether a customer or product is currently active, available, or in circulation within the business system.",
+      "synonyms": [
+        "1 = active, 0 = inactive",
+        "1 = available for sale, 0 = discontinued or out of circulation",
+        "Inactive carriers are not available for new orders",
+        "Must be > 0",
+        "bolActive",
+        "customers marked as inactive",
+        "inactive (bolActive = 0)"
+      ],
+      "provenance_text": "bolActive (BIT)\n    - Active customer flag\n    - 1 = active, 0 = inactive | bolActive (BIT)\n    - Product availability flag\n    - 1 = available for sale\n    - 0 = discontinued or out of circulation | bolActive (BIT)\n    - Active carrier flag\n    - Inactive carriers not available for new orders | fltPrice (DECIMAL 10,2)\n    - Unit selling price\n    - Must be > 0\n    - Stored with 2 decimal places | bolActive (BIT)\n    - Active carrier flag | - Some orders reference customers marked as inactive | - Customers can be marked as inactive (bolActive = 0) but are never deleted",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "2015 08 14",
+      "definition": "A specific date in the Gregorian calendar, used to mark a particular point in time.",
+      "synonyms": [
+        "March 2015"
+      ],
+      "provenance_text": "Last Updated: 2015-08-14 | **Last Updated**: March 2015",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Category Color Size",
+      "definition": "Category-Color-Size is a product attribute format used in SKU identifiers to specify product details such as category, color, and size.",
+      "synonyms": [
+        "Category-Color-Size (e.g., SHIRT-BLU-L)",
+        "Hierarchical: \"Clothing > Shirts > Casual\""
+      ],
+      "provenance_text": "strSKU (VARCHAR 50, UNIQUE)\n    - Stock Keeping Unit\n    - Format: Category-Color-Size (e.g., \"SHIRT-BLU-L\")\n    - Must be unique | - SKUs follow the format: Category-Color-Size (e.g., SHIRT-BLU-L) | strCategory (VARCHAR 100)\n    - Product category\n    - Hierarchical: \"Clothing > Shirts > Casual\"",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Data Migration Notes",
+      "definition": "A collection of notes or annotations that document specific instructions, issues, or considerations related to data migration processes.",
+      "synonyms": [
+        "migration notes, special handling",
+        "txtNotes"
+      ],
+      "provenance_text": "**Data Migration Notes**: The new system will use integer customer IDs (cust_id) instead of alphanumeric strCustID codes. | The `lngOrderID` uses long integer format. | The `ord_line_item` table contains redundant copies of product data (`product_code`, `item_name`) for historical accuracy. | txtNotes (TEXT)\n    - Free-form notes about customer\n    - Used by customer service team\n    - Contains migration notes, special handling",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Frequently Queried Fields",
+      "definition": "A free text field is a data entry component that allows users to input unstructured textual information within a database or form.",
+      "synonyms": [
+        "Free text field",
+        "TEXT fields",
+        "free text field",
+        "text"
+      ],
+      "provenance_text": "- No indexes on frequently queried fields (customer email, order date range) | strBrand (VARCHAR 100)\n    - Brand or manufacturer name\n    - Free text field | - TEXT fields used for variable-length data (should use VARCHAR(MAX)) | Customer's full name (free text field) | - SECURITY ISSUE: Full card number stored as text!",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "No Indexes",
+      "definition": "This entity refers to either naming conventions without prefixes or the absence of indexes on database fields, depending on context.",
+      "synonyms": [
+        "No prefix"
+      ],
+      "provenance_text": "- No indexes on frequently queried fields (customer email, order date range) | - No prefix: Group, User (reserved words!)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Varchar",
+      "definition": "A VARCHAR is a variable-length character string data type used in databases to store text data with a specified maximum length.",
+      "synonyms": [
+        "VARCHAR(20)",
+        "VARCHAR(50)",
+        "a VARCHAR"
+      ],
+      "provenance_text": "- `tblProduct.unit_cost` is VARCHAR(20) instead of DECIMAL | - `tblCustomer.strCustID` is VARCHAR(50) instead of INT | for example, `intCustID` is actually a VARCHAR",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Inv Txn Log",
+      "definition": "The inv_txn_log is a database table that records inventory transaction activities, including user interactions.",
+      "synonyms": [
+        "`inv_txn_log` table",
+        "inv_txn_log.user_id"
+      ],
+      "provenance_text": "- `inv_` prefix: inv_txn_log | 5. **inv_txn_log** - Inventory audit trail | Stored in `inv_txn_log` table. | - No foreign key constraint on `inv_txn_log.user_id`",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Card Debit Paypal Bank",
+      "definition": "PaymentMethod (VARCHAR 50)\n    - Payment method type\n    - Values: \"CREDIT_CARD\", \"DEBIT\", \"PAYPAL\", \"BANK_TRANSFER\"",
+      "synonyms": [],
+      "provenance_text": "PaymentMethod (VARCHAR 50)\n    - Payment method type\n    - Values: \"CREDIT_CARD\", \"DEBIT\", \"PAYPAL\", \"BANK_TRANSFER\"",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "South East West International",
+      "definition": "Values: \"North\", \"South\", \"East\", \"West\", \"International\"",
+      "synonyms": [],
+      "provenance_text": "Values: \"North\", \"South\", \"East\", \"West\", \"International\"",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "All Stock Movements",
+      "definition": "- All stock movements must be logged",
+      "synonyms": [],
+      "provenance_text": "- All stock movements must be logged",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Auto Increment, Identity Column",
+      "definition": "intProdID (INT, PK)\n    - Integer product identifier\n    - Auto-increment, identity column\n    - Used in foreign key references",
+      "synonyms": [],
+      "provenance_text": "intProdID (INT, PK)\n    - Integer product identifier\n    - Auto-increment, identity column\n    - Used in foreign key references",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Auto Populated By Trigger",
+      "definition": "dtmCreated (DATETIME)\n    - Record creation timestamp\n    - Auto-populated by trigger",
+      "synonyms": [],
+      "provenance_text": "dtmCreated (DATETIME)\n    - Record creation timestamp\n    - Auto-populated by trigger",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Business Terminology Definitions",
+      "definition": "**Purpose**: Business terminology definitions for data migration project",
+      "synonyms": [],
+      "provenance_text": "**Purpose**: Business terminology definitions for data migration project",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Reg Xxxx",
+      "definition": "Customer identifier in format C-XXXXX or REG-XXXX",
+      "synonyms": [],
+      "provenance_text": "Customer identifier in format C-XXXXX or REG-XXXX",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Null",
+      "definition": "cust_id (INT, NULL)\n    - NEW: Planned integer surrogate key\n    - Migration placeholder for new system\n    - Currently NULL for all records",
+      "synonyms": [],
+      "provenance_text": "cust_id (INT, NULL)\n    - NEW: Planned integer surrogate key\n    - Migration placeholder for new system\n    - Currently NULL for all records",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Different Parts Of",
+      "definition": "Different parts of the system use different naming conventions:",
+      "synonyms": [],
+      "provenance_text": "Different parts of the system use different naming conventions:",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Email (Varchar 150)",
+      "definition": "Email (VARCHAR 150)\n    - User email address",
+      "synonyms": [],
+      "provenance_text": "Email (VARCHAR 150)\n    - User email address",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Iso",
+      "definition": "Customer's country\n    - Full country name (not ISO code)",
+      "synonyms": [],
+      "provenance_text": "Customer's country\n    - Full country name (not ISO code)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Html Content Stored",
+      "definition": "strDescription (TEXT)\n    - Long product description\n    - HTML content (stored as-is, no sanitization)",
+      "synonyms": [],
+      "provenance_text": "strDescription (TEXT)\n    - Long product description\n    - HTML content (stored as-is, no sanitization)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Hungarian Notation Prefixes",
+      "definition": "The legacy system uses Hungarian notation prefixes: | Migration Note: These prefixes are inconsistent.",
+      "synonyms": [],
+      "provenance_text": "The legacy system uses Hungarian notation prefixes: | Migration Note: These prefixes are inconsistent.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Out",
+      "definition": "- Transaction types: IN (receipts), OUT (shipments), ADJ (corrections)",
+      "synonyms": [],
+      "provenance_text": "- Transaction types: IN (receipts), OUT (shipments), ADJ (corrections)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Last Login",
+      "definition": "LastLogin (DATETIME)\n    - Last successful login timestamp | LastLogin (DATETIME)\n    - Last successful login timestamp\n    - NULL for new users",
+      "synonyms": [],
+      "provenance_text": "LastLogin (DATETIME)\n    - Last successful login timestamp | LastLogin (DATETIME)\n    - Last successful login timestamp\n    - NULL for new users",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Low Priority",
+      "definition": "8. **tblShippingCarrier** - Reference data, can be manually recreated | 9. **Group** - Product categories, can be reorganized | 10. **User** - System users, can be recreated in new system",
+      "synonyms": [],
+      "provenance_text": "8. **tblShippingCarrier** - Reference data, can be manually recreated | 9. **Group** - Product categories, can be reorganized | 10. **User** - System users, can be recreated in new system",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Manual Adjustments",
+      "definition": "- Manual adjustments require supervisor approval",
+      "synonyms": [],
+      "provenance_text": "- Manual adjustments require supervisor approval",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Pci Dss Required Fields",
+      "definition": "- Payment data lacks PCI-DSS required fields (tokenization, encryption at rest)",
+      "synonyms": [],
+      "provenance_text": "- Payment data lacks PCI-DSS required fields (tokenization, encryption at rest)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Sha 256 Without Salt",
+      "definition": "- **CRITICAL**: `User.PasswordHash` uses SHA-256 without salt (vulnerable to rainbow tables)",
+      "synonyms": [],
+      "provenance_text": "- **CRITICAL**: `User.PasswordHash` uses SHA-256 without salt (vulnerable to rainbow tables)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Secondary",
+      "definition": "5. **inv_txn_log** - Inventory audit trail | 6. **tblPayment** - Payment records | 7. **tblOrderStatusHistory** - Order status audit",
+      "synonyms": [],
+      "provenance_text": "5. **inv_txn_log** - Inventory audit trail | 6. **tblPayment** - Payment records | 7. **tblOrderStatusHistory** - Order status audit",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Shipping Method",
+      "definition": " - `ship_meth` \u2192 Shipping Method (strShippingMethod)",
+      "synonyms": [],
+      "provenance_text": " - `ship_meth` \u2192 Shipping Method (strShippingMethod)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Crm",
+      "definition": "Purpose: Stores customer master data from the legacy CRM system",
+      "synonyms": [],
+      "provenance_text": "Purpose: Stores customer master data from the legacy CRM system",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Target System",
+      "definition": "**Target System**: New ERP Platform (Migration Q4 2015)",
+      "synonyms": [],
+      "provenance_text": "**Target System**: New ERP Platform (Migration Q4 2015)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Legacy System",
+      "definition": "The legacy system uses Hungarian notation prefixes:",
+      "synonyms": [],
+      "provenance_text": "The legacy system uses Hungarian notation prefixes:",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Total Amount",
+      "definition": "- Some `vw_SalesOrderHdr` records have `fltTotalAmount = 0` (likely failed calculations)",
+      "synonyms": [],
+      "provenance_text": "- Some `vw_SalesOrderHdr` records have `fltTotalAmount = 0` (likely failed calculations)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Int",
+      "definition": "and `lngOrderID` is a regular INT.",
+      "synonyms": [],
+      "provenance_text": "and `lngOrderID` is a regular INT.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Different Naming Conventions",
+      "definition": "Different parts of the system use different naming conventions:",
+      "synonyms": [],
+      "provenance_text": "Different parts of the system use different naming conventions:",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Discontinued But Remain",
+      "definition": "- Products can be discontinued but remain in the system for historical orders",
+      "synonyms": [],
+      "provenance_text": "- Products can be discontinued but remain in the system for historical orders",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Int Stock Qty",
+      "definition": "intStockQty (INT)\n    - Current stock quantity\n    - Updated by inventory transactions\n    - Can be negative (backorders allowed)",
+      "synonyms": [],
+      "provenance_text": "intStockQty (INT)\n    - Current stock quantity\n    - Updated by inventory transactions\n    - Can be negative (backorders allowed)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Letters, Numbers, Hyphens",
+      "definition": "Contains letters, numbers, hyphens",
+      "synonyms": [],
+      "provenance_text": "Contains letters, numbers, hyphens",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Prod Desc",
+      "definition": " - `prod_desc` \u2192 Product Description (strDescription)",
+      "synonyms": [],
+      "provenance_text": " - `prod_desc` \u2192 Product Description (strDescription)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Sales Territory Assignment",
+      "definition": "- Customer region determines sales territory assignment and tax calculation",
+      "synonyms": [],
+      "provenance_text": "- Customer region determines sales territory assignment and tax calculation",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Ship Meth",
+      "definition": " - `ship_meth` \u2192 Shipping Method (strShippingMethod)",
+      "synonyms": [],
+      "provenance_text": " - `ship_meth` \u2192 Shipping Method (strShippingMethod)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "Tbl Order Status History",
+      "definition": "7. **tblOrderStatusHistory** - Order status audit",
+      "synonyms": [],
+      "provenance_text": "7. **tblOrderStatusHistory** - Order status audit",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "In",
+      "definition": "- Inventory quantity is the sum of all IN transactions minus all OUT transactions",
+      "synonyms": [],
+      "provenance_text": "- Inventory quantity is the sum of all IN transactions minus all OUT transactions",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    },
+    {
+      "name": "True",
+      "definition": "HistoryID (INT, PK)\n    - History record identifier\n    - Auto-increment | CarrierID (INT, PK)\n    - Carrier identifier\n    - Auto-increment | PaymentID (INT, PK)\n    - Payment identifier\n    - Auto-increment",
+      "synonyms": [],
+      "provenance_text": "HistoryID (INT, PK)\n    - History record identifier\n    - Auto-increment | CarrierID (INT, PK)\n    - Carrier identifier\n    - Auto-increment | PaymentID (INT, PK)\n    - Payment identifier\n    - Auto-increment",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/thesis/tests/fixtures/06_edgecases_legacy/business_glossary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 46
+  },
+  "tables_parsed": [
+    {
+      "name": "TBLCUSTOMER",
+      "columns": 11
+    },
+    {
+      "name": "TBLPRODUCT",
+      "columns": 14
+    },
+    {
+      "name": "VW_SALESORDERHDR",
+      "columns": 11
+    },
+    {
+      "name": "ORD_LINE_ITEM",
+      "columns": 9
+    },
+    {
+      "name": "INV_TXN_LOG",
+      "columns": 8
+    },
+    {
+      "name": "GROUP",
+      "columns": 5
+    },
+    {
+      "name": "USER",
+      "columns": 7
+    },
+    {
+      "name": "TBLORDERSTATUSHISTORY",
+      "columns": 7
+    },
+    {
+      "name": "TBLSHIPPINGCARRIER",
+      "columns": 5
+    },
+    {
+      "name": "TBLPAYMENT",
+      "columns": 9
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customer",
+      "description": "This table stores information about customers, including their identifiers, contact details, geographic location, account status, and notes."
+    },
+    {
+      "name": "Product Table",
+      "description": "This table stores detailed information about products, including identifiers, descriptions, pricing, stock levels, and categorization data for inventory management and sales analysis."
+    },
+    {
+      "name": "View Sales Order Header",
+      "description": "This view contains header information for sales orders, including order details, dates, status, financial totals, and shipping information."
+    },
+    {
+      "name": "Order Line Item",
+      "description": "This table stores detailed information about each individual product line within customer orders, including quantities, pricing, discounts, and status."
+    },
+    {
+      "name": "Inventory Transaction Log",
+      "description": "This table records all inventory transactions, including product movements, quantities, transaction types, and associated user and reference information."
+    },
+    {
+      "name": "Group",
+      "description": "This table stores information about different groups within the organization, including their hierarchy and status."
+    },
+    {
+      "name": "User",
+      "description": "This table stores information about users, including their login credentials, roles, and account activity timestamps."
+    },
+    {
+      "name": "Order Status History",
+      "description": "This table records the history of status changes for customer orders, including who made the change and when."
+    },
+    {
+      "name": "Table Shipping Carrier",
+      "description": "This table stores information about shipping carriers, including their identifiers, names, codes, tracking URLs, and whether their bill of lading process is active."
+    },
+    {
+      "name": "Payment",
+      "description": "This table stores information about payments made for customer orders, including payment methods, dates, amounts, statuses, and card details."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 10,
+    "tables_enriched": 10,
+    "total_columns": 86
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 90,
+    "total_relationships": 90,
+    "completed_tables": 10
+  },
+  "stage_timings": {}
+}
