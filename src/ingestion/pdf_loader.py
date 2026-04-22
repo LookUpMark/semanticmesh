@@ -3,20 +3,20 @@
 EP-02: loads PDF pages or plain text files into Document objects, then splits
 them into fixed-size Chunks using RecursiveCharacterTextSplitter. No LLM involved.
 
-PDF extraction uses opendataloader-pdf (Java-backed) which provides structured
-JSON output with page numbers, element types, and heading levels.
+PDF extraction uses the official LangChain integration for opendataloader-pdf
+(``langchain-opendataloader-pdf``). Markdown output is requested so that heading
+hierarchy, tables, and lists are preserved verbatim — this is especially valuable
+for the parent splitter in ``chunk_documents_hierarchical`` which already splits
+on ``"\n## "`` boundaries.
 """
 
 from __future__ import annotations
 
-import json
 import logging
-import tempfile
 from pathlib import Path
-from typing import Any
 
-import opendataloader_pdf
 import tiktoken
+from langchain_opendataloader_pdf import OpenDataLoaderPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.config.logging import get_logger
@@ -27,9 +27,6 @@ logger: logging.Logger = get_logger(__name__)
 
 _settings = get_settings()
 _TOKENIZER = tiktoken.get_encoding("cl100k_base")
-
-# Element types to skip (noise for KG construction).
-_SKIP_TYPES = frozenset({"header", "footer"})
 
 
 class IngestionError(Exception):
@@ -57,67 +54,48 @@ def _load_text_file(path: Path) -> list[Document]:
         raise IngestionError(f"Failed to read text file: {path}") from exc
 
 
-def _parse_odl_json(
-    doc_json: dict[str, Any],
+def _lc_docs_to_documents(
+    lc_docs: list,
     source_name: str,
 ) -> list[Document]:
-    """Convert opendataloader JSON elements into page-level Document objects.
+    """Convert LangChain Document objects returned by OpenDataLoaderPDFLoader
+    into our internal ``Document`` schema.
 
-    The JSON ``kids`` array is a flat list of elements (heading, paragraph,
-    table, list, image, caption, etc.) each carrying a ``page number`` and
-    ``content`` field.  Elements are grouped by page and joined with ``\\n\\n``.
-    Header/footer elements are filtered out.
+    Each LangChain document has ``page_content`` (Markdown text) and
+    ``metadata["page"]`` (1-indexed page number).  Headers/footers are already
+    excluded by the loader (``include_header_footer=False`` default).
     """
-    kids = doc_json.get("kids", [])
-
-    # Group content by page number, filtering noise.
-    pages: dict[int, list[str]] = {}
-    for element in kids:
-        if element.get("type") in _SKIP_TYPES:
-            continue
-        content = element.get("content", "").strip()
+    documents: list[Document] = []
+    for lc_doc in lc_docs:
+        content = lc_doc.page_content.strip()
         if not content:
             continue
-        page_num = element.get("page number", 1)
-        pages.setdefault(page_num, []).append(content)
-
-    if not pages:
-        return []
-
-    documents: list[Document] = []
-    for page_num in sorted(pages.keys()):
-        combined_text = "\n\n".join(pages[page_num])
+        page = lc_doc.metadata.get("page", 1)
         documents.append(
             Document(
-                text=combined_text,
-                metadata={"source": source_name, "page": str(page_num)},
+                text=content,
+                metadata={"source": source_name, "page": str(page)},
             )
         )
-
     return documents
 
 
 def _load_pdf_via_opendataloader(path: Path) -> list[Document]:
-    """Extract text from a PDF using opendataloader-pdf with JSON output.
+    """Extract text from a PDF using the LangChain OpenDataLoader integration.
 
-    Calls ``opendataloader_pdf.convert()`` which spawns a JVM, converts the PDF
-    to structured JSON, and writes results to a temporary directory.
+    Uses ``OpenDataLoaderPDFLoader`` with Markdown output so that heading
+    hierarchy, table structure, and list formatting are preserved.
+    Headers and footers are excluded by the loader (default behaviour).
     """
-    with tempfile.TemporaryDirectory(prefix="odl_") as output_dir:
-        opendataloader_pdf.convert(
-            input_path=[str(path)],
-            output_dir=output_dir,
-            format="json",
-        )
-
-        json_files = list(Path(output_dir).glob("*.json"))
-        if not json_files:
-            raise IngestionError(f"No output from opendataloader-pdf for: {path}")
-
-        with open(json_files[0], encoding="utf-8") as f:
-            doc_json: dict[str, Any] = json.load(f)
-
-    documents = _parse_odl_json(doc_json, path.name)
+    loader = OpenDataLoaderPDFLoader(
+        file_path=str(path),
+        format="markdown",
+        split_pages=True,
+        include_header_footer=False,
+        quiet=True,
+    )
+    lc_docs = loader.load()
+    documents = _lc_docs_to_documents(lc_docs, path.name)
 
     if not documents:
         logger.debug("All pages empty in %s — skipping", path.name)
@@ -189,31 +167,35 @@ def load_pdfs_batch(paths: list[Path]) -> list[Document]:
     for tp in text_paths:
         all_docs.extend(_load_text_file(tp))
 
-    # Batch all PDFs into one convert() call.
+    # Batch all PDFs into one loader call (single JVM invocation).
     if pdf_paths:
-        with tempfile.TemporaryDirectory(prefix="odl_") as output_dir:
-            opendataloader_pdf.convert(
-                input_path=[str(p) for p in pdf_paths],
-                output_dir=output_dir,
-                format="json",
-            )
+        loader = OpenDataLoaderPDFLoader(
+            file_path=[str(p) for p in pdf_paths],
+            format="markdown",
+            split_pages=True,
+            include_header_footer=False,
+            quiet=True,
+        )
+        lc_docs = loader.load()
 
-            # Build a mapping from PDF stem to its parsed documents.
-            for pdf_path in pdf_paths:
-                stem = pdf_path.stem
-                # opendataloader names output as <stem>.json
-                json_file = Path(output_dir) / f"{stem}.json"
-                if not json_file.exists():
-                    logger.warning("No JSON output for '%s' — skipping", pdf_path.name)
-                    continue
-                with open(json_file, encoding="utf-8") as f:
-                    doc_json: dict[str, Any] = json.load(f)
-                docs = _parse_odl_json(doc_json, pdf_path.name)
-                if docs:
-                    logger.info("Loaded %d pages from '%s'", len(docs), pdf_path.name)
-                    all_docs.extend(docs)
-                else:
-                    logger.debug("All pages empty in %s — skipping", pdf_path.name)
+        # Group by source filename so we can log per-file counts.
+        from collections import defaultdict
+        per_file: dict[str, list] = defaultdict(list)
+        for lc_doc in lc_docs:
+            src = Path(lc_doc.metadata.get("source", "")).name
+            per_file[src].append(lc_doc)
+
+        for pdf_path in pdf_paths:
+            file_lc_docs = per_file.get(pdf_path.name, [])
+            if not file_lc_docs:
+                logger.warning("No output for '%s' — skipping", pdf_path.name)
+                continue
+            docs = _lc_docs_to_documents(file_lc_docs, pdf_path.name)
+            if docs:
+                logger.info("Loaded %d pages from '%s'", len(docs), pdf_path.name)
+                all_docs.extend(docs)
+            else:
+                logger.debug("All pages empty in %s — skipping", pdf_path.name)
 
     return all_docs
 
