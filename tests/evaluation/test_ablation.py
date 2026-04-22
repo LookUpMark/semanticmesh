@@ -69,14 +69,24 @@ class TestSettingsOverride:
     def test_cache_cleared_after_block(self) -> None:
         from src.config.settings import get_settings
 
-        # Fill the cache
-        _ = get_settings()
+        # Capture the instance before the block
+        settings_before = get_settings()
+
         with _settings_override({"_TEST_ABLATION_KEY": "x"}):
-            pass
-        # Cache should have been cleared (currsize==0 or a new call happened)
-        cache_info_after = get_settings.cache_info()
-        # After the block, cache was cleared, so currsize should be 0
-        assert cache_info_after.currsize == 0
+            # On entry the cache was cleared + re-warmed — must be a new object
+            settings_inside = get_settings()
+
+        # On exit the cache was cleared + re-warmed again — another new object
+        settings_after = get_settings()
+
+        # cache_clear() resets miss counters to 0, so we verify cycle via
+        # object identity: each phase must produce a distinct Settings instance
+        assert settings_inside is not settings_before, (
+            "_settings_override should create a new Settings on entry"
+        )
+        assert settings_after is not settings_inside, (
+            "_settings_override should create a new Settings on exit"
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
