@@ -1,4 +1,4 @@
-# Changelog — v0.1.0
+# Changelog — v1.0.0
 
 **Date:** 2026-04-17
 **Audit Reference:** docs/audits/AUDIT-2026-04-17.md
