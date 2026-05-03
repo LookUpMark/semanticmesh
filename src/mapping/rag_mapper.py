@@ -28,7 +28,7 @@ from src.models.schemas import (
     TableSchema,
 )
 from src.prompts.templates import MAPPING_SYSTEM, MAPPING_USER, REFLECTION_TEMPLATE
-from src.retrieval.embeddings import embed_text
+from src.retrieval.embeddings import embed_text, embed_texts as _embed_texts_batch
 from src.utils.json_utils import clean_json, extract_text_content
 from src.utils.text_utils import normalize_concept_name
 
@@ -273,13 +273,21 @@ def propose_mapping_heuristic(
     best_confidence = 0.0
     best_adjusted = -1.0
 
-    for candidate in ranked[: max(5, top_k or 0)]:
-        candidate_text = (
-            f"{candidate.name}: {candidate.definition}" if candidate.definition else candidate.name
+    # Batch-embed all candidate texts upfront (Y-004 optimization)
+    candidates_slice = ranked[: top_k if top_k else 5]
+    candidate_texts = [
+        f"{c.name}: {c.definition}" if c.definition else c.name for c in candidates_slice
+    ]
+    if candidate_texts:
+        candidate_vecs = np.array(
+            _embed_texts_batch(candidate_texts, model=embeddings), dtype=np.float32
         )
-        e_vec = np.array(embed_text(candidate_text, model=embeddings), dtype=np.float32).reshape(
-            1, -1
-        )
+    else:
+        candidate_vecs = np.empty((0, 0), dtype=np.float32)
+
+    for idx, candidate in enumerate(candidates_slice):
+        candidate_text = candidate_texts[idx]
+        e_vec = candidate_vecs[idx].reshape(1, -1)
         similarity = float(cosine_similarity(q_vec, e_vec)[0][0])
         base_confidence = max(0.0, min(1.0, (similarity + 1.0) / 2.0))
 

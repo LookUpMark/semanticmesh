@@ -64,6 +64,9 @@ def clean_json(raw: str) -> str:
     Returns:
         Cleaned JSON string with fences removed and JSON object extracted.
 
+    Raises:
+        ValueError: If input exceeds 5 MB safety limit.
+
     Example:
         >>> clean_json('```json\\n{"key": "value"}\\n```')
         '{"key": "value"}'
@@ -72,6 +75,9 @@ def clean_json(raw: str) -> str:
         >>> clean_json('  {"key": "value"}  ')
         '{"key": "value"}'
     """
+    _MAX_JSON_SIZE = 5 * 1024 * 1024  # 5 MB safety limit
+    if len(raw) > _MAX_JSON_SIZE:
+        raise ValueError(f"JSON input too large ({len(raw)} bytes > {_MAX_JSON_SIZE} limit).")
     cleaned = _FENCE_RE.sub("", raw).strip()
     # Extract JSON object or array from within larger text
     obj_start = cleaned.find("{")

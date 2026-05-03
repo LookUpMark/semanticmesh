@@ -17,6 +17,7 @@ from src.config.logging import get_logger
 from src.config.settings import get_settings
 from src.models.schemas import EntityCluster, Triplet
 from src.retrieval.embeddings import embed_texts
+from src.utils.text_utils import is_valid_entity_name
 
 if TYPE_CHECKING:
     import logging
@@ -28,21 +29,140 @@ _settings = get_settings()
 def extract_unique_entities(triplets: list[Triplet]) -> list[str]:
     """Extract all unique entity strings (subjects + objects) from triplets.
 
+    Applies ``is_valid_entity_name`` to reject obvious noise (stopwords-only,
+    sentence fragments, purely numeric values) before expensive downstream steps.
+
     Args:
         triplets: All triplets extracted by the SLM across all chunks.
 
     Returns:
-        Sorted list of unique, non-empty entity strings.
+        Sorted list of unique, non-empty, quality-filtered entity strings.
     """
     entities: set[str] = set()
+    rejected: int = 0
     for t in triplets:
         if t.subject.strip():
-            entities.add(t.subject.strip())
+            if is_valid_entity_name(t.subject):
+                entities.add(t.subject.strip())
+            else:
+                rejected += 1
         if t.object.strip():
-            entities.add(t.object.strip())
+            if is_valid_entity_name(t.object):
+                entities.add(t.object.strip())
+            else:
+                rejected += 1
     unique = sorted(entities)
+    if rejected:
+        logger.info(
+            "Filtered %d low-quality entity names before blocking.", rejected
+        )
     logger.info("Extracted %d unique entities from %d triplets.", len(unique), len(triplets))
     return unique
+
+
+def _split_oversized_cluster(
+    member_indices: list[int],
+    entities: list[str],
+    sim_matrix: np.ndarray,
+    max_size: int,
+    base_threshold: float,
+) -> list[EntityCluster]:
+    """Split an oversized Union-Find component into tighter sub-clusters.
+
+    Uses progressively higher similarity thresholds to re-cluster the members
+    until all sub-clusters are within ``max_size``. Members that don't fit
+    into any tight sub-cluster are promoted to singletons (dropped).
+
+    Args:
+        member_indices: Indices of entities in the oversized component.
+        entities: Full entity list (for name lookup).
+        sim_matrix: Pre-computed cosine similarity matrix.
+        max_size: Maximum allowed cluster size.
+        base_threshold: Original similarity threshold used in blocking.
+
+    Returns:
+        List of ``EntityCluster`` objects, each within ``max_size``.
+    """
+    idx_arr = np.array(member_indices)
+    sub_sim = sim_matrix[np.ix_(idx_arr, idx_arr)]
+    n_sub = len(member_indices)
+
+    # Re-cluster with a tighter threshold (step up by 0.05 each iteration)
+    threshold = base_threshold + 0.10
+    max_iterations = 5
+
+    for _ in range(max_iterations):
+        # Fresh Union-Find on sub-matrix
+        parent = list(range(n_sub))
+
+        def find(i: int) -> int:
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+
+        def union(i: int, j: int) -> None:
+            ri, rj = find(i), find(j)
+            if ri != rj:
+                parent[ri] = rj
+
+        for i in range(n_sub):
+            for j in range(i + 1, n_sub):
+                if sub_sim[i, j] >= threshold:
+                    union(i, j)
+
+        sub_groups: dict[int, list[int]] = defaultdict(list)
+        for i in range(n_sub):
+            sub_groups[find(i)].append(i)
+
+        # Check if all groups are within max_size
+        all_ok = all(len(g) <= max_size for g in sub_groups.values())
+        if all_ok:
+            break
+        threshold += 0.05
+
+    # Build EntityCluster objects from the sub-groups
+    result: list[EntityCluster] = []
+    for local_indices in sub_groups.values():
+        if len(local_indices) < 2:
+            continue
+        # Cap at max_size: take the top-N most mutually similar
+        if len(local_indices) > max_size:
+            # Pick the `max_size` members with highest average pairwise sim
+            local_arr = np.array(local_indices)
+            local_sim = sub_sim[np.ix_(local_arr, local_arr)]
+            avg_sims = local_sim.mean(axis=1)
+            top_local = np.argsort(avg_sims)[::-1][:max_size]
+            local_indices = [local_indices[i] for i in top_local]
+
+        global_indices = [member_indices[li] for li in local_indices]
+        variants = [entities[gi] for gi in global_indices]
+        canonical = max(variants, key=len)
+
+        g_arr = np.array(global_indices)
+        g_sub = sim_matrix[np.ix_(g_arr, g_arr)]
+        n_m = len(global_indices)
+        if n_m > 1:
+            mask = ~np.eye(n_m, dtype=bool)
+            avg_sim = float(g_sub[mask].mean())
+        else:
+            avg_sim = 1.0
+
+        result.append(
+            EntityCluster(
+                canonical_candidate=canonical,
+                variants=variants,
+                avg_similarity=round(avg_sim, 4),
+            )
+        )
+
+    logger.info(
+        "Split oversized cluster (%d members) → %d sub-clusters (threshold=%.2f).",
+        len(member_indices),
+        len(result),
+        threshold,
+    )
+    return result
 
 
 def block_entities(
@@ -103,9 +223,22 @@ def block_entities(
     for i in range(n):
         groups[find(i)].append(i)
 
+    max_cluster_size: int = _settings.er_max_cluster_size
+
     clusters: list[EntityCluster] = []
     for member_indices in groups.values():
         if len(member_indices) < 2:
+            continue
+
+        # ── Over-sized cluster protection ─────────────────────────────────────
+        # Transitive chaining in Union-Find can produce monster clusters
+        # (e.g., "Customer" absorbing 100+ loosely-related terms).
+        # Split oversized clusters into tighter sub-groups using a higher threshold.
+        if len(member_indices) > max_cluster_size:
+            sub_clusters = _split_oversized_cluster(
+                member_indices, entities, sim_matrix, max_cluster_size, sim_threshold
+            )
+            clusters.extend(sub_clusters)
             continue
 
         variants = [entities[i] for i in member_indices]

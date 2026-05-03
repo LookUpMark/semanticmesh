@@ -82,6 +82,9 @@ class QueryState(TypedDict, total=False):
     retrieval_filtered_by_threshold: bool
     context_sufficiency: str
     retrieval_gate_decision: str
+    semantic_verification_overlap: float
+    semantic_verification_passed: bool
+    semantic_verification_warning: str | None
     grader_consistency_valid: bool
     grader_rejection_count: int
     iteration_count: int

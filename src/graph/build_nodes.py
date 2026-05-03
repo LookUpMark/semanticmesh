@@ -21,7 +21,7 @@ from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
 from src.models.state import BuilderState
 from src.prompts.few_shot import load_cypher_examples
 from src.retrieval.embeddings import embed_text, get_embeddings
-from src.utils.text_utils import normalize_concept_name
+from src.utils.text_utils import is_valid_entity_name, normalize_concept_name
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -211,6 +211,18 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
         # Normalize the concept name to Title Case before any graph writes
         concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
 
+        # Reject concept names that are still garbage after normalization
+        if not is_valid_entity_name(concept_name):
+            logger.warning(
+                "Concept name '%s' (raw: '%s') rejected by quality gate — skipping graph write.",
+                concept_name,
+                proposal.mapped_concept,
+            )
+            log_node_event(logger, "build_graph", f"table={proposal.table_name}", "rejected concept name", timer.elapsed_ms)
+            completed = list(state.get("completed_tables") or [])
+            completed.append(proposal.table_name)
+            return {"completed_tables": completed}
+
         # Resolve entity early — needed for both LLM and fallback paths.
         # If no matching resolved entity exists (e.g. the RAG Mapper normalised the
         # concept name differently from what entity resolution produced), fall back
@@ -240,11 +252,11 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     break
             if not cypher_failed:
                 logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
-            exec_cypher = llm_cypher
-            # Safety-net params: the system prompt tells the LLM to inline values,
-            # but it sometimes copies parameterised style from few-shot examples.
-            # Providing the params avoids ParameterMissing errors at runtime.
-            exec_params = _build_llm_cypher_params(proposal, table, entity_for_write)
+                exec_cypher = llm_cypher
+                # Safety-net params: the system prompt tells the LLM to inline values,
+                # but it sometimes copies parameterised style from few-shot examples.
+                # Providing the params avoids ParameterMissing errors at runtime.
+                exec_params = _build_llm_cypher_params(proposal, table, entity_for_write)
         else:
             logger.info(
                 "LLM Cypher failed for '%s' — falling back to deterministic builder.",
@@ -256,52 +268,38 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             client.execute_cypher(exec_cypher, exec_params)
             logger.info("Graph updated for table '%s'.", proposal.table_name)
 
-            # Normalize PhysicalTable.table_name to canonical UPPERCASE
-            # (LLM Cypher may use lowercase from DDL source text, while
-            # build_fk_cypher always uses the UPPERCASE name from the parser)
-            client.execute_cypher(
-                "MATCH (pt:PhysicalTable) "
-                "WHERE toLower(pt.table_name) = toLower($name) "
-                "SET pt.table_name = $canonical",
-                {"name": table.table_name, "canonical": table.table_name},
-            )
-
-            # Always stamp source_file regardless of which Cypher path was used
-            # (LLM-generated Cypher doesn't know about this property)
+            # ── Consolidate property updates into single Cypher call ──────────
+            # Combines: normalization, source_file stamp, enriched metadata
+            set_clauses: list[str] = ["pt.table_name = $canonical"]
+            merged_params: dict[str, Any] = {
+                "name": table.table_name,
+                "canonical": table.table_name,
+            }
             if table.source_file:
-                client.execute_cypher(
-                    "MATCH (pt:PhysicalTable) "
-                    "WHERE toLower(pt.table_name) = toLower($name) "
-                    "SET pt.source_file = $source_file",
-                    {"name": table.table_name, "source_file": table.source_file},
-                )
-
-            # Always stamp enriched metadata on the PhysicalTable node so that
-            # nodes written via the LLM Cypher path get full properties too.
-            enriched_params: dict[str, Any] = {"name": table.table_name}
-            enriched_set_clauses: list[str] = []
+                set_clauses.append("pt.source_file = $source_file")
+                merged_params["source_file"] = table.source_file
             if getattr(table, "enriched_table_name", None):
-                enriched_set_clauses.append("pt.enriched_table_name = $etn")
-                enriched_params["etn"] = table.enriched_table_name
+                set_clauses.append("pt.enriched_table_name = $etn")
+                merged_params["etn"] = table.enriched_table_name
             if getattr(table, "table_description", None):
-                enriched_set_clauses.append("pt.table_description = $td")
-                enriched_params["td"] = table.table_description
+                set_clauses.append("pt.table_description = $td")
+                merged_params["td"] = table.table_description
             if getattr(table, "enriched_columns", None):
-                enriched_set_clauses.append("pt.enriched_columns = $ec")
-                enriched_params["ec"] = _json.dumps(
+                set_clauses.append("pt.enriched_columns = $ec")
+                merged_params["ec"] = _json.dumps(
                     [{"original": ec.original_name, "enriched": ec.enriched_name}
                      for ec in table.enriched_columns]
                 )
             if table.comment:
-                enriched_set_clauses.append("pt.comment = $cmt")
-                enriched_params["cmt"] = table.comment
-            if enriched_set_clauses:
-                client.execute_cypher(
-                    "MATCH (pt:PhysicalTable) "
-                    "WHERE toLower(pt.table_name) = toLower($name) "
-                    f"SET {', '.join(enriched_set_clauses)}",
-                    enriched_params,
-                )
+                set_clauses.append("pt.comment = $cmt")
+                merged_params["cmt"] = table.comment
+
+            client.execute_cypher(
+                "MATCH (pt:PhysicalTable) "
+                "WHERE toLower(pt.table_name) = toLower($name) "
+                f"SET {', '.join(set_clauses)}",
+                merged_params,
+            )
 
             fk_statements = build_fk_cypher(table)
             if fk_statements:

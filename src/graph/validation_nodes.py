@@ -33,7 +33,7 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
 
         if proposal is None:
             log_node_event(logger, "validate_mapping", "no proposal", f"attempts={attempts + 1}", timer.elapsed_ms)
-            return {"reflection_attempts": attempts + 1}
+            return {"reflection_attempts": attempts + 1, "best_proposal": best_proposal}
 
         # Layer 1: Pydantic
         validated, error = validate_schema(proposal.model_dump())

@@ -20,7 +20,14 @@ Output format: a single JSON object matching this schema exactly:
 Rules:
 - Output ONLY valid JSON. No markdown. No explanation. No preamble.
 - "provenance_text" must be copied VERBATIM from the input. Never paraphrase.
-- "subject" and "object" must be noun phrases. "predicate" must be a verb phrase or relation label.
+- "subject" and "object" must be SHORT noun phrases (1-4 words). "predicate" must be a verb phrase or relation label.
+- GOOD subject/object examples: "Customer", "Sales Order", "Product Category", "Invoice Line Item"
+- BAD subject/object examples (DO NOT produce these):
+  - Sentence fragments: "a unique identifier assigned to each customer"
+  - Descriptions: "the table that stores all order data"
+  - Pronouns or generic words: "it", "the data", "this value"
+  - Full clauses: "when an order is placed by a customer"
+- If an entity is described by a long phrase, extract only the core noun: "Customer" not "a registered customer in the system"
 - If the text contains no extractable triplets, return: {"triplets": []}
 - Do NOT infer facts not stated in the text.
 - Confidence: 1.0 = explicitly stated, 0.7 = strongly implied, 0.5 = weakly implied."""

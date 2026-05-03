@@ -285,7 +285,7 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
         "retrieved_contexts": retrieved_contexts,
         "retrieval_quality_score": float(state.get("retrieval_quality_score", 0.0)),
         "retrieval_chunk_count": int(state.get("retrieval_chunk_count", len(reranked))),
-        "retrieved_filtered_by_threshold": bool(
+        "retrieval_filtered_by_threshold": bool(
             state.get("retrieval_filtered_by_threshold", False)
         ),
         "context_sufficiency": state.get("context_sufficiency", "insufficient"),
@@ -403,7 +403,7 @@ def run_query(
             "retrieved_contexts": list[str],
             "retrieval_quality_score": float,
             "retrieval_chunk_count": int,
-            "retrieved_filtered_by_threshold": bool,
+            "retrieval_filtered_by_threshold": bool,
             "context_sufficiency": str,
             "retrieval_gate_decision": str,
             "semantic_verification_overlap": float,
@@ -454,7 +454,7 @@ def run_query(
         "retrieved_contexts": [],
         "retrieval_quality_score": 0.0,
         "retrieval_chunk_count": 0,
-        "retrieved_filtered_by_threshold": False,
+        "retrieval_filtered_by_threshold": False,
         "context_sufficiency": "insufficient",
         "retrieval_gate_decision": "proceed",
         "semantic_verification_overlap": 1.0,

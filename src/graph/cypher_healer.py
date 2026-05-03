@@ -69,6 +69,15 @@ def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
         or any other driver exception. The ``error_message`` is injected into
         the Reflection Prompt verbatim.
     """
+    # Safety: reject Cypher containing destructive operations before sending to Neo4j.
+    _BLOCKED_KEYWORDS = ("DROP ", "DETACH DELETE", "DELETE ", "REMOVE ", "CALL dbms.", "CALL db.index.fulltext.drop")
+    upper = cypher.upper()
+    for kw in _BLOCKED_KEYWORDS:
+        if kw in upper:
+            msg = f"Cypher contains blocked keyword '{kw.strip()}' — rejecting."
+            logger.warning(msg)
+            return False, msg
+
     explain_stmt = f"EXPLAIN {cypher}"
     try:
         with driver.session() as session:

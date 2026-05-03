@@ -463,29 +463,14 @@ def merge_results(
     rrf_scores: dict[str, float] = {}
     representative: dict[str, RetrievedChunk] = {}
 
-    for rank, chunk in enumerate(vector):
-        nid = chunk.node_id
-        if not nid.strip() or not chunk.text.strip():
-            continue
-        rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
-        if nid not in representative:
-            representative[nid] = chunk
-
-    for rank, chunk in enumerate(bm25):
-        nid = chunk.node_id
-        if not nid.strip() or not chunk.text.strip():
-            continue
-        rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
-        if nid not in representative:
-            representative[nid] = chunk
-
-    for rank, chunk in enumerate(graph):
-        nid = chunk.node_id
-        if not nid.strip() or not chunk.text.strip():
-            continue
-        rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
-        if nid not in representative:
-            representative[nid] = chunk
+    for source in (vector, bm25, graph):
+        for rank, chunk in enumerate(source):
+            nid = chunk.node_id
+            if not nid.strip() or not chunk.text.strip():
+                continue
+            rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
+            if nid not in representative:
+                representative[nid] = chunk
 
     merged = [
         representative[nid].model_copy(update={"score": score})

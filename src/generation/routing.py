@@ -34,21 +34,5 @@ def _route_after_retrieval_gate(state: QueryState) -> str:
     return "context_distillation"
 
 
-def _route_after_generation(state: QueryState) -> str:
-    return "semantic_verification"
-
-
-def _route_after_distillation(state: QueryState) -> str:
-    return "answer_generation"
-
-
-def _route_after_expansion(state: QueryState) -> str:
-    return "context_distillation"
-
-
-def _route_after_semantic_verification(state: QueryState) -> str:
-    return "hallucination_grader"
-
-
 def _route_after_consistency_validator(state: QueryState) -> str:
     return _route_after_grader(state)

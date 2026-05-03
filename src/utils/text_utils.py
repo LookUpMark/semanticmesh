@@ -167,6 +167,101 @@ _SENTENCE_MARKER_RE: Final[re.Pattern[str]] = re.compile(
     r"^(a|an|the|this|that|each|every)\s+", re.IGNORECASE
 )
 
+#: Words that alone (or as the sole content) are too generic to be a valid entity.
+_STOPWORD_ONLY_NAMES: Final[frozenset[str]] = frozenset({
+    "it", "its", "they", "them", "their", "this", "that", "these", "those",
+    "he", "she", "we", "you", "me", "him", "her", "us",
+    "is", "are", "was", "were", "be", "been", "being",
+    "has", "have", "had", "do", "does", "did",
+    "the", "a", "an", "some", "any", "all", "each", "every",
+    "data", "value", "item", "thing", "type", "record", "field",
+    "null", "none", "true", "false", "yes", "no",
+})
+
+#: Verbs/modals/auxiliaries that indicate a clause fragment, not a noun phrase.
+#: If a short phrase (2-4 words) contains one of these, it's likely not a proper entity.
+_CLAUSE_INDICATOR_WORDS: Final[frozenset[str]] = frozenset({
+    # Modals
+    "can", "could", "may", "might", "shall", "should", "will", "would", "must",
+    # Auxiliaries
+    "is", "are", "was", "were", "be", "been", "being",
+    "has", "have", "had", "do", "does", "did",
+    # Common verbs that produce fragments
+    "before", "after", "when", "while", "where", "then", "than",
+    "if", "unless", "until", "although", "because", "since",
+    # Prepositions that indicate truncated clauses
+    "into", "onto", "upon", "within", "without", "between", "among",
+    "through", "during", "against", "towards",
+})
+
+
+def is_valid_entity_name(name: str) -> bool:
+    """Check whether a raw entity string is a valid concept name.
+
+    Rejects names that are:
+    - Empty or whitespace-only
+    - Shorter than 2 characters (after stripping)
+    - Longer than 8 words (likely a sentence fragment)
+    - Composed entirely of stopwords / pronouns
+    - Purely numeric
+    - Short phrases (2-4 words) containing verbs/modals/conjunctions
+      (e.g. "Products Can Be", "Valid Category Before")
+
+    This is a lightweight pre-filter designed to catch obvious garbage
+    before expensive operations (embedding, LLM judge, Neo4j write).
+
+    Args:
+        name: Raw entity name string.
+
+    Returns:
+        True if the name passes basic quality checks.
+
+    Examples:
+        >>> is_valid_entity_name("Customer Order")
+        True
+        >>> is_valid_entity_name("it")
+        False
+        >>> is_valid_entity_name("Products Can Be")
+        False
+        >>> is_valid_entity_name("Valid Category Before")
+        False
+        >>> is_valid_entity_name("a unique numeric identifier assigned to each customer in the system")
+        False
+        >>> is_valid_entity_name("")
+        False
+    """
+    stripped = name.strip()
+    if len(stripped) < 2:
+        return False
+
+    # Reject purely numeric values
+    if stripped.replace(" ", "").replace(".", "").replace("-", "").isdigit():
+        return False
+
+    words = stripped.split()
+
+    # Reject sentence-length fragments (> 8 words)
+    if len(words) > 8:
+        return False
+
+    # Reject if ALL words are stopwords
+    content_words = [
+        w for w in words
+        if w.lower().strip(".,;:!?\"'()") not in _STOPWORD_ONLY_NAMES
+    ]
+    if not content_words:
+        return False
+
+    # Reject short phrases (2-4 words) that contain clause indicators
+    # (verbs, modals, conjunctions, prepositions) — these are sentence fragments
+    # e.g. "Products Can Be", "Valid Category Before", "Data Is Stored"
+    if 2 <= len(words) <= 4:
+        lower_words = {w.lower().strip(".,;:!?\"'()") for w in words}
+        if lower_words & _CLAUSE_INDICATOR_WORDS:
+            return False
+
+    return True
+
 
 def normalize_concept_name(name: str) -> str:
     """Normalize a raw LLM-generated entity name to a short Title Case phrase.

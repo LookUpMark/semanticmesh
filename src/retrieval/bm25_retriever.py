@@ -6,6 +6,7 @@ using rank-bm25 library. Provides index building and search functionality.
 
 from __future__ import annotations
 
+import threading
 from typing import TYPE_CHECKING, Any
 
 from src.config.logging import get_logger
@@ -18,6 +19,13 @@ if TYPE_CHECKING:
 
 logger: logging.Logger = get_logger(__name__)
 
+# ── BM25 Object Cache ─────────────────────────────────────────────────────────
+# Caches the BM25Okapi object alongside the node corpus to avoid rebuilding
+# the tokenized index on every query. Invalidated together with the node-index.
+_BM25_CACHE: Any = None  # BM25Okapi instance
+_BM25_CORPUS_ID: int = 0  # id() of the all_nodes list used to build cache
+_BM25_LOCK = threading.Lock()
+
 
 def invalidate_bm25_cache() -> None:
     """Invalidate the in-memory BM25 node-index cache.
@@ -26,6 +34,10 @@ def invalidate_bm25_cache() -> None:
     This thin wrapper is imported by ``builder_graph`` to avoid a circular import
     (hybrid_retriever imports bm25_retriever; builder_graph imports bm25_retriever).
     """
+    global _BM25_CACHE, _BM25_CORPUS_ID  # noqa: PLW0603
+    with _BM25_LOCK:
+        _BM25_CACHE = None
+        _BM25_CORPUS_ID = 0
     from src.retrieval.hybrid_retriever import (  # local import breaks cycle
         invalidate_bm25_cache as _invalidate,
     )
@@ -58,9 +70,19 @@ def bm25_search(
     if not all_nodes:
         return []
 
-    corpus_texts: list[str] = [_node_to_text(node) for node in all_nodes]
-    tokenised_corpus = [text.split() for text in corpus_texts]
-    bm25 = BM25Okapi(tokenised_corpus)
+    # Use cached BM25 object if the node list hasn't changed (same id())
+    global _BM25_CACHE, _BM25_CORPUS_ID  # noqa: PLW0603
+    corpus_id = id(all_nodes)
+    with _BM25_LOCK:
+        if _BM25_CACHE is not None and _BM25_CORPUS_ID == corpus_id:
+            bm25 = _BM25_CACHE
+        else:
+            corpus_texts: list[str] = [_node_to_text(node) for node in all_nodes]
+            tokenised_corpus = [text.split() for text in corpus_texts]
+            bm25 = BM25Okapi(tokenised_corpus)
+            _BM25_CACHE = bm25
+            _BM25_CORPUS_ID = corpus_id
+            logger.debug("bm25_search: rebuilt BM25 index (%d docs).", len(all_nodes))
 
     tokenised_query = query.lower().split()
     scores: list[float] = bm25.get_scores(tokenised_query).tolist()

@@ -28,6 +28,13 @@ class AppConfig:
     # ── LLM Providers ──────────────────────────────────────────────────────────
     lmstudio_base_url: str = "http://localhost:1234/v1"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    together_base_url: str = "https://api.together.xyz/v1"
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
+    deepseek_base_url: str = "https://api.deepseek.com/v1"
+    xai_base_url: str = "https://api.x.ai/v1"
+    cohere_base_url: str = "https://api.cohere.ai/compatibility/v1"
+    ollama_base_url: str = "http://localhost:11434/v1"
     # Global provider routing override: "auto" = infer from model name prefix.
     # Other values: "openrouter", "openai", "anthropic", "lmstudio", "ollama",
     # "google", "bedrock", "azure", "groq", "mistral", "together", "deepseek",
@@ -58,6 +65,7 @@ class AppConfig:
     # ── Entity Resolution ──────────────────────────────────────────────────────
     er_blocking_top_k: int = 10
     er_similarity_threshold: float = 0.75
+    er_max_cluster_size: int = 10
 
     # ── Confidence & Loop Guards ───────────────────────────────────────────────
     confidence_threshold: float = 0.90
@@ -85,6 +93,15 @@ class AppConfig:
 
     # ── Few-Shot ───────────────────────────────────────────────────────────────
     few_shot_cypher_examples: int = 5
+
+    # ── API Server ──────────────────────────────────────────────────────────────
+    api_server_host: str = "127.0.0.1"
+    api_server_port: int = 8000
+    api_max_upload_bytes: int = 100 * 1024 * 1024  # 100 MB
+    api_max_concurrent_jobs: int = 200
+    api_job_ttl_seconds: int = 3600
+    api_rate_limit_max_attempts: int = 5
+    api_rate_limit_window_seconds: int = 60
 
     # ── Ablation Flags ─────────────────────────────────────────────────────────
     enable_schema_enrichment: bool = True
