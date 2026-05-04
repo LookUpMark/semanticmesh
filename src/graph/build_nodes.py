@@ -265,8 +265,47 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=entity_for_write)
 
         with Neo4jClient() as client:
-            client.execute_cypher(exec_cypher, exec_params)
+            try:
+                client.execute_cypher(exec_cypher, exec_params)
+            except Exception as cypher_exec_err:
+                # LLM Cypher may use CREATE instead of MERGE, causing constraint
+                # violations when the same BusinessConcept already exists.
+                # Fallback to deterministic builder which always uses MERGE.
+                from neo4j.exceptions import ConstraintError
+                if isinstance(cypher_exec_err, ConstraintError):
+                    logger.warning(
+                        "LLM Cypher failed with constraint error for '%s' — "
+                        "retrying with deterministic builder: %s",
+                        proposal.table_name,
+                        cypher_exec_err,
+                    )
+                    fallback_cypher, fallback_params = build_upsert_cypher(
+                        proposal, table, entity=entity_for_write
+                    )
+                    client.execute_cypher(fallback_cypher, fallback_params)
+                else:
+                    raise
             logger.info("Graph updated for table '%s'.", proposal.table_name)
+
+            # ── Normalize BusinessConcept name created by LLM Cypher ──────────
+            # The LLM Cypher may create the BusinessConcept with a name that
+            # differs from our quality-gated `concept_name`. Force-rename it.
+            if proposal.mapped_concept:
+                client.execute_cypher(
+                    "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
+                    "WHERE toLower(pt.table_name) = toLower($tbl) AND bc.name <> $target "
+                    "SET bc.name = $target",
+                    {"tbl": table.table_name, "target": concept_name},
+                )
+                # ── Ensure MAPPED_TO edge exists (LLM Cypher may omit it) ─────
+                client.execute_cypher(
+                    "MATCH (bc:BusinessConcept {name: $bc_name}) "
+                    "MATCH (pt:PhysicalTable) WHERE toLower(pt.table_name) = toLower($tbl) "
+                    "MERGE (bc)-[r:MAPPED_TO]->(pt) "
+                    "ON CREATE SET r.confidence = $conf, r.validated_by = 'llm_judge', r.created_at = datetime() "
+                    "ON MATCH SET r.confidence = $conf, r.updated_at = datetime()",
+                    {"bc_name": concept_name, "tbl": table.table_name, "conf": proposal.confidence},
+                )
 
             # ── Consolidate property updates into single Cypher call ──────────
             # Combines: normalization, source_file stamp, enriched metadata
@@ -313,11 +352,17 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 try:
                     model = get_embeddings()
                     vector = embed_text(concept_name, model=model)
-                    client.execute_cypher(
-                        "MATCH (c:BusinessConcept {name: $name}) SET c.embedding = $emb",
-                        {"name": concept_name, "emb": vector},
-                    )
-                    logger.info("Embedding set for BusinessConcept '%s'.", concept_name)
+                    for _attempt in range(3):
+                        try:
+                            client.execute_cypher(
+                                "MATCH (c:BusinessConcept {name: $name}) SET c.embedding = $emb",
+                                {"name": concept_name, "emb": vector},
+                            )
+                            logger.info("Embedding set for BusinessConcept '%s'.", concept_name)
+                            break
+                        except Exception:
+                            if _attempt == 2:
+                                raise
                 except Exception as exc:
                     logger.warning("Could not set embedding for '%s': %s", concept_name, exc)
 
