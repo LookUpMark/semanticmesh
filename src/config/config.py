@@ -120,6 +120,7 @@ class AppConfig:
     heuristic_mapping_confidence_threshold: float = 0.60
     enable_lazy_expansion: bool = True
     lazy_expansion_confidence_threshold: float = 0.40
+    enable_post_rerank_expansion: bool = True
 
     # ── Performance / Cost Optimisation ───────────────────────────────────────
     # When True, singleton entity definitions are derived directly from their

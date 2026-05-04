@@ -21,241 +21,473 @@
       "id": "QA-001",
       "category": "direct_mapping",
       "question": "What information is stored about products in the manufacturing system?",
-      "answer": "Products are tracked with a unique identifier (product_id), descriptive name (product_name), classification as finished good, assembly, or component (product_type), optional parent product reference for hierarchical structures (parent_product_id), standard unit cost (base_cost), typical procurement or production lead time (lead_time_days), and active status flag (is_active)."
+      "answer": "Products are tracked with a unique identifier (product_id), descriptive name (product_name), classification as finished good, assembly, or component (product_type), optional parent product reference for hierarchical structures (parent_product_id), standard unit cost (base_cost), typical procurement or production lead time (lead_time_days), and active status flag (is_active).",
+      "expected_sources": [
+        "product",
+        "component"
+      ]
     },
     {
       "id": "QA-002",
       "category": "direct_mapping",
       "question": "How are components defined in the manufacturing database?",
-      "answer": "Components are defined with a unique identifier (component_id), descriptive name (component_name), category grouping (component_category), unit of measure (unit_of_measure), standard unit cost (standard_cost), and optional reference to technical specifications (specification_id). Components represent atomic materials or parts that cannot be further decomposed."
+      "answer": "Components are defined with a unique identifier (component_id), descriptive name (component_name), category grouping (component_category), unit of measure (unit_of_measure), standard unit cost (standard_cost), and optional reference to technical specifications (specification_id). Components represent atomic materials or parts that cannot be further decomposed.",
+      "expected_sources": [
+        "component",
+        "specification"
+      ]
     },
     {
       "id": "QA-003",
       "category": "direct_mapping",
       "question": "What is the purpose of the Bill of Materials (BOM) table?",
-      "answer": "The BOM table defines the hierarchical structure of products by specifying which components or sub-assemblies are required to manufacture each parent product. It records the unique BOM entry identifier (bom_id), parent product being built (parent_product_id), component or sub-assembly product (component_product_id), required quantity per unit (quantity), unit of measure, depth level in the hierarchy (bom_level), and whether the component is optional (is_optional)."
+      "answer": "The BOM table defines the hierarchical structure of products by specifying which components or sub-assemblies are required to manufacture each parent product. It records the unique BOM entry identifier (bom_id), parent product being built (parent_product_id), component or sub-assembly product (component_product_id), required quantity per unit (quantity), unit of measure, depth level in the hierarchy (bom_level), and whether the component is optional (is_optional).",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom"
+      ]
     },
     {
       "id": "QA-004",
       "category": "direct_mapping",
       "question": "What supplier information does the system maintain?",
-      "answer": "Suppliers are tracked with a unique identifier (supplier_id), legal business name (supplier_name), primary contact email (contact_email), primary contact phone number (contact_phone), performance rating from 1.0 to 5.0 (rating), and preferred supplier status flag (is_preferred)."
+      "answer": "Suppliers are tracked with a unique identifier (supplier_id), legal business name (supplier_name), primary contact email (contact_email), primary contact phone number (contact_phone), performance rating from 1.0 to 5.0 (rating), and preferred supplier status flag (is_preferred).",
+      "expected_sources": [
+        "supplier"
+      ]
     },
     {
       "id": "QA-005",
       "category": "direct_mapping",
       "question": "How are warehouses represented in the schema?",
-      "answer": "Warehouses are defined with a unique identifier (warehouse_id), descriptive name (warehouse_name), full street address (address), city location (city), state or province (state), total storage capacity in cubic meters (capacity), and optional manager identifier (manager_id)."
+      "answer": "Warehouses are defined with a unique identifier (warehouse_id), descriptive name (warehouse_name), full street address (address), city location (city), state or province (state), total storage capacity in cubic meters (capacity), and optional manager identifier (manager_id).",
+      "expected_sources": [
+        "warehouse"
+      ]
     },
     {
       "id": "QA-006",
       "category": "direct_mapping",
       "question": "What does the inventory table track?",
-      "answer": "The inventory table tracks real-time stock levels including a unique record identifier (inventory_id), warehouse location (warehouse_id), component identifier for materials (component_id) or product identifier for finished goods (product_id), current physical stock quantity (quantity_on_hand), quantity reserved for open work orders (quantity_reserved), threshold that triggers purchase orders (reorder_threshold), and most recent restock date (last_restock_date)."
+      "answer": "The inventory table tracks real-time stock levels including a unique record identifier (inventory_id), warehouse location (warehouse_id), component identifier for materials (component_id) or product identifier for finished goods (product_id), current physical stock quantity (quantity_on_hand), quantity reserved for open work orders (quantity_reserved), threshold that triggers purchase orders (reorder_threshold), and most recent restock date (last_restock_date).",
+      "expected_sources": [
+        "product",
+        "component",
+        "warehouse",
+        "inventory",
+        "work_order"
+      ]
     },
     {
       "id": "QA-007",
       "category": "direct_mapping",
       "question": "How are work orders structured in the manufacturing system?",
-      "answer": "Work orders represent production jobs with a unique identifier (work_order_id), product to be manufactured (product_id), optional parent work order for nested hierarchies (parent_work_order), quantity to produce (quantity_ordered), quantity completed so far (quantity_completed), current status (PENDING, IN_PROGRESS, COMPLETED, CLOSED), priority level (LOW, MEDIUM, HIGH, URGENT), planned start and end dates, and warehouse production location (warehouse_id)."
+      "answer": "Work orders represent production jobs with a unique identifier (work_order_id), product to be manufactured (product_id), optional parent work order for nested hierarchies (parent_work_order), quantity to produce (quantity_ordered), quantity completed so far (quantity_completed), current status (PENDING, IN_PROGRESS, COMPLETED, CLOSED), priority level (LOW, MEDIUM, HIGH, URGENT), planned start and end dates, and warehouse production location (warehouse_id).",
+      "expected_sources": [
+        "product",
+        "warehouse",
+        "work_order"
+      ]
     },
     {
       "id": "QA-008",
       "category": "direct_mapping",
       "question": "What information is captured in the shipment table?",
-      "answer": "Shipments track material transfers with a unique identifier (shipment_id), shipment type (INBOUND from suppliers, OUTBOUND to customers, INTERNAL between warehouses), destination warehouse (warehouse_id), source supplier for inbound (supplier_id), destination customer for outbound (customer_id), ship date, estimated and actual arrival dates, and current status (PENDING, SHIPPED, DELIVERED, CANCELLED)."
+      "answer": "Shipments track material transfers with a unique identifier (shipment_id), shipment type (INBOUND from suppliers, OUTBOUND to customers, INTERNAL between warehouses), destination warehouse (warehouse_id), source supplier for inbound (supplier_id), destination customer for outbound (customer_id), ship date, estimated and actual arrival dates, and current status (PENDING, SHIPPED, DELIVERED, CANCELLED).",
+      "expected_sources": [
+        "supplier",
+        "warehouse",
+        "shipment"
+      ]
     },
     {
       "id": "QA-009",
       "category": "direct_mapping",
       "question": "How does the quality control system record inspections?",
-      "answer": "Quality control records are stored with a unique identifier (qc_id), associated production batch (batch_id), applicable specification requirements (specification_id), inspection date (qc_date), inspection type (INCOMING for supplier materials, IN_PROCESS during manufacturing, FINAL for finished goods), inspector identifier (inspector_id), inspection result (PASS, FAIL, CONDITIONAL), number of defects found (defect_count), and detailed observations (notes)."
+      "answer": "Quality control records are stored with a unique identifier (qc_id), associated production batch (batch_id), applicable specification requirements (specification_id), inspection date (qc_date), inspection type (INCOMING for supplier materials, IN_PROCESS during manufacturing, FINAL for finished goods), inspector identifier (inspector_id), inspection result (PASS, FAIL, CONDITIONAL), number of defects found (defect_count), and detailed observations (notes).",
+      "expected_sources": [
+        "product",
+        "supplier",
+        "quality_control",
+        "specification",
+        "batch"
+      ]
     },
     {
       "id": "QA-010",
       "category": "direct_mapping",
       "question": "What do specification records define?",
-      "answer": "Specifications define technical requirements with a unique identifier (specification_id), descriptive name (specification_name), version number, effective date, specification type (DIMENSIONAL, MATERIAL, PERFORMANCE), critical parameter being measured (critical_parameter), acceptable minimum value (min_value), acceptable maximum value (max_value), and unit of measure for the parameter values."
+      "answer": "Specifications define technical requirements with a unique identifier (specification_id), descriptive name (specification_name), version number, effective date, specification type (DIMENSIONAL, MATERIAL, PERFORMANCE), critical parameter being measured (critical_parameter), acceptable minimum value (min_value), acceptable maximum value (max_value), and unit of measure for the parameter values.",
+      "expected_sources": [
+        "specification"
+      ]
     },
     {
       "id": "QA-011",
       "category": "multi_hop",
       "question": "How can I find which suppliers provide specific components?",
-      "answer": "Query the component_supplier table which links components to their approved suppliers. This table contains the component identifier (component_id), supplier identifier (supplier_id), preferred supplier flag (is_preferred), lead time in days (lead_time_days), and unit price (unit_price). Join with the supplier table to get supplier names and ratings, and with the component table to get component details."
+      "answer": "Query the component_supplier table which links components to their approved suppliers. This table contains the component identifier (component_id), supplier identifier (supplier_id), preferred supplier flag (is_preferred), lead time in days (lead_time_days), and unit price (unit_price). Join with the supplier table to get supplier names and ratings, and with the component table to get component details.",
+      "expected_sources": [
+        "component",
+        "supplier",
+        "component_supplier"
+      ]
     },
     {
       "id": "QA-012",
       "category": "multi_hop",
       "question": "How do I trace which components are needed to fulfill a work order?",
-      "answer": "Start with the work_order table to get the product_id being manufactured. Join to the bom table using product_id as parent_product_id to find all direct components and sub-assemblies. For each component_product_id, if it is an ASSEMBLY type product, recursively query the bom table again to explode multi-level BOM structures. The quantity required is work_order.quantity_ordered multiplied by bom.quantity for each level."
+      "answer": "Start with the work_order table to get the product_id being manufactured. Join to the bom table using product_id as parent_product_id to find all direct components and sub-assemblies. For each component_product_id, if it is an ASSEMBLY type product, recursively query the bom table again to explode multi-level BOM structures. The quantity required is work_order.quantity_ordered multiplied by bom.quantity for each level.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "work_order"
+      ]
     },
     {
       "id": "QA-013",
       "category": "multi_hop",
       "question": "How can I identify which warehouses have available inventory for specific components?",
-      "answer": "Query the inventory table filtered by component_id, joining with the warehouse table to get warehouse names and locations. Calculate available quantity as quantity_on_hand minus quantity_reserved. Filter for records where available quantity is greater than zero. Results show warehouse names, locations, and actual available stock levels."
+      "answer": "Query the inventory table filtered by component_id, joining with the warehouse table to get warehouse names and locations. Calculate available quantity as quantity_on_hand minus quantity_reserved. Filter for records where available quantity is greater than zero. Results show warehouse names, locations, and actual available stock levels.",
+      "expected_sources": [
+        "component",
+        "warehouse",
+        "inventory"
+      ]
     },
     {
       "id": "QA-014",
       "category": "multi_hop",
       "question": "How do I find which shipments delivered materials from a specific supplier?",
-      "answer": "Query the shipment table filtering by supplier_id and shipment_type = 'INBOUND'. Join with the warehouse table to show destination warehouses. Filter for status = 'DELIVERED' and include actual_arrival date. Results can be ordered by ship_date descending to show most recent deliveries first."
+      "answer": "Query the shipment table filtering by supplier_id and shipment_type = 'INBOUND'. Join with the warehouse table to show destination warehouses. Filter for status = 'DELIVERED' and include actual_arrival date. Results can be ordered by ship_date descending to show most recent deliveries first.",
+      "expected_sources": [
+        "supplier",
+        "warehouse",
+        "shipment"
+      ]
     },
     {
       "id": "QA-015",
       "category": "multi_hop",
       "question": "How can I determine which quality control inspections were performed on a specific production batch?",
-      "answer": "Query the quality_control table filtered by batch_id. Join with the specification table to get requirement details (specification_name, spec_type, acceptable ranges). Include qc_date, qc_type (INCOMING, IN_PROCESS, FINAL), result (PASS, FAIL, CONDITIONAL), and defect_count. This shows the complete inspection history for the batch."
+      "answer": "Query the quality_control table filtered by batch_id. Join with the specification table to get requirement details (specification_name, spec_type, acceptable ranges). Include qc_date, qc_type (INCOMING, IN_PROCESS, FINAL), result (PASS, FAIL, CONDITIONAL), and defect_count. This shows the complete inspection history for the batch.",
+      "expected_sources": [
+        "product",
+        "quality_control",
+        "specification",
+        "batch"
+      ]
     },
     {
       "id": "QA-016",
       "category": "multi_hop",
       "question": "How do I track which work orders are in progress at a specific warehouse?",
-      "answer": "Query the work_order table filtering by warehouse_id and status = 'IN_PROGRESS'. Join with the product table to get product names and types. Include quantity_ordered, quantity_completed, priority, planned_end_date, and calculate progress percentage as (quantity_completed / quantity_ordered * 100). Order by priority and planned_end_date to show critical orders first."
+      "answer": "Query the work_order table filtering by warehouse_id and status = 'IN_PROGRESS'. Join with the product table to get product names and types. Include quantity_ordered, quantity_completed, priority, planned_end_date, and calculate progress percentage as (quantity_completed / quantity_ordered * 100). Order by priority and planned_end_date to show critical orders first.",
+      "expected_sources": [
+        "product",
+        "warehouse",
+        "work_order"
+      ]
     },
     {
       "id": "QA-017",
       "category": "multi_hop",
       "question": "How can I find which components need reordering based on current inventory levels?",
-      "answer": "Query the inventory table and filter where quantity_on_hand minus quantity_reserved is less than reorder_threshold. Join with the component table to get component names, categories, and standard costs. Join with the warehouse table for location information. Results identify which components are below safety stock and require purchase orders."
+      "answer": "Query the inventory table and filter where quantity_on_hand minus quantity_reserved is less than reorder_threshold. Join with the component table to get component names, categories, and standard costs. Join with the warehouse table for location information. Results identify which components are below safety stock and require purchase orders.",
+      "expected_sources": [
+        "component",
+        "warehouse",
+        "inventory"
+      ]
     },
     {
       "id": "QA-018",
       "category": "multi_hop",
       "question": "How do I determine the manufacturing route for a specific product?",
-      "answer": "Query the route table filtering by product_id, ordered by sequence_number ascending. For each operation, retrieve operation_name, work_center, cycle_time_minutes, and setup_time_minutes. Join with the product table to get product details. The sequence of operations shows the complete manufacturing workflow from start to finish."
+      "answer": "Query the route table filtering by product_id, ordered by sequence_number ascending. For each operation, retrieve operation_name, work_center, cycle_time_minutes, and setup_time_minutes. Join with the product table to get product details. The sequence of operations shows the complete manufacturing workflow from start to finish.",
+      "expected_sources": [
+        "product",
+        "route"
+      ]
     },
     {
       "id": "QA-019",
       "category": "multi_hop",
       "question": "How can I find which batches are stored at a specific warehouse and their QC status?",
-      "answer": "Query the batch table filtering by warehouse_id. Join with the product table to get product names and types. Include production_date, quantity_produced, expiry_date, and qc_status (PENDING, PASSED, FAILED, QUARANTINED). Filter by qc_status to isolate batches requiring quality attention or ready for shipment."
+      "answer": "Query the batch table filtering by warehouse_id. Join with the product table to get product names and types. Include production_date, quantity_produced, expiry_date, and qc_status (PENDING, PASSED, FAILED, QUARANTINED). Filter by qc_status to isolate batches requiring quality attention or ready for shipment.",
+      "expected_sources": [
+        "product",
+        "warehouse",
+        "shipment",
+        "batch"
+      ]
     },
     {
       "id": "QA-020",
       "category": "multi_hop",
       "question": "How do I identify which specifications apply to specific components?",
-      "answer": "Query the component table and join with the specification table via specification_id. Include component_name, component_category, and specification details (specification_name, spec_type, critical_parameter, min_value, max_value, unit_of_measure). This shows the technical requirements that each component must meet."
+      "answer": "Query the component table and join with the specification table via specification_id. Include component_name, component_category, and specification details (specification_name, spec_type, critical_parameter, min_value, max_value, unit_of_measure). This shows the technical requirements that each component must meet.",
+      "expected_sources": [
+        "component",
+        "specification"
+      ]
     },
     {
       "id": "QA-021",
       "category": "recursive",
       "question": "How can I perform a complete BOM explosion to find all components required for a finished product?",
-      "answer": "Use a recursive query starting from the product_id of the finished good. At each level, join the bom table to find component_product_id entries. For each component, check if product_type is 'ASSEMBLY' or 'FINISHED_GOOD'. If so, recursively query bom again using that component_product_id as the new parent. If product_type is 'COMPONENT', this is a leaf node. Accumulate quantities by multiplying bom.quantity at each level. Continue until all leaf components are reached."
+      "answer": "Use a recursive query starting from the product_id of the finished good. At each level, join the bom table to find component_product_id entries. For each component, check if product_type is 'ASSEMBLY' or 'FINISHED_GOOD'. If so, recursively query bom again using that component_product_id as the new parent. If product_type is 'COMPONENT', this is a leaf node. Accumulate quantities by multiplying bom.quantity at each level. Continue until all leaf components are reached.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom"
+      ]
     },
     {
       "id": "QA-022",
       "category": "recursive",
       "question": "How do I calculate the total material cost for a product including all sub-assemblies?",
-      "answer": "Perform a recursive BOM explosion to find all leaf-level components. For each leaf component, join with the component table to get standard_cost. Multiply standard_cost by the accumulated quantity from the BOM traversal. Sum all component costs to get total material cost. This calculation must traverse the full product hierarchy regardless of depth."
+      "answer": "Perform a recursive BOM explosion to find all leaf-level components. For each leaf component, join with the component table to get standard_cost. Multiply standard_cost by the accumulated quantity from the BOM traversal. Sum all component costs to get total material cost. This calculation must traverse the full product hierarchy regardless of depth.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom"
+      ]
     },
     {
       "id": "QA-023",
       "category": "recursive",
       "question": "How can I find all parent products that contain a specific component anywhere in their BOM structure?",
-      "answer": "Use a recursive reverse traversal of the BOM. Start with the component_id as the initial parent_product_id. Find all records where this product appears as component_product_id in the bom table. For each parent_product_id found, check if it appears as a component_product_id in other bom records (is a sub-assembly used in higher-level assemblies). Recursively ascend until reaching top-level products with no parent_product_id in the product table."
+      "answer": "Use a recursive reverse traversal of the BOM. Start with the component_id as the initial parent_product_id. Find all records where this product appears as component_product_id in the bom table. For each parent_product_id found, check if it appears as a component_product_id in other bom records (is a sub-assembly used in higher-level assemblies). Recursively ascend until reaching top-level products with no parent_product_id in the product table.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom"
+      ]
     },
     {
       "id": "QA-024",
       "category": "recursive",
       "question": "How do I identify work orders that require a specific component, considering nested sub-assemblies?",
-      "answer": "First, perform reverse BOM traversal to find all parent products that contain the target component at any level. Then query the work_order table where product_id is in the set of parent products found. This includes work orders for finished goods that contain the component indirectly through sub-assemblies."
+      "answer": "First, perform reverse BOM traversal to find all parent products that contain the target component at any level. Then query the work_order table where product_id is in the set of parent products found. This includes work orders for finished goods that contain the component indirectly through sub-assemblies.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "work_order"
+      ]
     },
     {
       "id": "QA-025",
       "category": "recursive",
       "question": "How can I determine the maximum BOM depth level for any product?",
-      "answer": "Use a recursive query on the bom table, incrementing a level counter at each traversal. Start with bom_level = 0 and add 1 for each recursive step. Track the maximum level reached across all product hierarchies. This identifies the most complex product structures with the deepest nesting."
+      "answer": "Use a recursive query on the bom table, incrementing a level counter at each traversal. Start with bom_level = 0 and add 1 for each recursive step. Track the maximum level reached across all product hierarchies. This identifies the most complex product structures with the deepest nesting.",
+      "expected_sources": [
+        "product",
+        "bom"
+      ]
     },
     {
       "id": "QA-026",
       "category": "recursive",
       "question": "How do I find all products that have a specific product as a sub-assembly at any level?",
-      "answer": "Perform a recursive search starting with the target product_id as the initial component_product_id in the bom table. For each parent_product_id found, check if that parent appears as a component in other bom entries. Continue recursively until reaching products that are not used as components elsewhere. The result is the complete list of products that incorporate the target sub-assembly."
+      "answer": "Perform a recursive search starting with the target product_id as the initial component_product_id in the bom table. For each parent_product_id found, check if that parent appears as a component in other bom entries. Continue recursively until reaching products that are not used as components elsewhere. The result is the complete list of products that incorporate the target sub-assembly.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom"
+      ]
     },
     {
       "id": "QA-027",
       "category": "recursive",
       "question": "How can I calculate the total lead time for a product including all sub-assembly lead times?",
-      "answer": "Perform a recursive BOM explosion to find all components and sub-assemblies. For each product_id in the hierarchy, retrieve lead_time_days from the product table. The total lead time is the maximum of all lead times in the hierarchy (representing the longest dependency chain), or optionally sum lead times for each level if manufacturing is sequential rather than parallel."
+      "answer": "Perform a recursive BOM explosion to find all components and sub-assemblies. For each product_id in the hierarchy, retrieve lead_time_days from the product table. The total lead time is the maximum of all lead times in the hierarchy (representing the longest dependency chain), or optionally sum lead times for each level if manufacturing is sequential rather than parallel.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom"
+      ]
     },
     {
       "id": "QA-028",
       "category": "recursive",
       "question": "How do I generate a complete indented BOM report showing the hierarchical structure?",
-      "answer": "Use a recursive query on the bom table that tracks the current depth level. Start with the top-level product (parent_product_id where product has no parent_product_id). At each level, output component details indented by depth level. Include product_name, quantity, and unit_of_measure. Recursively process all component_product_id entries that are assemblies until reaching leaf components."
+      "answer": "Use a recursive query on the bom table that tracks the current depth level. Start with the top-level product (parent_product_id where product has no parent_product_id). At each level, output component details indented by depth level. Include product_name, quantity, and unit_of_measure. Recursively process all component_product_id entries that are assemblies until reaching leaf components.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom"
+      ]
     },
     {
       "id": "QA-029",
       "category": "recursive",
       "question": "How can I find which components appear most frequently across all product BOMs?",
-      "answer": "Perform BOM explosion for all products and aggregate occurrences of each leaf-level component. Count how many distinct product hierarchies contain each component. Join with component table for component names. Order by frequency descending to identify common components that should be prioritized for inventory management."
+      "answer": "Perform BOM explosion for all products and aggregate occurrences of each leaf-level component. Count how many distinct product hierarchies contain each component. Join with component table for component names. Order by frequency descending to identify common components that should be prioritized for inventory management.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "inventory"
+      ]
     },
     {
       "id": "QA-030",
       "category": "recursive",
       "question": "How do I detect circular references in the BOM structure to prevent infinite loops?",
-      "answer": "Use a recursive query with a cycle detection check. Track the path of visited product_ids at each recursion level. If a product_id appears twice in the same path, a circular reference exists. Alternatively, check if any bom record has parent_product_id = component_product_id (direct self-reference), or perform depth-limited traversal and flag paths exceeding a reasonable maximum depth."
+      "answer": "Use a recursive query with a cycle detection check. Track the path of visited product_ids at each recursion level. If a product_id appears twice in the same path, a circular reference exists. Alternatively, check if any bom record has parent_product_id = component_product_id (direct self-reference), or perform depth-limited traversal and flag paths exceeding a reasonable maximum depth.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom"
+      ]
     },
     {
       "id": "QA-031",
       "category": "complex",
       "question": "How can I determine the complete supplier chain for a finished product, including suppliers for all sub-assemblies?",
-      "answer": "First, perform recursive BOM explosion to find all leaf-level components in the product hierarchy. Then query the component_supplier table for each component_id to find approved suppliers. Join with the supplier table to get supplier names, ratings, and contact information. Include supplier-specific lead times and unit prices. The result is the complete supplier network required to source all materials for the finished product."
+      "answer": "First, perform recursive BOM explosion to find all leaf-level components in the product hierarchy. Then query the component_supplier table for each component_id to find approved suppliers. Join with the supplier table to get supplier names, ratings, and contact information. Include supplier-specific lead times and unit prices. The result is the complete supplier network required to source all materials for the finished product.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "supplier",
+        "component_supplier"
+      ]
     },
     {
       "id": "QA-032",
       "category": "complex",
       "question": "How do I check if sufficient inventory exists across all warehouses to fulfill a work order?",
-      "answer": "For the work_order's product_id, perform recursive BOM explosion to get all required components with quantities. For each component, sum the available quantity (quantity_on_hand - quantity_reserved) across all warehouses from the inventory table. Compare aggregated available inventory against required quantity multiplied by work_order quantity_ordered. Flag any components where available inventory is insufficient and identify which warehouses have stock."
+      "answer": "For the work_order's product_id, perform recursive BOM explosion to get all required components with quantities. For each component, sum the available quantity (quantity_on_hand - quantity_reserved) across all warehouses from the inventory table. Compare aggregated available inventory against required quantity multiplied by work_order quantity_ordered. Flag any components where available inventory is insufficient and identify which warehouses have stock.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "warehouse",
+        "inventory",
+        "work_order"
+      ]
     },
     {
       "id": "QA-033",
       "category": "complex",
       "question": "How can I find which quality control inspections failed for components from specific suppliers?",
-      "answer": "Query the quality_control table filtering by result = 'FAIL'. Join with the batch table to get product_id and production_date. Join with the bom table recursively to trace which products contain failed components. Join with component_supplier and supplier tables to identify the source supplier. Filter by supplier_id to find all failed inspections attributable to that supplier's materials."
+      "answer": "Query the quality_control table filtering by result = 'FAIL'. Join with the batch table to get product_id and production_date. Join with the bom table recursively to trace which products contain failed components. Join with component_supplier and supplier tables to identify the source supplier. Filter by supplier_id to find all failed inspections attributable to that supplier's materials.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "supplier",
+        "quality_control",
+        "batch",
+        "component_supplier"
+      ]
     },
     {
       "id": "QA-034",
       "category": "complex",
       "question": "How do I calculate the total manufacturing time for a work order including all sub-assembly work orders?",
-      "answer": "Query the work_order table starting with the parent work_order. Find all child work_orders where parent_work_order matches the current work_order_id. For each work order (parent and children), join with the route table on product_id to get all operations. Sum (cycle_time_minutes * quantity) plus setup_time_minutes for each operation. Aggregate across all work orders in the hierarchy to get total manufacturing time."
+      "answer": "Query the work_order table starting with the parent work_order. Find all child work_orders where parent_work_order matches the current work_order_id. For each work order (parent and children), join with the route table on product_id to get all operations. Sum (cycle_time_minutes * quantity) plus setup_time_minutes for each operation. Aggregate across all work orders in the hierarchy to get total manufacturing time.",
+      "expected_sources": [
+        "product",
+        "work_order",
+        "route"
+      ]
     },
     {
       "id": "QA-035",
       "category": "complex",
       "question": "How can I identify which shipments are overdue and their impact on work orders?",
-      "answer": "Query the shipment table filtering for status = 'SHIPPED' where actual_arrival is NULL and estimated_arrival is in the past (overdue). Join with the component_supplier table via supplier_id and component_id to identify which components are delayed. Perform reverse BOM lookup to find which parent products require these components. Join with work_order table where status = 'PENDING' or 'IN_PROGRESS' to identify production jobs impacted by the delay."
+      "answer": "Query the shipment table filtering for status = 'SHIPPED' where actual_arrival is NULL and estimated_arrival is in the past (overdue). Join with the component_supplier table via supplier_id and component_id to identify which components are delayed. Perform reverse BOM lookup to find which parent products require these components. Join with work_order table where status = 'PENDING' or 'IN_PROGRESS' to identify production jobs impacted by the delay.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "supplier",
+        "work_order",
+        "shipment",
+        "component_supplier"
+      ]
     },
     {
       "id": "QA-036",
       "category": "complex",
       "question": "How do I find which batches are approaching or past expiry and contain components from specific suppliers?",
-      "answer": "Query the batch table filtering for expiry_date within a warning window (e.g., next 30 days) or past expiry. Join with the bom table recursively on product_id to trace all components used in those batches. Join with component_supplier and supplier tables to filter by specific suppliers. Results identify at-risk inventory from those suppliers that may need expedited usage or quality re-evaluation."
+      "answer": "Query the batch table filtering for expiry_date within a warning window (e.g., next 30 days) or past expiry. Join with the bom table recursively on product_id to trace all components used in those batches. Join with component_supplier and supplier tables to filter by specific suppliers. Results identify at-risk inventory from those suppliers that may need expedited usage or quality re-evaluation.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "supplier",
+        "inventory",
+        "batch",
+        "component_supplier"
+      ]
     },
     {
       "id": "QA-037",
       "category": "complex",
       "question": "How can I generate a material requirements plan showing when to order components based on work order schedules?",
-      "answer": "Query all work_orders with status 'PENDING' ordered by planned_start_date. For each work_order, perform BOM explosion to get required components and quantities. For each component, query inventory for current available stock across warehouses. Calculate net requirements = (required quantity * work_order quantity) - available stock. Query component_supplier for supplier lead times. Calculate required order date = planned_start_date - lead_time_days. Output a plan showing component, quantity, supplier, and order date."
+      "answer": "Query all work_orders with status 'PENDING' ordered by planned_start_date. For each work_order, perform BOM explosion to get required components and quantities. For each component, query inventory for current available stock across warehouses. Calculate net requirements = (required quantity * work_order quantity) - available stock. Query component_supplier for supplier lead times. Calculate required order date = planned_start_date - lead_time_days. Output a plan showing component, quantity, supplier, and order date.",
+      "expected_sources": [
+        "component",
+        "bom",
+        "supplier",
+        "warehouse",
+        "inventory",
+        "work_order",
+        "component_supplier"
+      ]
     },
     {
       "id": "QA-038",
       "category": "complex",
       "question": "How do I trace the complete genealogy of a component from supplier through batch to finished goods?",
-      "answer": "Start with a shipment from the supplier (shipment table with supplier_id and shipment_type = 'INBOUND'). Track to inventory updates via component_id and warehouse_id. Identify batches that consumed the component via reverse BOM lookup (batch.product_id → bom hierarchy → component_id). Query quality_control records for those batches to show inspection results. Trace forward to work_orders that produced the batches, and finally to shipment records for finished goods delivery."
+      "answer": "Start with a shipment from the supplier (shipment table with supplier_id and shipment_type = 'INBOUND'). Track to inventory updates via component_id and warehouse_id. Identify batches that consumed the component via reverse BOM lookup (batch.product_id → bom hierarchy → component_id). Query quality_control records for those batches to show inspection results. Trace forward to work_orders that produced the batches, and finally to shipment records for finished goods delivery.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "supplier",
+        "warehouse",
+        "inventory",
+        "work_order",
+        "shipment",
+        "quality_control",
+        "batch"
+      ]
     },
     {
       "id": "QA-039",
       "category": "complex",
       "question": "How can I find alternative suppliers for components that are critical for multiple products?",
-      "answer": "Perform BOM explosion for all active products and count component usage frequency. Identify high-frequency components. Query component_supplier table to find all suppliers for these components. Filter to suppliers with rating >= 4.0 (high quality) and is_preferred = 'Y'. For each component, list alternative suppliers with their unit_price and lead_time_days. This enables supplier diversification for critical materials."
+      "answer": "Perform BOM explosion for all active products and count component usage frequency. Identify high-frequency components. Query component_supplier table to find all suppliers for these components. Filter to suppliers with rating >= 4.0 (high quality) and is_preferred = 'Y'. For each component, list alternative suppliers with their unit_price and lead_time_days. This enables supplier diversification for critical materials.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "supplier",
+        "component_supplier"
+      ]
     },
     {
       "id": "QA-040",
       "category": "complex",
       "question": "How do I calculate the total landed cost for a product including component costs, supplier lead times, and manufacturing operations?",
-      "answer": "Perform recursive BOM explosion to get all leaf components. For each component, query component_supplier to get unit_price from primary supplier. Multiply by accumulated BOM quantity for material cost. Add shipping costs (estimated from shipment history). Query route table for the product to get all manufacturing operations. Calculate labor cost = sum of (cycle_time_minutes * labor_rate) across all operations. Sum material cost + shipping cost + labor cost + overhead allocation for total landed cost."
+      "answer": "Perform recursive BOM explosion to get all leaf components. For each component, query component_supplier to get unit_price from primary supplier. Multiply by accumulated BOM quantity for material cost. Add shipping costs (estimated from shipment history). Query route table for the product to get all manufacturing operations. Calculate labor cost = sum of (cycle_time_minutes * labor_rate) across all operations. Sum material cost + shipping cost + labor cost + overhead allocation for total landed cost.",
+      "expected_sources": [
+        "product",
+        "component",
+        "bom",
+        "supplier",
+        "shipment",
+        "route",
+        "component_supplier"
+      ]
     }
   ]
 }

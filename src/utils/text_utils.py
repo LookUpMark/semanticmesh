@@ -194,6 +194,10 @@ _CLAUSE_INDICATOR_WORDS: Final[frozenset[str]] = frozenset({
     "through", "during", "against", "towards",
 })
 
+# Suffixes that indicate the LLM confused a database field with a concept
+_IDENTIFIER_SUFFIXES: Final[frozenset[str]] = frozenset({
+    "id", "ids", "key", "code", "number", "num", "no", "pk", "fk",
+})
 
 def is_valid_entity_name(name: str) -> bool:
     """Check whether a raw entity string is a valid concept name.
@@ -238,6 +242,12 @@ def is_valid_entity_name(name: str) -> bool:
     if stripped.replace(" ", "").replace(".", "").replace("-", "").isdigit():
         return False
 
+    # Reject names that look like DB object identifiers (table/view/sp prefixes)
+    # e.g. "Vw Sales Order Hdr", "Tbl Customer", "Sp Get Orders"
+    first_token = stripped.split()[0].lower() if stripped else ""
+    if first_token in {"vw", "tbl", "sp", "fn", "usp", "dbo", "sys"}:
+        return False
+
     words = stripped.split()
 
     # Reject sentence-length fragments (> 8 words)
@@ -258,6 +268,17 @@ def is_valid_entity_name(name: str) -> bool:
     if 2 <= len(words) <= 4:
         lower_words = {w.lower().strip(".,;:!?\"'()") for w in words}
         if lower_words & _CLAUSE_INDICATOR_WORDS:
+            return False
+
+    # Reject names ending with identifier-like suffixes (LLM confused a field with a concept)
+    # e.g. "Component Supplier Id", "Order Number", "Customer Key"
+    # Also reject trailing prepositions indicating truncated phrases
+    # e.g. "Physical Transfer Of", "Data Stored In"
+    if len(words) >= 2:
+        last_word = words[-1].lower().strip(".,;:!?\"'()")
+        if last_word in _IDENTIFIER_SUFFIXES:
+            return False
+        if last_word in {"of", "in", "to", "for", "from", "by", "at", "on", "with"}:
             return False
 
     return True

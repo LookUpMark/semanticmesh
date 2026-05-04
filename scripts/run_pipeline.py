@@ -418,11 +418,11 @@ def _run_single(
                 expected_sources = pair.get("expected_sources", [])
                 covered_sources: list[str] = []
                 if expected_sources:
-                    # Build token-level index from entity_names.
+                    # Build token-level index from entity_names + sources.
                     # entity_names may use "ConceptName→TABLE_NAME" format — expand both sides
                     # then split each normalized part into individual tokens.
                     norm_retrieved_tokens: set[str] = set()
-                    for s in entity_names:
+                    for s in (*entity_names, *sources):
                         if s:
                             for part in s.split("→"):
                                 norm_retrieved_tokens.update(_ns(part.strip()).split())
@@ -434,10 +434,18 @@ def _run_single(
                             for header in _header_re.findall(str(chunk)):
                                 norm_retrieved_tokens.update(_ns(header.strip()).split())
                     # Partial token overlap: a source is covered if at least one of its
-                    # tokens appears in the retrieved token index.
+                    # tokens appears in (or is a stem-prefix of) the retrieved token index.
                     for es in expected_sources:
                         es_tokens = set(_ns(str(es)).split())
-                        if es_tokens and (es_tokens & norm_retrieved_tokens):
+                        if es_tokens and (
+                            es_tokens & norm_retrieved_tokens
+                            or any(
+                                rt.startswith(et) or et.startswith(rt)
+                                for et in es_tokens
+                                for rt in norm_retrieved_tokens
+                                if len(et) >= 3 and len(rt) >= 3
+                            )
+                        ):
                             covered_sources.append(str(es))
                 # None when no expected_sources — metric is not applicable (not inflated to 1.0)
                 gt_coverage: float | None = (

@@ -267,6 +267,27 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         else:
             sufficiency = "adequate"
 
+        # Post-rerank graph expansion: add direct neighbors of reranked chunks
+        if getattr(settings, "enable_post_rerank_expansion", True):
+            try:
+                seed_ids = list({c.node_id for c in valid if c.source_type in ("vector", "graph", "parent_chunk")})[:8]
+                if seed_ids:
+                    client = Neo4jClient()
+                    neighbor_chunks = graph_traversal(
+                        seed_names=seed_ids, client=client, depth=1,
+                    )
+                    existing_ids = {c.node_id for c in valid}
+                    new_neighbors = [
+                        c for c in neighbor_chunks if c.node_id not in existing_ids
+                    ]
+                    if new_neighbors:
+                        for nc in new_neighbors:
+                            nc.score = 0.05
+                        valid = valid + new_neighbors
+                        logger.debug("Post-rerank expansion added %d neighbor chunks", len(new_neighbors))
+            except Exception:
+                logger.debug("Post-rerank expansion failed, continuing without it")
+
         log_node_event(logger, "rerank", f"pool={len(pool)} candidates={len(candidates)}", f"{len(valid)} chunks score={top_score:.4f}", timer.elapsed_ms)
         return {
             "reranked_chunks": valid,

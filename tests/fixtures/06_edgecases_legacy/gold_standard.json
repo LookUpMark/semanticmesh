@@ -12,227 +12,596 @@
       "question": "What is the purpose of the tblCustomer table?",
       "answer": "The tblCustomer table stores customer master data including customer codes, names, email addresses, and region information. It uses Hungarian notation with the str prefix for string fields and contains both legacy fields (strCustID, strFullName) and new migration compatibility fields (cust_id, customer_name).",
       "triplets_expected": [
-        ["tblCustomer", "stores", "customer master data"],
-        ["tblCustomer", "has field", "strCustID"],
-        ["tblCustomer", "has field", "strFullName"],
-        ["tblCustomer", "has field", "strEmail"],
-        ["strCustID", "is", "primary key of tblCustomer"]
+        [
+          "tblCustomer",
+          "stores",
+          "customer master data"
+        ],
+        [
+          "tblCustomer",
+          "has field",
+          "strCustID"
+        ],
+        [
+          "tblCustomer",
+          "has field",
+          "strFullName"
+        ],
+        [
+          "tblCustomer",
+          "has field",
+          "strEmail"
+        ],
+        [
+          "strCustID",
+          "is",
+          "primary key of tblCustomer"
+        ]
       ],
-      "edge_case": "Hungarian notation (tbl_ prefix, str prefix)"
+      "edge_case": "Hungarian notation (tbl_ prefix, str prefix)",
+      "expected_sources": [
+        "tblCustomer"
+      ]
     },
     {
       "id": 2,
       "question": "How are customers identified in the legacy system?",
       "answer": "Customers are identified by strCustID, which is a VARCHAR(50) field containing alphanumeric customer codes inherited from an AS/400 system. These codes follow formats like C-XXXXX or REG-XXXX and can contain letters, numbers, and hyphens.",
       "triplets_expected": [
-        ["Customer", "identified by", "strCustID"],
-        ["strCustID", "has data type", "VARCHAR(50)"],
-        ["strCustID", "contains", "alphanumeric codes"],
-        ["strCustID", "inherited from", "AS/400 system"]
+        [
+          "Customer",
+          "identified by",
+          "strCustID"
+        ],
+        [
+          "strCustID",
+          "has data type",
+          "VARCHAR(50)"
+        ],
+        [
+          "strCustID",
+          "contains",
+          "alphanumeric codes"
+        ],
+        [
+          "strCustID",
+          "inherited from",
+          "AS/400 system"
+        ]
       ],
-      "edge_case": "Inappropriate data type for ID (VARCHAR instead of INT)"
+      "edge_case": "Inappropriate data type for ID (VARCHAR instead of INT)",
+      "expected_sources": [
+        "tblCustomer"
+      ]
     },
     {
       "id": 3,
       "question": "What table stores order header information and what is its primary key?",
       "answer": "Order header information is stored in the vw_SalesOrderHdr table despite the vw_ prefix suggesting it's a view. The primary key is lngOrderID, which is an INT field using the lng (long integer) Hungarian notation prefix.",
       "triplets_expected": [
-        ["vw_SalesOrderHdr", "stores", "order header information"],
-        ["vw_SalesOrderHdr", "has primary key", "lngOrderID"],
-        ["lngOrderID", "has data type", "INT"],
-        ["vw_SalesOrderHdr", "is actually a", "table not a view"]
+        [
+          "vw_SalesOrderHdr",
+          "stores",
+          "order header information"
+        ],
+        [
+          "vw_SalesOrderHdr",
+          "has primary key",
+          "lngOrderID"
+        ],
+        [
+          "lngOrderID",
+          "has data type",
+          "INT"
+        ],
+        [
+          "vw_SalesOrderHdr",
+          "is actually a",
+          "table not a view"
+        ]
       ],
-      "edge_case": "Misleading table prefix (vw_ but it's a table)"
+      "edge_case": "Misleading table prefix (vw_ but it's a table)",
+      "expected_sources": [
+        "vw_SalesOrderHdr"
+      ]
     },
     {
       "id": 4,
       "question": "Which table in the schema uses a SQL reserved word as its name?",
       "answer": "The schema includes two tables that use SQL reserved words: 'Group' (for product categories) and 'User' (for system users). These require square bracket quoting [Group] and [User] in SQL queries to avoid syntax errors.",
       "triplets_expected": [
-        ["Group", "is a", "SQL reserved word"],
-        ["User", "is a", "SQL reserved word"],
-        ["Group", "requires", "square bracket quoting"],
-        ["User", "requires", "square bracket quoting"]
+        [
+          "Group",
+          "is a",
+          "SQL reserved word"
+        ],
+        [
+          "User",
+          "is a",
+          "SQL reserved word"
+        ],
+        [
+          "Group",
+          "requires",
+          "square bracket quoting"
+        ],
+        [
+          "User",
+          "requires",
+          "square bracket quoting"
+        ]
       ],
-      "edge_case": "SQL reserved words as table names"
+      "edge_case": "SQL reserved words as table names",
+      "expected_sources": [
+        "tblProduct"
+      ]
     },
     {
       "id": 5,
       "question": "What is the relationship between vw_SalesOrderHdr and tblCustomer?",
       "answer": "vw_SalesOrderHdr has a foreign key relationship with tblCustomer through the intCustID field, which references strCustID. Despite the int prefix suggesting an integer, intCustID is actually a VARCHAR(50) field matching the strCustID data type.",
       "triplets_expected": [
-        ["vw_SalesOrderHdr", "has foreign key to", "tblCustomer"],
-        ["intCustID", "references", "strCustID"],
-        ["intCustID", "has misleading prefix", "int suggests integer but is VARCHAR"],
-        ["vw_SalesOrderHdr", "contains", "intCustID"]
+        [
+          "vw_SalesOrderHdr",
+          "has foreign key to",
+          "tblCustomer"
+        ],
+        [
+          "intCustID",
+          "references",
+          "strCustID"
+        ],
+        [
+          "intCustID",
+          "has misleading prefix",
+          "int suggests integer but is VARCHAR"
+        ],
+        [
+          "vw_SalesOrderHdr",
+          "contains",
+          "intCustID"
+        ]
       ],
-      "edge_case": "Misleading Hungarian notation prefix"
+      "edge_case": "Misleading Hungarian notation prefix",
+      "expected_sources": [
+        "tblCustomer",
+        "vw_SalesOrderHdr"
+      ]
     },
     {
       "id": 6,
       "question": "What naming convention is used for the inventory transaction log table?",
       "answer": "The inventory transaction log table is named 'inv_txn_log' using abbreviated naming with underscore separators. Field names within this table are also heavily abbreviated: txn_id (transaction ID), txn_dt (transaction date), txn_type (transaction type), and prod_id (product ID).",
       "triplets_expected": [
-        ["inv_txn_log", "uses", "abbreviated naming convention"],
-        ["inv_txn_log", "has field", "txn_id"],
-        ["inv_txn_log", "has field", "txn_dt"],
-        ["inv_txn_log", "has field", "txn_type"]
+        [
+          "inv_txn_log",
+          "uses",
+          "abbreviated naming convention"
+        ],
+        [
+          "inv_txn_log",
+          "has field",
+          "txn_id"
+        ],
+        [
+          "inv_txn_log",
+          "has field",
+          "txn_dt"
+        ],
+        [
+          "inv_txn_log",
+          "has field",
+          "txn_type"
+        ]
       ],
-      "edge_case": "Heavily abbreviated table and field names"
+      "edge_case": "Heavily abbreviated table and field names",
+      "expected_sources": [
+        "tblProduct",
+        "inv_txn_log"
+      ]
     },
     {
       "id": 7,
       "question": "What data quality issue exists in the tblProduct unit_cost field?",
       "answer": "The tblProduct.unit_cost field has an inappropriate data type - it's defined as VARCHAR(20) instead of DECIMAL. This field contains currency symbols like '$19.99' which require parsing before calculations can be performed, making it unusable for mathematical operations without transformation.",
       "triplets_expected": [
-        ["tblProduct", "has field", "unit_cost"],
-        ["unit_cost", "has inappropriate data type", "VARCHAR instead of DECIMAL"],
-        ["unit_cost", "contains", "currency symbols"],
-        ["unit_cost", "requires parsing before", "calculations"]
+        [
+          "tblProduct",
+          "has field",
+          "unit_cost"
+        ],
+        [
+          "unit_cost",
+          "has inappropriate data type",
+          "VARCHAR instead of DECIMAL"
+        ],
+        [
+          "unit_cost",
+          "contains",
+          "currency symbols"
+        ],
+        [
+          "unit_cost",
+          "requires parsing before",
+          "calculations"
+        ]
       ],
-      "edge_case": "Wrong data type for numeric field"
+      "edge_case": "Wrong data type for numeric field",
+      "expected_sources": [
+        "tblProduct"
+      ]
     },
     {
       "id": 8,
       "question": "How does the ord_line_item table handle product data redundancy?",
       "answer": "The ord_line_item table contains redundant copies of product data (product_code and item_name) that are denormalized for reporting performance and to snapshot product information at the time of order. These fields may become out of sync with the tblProduct master and should not be updated from product master changes.",
       "triplets_expected": [
-        ["ord_line_item", "contains", "redundant product data"],
-        ["product_code", "is copy of", "tblProduct.strSKU"],
-        ["item_name", "is snapshot of", "product name at order time"],
-        ["ord_line_item", "uses denormalization for", "reporting performance"]
+        [
+          "ord_line_item",
+          "contains",
+          "redundant product data"
+        ],
+        [
+          "product_code",
+          "is copy of",
+          "tblProduct.strSKU"
+        ],
+        [
+          "item_name",
+          "is snapshot of",
+          "product name at order time"
+        ],
+        [
+          "ord_line_item",
+          "uses denormalization for",
+          "reporting performance"
+        ]
       ],
-      "edge_case": "Denormalized redundant fields"
+      "edge_case": "Denormalized redundant fields",
+      "expected_sources": [
+        "tblProduct",
+        "ord_line_item"
+      ]
     },
     {
       "id": 9,
       "question": "What are the valid values for the strOrderStatus field in vw_SalesOrderHdr?",
       "answer": "The strOrderStatus field accepts three values enforced by a CHECK constraint: 'PENDING' (order received but not shipped), 'SHIPPED' (order has been shipped to customer), and 'CANCELLED' (order cancelled before shipping).",
       "triplets_expected": [
-        ["strOrderStatus", "has valid values", "PENDING, SHIPPED, CANCELLED"],
-        ["strOrderStatus", "has constraint", "CHECK constraint"],
-        ["PENDING", "means", "order received but not shipped"],
-        ["SHIPPED", "means", "order has been shipped"]
+        [
+          "strOrderStatus",
+          "has valid values",
+          "PENDING, SHIPPED, CANCELLED"
+        ],
+        [
+          "strOrderStatus",
+          "has constraint",
+          "CHECK constraint"
+        ],
+        [
+          "PENDING",
+          "means",
+          "order received but not shipped"
+        ],
+        [
+          "SHIPPED",
+          "means",
+          "order has been shipped"
+        ]
       ],
-      "edge_case": "CHECK constraint with limited enum values"
+      "edge_case": "CHECK constraint with limited enum values",
+      "expected_sources": [
+        "tblCustomer",
+        "vw_SalesOrderHdr"
+      ]
     },
     {
       "id": 10,
       "question": "Which table stores payment information and what security issue does it have?",
       "answer": "Payment information is stored in the tblPayment table. The table has a critical security issue: the CardNumberText field stores full unencrypted credit card numbers as VARCHAR(100), which is a PCI compliance violation. The system also lacks proper tokenization and encryption at rest.",
       "triplets_expected": [
-        ["tblPayment", "stores", "payment information"],
-        ["CardNumberText", "stores", "unencrypted card numbers"],
-        ["CardNumberText", "is", "PCI compliance violation"],
-        ["tblPayment", "lacks", "tokenization"]
+        [
+          "tblPayment",
+          "stores",
+          "payment information"
+        ],
+        [
+          "CardNumberText",
+          "stores",
+          "unencrypted card numbers"
+        ],
+        [
+          "CardNumberText",
+          "is",
+          "PCI compliance violation"
+        ],
+        [
+          "tblPayment",
+          "lacks",
+          "tokenization"
+        ]
       ],
-      "edge_case": "Security violation (plaintext sensitive data)"
+      "edge_case": "Security violation (plaintext sensitive data)",
+      "expected_sources": [
+        "tblPayment"
+      ]
     },
     {
       "id": 11,
       "question": "What is the purpose of the bolActive field in tblCustomer and tblProduct?",
       "answer": "The bolActive field (using Hungarian notation 'bol' for boolean/bit) is a flag indicating whether a record is active. In tblCustomer, it marks whether customers are included in marketing (1=active, 0=inactive). In tblProduct, it indicates product availability (1=available for sale, 0=discontinued).",
       "triplets_expected": [
-        ["bolActive", "is a", "boolean flag field"],
-        ["tblCustomer", "uses bolActive for", "marketing inclusion status"],
-        ["tblProduct", "uses bolActive for", "availability status"],
-        ["bolActive", "values are", "1 or 0"]
+        [
+          "bolActive",
+          "is a",
+          "boolean flag field"
+        ],
+        [
+          "tblCustomer",
+          "uses bolActive for",
+          "marketing inclusion status"
+        ],
+        [
+          "tblProduct",
+          "uses bolActive for",
+          "availability status"
+        ],
+        [
+          "bolActive",
+          "values are",
+          "1 or 0"
+        ]
       ],
-      "edge_case": "Hungarian notation prefix (bol)"
+      "edge_case": "Hungarian notation prefix (bol)",
+      "expected_sources": [
+        "tblCustomer",
+        "tblProduct"
+      ]
     },
     {
       "id": 12,
       "question": "How are inventory transactions tracked in the system?",
       "answer": "Inventory transactions are tracked in the inv_txn_log table, which records all stock movements. Each transaction has a type (txn_type): 'IN' for receipts, 'OUT' for shipments, and 'ADJ' for corrections. The table uses heavily abbreviated field names and references products via prod_id.",
       "triplets_expected": [
-        ["inv_txn_log", "tracks", "inventory transactions"],
-        ["txn_type", "has values", "IN, OUT, ADJ"],
-        ["IN", "means", "receipt"],
-        ["OUT", "means", "shipment"]
+        [
+          "inv_txn_log",
+          "tracks",
+          "inventory transactions"
+        ],
+        [
+          "txn_type",
+          "has values",
+          "IN, OUT, ADJ"
+        ],
+        [
+          "IN",
+          "means",
+          "receipt"
+        ],
+        [
+          "OUT",
+          "means",
+          "shipment"
+        ]
       ],
-      "edge_case": "Abbreviated field names with cryptic codes"
+      "edge_case": "Abbreviated field names with cryptic codes",
+      "expected_sources": [
+        "tblProduct",
+        "inv_txn_log"
+      ]
     },
     {
       "id": 13,
       "question": "What is the self-referencing relationship in the Group table?",
       "answer": "The Group table has a self-referencing foreign key where ParentGroupID references GroupID, creating a hierarchical structure for product categories. A NULL ParentGroupID indicates a top-level group, while non-NULL values create nested category levels.",
       "triplets_expected": [
-        ["Group", "has self-referencing foreign key", "ParentGroupID"],
-        ["ParentGroupID", "references", "GroupID"],
-        ["ParentGroupID", "NULL means", "top-level group"],
-        ["Group", "creates", "hierarchical structure"]
+        [
+          "Group",
+          "has self-referencing foreign key",
+          "ParentGroupID"
+        ],
+        [
+          "ParentGroupID",
+          "references",
+          "GroupID"
+        ],
+        [
+          "ParentGroupID",
+          "NULL means",
+          "top-level group"
+        ],
+        [
+          "Group",
+          "creates",
+          "hierarchical structure"
+        ]
       ],
-      "edge_case": "Self-referencing foreign key with reserved word table name"
+      "edge_case": "Self-referencing foreign key with reserved word table name",
+      "expected_sources": [
+        "tblProduct"
+      ]
     },
     {
       "id": 14,
       "question": "What migration compatibility columns exist in tblCustomer?",
       "answer": "The tblCustomer table includes cust_id (INT) and customer_name (VARCHAR 255) as migration compatibility columns alongside the legacy strCustID and strFullName fields. These are intended for the new ERP system that will use integer IDs and standardized naming conventions.",
       "triplets_expected": [
-        ["tblCustomer", "has migration fields", "cust_id and customer_name"],
-        ["cust_id", "is intended for", "new ERP system"],
-        ["customer_name", "uses standardized naming", "instead of Hungarian notation"],
-        ["cust_id", "has data type", "INT"]
+        [
+          "tblCustomer",
+          "has migration fields",
+          "cust_id and customer_name"
+        ],
+        [
+          "cust_id",
+          "is intended for",
+          "new ERP system"
+        ],
+        [
+          "customer_name",
+          "uses standardized naming",
+          "instead of Hungarian notation"
+        ],
+        [
+          "cust_id",
+          "has data type",
+          "INT"
+        ]
       ],
-      "edge_case": "Old and new columns coexisting for migration"
+      "edge_case": "Old and new columns coexisting for migration",
+      "expected_sources": [
+        "tblCustomer"
+      ]
     },
     {
       "id": 15,
       "question": "How does the system handle order status history tracking?",
       "answer": "Order status changes are tracked in the tblOrderStatusHistory table, which creates an audit record for each status transition. Each history record includes OrderID, OldStatus, NewStatus, ChangedByUser, ChangedDate, and ChangeReason fields, providing a complete audit trail of order workflow.",
       "triplets_expected": [
-        ["tblOrderStatusHistory", "tracks", "order status changes"],
-        ["tblOrderStatusHistory", "creates", "audit records"],
-        ["tblOrderStatusHistory", "has field", "OldStatus"],
-        ["tblOrderStatusHistory", "has field", "NewStatus"]
+        [
+          "tblOrderStatusHistory",
+          "tracks",
+          "order status changes"
+        ],
+        [
+          "tblOrderStatusHistory",
+          "creates",
+          "audit records"
+        ],
+        [
+          "tblOrderStatusHistory",
+          "has field",
+          "OldStatus"
+        ],
+        [
+          "tblOrderStatusHistory",
+          "has field",
+          "NewStatus"
+        ]
       ],
-      "edge_case": "Audit table with verbose naming (tbl prefix)"
+      "edge_case": "Audit table with verbose naming (tbl prefix)",
+      "expected_sources": [
+        "tblOrderStatusHistory"
+      ]
     },
     {
       "id": 16,
       "question": "What is the inconsistent naming pattern between order tables?",
       "answer": "The schema shows inconsistent naming: order headers use 'vw_SalesOrderHdr' with Hungarian notation, while line items use 'ord_line_item' with abbreviated underscore notation. Additionally, the line item table references lngOrderID but names its foreign key 'ord_id' instead of 'order_id' or 'lngOrderID'.",
       "triplets_expected": [
-        ["vw_SalesOrderHdr", "uses", "Hungarian notation"],
-        ["ord_line_item", "uses", "abbreviated underscore notation"],
-        ["ord_line_item.ord_id", "references", "vw_SalesOrderHdr.lngOrderID"],
-        ["schema", "has inconsistent", "naming conventions"]
+        [
+          "vw_SalesOrderHdr",
+          "uses",
+          "Hungarian notation"
+        ],
+        [
+          "ord_line_item",
+          "uses",
+          "abbreviated underscore notation"
+        ],
+        [
+          "ord_line_item.ord_id",
+          "references",
+          "vw_SalesOrderHdr.lngOrderID"
+        ],
+        [
+          "schema",
+          "has inconsistent",
+          "naming conventions"
+        ]
       ],
-      "edge_case": "Mixed naming conventions across related tables"
+      "edge_case": "Mixed naming conventions across related tables",
+      "expected_sources": [
+        "vw_SalesOrderHdr",
+        "ord_line_item"
+      ]
     },
     {
       "id": 17,
       "question": "What deprecated fields exist in tblProduct and why should they be avoided?",
       "answer": "The tblProduct table contains three deprecated fields: prod_num (superseded by strSKU), item_desc (superseded by strDescription), and unit_cost (wrong data type with VARCHAR instead of DECIMAL). These fields should not be used in new code as they represent outdated design decisions.",
       "triplets_expected": [
-        ["tblProduct", "has deprecated fields", "prod_num, item_desc, unit_cost"],
-        ["prod_num", "superseded by", "strSKU"],
-        ["item_desc", "superseded by", "strDescription"],
-        ["unit_cost", "has wrong type", "VARCHAR instead of DECIMAL"]
+        [
+          "tblProduct",
+          "has deprecated fields",
+          "prod_num, item_desc, unit_cost"
+        ],
+        [
+          "prod_num",
+          "superseded by",
+          "strSKU"
+        ],
+        [
+          "item_desc",
+          "superseded by",
+          "strDescription"
+        ],
+        [
+          "unit_cost",
+          "has wrong type",
+          "VARCHAR instead of DECIMAL"
+        ]
       ],
-      "edge_case": "Deprecated fields coexisting with current fields"
+      "edge_case": "Deprecated fields coexisting with current fields",
+      "expected_sources": [
+        "tblProduct"
+      ]
     },
     {
       "id": 18,
       "question": "How are shipping carriers configured in the system?",
       "answer": "Shipping carriers are stored in the tblShippingCarrier table with CarrierID, CarrierName, CarrierCode (for API integration), TrackingURL (with {TRACKING_NUM} placeholder), and bolActive flag. Only carriers with bolActive=1 should be offered during checkout.",
       "triplets_expected": [
-        ["tblShippingCarrier", "stores", "shipping carrier configuration"],
-        ["CarrierCode", "used for", "API integration"],
-        ["TrackingURL", "contains placeholder", "{TRACKING_NUM}"],
-        ["bolActive", "determines", "checkout availability"]
+        [
+          "tblShippingCarrier",
+          "stores",
+          "shipping carrier configuration"
+        ],
+        [
+          "CarrierCode",
+          "used for",
+          "API integration"
+        ],
+        [
+          "TrackingURL",
+          "contains placeholder",
+          "{TRACKING_NUM}"
+        ],
+        [
+          "bolActive",
+          "determines",
+          "checkout availability"
+        ]
       ],
-      "edge_case": "Template URL with placeholder syntax"
+      "edge_case": "Template URL with placeholder syntax",
+      "expected_sources": [
+        "tblShippingCarrier"
+      ]
     },
     {
       "id": 19,
       "question": "What is the relationship between User table passwords and security?",
       "answer": "The User table stores password hashes in the PasswordHash field, but uses SHA-256 without salt, making it vulnerable to rainbow table attacks. This is identified as a security issue in the data dictionary. Additionally, the table name 'User' is a SQL reserved word requiring square bracket quoting.",
       "triplets_expected": [
-        ["User", "has field", "PasswordHash"],
-        ["PasswordHash", "uses", "SHA-256 without salt"],
-        ["PasswordHash", "is vulnerable to", "rainbow table attacks"],
-        ["User", "is a", "SQL reserved word"]
+        [
+          "User",
+          "has field",
+          "PasswordHash"
+        ],
+        [
+          "PasswordHash",
+          "uses",
+          "SHA-256 without salt"
+        ],
+        [
+          "PasswordHash",
+          "is vulnerable to",
+          "rainbow table attacks"
+        ],
+        [
+          "User",
+          "is a",
+          "SQL reserved word"
+        ]
       ],
       "edge_case": "Security vulnerability + reserved word table name"
     },
@@ -241,72 +610,202 @@
       "question": "What fields in vw_SalesOrderHdr use the 'flt' Hungarian notation prefix and what do they store?",
       "answer": "The vw_SalesOrderHdr table uses the 'flt' (float) prefix for three monetary fields: fltSubTotal (line item subtotal before tax), fltTaxAmount (calculated tax), and fltTotalAmount (final total including tax and shipping). Despite the 'flt' prefix suggesting floating-point, these are defined as DECIMAL(12,2) for proper currency handling.",
       "triplets_expected": [
-        ["vw_SalesOrderHdr", "has flt fields", "fltSubTotal, fltTaxAmount, fltTotalAmount"],
-        ["flt prefix", "suggests float but actually", "DECIMAL"],
-        ["fltSubTotal", "stores", "subtotal before tax"],
-        ["fltTotalAmount", "stores", "final order total"]
+        [
+          "vw_SalesOrderHdr",
+          "has flt fields",
+          "fltSubTotal, fltTaxAmount, fltTotalAmount"
+        ],
+        [
+          "flt prefix",
+          "suggests float but actually",
+          "DECIMAL"
+        ],
+        [
+          "fltSubTotal",
+          "stores",
+          "subtotal before tax"
+        ],
+        [
+          "fltTotalAmount",
+          "stores",
+          "final order total"
+        ]
       ],
-      "edge_case": "Misleading Hungarian notation (flt for DECIMAL)"
+      "edge_case": "Misleading Hungarian notation (flt for DECIMAL)",
+      "expected_sources": [
+        "vw_SalesOrderHdr"
+      ]
     },
     {
       "id": 21,
       "question": "How does the schema handle the different date/time field naming conventions?",
       "answer": "The schema uses 'dtm' (datetime) Hungarian notation prefix consistently: dtmCreated and dtmLastModified in tblCustomer, dtmOrderDate/dtmShipDate/dtmRequiredDate in vw_SalesOrderHdr, dtmIntroduced/dtmDiscontinued in tblProduct, and txn_dt in inv_txn_log (abbreviated exception). The User table breaks convention with LastLogin and CreatedDate.",
       "triplets_expected": [
-        ["dtm prefix", "indicates", "datetime fields"],
-        ["dtmCreated and dtmLastModified", "are in", "tblCustomer"],
-        ["txn_dt", "is abbreviated exception", "in inv_txn_log"],
-        ["User table", "breaks convention with", "LastLogin and CreatedDate"]
+        [
+          "dtm prefix",
+          "indicates",
+          "datetime fields"
+        ],
+        [
+          "dtmCreated and dtmLastModified",
+          "are in",
+          "tblCustomer"
+        ],
+        [
+          "txn_dt",
+          "is abbreviated exception",
+          "in inv_txn_log"
+        ],
+        [
+          "User table",
+          "breaks convention with",
+          "LastLogin and CreatedDate"
+        ]
       ],
-      "edge_case": "Inconsistent datetime field naming (dtm vs dt vs Date)"
+      "edge_case": "Inconsistent datetime field naming (dtm vs dt vs Date)",
+      "expected_sources": [
+        "tblCustomer",
+        "tblProduct",
+        "vw_SalesOrderHdr",
+        "inv_txn_log"
+      ]
     },
     {
       "id": 22,
       "question": "What table prefix patterns exist in the schema and what do they indicate?",
       "answer": "The schema uses multiple inconsistent table prefixes: 'tbl' for standard tables (tblCustomer, tblProduct, tblPayment, tblShippingCarrier, tblOrderStatusHistory), 'vw_' for a misnamed table (vw_SalesOrderHdr), and domain-specific prefixes 'ord_' (ord_line_item) and 'inv_' (inv_txn_log). Two tables (Group, User) use reserved words with no prefix.",
       "triplets_expected": [
-        ["tbl prefix", "used for", "standard tables"],
-        ["vw_ prefix", "is misleading because", "vw_SalesOrderHdr is a table not view"],
-        ["ord_ and inv_ prefixes", "are domain-specific", "abbreviations"],
-        ["Group and User", "use reserved words", "without prefixes"]
+        [
+          "tbl prefix",
+          "used for",
+          "standard tables"
+        ],
+        [
+          "vw_ prefix",
+          "is misleading because",
+          "vw_SalesOrderHdr is a table not view"
+        ],
+        [
+          "ord_ and inv_ prefixes",
+          "are domain-specific",
+          "abbreviations"
+        ],
+        [
+          "Group and User",
+          "use reserved words",
+          "without prefixes"
+        ]
       ],
-      "edge_case": "Multiple inconsistent table naming patterns"
+      "edge_case": "Multiple inconsistent table naming patterns",
+      "expected_sources": [
+        "tblCustomer",
+        "tblProduct",
+        "vw_SalesOrderHdr",
+        "ord_line_item",
+        "inv_txn_log",
+        "tblOrderStatusHistory",
+        "tblShippingCarrier",
+        "tblPayment"
+      ]
     },
     {
       "id": 23,
       "question": "What foreign key relationships exist for the vw_SalesOrderHdr table?",
       "answer": "The vw_SalesOrderHdr table has one explicit foreign key constraint: intCustID references tblCustomer.strCustID. Implicit relationships (not enforced by FK constraints) include tblPayment.OrderID, tblOrderStatusHistory.OrderID, and ord_line_item.ord_id all referencing vw_SalesOrderHdr.lngOrderID.",
       "triplets_expected": [
-        ["vw_SalesOrderHdr", "has FK to", "tblCustomer via intCustID"],
-        ["tblPayment", "references vw_SalesOrderHdr", "via OrderID"],
-        ["tblOrderStatusHistory", "references vw_SalesOrderHdr", "via OrderID"],
-        ["ord_line_item", "references vw_SalesOrderHdr", "via ord_id"]
+        [
+          "vw_SalesOrderHdr",
+          "has FK to",
+          "tblCustomer via intCustID"
+        ],
+        [
+          "tblPayment",
+          "references vw_SalesOrderHdr",
+          "via OrderID"
+        ],
+        [
+          "tblOrderStatusHistory",
+          "references vw_SalesOrderHdr",
+          "via OrderID"
+        ],
+        [
+          "ord_line_item",
+          "references vw_SalesOrderHdr",
+          "via ord_id"
+        ]
       ],
-      "edge_case": "Mix of explicit and implicit foreign key relationships"
+      "edge_case": "Mix of explicit and implicit foreign key relationships",
+      "expected_sources": [
+        "tblCustomer",
+        "vw_SalesOrderHdr",
+        "ord_line_item",
+        "tblOrderStatusHistory",
+        "tblPayment"
+      ]
     },
     {
       "id": 24,
       "question": "How does the legacy system handle product SKU format and uniqueness?",
       "answer": "Product SKUs are stored in the strSKU field with a UNIQUE constraint. The format follows Category-Color-Size pattern (e.g., 'SHIRT-BLU-L'). The deprecated prod_num field also exists but should not be used. SKUs are used in foreign key references from ord_line_item through the denormalized product_code field.",
       "triplets_expected": [
-        ["strSKU", "has format", "Category-Color-Size"],
-        ["strSKU", "has constraint", "UNIQUE"],
-        ["prod_num", "is deprecated", "should not be used"],
-        ["ord_line_item.product_code", "is denormalized copy of", "strSKU"]
+        [
+          "strSKU",
+          "has format",
+          "Category-Color-Size"
+        ],
+        [
+          "strSKU",
+          "has constraint",
+          "UNIQUE"
+        ],
+        [
+          "prod_num",
+          "is deprecated",
+          "should not be used"
+        ],
+        [
+          "ord_line_item.product_code",
+          "is denormalized copy of",
+          "strSKU"
+        ]
       ],
-      "edge_case": "Formatted field values with deprecated duplicate"
+      "edge_case": "Formatted field values with deprecated duplicate",
+      "expected_sources": [
+        "tblProduct",
+        "ord_line_item"
+      ]
     },
     {
       "id": 25,
       "question": "What are the critical data quality issues identified for migration?",
       "answer": "Critical issues include: (1) PCI compliance violation - unencrypted card numbers in tblPayment.CardNumberText, (2) inappropriate data types - unit_cost as VARCHAR instead of DECIMAL, (3) missing foreign key constraints - inv_txn_log.user_id has no FK to User table, (4) security vulnerability - User.PasswordHash uses unsalted SHA-256, (5) misleading Hungarian notation - intCustID is VARCHAR not INT, and (6) reserved words as table names requiring quoting.",
       "triplets_expected": [
-        ["tblPayment.CardNumberText", "is", "PCI compliance violation"],
-        ["tblProduct.unit_cost", "has wrong type", "VARCHAR not DECIMAL"],
-        ["inv_txn_log.user_id", "lacks", "foreign key constraint"],
-        ["User.PasswordHash", "has security vulnerability", "unsalted SHA-256"]
+        [
+          "tblPayment.CardNumberText",
+          "is",
+          "PCI compliance violation"
+        ],
+        [
+          "tblProduct.unit_cost",
+          "has wrong type",
+          "VARCHAR not DECIMAL"
+        ],
+        [
+          "inv_txn_log.user_id",
+          "lacks",
+          "foreign key constraint"
+        ],
+        [
+          "User.PasswordHash",
+          "has security vulnerability",
+          "unsalted SHA-256"
+        ]
       ],
-      "edge_case": "Multiple critical data quality and security issues"
+      "edge_case": "Multiple critical data quality and security issues",
+      "expected_sources": [
+        "inv_txn_log",
+        "tblPayment"
+      ]
     }
   ],
   "metadata": {

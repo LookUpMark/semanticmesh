@@ -1,0 +1,1746 @@
+{
+  "study_id": "AB-BEST",
+  "timestamp": "2026-05-04T15:01:14.196819+00:00",
+  "trace_id": "AB-BEST.2026-05-04T15-01-14.196819+00-00",
+  "config": {
+    "llm_model_reasoning": "openai/gpt-oss-120b",
+    "llm_model_extraction": "openai/gpt-4.1-nano",
+    "chunk_size": 128,
+    "chunk_overlap": 16,
+    "er_similarity_threshold": 0.65,
+    "er_blocking_top_k": 5,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "tests/fixtures/02_intermediate_finance/business_glossary.md",
+    "tests/fixtures/02_intermediate_finance/data_dictionary.md"
+  ],
+  "ddl_files": [
+    "tests/fixtures/02_intermediate_finance/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition:** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds.\n\n**Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship managem... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "637"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Transaction\n\n**Definition:** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees.\n\n**Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service.\n\n**Key Attributes:**\n- Transaction ID (unique identifier)\n- Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fe... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "717"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate.\n\n**Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.\n\n**Key Attributes:**\n- Interest Rate (annual percentage)\n- APR (Annual Percentage Rate) - for loans\n- APY (Annual Percentage Yield) - for d... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "686"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## ATM\n\n**Definition:** Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance.\n\n**Business Context:** ATMs extend banking access beyond branch hours and locations. They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores.\n\n**Key Attributes:**\n- ATM ID and Code\n- Location (address and GPS coordinates)\n- ATM Type (Standalone, Branch, DriveThrough... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "761"
+    },
+    {
+      "chunk_id": 4,
+      "text": "# Retail Banking Data Dictionary\n\nThis document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.\n\n---\n\n## customers\n\n**Description:** Core customer dimension table containing master data for all individual and corporate banking customers. Includes KYC (Know Your Customer) compliance status, risk profiling for investment suitability, and preferred customer flags for VIP treatmen... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "538"
+    },
+    {
+      "chunk_id": 5,
+      "text": "## branches\n\n**Description:** Physical bank locations including full-service branches, satellite offices, and ATM-only locations. Tracks staffing levels, operating hours, ATM counts, and branch status for operational management.\n\n**Primary Key:** `branch_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| branch_id | INTEGER | Unique branch identifier (primary key) | NO |\n| branch_code | VARCHAR(4) | 4-digit ... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "489"
+    },
+    {
+      "chunk_id": 6,
+      "text": "## atms\n\n**Description:** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location services, and operational status for availability management.\n\n**Primary Key:** `atm_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| atm_id | INTEGER | Unique ATM identifier (primary key) | NO |\n| atm_code | VA... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "464"
+    },
+    {
+      "chunk_id": 7,
+      "text": "## accounts\n\n**Description:** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status.\n\n**Primary Key:** `account_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| account_id |... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "668"
+    },
+    {
+      "chunk_id": 8,
+      "text": "## customer_account\n\n**Description:** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes.\n\n**Primary Key:** Composite (`customer_id`, `account_id`)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| customer_id | INTEGER | Foreign key to cus... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "392"
+    },
+    {
+      "chunk_id": 9,
+      "text": "## transactions\n\n**Description:** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated fields (balance_after) and includes location data for POS and ATM transactions for fraud detection.\n\n**Primary Key:** `transaction_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Uniq... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "480"
+    },
+    {
+      "chunk_id": 10,
+      "text": "## loans\n\n**Description:** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management.\n\n**Primary Key:** `loan_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| loan_id | INTEGER | Unique loan identifier (primary k... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "497"
+    },
+    {
+      "chunk_id": 11,
+      "text": "## cards\n\n**Description:** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, and card status. Supports multiple networks (Visa, Mastercard, Discover, American Express).\n\n**Primary Key:** `card_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| card_id | INTEGER | Unique card identifier (p... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "658"
+    },
+    {
+      "chunk_id": 12,
+      "text": "## Entity Relationship Summary\n\n**Key Relationships:**\n- customers \u2190\u2192 accounts (many-to-many via customer_account)\n- accounts \u2192 accounts (self-reference for parent-child hierarchy)\n- accounts \u2192 transactions (one-to-many)\n- customers \u2192 loans (one-to-many)\n- accounts \u2192 cards (one-to-many)\n- branches \u2192 accounts (one-to-many)\n- branches \u2192 atms (one-to-many)\n\n**Cascade Rules:**\n- All foreign keys have NO CASCADE by default (manual integrity management)\n- customer_account junction table requires both ... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "246"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 13,
+    "total_tokens": 7233,
+    "avg_tokens": 556.3846153846154
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "is",
+      "object": "a financial arrangement",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "allows",
+      "object": "deposit, withdrawal, and management of funds",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Accounts",
+      "predicate": "are",
+      "object": "the primary vehicle for customer banking relationships",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account Number",
+      "predicate": "is",
+      "object": "unique identifier",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "can be",
+      "object": "individual or jointly held",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "may be",
+      "object": "organized into hierarchical portfolio structures",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Account Number",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Account Type",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Current Balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Interest Rate",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Interest Earned",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Minimum Balance Requirements",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Monthly Fees",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "has",
+      "object": "Account Status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account numbers",
+      "predicate": "must be",
+      "object": "unique across the system",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Parent accounts",
+      "predicate": "cannot reference",
+      "object": "themselves",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Available balance",
+      "predicate": "may be",
+      "object": "less than current balance",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Minimum balance requirements",
+      "predicate": "may trigger",
+      "object": "monthly fees",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Dormant accounts",
+      "predicate": "are",
+      "object": "automatically flagged after 12 months of inactivity",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is",
+      "object": "an individual or corporate entity",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "maintains",
+      "object": "a banking relationship",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Customer ID",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Tax ID",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Contact Information",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "KYC Status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Risk Profile",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Customer Since Date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Preferred Status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Tax ID",
+      "predicate": "must be",
+      "object": "unique across all customers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "affects",
+      "object": "balance of an account",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "flows through",
+      "object": "multiple states",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "creates",
+      "object": "audit trails",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction ID",
+      "predicate": "is",
+      "object": "unique identifier",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction Type",
+      "predicate": "includes",
+      "object": "Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "has",
+      "object": "Amount and Currency",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction Date/Time",
+      "predicate": "is",
+      "object": "date and time",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "has",
+      "object": "Status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "has",
+      "object": "Balance After Transaction",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "has",
+      "object": "Description and Reference Number",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "has",
+      "object": "Location",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Debit transactions",
+      "predicate": "reduce",
+      "object": "account balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Credit transactions",
+      "predicate": "increase",
+      "object": "account balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "must maintain",
+      "object": "sufficient funds",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Posted transactions",
+      "predicate": "are",
+      "object": "final",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Failed transactions",
+      "predicate": "are",
+      "object": "logged for audit",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Failed transactions",
+      "predicate": "do not affect",
+      "object": "balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "POS transactions",
+      "predicate": "include",
+      "object": "merchant location data",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan",
+      "predicate": "is",
+      "object": "financial arrangement",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loans",
+      "predicate": "range from",
+      "object": "secured mortgages to unsecured personal loans and revolving credit facilities",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan",
+      "predicate": "tracks",
+      "object": "amortization, remaining balance, and maturity dates",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan ID",
+      "predicate": "is",
+      "object": "unique identifier",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan Type",
+      "predicate": "includes",
+      "object": "Mortgage, Personal, Auto, HELOC, CreditCard",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Principal Amount",
+      "predicate": "is",
+      "object": "loan amount",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Interest Rate",
+      "predicate": "is",
+      "object": "APR",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Term",
+      "predicate": "is",
+      "object": "months",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Monthly Payment Amount",
+      "predicate": "is",
+      "object": "monthly payment",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Balance Due",
+      "predicate": "is",
+      "object": "remaining balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Origination Date and Maturity Date",
+      "predicate": "are",
+      "object": "dates",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan Status",
+      "predicate": "includes",
+      "object": "Pending, Approved, Active, PaidOff, Defaulted",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest",
+      "predicate": "is defined as",
+      "object": "The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), exp... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest",
+      "predicate": "is the",
+      "object": "fundamental profit mechanism in banking",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Banks",
+      "predicate": "pay interest on",
+      "object": "deposits",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Banks",
+      "predicate": "charge interest on",
+      "object": "loans",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest Rate",
+      "predicate": "is",
+      "object": "annual percentage",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "APR",
+      "predicate": "stands for",
+      "object": "Annual Percentage Rate",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "APY",
+      "predicate": "stands for",
+      "object": "Annual Percentage Yield",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest",
+      "predicate": "is credited",
+      "object": "monthly",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Loan interest",
+      "predicate": "is",
+      "object": "amortized",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "APY",
+      "predicate": "accounts for",
+      "object": "compounding effects",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Promotional rates",
+      "predicate": "may be",
+      "object": "temporary",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Penalty rates",
+      "predicate": "may apply for",
+      "object": "rule violations",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Standard Savings",
+      "predicate": "has",
+      "object": "0.25% APY",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Premium Savings",
+      "predicate": "has",
+      "object": "0.50% APY",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Money Market",
+      "predicate": "has",
+      "object": "0.75% APY",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "12-Month CD",
+      "predicate": "has",
+      "object": "4.50% APR",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Mortgage",
+      "predicate": "has",
+      "object": "5.50% fixed APR",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Credit Card",
+      "predicate": "has",
+      "object": "18.50% variable APR",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branch",
+      "predicate": "is defined as",
+      "object": "A physical banking location where customers can access in-person services including teller transacti... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branches",
+      "predicate": "represent",
+      "object": "the physical presence of the bank",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branches",
+      "predicate": "range from",
+      "object": "full-service headquarters with multiple staff to satellite locations with limited services and ATM-o... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branch ID and Code",
+      "predicate": "are",
+      "object": "key attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branch Type",
+      "predicate": "can be",
+      "object": "FullService, Satellite, ATMOnly",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branches",
+      "predicate": "must have",
+      "object": "unique codes within the bank",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM",
+      "predicate": "is",
+      "object": "self-service banking terminal",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATMs",
+      "predicate": "extend",
+      "object": "banking access",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM",
+      "predicate": "can be",
+      "object": "attached to branches or deployed as standalone units",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM ID and Code",
+      "predicate": "are",
+      "object": "key attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Location",
+      "predicate": "is",
+      "object": "attribute",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM Type",
+      "predicate": "is",
+      "object": "attribute",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Status",
+      "predicate": "is",
+      "object": "attribute",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cash Balance and Last Replenished Date",
+      "predicate": "are",
+      "object": "attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Supported Features",
+      "predicate": "are",
+      "object": "attributes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Standalone ATMs",
+      "predicate": "are",
+      "object": "not affiliated with a branch",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Branch ATMs",
+      "predicate": "are located",
+      "object": "on branch premises",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "DriveThrough ATMs",
+      "predicate": "serve",
+      "object": "vehicles only",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cash replenishment",
+      "predicate": "is triggered",
+      "object": "when balance falls below threshold",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "OutOfCash status",
+      "predicate": "prevents",
+      "object": "withdrawal attempts",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cardless transactions",
+      "predicate": "require",
+      "object": "mobile app authentication",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Card",
+      "predicate": "is",
+      "object": "a payment instrument",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cards",
+      "predicate": "are",
+      "object": "primary interface",
+      "confidence": 1.0
+    },
+    "... [97 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 197,
+    "avg_confidence": 0.9939086294416244,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "18.50% Variable Apr",
+      "definition": "APY (Annual Percentage Yield) is a measure of the real rate of return on an investment or deposit accounting for compounding, while APR (Annual Percentage Rate) is a measure of the cost of credit including interest and fees, used for loans and credit products.",
+      "synonyms": [
+        "0.25% APY",
+        "0.50% APY",
+        "0.75% APY",
+        "4.50% APR",
+        "5.50% fixed APR",
+        "APY"
+      ],
+      "provenance_text": "- Credit Card: 18.50% variable APR based on prime rate | - Standard Savings: 0.25% APY (0.10% stated rate with monthly compounding) | - Premium Savings: 0.50% APY (0.495% stated rate with daily compounding) | - Money Market: 0.75% APY tiered by balance | - 12-Month CD: 4.50% APR (4.60% APY with monthly compounding) | - Mortgage: 5.50% fixed APR for 360-month term | APY (Annual Percentage Yield) - for deposits | - APY accounts for compounding effects and is higher than stated rate",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Automated Teller Machine",
+      "definition": "An Automated Teller Machine (ATM) is a self-service banking terminal that enables customers to perform basic financial transactions without the assistance of bank tellers.",
+      "synonyms": [
+        "ATM",
+        "ATMs"
+      ],
+      "provenance_text": "Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance. | They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores. | ATMs extend banking access beyond branch hours and locations.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Account",
+      "definition": "An account is a financial arrangement between a customer and a bank that allows deposit, withdrawal, and management of funds.",
+      "synonyms": [
+        "Account numbers",
+        "Accounts",
+        "account_id",
+        "account_number",
+        "accounts"
+      ],
+      "provenance_text": "A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. | They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship management purposes. | Account Number (unique identifier) | Account Type (Checking, Savings, MoneyMarket, CD, Investment) | Current Balance vs. Available Balance | Interest Rate and Interest Earned | Minimum Balance Requirements | Monthly Fees | Account Status (Active, Dormant, Frozen, Closed) | Account numbers must be unique across the system | Accounts are the primary vehicle for customer banking relationships. | Unique account identifier (primary key) | account_id | INTEGER | Foreign key to accounts (part of PK) | account_id | INTEGER | Foreign key to accounts | Foreign key to accounts (linked account) | Human-readable account number, must be unique | Deposit account master table supporting multiple account types (checking, savings, money market, CD, inv",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Account Type",
+      "definition": "An account type categorizes the different kinds of bank accounts such as Checking, Savings, Money Market, CD, and Investment.",
+      "synonyms": [
+        "account_type"
+      ],
+      "provenance_text": "Account Type (Checking, Savings, MoneyMarket, CD, Investment) | Type: Checking/Savings/MoneyMarket/CD/Investment",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Account Status",
+      "definition": "An account status indicating whether it is active, dormant, frozen, closed, blocked, or expired, reflecting its current operational state.",
+      "synonyms": [
+        "Active/Dormant/Frozen/Closed",
+        "Active/Frozen/Blocked/Expired"
+      ],
+      "provenance_text": "Account Status (Active, Dormant, Frozen, Closed) | Status: Active/Dormant/Frozen/Closed | Status: Active/Frozen/Blocked/Expired",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Annual Percentage Yield",
+      "definition": "Annual Percentage Rate (APR) is the annualized interest rate charged on loans, representing the cost of borrowing over a year.",
+      "synonyms": [
+        "Annual Percentage Rate",
+        "Annual interest rate"
+      ],
+      "provenance_text": "APY (Annual Percentage Yield) - for deposits | APR (Annual Percentage Rate) - for loans | Annual interest rate (NULL for non-interest accounts) | Annual interest rate (APR)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Available Balance",
+      "definition": "The available balance is the amount of funds in an account that can be withdrawn or used, excluding holds and pending transactions.",
+      "synonyms": [
+        "Balance available for withdrawal",
+        "available_balance"
+      ],
+      "provenance_text": "Available balance may be less than current balance due to holds or pending transactions | Balance available for withdrawal (excludes holds)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Balance Due",
+      "definition": "The remaining amount of money owed on a loan or account that is yet to be paid.",
+      "synonyms": [
+        "balance_due"
+      ],
+      "provenance_text": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted) | Current outstanding balance",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Branch",
+      "definition": "A physical banking location where customers can access in-person services including teller transactions, account opening, loan applications, and financial advisory services.",
+      "synonyms": [
+        "Branches"
+      ],
+      "provenance_text": "## Branch\n\n**Definition:** A physical banking location where customers can access in-person services including teller transactions, account opening, loan applications, and financial advisory services. | Branches represent the physical presence of the bank. | They range from full-service headquarters with multiple staff to satellite locations with limited services and ATM-only locations with no staff. | - Branch codes must be unique within the bank",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Current Timestamp",
+      "definition": "A placeholder representing the current date and time used as a default value in database fields.",
+      "synonyms": [
+        "CURRENT_DATE"
+      ],
+      "provenance_text": "Default Values: created_at: CURRENT_TIMESTAMP | Default Values: updated_at: CURRENT_TIMESTAMP | Default Values: customer_since: CURRENT_DATE",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Payment Card",
+      "definition": "A payment card is a physical or virtual card issued to a customer that enables electronic transactions at point-of-sale terminals, ATMs, and online merchants, often linked to a bank account or credit line.",
+      "synonyms": [
+        "Card",
+        "Cards",
+        "cards"
+      ],
+      "provenance_text": "A payment card issued to a customer, linked to their bank account or credit line, enabling electronic transactions at POS terminals, ATMs, and online merchants. | Cards are the primary interface for customer banking activities. | Tracks security features (chip, contactless, PIN), spending limits, and card status. | Supports multiple networks (Visa, Mastercard, Discover, American Express).",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Card Number",
+      "definition": "Card Type refers to the classification of a payment card, such as Debit, Credit, or ATM card.",
+      "synonyms": [
+        "Card Type",
+        "card_id",
+        "card_type"
+      ],
+      "provenance_text": "Primary Account Number (PAN), must be unique | - Card Type (Debit, Credit, ATM) | Unique card identifier (primary key) | Type: Debit/Credit/ATM",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Current Balance",
+      "definition": "The current balance is the total amount of funds available in a financial account at a specific point in time, including pending transactions.",
+      "synonyms": [
+        "current_balance"
+      ],
+      "provenance_text": "Current Balance vs. Available Balance | Current balance including pending transactions",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Current Balance Including",
+      "definition": "The current amount owed on an account or loan, including all pending transactions and adjustments.",
+      "synonyms": [
+        "Current outstanding balance",
+        "remaining balance"
+      ],
+      "provenance_text": "Current balance including pending transactions | Current outstanding balance | Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Customer",
+      "definition": "An individual or corporate entity that maintains a banking relationship with a financial institution, subject to KYC verification and used for banking and financial services.",
+      "synonyms": [
+        "customer",
+        "customers"
+      ],
+      "provenance_text": "An individual or corporate entity that maintains a banking relationship with the institution, having completed Know Your Customer (KYC) verification. | Customer ID (primary key) | Tax ID (SSN for individuals, EIN for corporations) | Contact Information (email, phone, address) | KYC Status (Level1, Level2, Level3) | Risk Profile (Conservative, Moderate, Aggressive) | Customer Since Date | Preferred Status (VIP flag) | Includes KYC (Know Your Customer) compliance status | Includes ... risk profiling for investment suitability | Includes ... preferred customer flags for VIP treatment. | Core customer dimension table containing master data for all individual and corporate banking customers.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "External Account Involved",
+      "definition": "An external account involved in financial transfers, representing an account outside the primary system used for transactions.",
+      "synonyms": [
+        "external_account"
+      ],
+      "provenance_text": "external_account | VARCHAR(30) | External account involved (transfers)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Interest Earned",
+      "definition": "Interest Earned refers to the income accrued from interest on investments or accounts over a specified period.",
+      "synonyms": [
+        "interest_earned"
+      ],
+      "provenance_text": "Interest Rate and Interest Earned | Year-to-date interest earned",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Interest Rate",
+      "definition": "Interest Rate is the percentage charged or earned on a principal amount over a specified period, commonly used in loans and interest-bearing accounts.",
+      "synonyms": [
+        "interest_rate"
+      ],
+      "provenance_text": "Interest Rate and Interest Earned | Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted) | - Interest Rate (annual percentage) | Annual interest rate (NULL for non-interest accounts) | Annual interest rate (APR)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Loan",
+      "definition": "A financial arrangement where a lender provides funds to a borrower with the agreement that the funds will be repaid with interest over a specified period.",
+      "synonyms": [
+        "Loans",
+        "loans"
+      ],
+      "provenance_text": "Definition: A financial arrangement where the bank lends a principal amount to a customer, who repays with interest over a specified term according to a fixed schedule. | Each loan tracks amortization, remaining balance, and maturity dates. | Business Context: Loans are core revenue-generating products. They range from secured mortgages to unsecured personal loans and revolving credit facilities. | Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Loan Type",
+      "definition": "Loan Type refers to the classification of different kinds of loans such as mortgage, personal, auto, HELOC, and credit card loans.",
+      "synonyms": [
+        "loan_type"
+      ],
+      "provenance_text": "Key Attributes: - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) | Type: Mortgage/Personal/Auto/HELOC/CreditCard",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Location",
+      "definition": "A Location represents the physical place or address where a transaction takes place, including address and GPS coordinates.",
+      "synonyms": [
+        "location"
+      ],
+      "provenance_text": "Key Attributes: - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) | - Location (address and GPS coordinates) | location | VARCHAR(100) | Location where transaction occurred",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Minimum Balance Requirements",
+      "definition": "The minimum balance an account holder must maintain to avoid fees or penalties.",
+      "synonyms": [
+        "Minimum balance requirements",
+        "Required minimum balance"
+      ],
+      "provenance_text": "Minimum Balance Requirements | Minimum balance requirements may trigger monthly fees if not met | Required minimum balance to avoid fees",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Monthly Maintenance Fee",
+      "definition": "A recurring charge or fee that is billed or paid on a monthly basis for services, maintenance, or account requirements.",
+      "synonyms": [
+        "Monthly Fees",
+        "Monthly Payment Amount",
+        "monthly",
+        "monthly fees",
+        "monthly payment",
+        "monthly_fee",
+        "monthly_payment"
+      ],
+      "provenance_text": "Monthly maintenance fee | Monthly Fees | Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted) | - Deposit interest is credited monthly (typically on first day of month) | Minimum balance requirements may trigger monthly fees if not met | Required monthly payment",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Parent Account",
+      "definition": "An identifier or reference to the immediate superior account in an account hierarchy within a business or organizational structure.",
+      "synonyms": [
+        "Parent accounts",
+        "parent account",
+        "parent_account_id"
+      ],
+      "provenance_text": "Parent accounts cannot reference themselves (no circular hierarchies) | Parent account for hierarchy (NULL for top-level)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Principal Amount",
+      "definition": "The principal amount is the original sum of money borrowed in a loan, excluding interest and other charges.",
+      "synonyms": [
+        "principal_amount"
+      ],
+      "provenance_text": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted) | Original loan principal",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Risk Profile",
+      "definition": "A risk profile is a classification that indicates an investor's willingness and capacity to take on risk, used to tailor investment strategies.",
+      "synonyms": [
+        "risk_profile"
+      ],
+      "provenance_text": "Risk Profile (Conservative, Moderate, Aggressive) | Includes ... risk profiling for investment suitability | Default Values: risk_profile: 'Moderate'",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Status",
+      "definition": "An attribute representing the current condition or state of an entity, transaction, or account within a business process.",
+      "synonyms": [
+        "status"
+      ],
+      "provenance_text": "Key Attributes: - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) | - Status (Operational, OutOfService, OutOfCash) | Status: Pending/Approved/Active/PaidOff/Defaulted | Status: Active/Dormant/Frozen/Closed | status | VARCHAR(20) | Status: Pending/Posted/Failed/Cancelled/OnHold | Status: Active/Frozen/Blocked/Expired",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Transaction Date/Time",
+      "definition": "The date and time when a financial transaction took place.",
+      "synonyms": [
+        "Timestamp of last transaction",
+        "last_transaction_date",
+        "transaction_date"
+      ],
+      "provenance_text": "Key Attributes: - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) | Timestamp of last transaction | transaction_date | TIMESTAMP | When transaction occurred",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Transaction",
+      "definition": "A transaction is a financial activity that affects the balance of an account, such as debits, credits, transfers, withdrawals, and fees, and is used to track operational and regulatory compliance in banking.",
+      "synonyms": [
+        "Transactions"
+      ],
+      "provenance_text": "Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. | Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. | Key Attributes: - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions) | Transaction fact table recording all account activity. | Supports multiple transaction types including debits, credits, transfers, and withdrawals. | Tracks calculated fields (balance_after) | and includes location data for POS and ATM transactions for fraud detection. | Business Rules: - Transactions must maintain sufficient funds (except for ",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Transaction Type",
+      "definition": "Transaction Type is a category that classifies financial transactions such as Debit, Credit, Transfer, Payment, Withdrawal, Deposit, or Fee.",
+      "synonyms": [
+        "transaction_type"
+      ],
+      "provenance_text": "Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) | transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Financial Arrangement",
+      "definition": "A financial arrangement is an agreement between a bank and a customer that involves the management, lending, or borrowing of funds under specified terms.",
+      "synonyms": [
+        "a financial arrangement",
+        "financial arrangement"
+      ],
+      "provenance_text": "A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. | Definition: A financial arrangement where the bank lends a principal amount to a customer, who repays with interest over a specified term according to a fixed schedule.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Account Balance",
+      "definition": "The account balance is the current amount of money available in a financial account, reflecting all transactions such as debits, credits, transfers, withdrawals, and fees.",
+      "synonyms": [
+        "balance of an account"
+      ],
+      "provenance_text": "Business Rules: - Debit transactions reduce account balance | Business Rules: - Credit transactions increase account balance | Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Loan Amount",
+      "definition": "Loan amount refers to the principal sum of money borrowed in a loan agreement.",
+      "synonyms": [
+        "amount"
+      ],
+      "provenance_text": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted) | amount | DECIMAL(15,2) | Transaction amount (always positive)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Linked Date",
+      "definition": "linked: an entity representing the relationship between accounts and customers; linked_date: the date when the relationship was established.",
+      "synonyms": [
+        "linked"
+      ],
+      "provenance_text": "linked_date | DATE | Date relationship was established | - Linked Account and Customer",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Ownership Percentage",
+      "definition": "An ownership percentage represents the proportion of ownership stake an individual or entity holds in an asset or entity, expressed as a percentage.",
+      "synonyms": [
+        "ownership percentages",
+        "ownership_percentage",
+        "percentage ownership"
+      ],
+      "provenance_text": "Tracks ownership percentages and primary owner designation for billing and legal purposes. | ownership_percentage | DECIMAL(5,2) | Percentage ownership (0.00-100.00)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Primary Owner",
+      "definition": "The primary owner is the main individual or entity recognized as holding the principal ownership rights and responsibilities for an asset or entity.",
+      "synonyms": [
+        "primary owner designation"
+      ],
+      "provenance_text": "is_primary | BOOLEAN | Whether this is the primary owner | Tracks ownership percentages and primary owner designation for billing and legal purposes.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Promotional Rates",
+      "definition": "Penalty rates are charges applied for rule violations, whereas promotional rates are temporary interest rates offered to attract customers.",
+      "synonyms": [
+        "Penalty rates"
+      ],
+      "provenance_text": "- Promotional rates may be temporary (e.g., 12-month CD bonus rates) | - Penalty rates may apply for rule violations (e.g., early CD withdrawal)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Standard Savings",
+      "definition": "Premium Savings is a savings account offering a higher annual percentage yield (APY) with specific compounding features, distinct from Standard Savings.",
+      "synonyms": [
+        "Premium Savings"
+      ],
+      "provenance_text": "- Standard Savings: 0.25% APY (0.10% stated rate with monthly compounding) | - Premium Savings: 0.50% APY (0.495% stated rate with daily compounding)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Supported Features",
+      "definition": "Security Features are specific attributes related to the security mechanisms and protections of a device or system, such as chip, contactless, and PIN functionalities.",
+      "synonyms": [
+        "Security Features",
+        "attribute",
+        "attributes",
+        "key attributes",
+        "security features"
+      ],
+      "provenance_text": "- Supported Features (Deposit, Cardless Withdrawal) | - Security Features (Chip, Contactless, PIN) | - Location (address and GPS coordinates) | - ATM Type (Standalone, Branch, DriveThrough) | - Status (Operational, OutOfService, OutOfCash) | - Card Type (Debit, Credit, ATM) | - Card Network (Visa, Mastercard, Discover, AmericanExpress) | - Cardholder Name | - Credit Limit (for credit cards) | - Card Status (Active, Frozen, Blocked, Expired) | - Cash Balance and Last Replenished Date | - Expiration Date and CVV | - Daily Limits (POS and ATM) | - Key Attributes:\n- Branch ID and Code | - ATM ID and Code | - Card ID and Card Number (PAN) | Tracks security features (chip, contactless, PIN), spending limits, and card status.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Unique Transaction Identifier",
+      "definition": "A unique identifier is a code or number that distinctly identifies a specific entity such as an account, card, loan, or transaction within a system.",
+      "synonyms": [
+        "Unique account identifier",
+        "Unique card identifier",
+        "Unique loan identifier",
+        "unique",
+        "unique across all customers",
+        "unique across the system",
+        "unique codes within the bank",
+        "unique identifier"
+      ],
+      "provenance_text": "transaction_id | INTEGER | Unique transaction identifier (primary key) | Unique account identifier (primary key) | Unique card identifier (primary key) | Unique loan identifier (primary key) | Tax identification number (SSN/EIN), must be unique | Human-readable account number, must be unique | Primary Account Number (PAN), must be unique | Tax ID must be be unique across all customers | Account numbers must be unique across the system | - Branch codes must be unique within the bank | Account Number (unique identifier) | Transaction ID (unique identifier) | Key Attributes: - Loan ID (unique identifier)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Level1",
+      "definition": "Default Values: kyc_status: 'Level1'",
+      "synonyms": [],
+      "provenance_text": "Default Values: kyc_status: 'Level1'",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Moderate",
+      "definition": "Default Values: risk_profile: 'Moderate'",
+      "synonyms": [],
+      "provenance_text": "Default Values: risk_profile: 'Moderate'",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "12 Month Cd",
+      "definition": "- 12-Month CD: 4.50% APR (4.60% APY with monthly compounding)",
+      "synonyms": [],
+      "provenance_text": "- 12-Month CD: 4.50% APR (4.60% APY with monthly compounding)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Apr",
+      "definition": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted) | APR (Annual Percentage Rate) - for loans",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted) | APR (Annual Percentage Rate) - for loans",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Atm Type",
+      "definition": "- ATM Type (Standalone, Branch, DriveThrough)",
+      "synonyms": [],
+      "provenance_text": "- ATM Type (Standalone, Branch, DriveThrough)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Account Status",
+      "definition": "Account Status (Active, Dormant, Frozen, Closed) | Status: Active/Dormant/Frozen/Closed | Status: Active/Frozen/Blocked/Expired",
+      "synonyms": [],
+      "provenance_text": "Account Status (Active, Dormant, Frozen, Closed) | Status: Active/Dormant/Frozen/Closed | Status: Active/Frozen/Blocked/Expired",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Account Close Date",
+      "definition": "Account close date (NULL if active)",
+      "synonyms": [],
+      "provenance_text": "Account close date (NULL if active)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Account Open Date",
+      "definition": "Account open date",
+      "synonyms": [],
+      "provenance_text": "Account open date",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Amount And Currency",
+      "definition": "Key Attributes: - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Transaction ID (unique identifier) - Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) - Amount and Currency - Transaction Date/Time - Status (Pending, Posted, Failed, Cancelled, OnHold) - Balance After Transaction - Description and Reference Number - Location (for POS and ATM transactions)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Authorized Signer",
+      "definition": "CHECK (relationship_type IN ('Owner', 'JointOwner', 'AuthorizedSigner', 'Custodian'))",
+      "synonyms": [],
+      "provenance_text": "CHECK (relationship_type IN ('Owner', 'JointOwner', 'AuthorizedSigner', 'Custodian'))",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Banks",
+      "definition": "Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. | Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.",
+      "synonyms": [],
+      "provenance_text": "Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. | Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Branch Atms",
+      "definition": "- Branch ATMs are located on branch premises",
+      "synonyms": [],
+      "provenance_text": "- Branch ATMs are located on branch premises",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Branch Type",
+      "definition": "- Branch Type (FullService, Satellite, ATMOnly)",
+      "synonyms": [],
+      "provenance_text": "- Branch Type (FullService, Satellite, ATMOnly)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Card Network",
+      "definition": "- Card Network (Visa, Mastercard, Discover, AmericanExpress)",
+      "synonyms": [],
+      "provenance_text": "- Card Network (Visa, Mastercard, Discover, AmericanExpress)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Card Status",
+      "definition": "- Card Status (Active, Frozen, Blocked, Expired)",
+      "synonyms": [],
+      "provenance_text": "- Card Status (Active, Frozen, Blocked, Expired)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Cardholder Name",
+      "definition": "- Cardholder Name",
+      "synonyms": [],
+      "provenance_text": "- Cardholder Name",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Cardless Transactions",
+      "definition": "- Cardless transactions require mobile app authentication",
+      "synonyms": [],
+      "provenance_text": "- Cardless transactions require mobile app authentication",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Last Replenished Date",
+      "definition": "- Cash Balance and Last Replenished Date",
+      "synonyms": [],
+      "provenance_text": "- Cash Balance and Last Replenished Date",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Cash Replenishment",
+      "definition": "- Cash replenishment is triggered when balance falls below threshold",
+      "synonyms": [],
+      "provenance_text": "- Cash replenishment is triggered when balance falls below threshold",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Checking/Savings/Money Market/Cd/Investment",
+      "definition": "Type: Checking/Savings/MoneyMarket/CD/Investment",
+      "synonyms": [],
+      "provenance_text": "Type: Checking/Savings/MoneyMarket/CD/Investment",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Contact Information",
+      "definition": "Contact Information (email, phone, address)",
+      "synonyms": [],
+      "provenance_text": "Contact Information (email, phone, address)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Credit Card",
+      "definition": "- Credit Card: 18.50% variable APR based on prime rate",
+      "synonyms": [],
+      "provenance_text": "- Credit Card: 18.50% variable APR based on prime rate",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Credit Limit",
+      "definition": "- Credit Limit (for credit cards)",
+      "synonyms": [],
+      "provenance_text": "- Credit Limit (for credit cards)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Credit Transactions",
+      "definition": "Business Rules: - Credit transactions increase account balance",
+      "synonyms": [],
+      "provenance_text": "Business Rules: - Credit transactions increase account balance",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Custodian",
+      "definition": "CHECK (relationship_type IN ('Owner', 'JointOwner', 'AuthorizedSigner', 'Custodian'))",
+      "synonyms": [],
+      "provenance_text": "CHECK (relationship_type IN ('Owner', 'JointOwner', 'AuthorizedSigner', 'Custodian'))",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Daily Limits",
+      "definition": "- Daily Limits (POS and ATM)",
+      "synonyms": [],
+      "provenance_text": "- Daily Limits (POS and ATM)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Date Loan Is",
+      "definition": "Date loan is scheduled to be paid off",
+      "synonyms": [],
+      "provenance_text": "Date loan is scheduled to be paid off",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Debit Transactions",
+      "definition": "Business Rules: - Debit transactions reduce account balance",
+      "synonyms": [],
+      "provenance_text": "Business Rules: - Debit transactions reduce account balance",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Credit Transfer Payment Withdrawal",
+      "definition": "Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee)",
+      "synonyms": [],
+      "provenance_text": "Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Debit/Credit/Atm",
+      "definition": "Type: Debit/Credit/ATM",
+      "synonyms": [],
+      "provenance_text": "Type: Debit/Credit/ATM",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Dormant Accounts",
+      "definition": "Dormant accounts are automatically flagged after 12 months of inactivity",
+      "synonyms": [],
+      "provenance_text": "Dormant accounts are automatically flagged after 12 months of inactivity",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Drive Through Atms",
+      "definition": "- DriveThrough ATMs serve vehicles only",
+      "synonyms": [],
+      "provenance_text": "- DriveThrough ATMs serve vehicles only",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Expiration Date And Cvv",
+      "definition": "- Expiration Date and CVV",
+      "synonyms": [],
+      "provenance_text": "- Expiration Date and CVV",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Failed Transactions",
+      "definition": "Business Rules: - Failed transactions are logged for audit but do not affect balance | Business Rules: - Failed transactions are logged for audit but do not affect balance",
+      "synonyms": [],
+      "provenance_text": "Business Rules: - Failed transactions are logged for audit but do not affect balance | Business Rules: - Failed transactions are logged for audit but do not affect balance",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Foreign Key To Accounts",
+      "definition": "account_id | INTEGER | Foreign key to accounts | Foreign key to accounts (linked account)",
+      "synonyms": [],
+      "provenance_text": "account_id | INTEGER | Foreign key to accounts | Foreign key to accounts (linked account)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Foreign Key To Customers",
+      "definition": "Foreign key to customers (borrower) | Foreign key to customers (cardholder)",
+      "synonyms": [],
+      "provenance_text": "Foreign key to customers (borrower) | Foreign key to customers (cardholder)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Full Service, Satellite, Atmonly",
+      "definition": "- Branch Type (FullService, Satellite, ATMOnly)",
+      "synonyms": [],
+      "provenance_text": "- Branch Type (FullService, Satellite, ATMOnly)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Human Readable Transaction Description",
+      "definition": "description | VARCHAR(200) | Human-readable transaction description",
+      "synonyms": [],
+      "provenance_text": "description | VARCHAR(200) | Human-readable transaction description",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Interest",
+      "definition": "Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. | Interest is the fundamental profit mechanism in banking. | - Deposit interest is credited monthly (typically on first day of month)",
+      "synonyms": [],
+      "provenance_text": "Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate. | Interest is the fundamental profit mechanism in banking. | - Deposit interest is credited monthly (typically on first day of month)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Joint Owner",
+      "definition": "CHECK (relationship_type IN ('Owner', 'JointOwner', 'AuthorizedSigner', 'Custodian'))",
+      "synonyms": [],
+      "provenance_text": "CHECK (relationship_type IN ('Owner', 'JointOwner', 'AuthorizedSigner', 'Custodian'))",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Kyc Status",
+      "definition": "KYC Status (Level1, Level2, Level3)",
+      "synonyms": [],
+      "provenance_text": "KYC Status (Level1, Level2, Level3)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Linked Account And Customer",
+      "definition": "- Linked Account and Customer",
+      "synonyms": [],
+      "provenance_text": "- Linked Account and Customer",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Loan Status",
+      "definition": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Loan Interest",
+      "definition": "- Loan interest is amortized (early payments are mostly interest, later mostly principal)",
+      "synonyms": [],
+      "provenance_text": "- Loan interest is amortized (early payments are mostly interest, later mostly principal)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Loan Portfolio",
+      "definition": "Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. | Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management.",
+      "synonyms": [],
+      "provenance_text": "Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. | Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Loan Term In Months",
+      "definition": "Loan term in months (0 for revolving credit)",
+      "synonyms": [],
+      "provenance_text": "Loan term in months (0 for revolving credit)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Money Market",
+      "definition": "- Money Market: 0.75% APY tiered by balance",
+      "synonyms": [],
+      "provenance_text": "- Money Market: 0.75% APY tiered by balance",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Mortgage",
+      "definition": "- Mortgage: 5.50% fixed APR for 360-month term",
+      "synonyms": [],
+      "provenance_text": "- Mortgage: 5.50% fixed APR for 360-month term",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Personal Auto Heloc Credit",
+      "definition": "Key Attributes: - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Original Loan Principal",
+      "definition": "Original loan principal",
+      "synonyms": [],
+      "provenance_text": "Original loan principal",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Maturity Date",
+      "definition": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Out Of Cash Status",
+      "definition": "- OutOfCash status prevents withdrawal attempts but allows balance inquiries",
+      "synonyms": [],
+      "provenance_text": "- OutOfCash status prevents withdrawal attempts but allows balance inquiries",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Owner",
+      "definition": "Default Values: relationship_type: 'Owner'",
+      "synonyms": [],
+      "provenance_text": "Default Values: relationship_type: 'Owner'",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Pos Transactions",
+      "definition": "Business Rules: - POS transactions include merchant location data for fraud detection",
+      "synonyms": [],
+      "provenance_text": "Business Rules: - POS transactions include merchant location data for fraud detection",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Payment Card Issuance Table",
+      "definition": "Links cards to both customer and account.",
+      "synonyms": [],
+      "provenance_text": "Links cards to both customer and account.",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Approved Active Paid Off",
+      "definition": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted)",
+      "synonyms": [],
+      "provenance_text": "Key Attributes: - Loan ID (unique identifier) - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard) - Principal Amount - Interest Rate (APR) - Term (months) - Monthly Payment Amount - Balance Due - Origination Date and Maturity Date - Loan Status (Pending, Approved, Active, PaidOff, Defaulted)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Posted Transactions",
+      "definition": "Business Rules: - Posted transactions are final and cannot be modified (only reversed with new transaction)",
+      "synonyms": [],
+      "provenance_text": "Business Rules: - Posted transactions are final and cannot be modified (only reversed with new transaction)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Preferred Status",
+      "definition": "Preferred Status (VIP flag)",
+      "synonyms": [],
+      "provenance_text": "Preferred Status (VIP flag)",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Record Creation Timestamp",
+      "definition": "Record creation timestamp | created_at | TIMESTAMP | Record creation timestamp | Record creation timestamp",
+      "synonyms": [],
+      "provenance_text": "Record creation timestamp | created_at | TIMESTAMP | Record creation timestamp | Record creation timestamp",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    },
+    {
+      "name": "Record Last Modification Timestamp",
+      "definition": "Record last modification timestamp",
+      "synonyms": [],
+      "provenance_text": "Record last modification timestamp",
+      "source_doc": "tests/fixtures/02_intermediate_finance/business_glossary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 186
+  },
+  "tables_parsed": [
+    {
+      "name": "CUSTOMERS",
+      "columns": 16
+    },
+    {
+      "name": "BRANCHES",
+      "columns": 16
+    },
+    {
+      "name": "ATMS",
+      "columns": 14
+    },
+    {
+      "name": "ACCOUNTS",
+      "columns": 18
+    },
+    {
+      "name": "CUSTOMER_ACCOUNT",
+      "columns": 8
+    },
+    {
+      "name": "TRANSACTIONS",
+      "columns": 13
+    },
+    {
+      "name": "LOANS",
+      "columns": 13
+    },
+    {
+      "name": "CARDS",
+      "columns": 19
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customers",
+      "description": "This table stores detailed information about customers, including their contact details, identification, risk assessment status, and customer lifecycle timestamps."
+    },
+    {
+      "name": "Branches",
+      "description": "This table stores information about bank branch locations, including their identifiers, contact details, operational hours, and staffing information."
+    },
+    {
+      "name": "Automated Teller Machines",
+      "description": "This table stores information about Automated Teller Machines, including their locations, statuses, and capabilities, to support banking operations and maintenance."
+    },
+    {
+      "name": "Bank Accounts",
+      "description": "This table stores detailed information about bank accounts, including balances, interest, status, and transaction dates, for managing customer banking relationships."
+    },
+    {
+      "name": "Customer Account",
+      "description": "This table stores information about the relationships between customers and their accounts, including ownership details and linkage dates."
+    },
+    {
+      "name": "Transactions",
+      "description": "This table records individual financial transactions, including details such as transaction type, amount, currency, date, status, and related account information."
+    },
+    {
+      "name": "Loans",
+      "description": "This table stores information about loan agreements, including borrower details, loan terms, payment schedules, and current status."
+    },
+    {
+      "name": "Customer Credit Card Information",
+      "description": "This table stores detailed information about customer credit cards, including their status, limits, and usage details."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 8,
+    "tables_enriched": 8,
+    "total_columns": 117
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 120,
+    "total_relationships": 126,
+    "completed_tables": 8
+  },
+  "stage_timings": {}
+}
