@@ -309,7 +309,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
 
             # ── Consolidate property updates into single Cypher call ──────────
             # Combines: normalization, source_file stamp, enriched metadata
-            set_clauses: list[str] = ["pt.table_name = $canonical"]
+            set_clauses: list[str] = ["pt.table_name = $canonical", "pt.name = $canonical"]
             merged_params: dict[str, Any] = {
                 "name": table.table_name,
                 "canonical": table.table_name,
