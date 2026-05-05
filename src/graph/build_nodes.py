@@ -212,16 +212,30 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
         concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
 
         # Reject concept names that are still garbage after normalization
+        # Fallback to enriched_table_name (e.g. "Shipment" for SHIPMENT) instead of skipping entirely
         if not is_valid_entity_name(concept_name):
-            logger.warning(
-                "Concept name '%s' (raw: '%s') rejected by quality gate — skipping graph write.",
-                concept_name,
-                proposal.mapped_concept,
+            fallback_name = normalize_concept_name(
+                getattr(table, "enriched_table_name", None) or table.table_name
             )
-            log_node_event(logger, "build_graph", f"table={proposal.table_name}", "rejected concept name", timer.elapsed_ms)
-            completed = list(state.get("completed_tables") or [])
-            completed.append(proposal.table_name)
-            return {"completed_tables": completed}
+            if is_valid_entity_name(fallback_name):
+                logger.warning(
+                    "Concept name '%s' (raw: '%s') rejected by quality gate — "
+                    "falling back to enriched table name '%s'.",
+                    concept_name,
+                    proposal.mapped_concept,
+                    fallback_name,
+                )
+                concept_name = fallback_name
+            else:
+                logger.warning(
+                    "Concept name '%s' (raw: '%s') rejected by quality gate — skipping graph write.",
+                    concept_name,
+                    proposal.mapped_concept,
+                )
+                log_node_event(logger, "build_graph", f"table={proposal.table_name}", "rejected concept name", timer.elapsed_ms)
+                completed = list(state.get("completed_tables") or [])
+                completed.append(proposal.table_name)
+                return {"completed_tables": completed}
 
         # Resolve entity early — needed for both LLM and fallback paths.
         # If no matching resolved entity exists (e.g. the RAG Mapper normalised the

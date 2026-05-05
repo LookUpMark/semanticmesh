@@ -44,6 +44,33 @@ def invalidate_bm25_cache() -> None:
     _invalidate()
 
 
+# ── DDL Query Expansion ────────────────────────────────────────────────────────
+# When a query mentions status/constraint-related terms, inject DDL keywords
+# so BM25 can find chunks containing column definitions and CHECK constraints.
+
+_DDL_EXPANSION_MAP: dict[str, list[str]] = {
+    "status": ["status_code", "pending", "confirmed", "cancelled", "check"],
+    "statuses": ["status_code", "pending", "confirmed", "cancelled", "check"],
+    "constraint": ["check", "constraint", "unique", "foreign", "not"],
+    "type": ["varchar", "integer", "decimal", "bigint", "boolean", "date"],
+    "enum": ["check", "status_code", "type_code"],
+    "values": ["check", "pending", "confirmed", "cancelled"],
+    "nullable": ["null", "not", "nullable", "yes", "no"],
+    "payment": ["payment_method", "amount", "status_code", "confirmed_at"],
+    "confirmation": ["confirmed_at", "confirmed", "status_code", "pending"],
+}
+
+
+def _expand_query_tokens(tokens: list[str]) -> list[str]:
+    """Expand BM25 query tokens with DDL-related synonyms for better recall."""
+    expanded = list(tokens)
+    for token in tokens:
+        clean = token.strip("?.,!;:")
+        if clean in _DDL_EXPANSION_MAP:
+            expanded.extend(_DDL_EXPANSION_MAP[clean])
+    return expanded
+
+
 def bm25_search(
     query: str,
     all_nodes: list[dict[str, Any]],
@@ -84,7 +111,7 @@ def bm25_search(
             _BM25_CORPUS_ID = corpus_id
             logger.debug("bm25_search: rebuilt BM25 index (%d docs).", len(all_nodes))
 
-    tokenised_query = query.lower().split()
+    tokenised_query = _expand_query_tokens(query.lower().split())
     scores: list[float] = bm25.get_scores(tokenised_query).tolist()
 
     indexed = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)[:n]

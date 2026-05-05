@@ -60,7 +60,7 @@ class AppConfig:
     embedding_model: str = "BAAI/bge-m3"
     embedding_dimensions: int = 1024
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
-    reranker_top_k: int = 12
+    reranker_top_k: int = 20
 
     # ── Entity Resolution ──────────────────────────────────────────────────────
     er_blocking_top_k: int = 10
