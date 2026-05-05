@@ -99,6 +99,27 @@ def get_reranker():
     return reranker
 
 
+def _enrich_text_for_reranking(chunk: RetrievedChunk) -> str:
+    """Enrich short chunk texts for better cross-encoder scoring.
+
+    Short BC/graph chunks (e.g. "Customer Master: Primary record...")  get low
+    reranker scores because there's not enough text. Prepend context info.
+    """
+    text = chunk.text
+    if len(text) < 200 and chunk.node_type not in ("ParentChunk", "Chunk"):
+        prefix_parts: list[str] = []
+        if chunk.node_type and chunk.node_type != "Unknown":
+            prefix_parts.append(chunk.node_type)
+        if chunk.node_id and chunk.node_id != text:
+            prefix_parts.append(chunk.node_id)
+        rel = chunk.metadata.get("rel_type") if chunk.metadata else None
+        if rel:
+            prefix_parts.append(f"relationship: {rel}")
+        if prefix_parts:
+            text = f"[{' | '.join(prefix_parts)}] {text}"
+    return text
+
+
 def rerank(
     query: str,
     chunks: list[RetrievedChunk],
@@ -144,7 +165,7 @@ def rerank(
     if reranker is None:
         reranker = get_reranker()
 
-    pairs: list[tuple[str, str]] = [(query, chunk.text) for chunk in valid_chunks]
+    pairs: list[tuple[str, str]] = [(query, _enrich_text_for_reranking(chunk)) for chunk in valid_chunks]
 
     try:
         scores: list[float] = reranker.compute_score(pairs, normalize=True)
@@ -158,6 +179,21 @@ def rerank(
         scored.append(chunk.model_copy(update={"metadata": updated_meta, "score": float(score)}))
 
     reranked = sorted(scored, key=lambda c: c.score, reverse=True)[:k]
+
+    # Rank-based confidence floor: the top chunk being #1 in a competitive pool
+    # is itself strong evidence of relevance even when cross-encoder absolute
+    # scores are low (common with short BC definitions or markdown tables).
+    if len(valid_chunks) >= 3:
+        for i, chunk in enumerate(reranked[:5]):
+            floor = max(0.25 - i * 0.05, 0.05)
+            if chunk.score < floor:
+                reranked[i] = chunk.model_copy(
+                    update={
+                        "score": floor,
+                        "metadata": {**chunk.metadata, "reranker_score": chunk.score, "score_floored_from": chunk.score},
+                    },
+                )
+
     logger.info(
         "rerank: top chunk '%s' score=%.4f (pool=%d, top_k=%d).",
         reranked[0].node_id if reranked else "N/A",
