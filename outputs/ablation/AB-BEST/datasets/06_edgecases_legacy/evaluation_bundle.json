@@ -2,14 +2,14 @@
   "meta": {
     "study_id": "AB-BEST",
     "dataset_id": "06_edgecases_legacy",
-    "timestamp": "2026-05-04T20:30:26.611853+00:00",
+    "timestamp": "2026-05-05T13:47:39.822047+00:00",
     "bundle_version": "1.0"
   },
   "config": {
-    "extraction_mode": "LLM (openai/gpt-4.1-nano)",
+    "extraction_mode": "LLM (gpt-5-nano-2025-08-07)",
     "embedding_model": "BAAI/bge-m3",
-    "reasoning_model": "openai/gpt-oss-120b",
-    "extraction_model": "openai/gpt-4.1-nano",
+    "reasoning_model": "gpt-5.4-nano-2026-03-17",
+    "extraction_model": "gpt-5-nano-2025-08-07",
     "chunk_size": 128,
     "chunk_overlap": 16,
     "retrieval_mode": "hybrid",
@@ -32,8 +32,8 @@
     }
   },
   "builder_report": {
-    "triplets_extracted": 190,
-    "entities_resolved": 178,
+    "triplets_extracted": 192,
+    "entities_resolved": 149,
     "tables_parsed": 10,
     "tables_completed": 10,
     "cypher_failed": false,
@@ -52,7 +52,7 @@
     "abstained_count": 0,
     "avg_gt_coverage": 1.0,
     "avg_top_score": 0.9921232932834126,
-    "avg_chunk_count": 20.0,
+    "avg_chunk_count": 24.0,
     "elapsed_s": 0
   },
   "per_question": [
@@ -65,7 +65,7 @@
       "expected_sources": [
         "tblCustomer"
       ],
-      "generated_answer": "The **tblCustomer** table is used to **store the customer master data from the legacy CRM system**. Its purpose is to hold each customer’s core record (the legacy alphanumeric customer code `strCustID` and the customer’s full name) so that the data can be migrated to the new ERP system and used for all downstream processes such as order entry【1†L1-L3】. Additionally, the migration priority guide lists **tblCustomer as a critical‑path table that must be migrated first because it is required for all orders**【4†L1-L4】",
+      "generated_answer": "The **`tblCustomer`** table stores **customer master data from the legacy CRM system** (CustomerMaster v3.2.1), using the **legacy customer identifier `strCustID` inherited from the AS/400 system**. This customer master data is required for downstream processes such as **orders** (it is listed as a critical-path table that **must be migrated first because it is required for all orders**).",
       "sources_retrieved": [
         "parent_chunk_data_dictionary.txt_4",
         "parent_chunk_business_glossary.md_0",
@@ -75,10 +75,10 @@
         "VW_SALESORDERHDR→TBLCUSTOMER",
         "parent_chunk_business_glossary.md_2",
         "parent_chunk_data_dictionary.txt_6",
-        "Product Category Group",
+        "TBLCUSTOMER",
+        "parent_chunk_data_dictionary.txt_8",
         "ORD_LINE_ITEM→TBLPRODUCT",
-        "INV_TXN_LOG→TBLPRODUCT",
-        "TBLPAYMENT→VW_SALESORDERHDR"
+        "INV_TXN_LOG→TBLPRODUCT"
       ],
       "contexts_retrieved": [
         "================================================================================\nCUSTOMERMASTER DATABASE - DATA DICTIONARY\n================================================================================\nLegacy System: CustomerMaster v3.2.1 Last Updated: 2015-08-14 Migration Status: PENDING to new ERP system ================================================================================ TABLE: tblCustomer -------------------------------------------------------------------------------- Purpose: ",
@@ -89,10 +89,10 @@
         "Relationship: VW_SALESORDERHDR references TBLCUSTOMER via foreign key INTCUSTID -> TBLCUSTOMER.STRCUSTID.",
         "## Legacy System Quirks\n\n### Hungarian Notation\nThe legacy system uses Hungarian notation prefixes: - `str` = string (VARCHAR) - `int` = integer (INT) - `lng` = long integer (INT) - `flt` = float/money (DECIMAL) - `bol` = boolean (BIT) - `dtm` = datetime (DATETIME) **Migration Note**: These prefixes are inconsistent. For example, `intCustID` is actually a VARCHAR, and `lngOrderID` is a regular INT. ### Table Naming Inconsistency Different parts of the system use different naming conventions: - `",
         "qty (INT)\n    - Quantity ordered\n    - Must be positive integer\n\namt (DECIMAL 10,2)\n    - Line item total amount (qty * unit_price)\n    - At time of order (snapshotted, not current price)\n\ndisc_amt (DECIMAL 10,2)\n    - Discount amount applied to this line\n    - Can be zero\n\nline_status (VARCHAR 20)\n    - Line item status\n    - Values: \"PENDING\", \"PICKED\", \"SHIPPED\", \"BACKORDERED\" product_code (VARCHAR 50) - REDUNDANT: Copy of tblProduct.strSKU - Denormalized for reporting performance - May be ou",
-        "Product Category Group: An entity representing a group of product categories organized in a hierarchical, tree-like structure for classification purposes.",
+        "TBLCUSTOMER: TBLCUSTOMER",
+        "CardNumberText (VARCHAR 100)\n    - SECURITY ISSUE: Full card number stored as text! - Should be tokenized - Contains unencrypted PAN (Primary Account Number) CardHolderName (VARCHAR 100) - Cardholder name - As provided by customer AuthorizationCode (VARCHAR 50) - Payment gateway auth code - Proof of successful authorization ================================================================================ MIGRATION NOTES: ============================================================================",
         "Relationship: ORD_LINE_ITEM references TBLPRODUCT via foreign key PROD_ID -> TBLPRODUCT.INTPRODID.",
-        "Relationship: INV_TXN_LOG references TBLPRODUCT via foreign key PROD_ID -> TBLPRODUCT.INTPRODID.",
-        "Relationship: TBLPAYMENT references VW_SALESORDERHDR via foreign key ORDERID -> VW_SALESORDERHDR.LNGORDERID."
+        "Relationship: INV_TXN_LOG references TBLPRODUCT via foreign key PROD_ID -> TBLPRODUCT.INTPRODID."
       ],
       "covered_sources": [
         "tblCustomer"
@@ -101,7 +101,7 @@
       "grounded": true,
       "gate_decision": "proceed",
       "retrieval_quality_score": 0.9921232932834126,
-      "chunk_count": 20,
+      "chunk_count": 24,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"

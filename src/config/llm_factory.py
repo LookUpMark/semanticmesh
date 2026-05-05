@@ -283,16 +283,16 @@ def get_reasoning_llm() -> LLMProtocol:
     Used for: schema mapping, Actor-Critic, LLM judge, hallucination grader,
     schema enrichment, Cypher generation/healing.
 
-    ``reasoning_effort=medium`` (OpenAI) / ``reasoning.effort=medium`` (OpenRouter)
-    gives the model sufficient thinking budget for multi-hop synthesis across chunks.
+    ``reasoning_effort=high`` (OpenAI) / ``reasoning.effort=high`` (OpenRouter)
+    gives the model full thinking budget for multi-hop synthesis across chunks.
     """
     s = get_settings()
     provider_override = s.llm_provider if s.llm_provider != "auto" else None
     effective_provider = provider_override or detect_provider(s.llm_model_reasoning)
     if effective_provider == "openrouter":
-        low_reasoning: dict | None = {"reasoning": {"effort": "medium"}}
+        low_reasoning: dict | None = {"reasoning": {"effort": "high"}}
     elif effective_provider == "openai":
-        low_reasoning = {"reasoning_effort": "medium"}
+        low_reasoning = {"reasoning_effort": "high"}
     else:
         low_reasoning = None
     return make_llm(
@@ -404,9 +404,9 @@ def get_midtier_llm() -> LLMProtocol:
     provider_override = s.llm_provider if s.llm_provider != "auto" else None
     effective_provider = provider_override or detect_provider(s.llm_model_midtier)
     if effective_provider == "openrouter":
-        low_reasoning: dict | None = {"reasoning": {"effort": "low"}}
+        low_reasoning: dict | None = {"reasoning": {"effort": "medium"}}
     elif effective_provider == "openai":
-        low_reasoning = {"reasoning_effort": "low"}
+        low_reasoning = {"reasoning_effort": "medium"}
     else:
         low_reasoning = None
     return make_llm(

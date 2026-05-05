@@ -1,13 +1,13 @@
 {
   "study_id": "AB-BEST",
   "dataset_id": "04_complex_manufacturing",
-  "run_tag": "run-20260504_220332",
-  "timestamp": "2026-05-04T20:13:09.312105+00:00",
+  "run_tag": "run-20260505_150918",
+  "timestamp": "2026-05-05T13:36:34.835230+00:00",
   "config": {
-    "extraction_mode": "LLM (openai/gpt-4.1-nano)",
+    "extraction_mode": "LLM (gpt-5-nano-2025-08-07)",
     "embedding_model": "BAAI/bge-m3",
-    "reasoning_model": "openai/gpt-oss-120b",
-    "extraction_model": "openai/gpt-4.1-nano",
+    "reasoning_model": "gpt-5.4-nano-2026-03-17",
+    "extraction_model": "gpt-5-nano-2025-08-07",
     "chunk_size": 128,
     "chunk_overlap": 16,
     "retrieval_mode": "hybrid",
@@ -17,11 +17,11 @@
     "er_similarity_threshold": 0.65
   },
   "builder": {
-    "triplets": 133,
-    "entities": 126,
+    "triplets": 211,
+    "entities": 167,
     "tables_parsed": 13,
     "tables_completed": 13,
-    "elapsed_s": 567.2
+    "elapsed_s": 428.9
   },
   "query": {
     "total_questions": 1,
@@ -29,7 +29,7 @@
     "grounded_rate": 1.0,
     "avg_gt_coverage": 1.0,
     "avg_top_score": 0.8872045937171068,
-    "avg_chunk_count": 20.0,
+    "avg_chunk_count": 26.0,
     "abstained_count": 0
   },
   "per_question": [
@@ -37,7 +37,7 @@
       "query_id": "QA-001",
       "question": "What information is stored about products in the manufacturing system?",
       "expected_answer": "Products are tracked with a unique identifier (product_id), descriptive name (product_name), classification as finished good, assembly, or component (product_type), optional parent product reference for hierarchical structures (parent_product_id), standard unit cost (base_cost), typical procurement or production lead time (lead_time_days), and active status flag (is_active).",
-      "generated_answer": "The manufacturing system stores product information in the **product** table and the same concepts are described in the business glossary entry \u201cProduct.\u201d\n\n**Table\u2011level attributes (product table)**  \n- **product_id** \u2013\u202fVARCHAR(20) primary key that uniquely identifies the product.  \n- **product_name** \u2013\u202fVARCHAR(100)\u202fNOT\u202fNULL, the product\u2019s name or description.  \n- **product_type** \u2013\u202fproduct_type_t\u202fNOT\u202fNULL with a default of\u202f\u2018FINISHED_GOOD\u2019; values are\u202fFINISHED_GOOD,\u202fASSEMBLY,\u202fCOMPONENT.  \n- **parent_product_id** \u2013\u202fVARCHAR(20) foreign key that references\u202fproduct(product_id); it links a product to its parent for hierarchical Bill\u2011of\u2011Materials (BOM) structures.  \n- **base_cost** \u2013\u202fDECIMAL(10,2)\u202fNOT\u202fNULL, default\u202f0.00, with a CHECK\u202f\u2265\u202f0; the base manufacturing cost.  \n- **lead_time_days** \u2013\u202fINT\u202fNOT\u202fNULL, default\u202f0, with a CHECK\u202f\u2265\u202f0; the procurement or production lead time in days.  \n- **is_active** \u2013\u202fyes_no_t\u202fNOT\u202fNULL, default\u202f\u2018Y\u2019; a flag indicating whether the product is currently active.  \n\nThe table also defines an index (`idx_product_parent`) on\u202fparent_product_id\u202fto support hierarchical queries and a self\u2011referencing relationship that enables unlimited nesting of assemblies\u30101\u2020L1-L2\u3011.\n\n**Business\u2011glossary description (Product)**  \nA product represents any manufactured item\u2014finished goods, sub\u2011assemblies, or individual components. Each product has:  \n- a unique 20\u2011character identifier,  \n- a name/description,  \n- a type classification (FINISHED_GOOD, ASSEMBLY, COMPONENT),  \n- an optional hierarchical link via\u202fparent_product_id\u202fso that complex products can contain simpler products as parts,  \n- base cost and lead\u2011time information for cost and scheduling, and  \n- an active\u2011status flag indicating whether it is currently used in manufacturing.  \n\nProducts can have multiple child products (BOM hierarchy), can be referenced in work orders, appear in shipments, and are stored in inventory records\u30105\u2020L1-L2\u3011.\n\n**Combined answer**  \nThus, the manufacturing system records for each product: its unique ID, name, classification type, parent\u2011product reference (enabling multi\u2011level BOM hierarchies), base manufacturing cost, lead time in days, and an active/inactive status flag. These attributes support product identification, cost calculation, production planning, and hierarchical assembly management",
+      "generated_answer": "Products are stored in the **`product`** table, which represents all manufactured items (finished goods, sub-assemblies, and components) and supports hierarchical product structures.\n\nFor each product, the system stores:\n\n`product_id` (VARCHAR(20), primary key): unique product identifier.  \n`product_name` (VARCHAR(100), NOT NULL): product name.  \n`product_type` (product_type_t, NOT NULL, default `FINISHED_GOOD`): classification, with allowed values **FINISHED_GOOD**, **ASSEMBLY**, **COMPONENT**.  \n`parent_product_id` (VARCHAR(20), foreign key \u2192 `product(product_id)`): links the product into a hierarchical assembly structure (BOM-style). This self-referencing relationship enables multi-level assemblies and supports unlimited nesting depth. The table also has index `idx_product_parent` on `parent_product_id` (WHERE `parent_product_id` IS NOT NULL) to support hierarchical queries.  \n`base_cost` (DECIMAL(10,2), NOT NULL, default 0.00, CHECK `>= 0`): base manufacturing cost.  \n`lead_time_days` (INT, NOT NULL, default 0, CHECK `>= 0`): procurement or production lead time expressed in days.  \n`is_active` (yes_no_t, NOT NULL, default `Y`): active/inactive status flag.\n\nThe manufacturing business glossary\u2019s \u201cProduct\u201d concept matches this: it defines products as manufactured items organized hierarchically via `parent_product_id`, with a unique identifier, name/description, type classification, base cost, lead time, and an active status flag.",
       "expected_sources": [
         "product",
         "component"
@@ -53,26 +53,32 @@
         "parent_chunk_data_dictionary.md_5",
         "parent_chunk_data_dictionary.md_7",
         "parent_chunk_business_glossary.md_0",
+        "Product",
         "parent_chunk_business_glossary.md_1",
+        "Component",
         "Inventory",
-        "parent_chunk_business_glossary.md_2",
-        "Physical Storage Location",
+        "Bom",
         "Work Order",
-        "Component Supplier Relationship",
-        "Technical Specification"
+        "Manufacturing Route"
       ],
       "entity_names": [
-        "INVENTORY\u2192PRODUCT",
-        "Batch",
-        "Product",
-        "Inventory",
-        "Component Supplier Relationship",
         "BOM\u2192PRODUCT",
         "Technical Specification",
-        "WORK_ORDER\u2192PRODUCT",
+        "SUPPLIER",
+        "Component",
+        "Production Batch",
+        "Bom",
+        "SHIPMENT",
+        "QUALITY_CONTROL",
+        "Warehouse",
         "Work Order",
-        "BATCH\u2192PRODUCT",
-        "Physical Storage Location"
+        "Quality Control",
+        "COMPONENT_SUPPLIER",
+        "Product",
+        "Manufacturing Route",
+        "Supplier",
+        "Inventory",
+        "INVENTORY\u2192PRODUCT"
       ],
       "retrieved_contexts": [
         "# Manufacturing Data Dictionary\n\nThis data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationships. Special attention is given to self-referential relationships that support hierarchical product structures.\n\n## product\n\nStores all manufactured items including finished goods, assemblies, and components. Supports hierarchical product relationships via self-referencing foreign key.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| product_id | VARCHAR(20) | PRIMARY KEY | Unique product identifier |\n| product_name | VARCHAR(100) | NOT NULL | Product name |\n| product_type | product_type_t | NOT NULL, DEFAULT 'FINISHED_GOOD' | Product classification: FINISHED_GOOD, ASSEMBLY, COMPONENT | | parent_product_id | VARCHAR(20) | FOREIGN KEY \u2192 product(product_id) | Parent product for hierarchical assemblies | | base_cost | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Base manufacturing cost | | lead_time_days | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Procurement or production lead time | | is_active | yes_no_t | NOT NULL, DEFAULT 'Y' | Active status flag | **Indexes:** - `idx_product_parent` on parent_product_id (WHERE NOT NULL) \u2014 supports hierarchical queries **Self-Referential Relationship:** - `parent_product_id` references `product_id` \u2014 enables multi-level product assemblies - A product can contain other products as components via BOM - Supports unlimited nesting depth for complex assemblies ## component Stores atomic raw material",
@@ -80,19 +86,19 @@
         "## warehouse\n\nStores physical storage location information for inventory management.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| warehouse_id | VARCHAR(20) | PRIMARY KEY | Unique warehouse identifier |\n| warehouse_name | VARCHAR(100) | NOT NULL | Warehouse name |\n| address | VARCHAR(200) | | Street address |\n| city | VARCHAR(50) | | City location |\n| state | VARCHAR(50) | | State or province |\n| capacity | INT | NOT NULL, DEFAULT 0, CHECK > 0 | Storage capacity |\n| manager_id | VARCHAR(20) | | Warehouse manager reference |\n\n**Relationships: ** - One-to-many with inventory - One-to-many with shipment - One-to-many with work_order - One-to-many with batch ## inventory Tracks stock levels for components and products at specific warehouse locations. | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | inventory_id | VARCHAR(20) | PRIMARY KEY | Unique inventory identifier | | warehouse_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 warehouse(warehouse_id) | Warehouse location | | component_id | VARCHAR(20) | FOREIGN KEY \u2192 component(component_id) | Component reference (exclusive with product_id) | | product_id | VARCHAR(20) | FOREIGN KEY \u2192 product(product_id) | Product reference (exclusive with component_id) | | quantity_on_hand | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Av",
         "## specification\n\nDefines technical requirements and acceptance criteria for materials and products.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| specification_id | VARCHAR(20) | PRIMARY KEY | Unique specification identifier |\n| specification_name | VARCHAR(100) | NOT NULL | Specification name |\n| version | VARCHAR(10) | NOT NULL | Specification version |\n| effective_date | DATE | NOT NULL | Effective date |\n| spec_type | spec_type_t | NOT NULL | DIMENSIONAL, MATERIAL, PERFORMANCE |\n| critical_parameter | VARCHAR(100) | | Parameter being tested |\n| min_value | DECIMAL(10,3) | | Minimum acceptable value |\n| max_value | DECIMAL(10,3) | | Maximum acceptable value |\n| unit_of_measure | VARCHAR(10) | | Test unit of measure |\n\n**Indexes: ** - `idx_specification_type` on spec_type - `idx_specification_effective` on effective_date **Constraints:** - `chk_min_max` \u2014 ensures max_value >= min_value ## batch Tracks production lots for traceability and inventory management. | Column | Data Type | Constraints | Description | |--------|-----------|-------------|-------------| | batch_id | VARCHAR(20) | PRIMARY KEY | Unique batch identifier | | product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product produced | | production_date | DATE | NOT NULL | Production date | | quantity_produced | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK > 0 | Quantity produced | | warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Storage location | | expiry_date | DATE | | Expiry date (if applicable) | | qc_sta",
         "# Manufacturing Business Glossary\n\nThis glossary defines the core business concepts and terminology used in the manufacturing supply chain domain. It covers product structures, materials management, production workflows, and quality assurance processes.\n\n## Product\n\nA Product represents any manufactured item in the system, including finished goods ready for sale, sub-assemblies used in production, and individual components. Products are organized in a hierarchical structure where complex products can contain simpler products as parts. Each product has a unique identifier, name, type classification, base cost, and lead time for procurement or production. Products can be active or inactive based on current manufacturing requirements.\n\n**Key Attributes: ** - Unique product identifier (20 characters) - Product name and description - Type classification: FINISHED_GOOD, ASSEMBLY, or COMPONENT - Hierarchical relationship via parent_product_id - Base cost and lead time information - Active status flag **Relationships:** - A Product can have multiple child Products (via BOM hierarchy) - A Product can reference a parent Product (for multi-level assemblies) - Products are used in Work Orders for production - Products appear in Shipments (outbound) - Products are stored in Inventory records ## Component A Component represents atomic raw materials or purchased parts that cannot be further broken down into simpler manufactured items. Components are the building blocks used in manufacturing and are procured from external suppliers. Each component has",
+        "Product: Product is the business entity representing any manufactured item in the system, including finished goods, sub-assemblies, and components, and may support hierarchical relationships among products.",
         "## Warehouse\n\nA Warehouse represents a physical storage location where materials, components, and finished goods are stored. Warehouses have defined capacity limits, geographic location information, and are managed by designated managers. Warehouses serve as nodes in the supply chain network where inventory is held, shipments are received, and products are staged for production or distribution.\n\n**Key Attributes: ** - Unique warehouse identifier - Warehouse name and location - Address, city, and state information - Storage capacity limits - Manager assignment **Relationships:** - Warehouses contain multiple Inventory records - Warehouses receive and ship Shipments - Warehouses are linked to Work Orders for production staging - Warehouses store produced Batches ## Inventory Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement. Inventory records support either components or products (but not both in the same record) and include timestamps for the last restock date. **Key Attributes:** - Unique inventory identifier - Wa",
-        "Inventory: Inventory represents the stock of components and products stored in warehouses, including records that track quantities, locations, and identifiers.",
-        "## QualityControl\n\nQuality Control (QC) represents inspection and testing activities performed on materials, in-process production, or finished goods. QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes. QC activities are associated with specific production batches and may reference technical specifications being tested.\n\n**Key Attributes: ** - Unique QC identifier - Batch reference (production lot being inspected) - Specification reference (requirements being tested) - QC date and inspector - Type: INCOMING, IN_PROCESS, FINAL - Result: PASS, FAIL, CONDITIONAL - Defect count and notes **Relationships:** - QC inspections are performed on Batches - QC tests against Specifications - QC results determine Batch status - QC failures trigger rework or scrap decisions ## Specification A Specification defines technical requirements, standards, and acceptance criteria for materials or products. Specifications include version numbers, effective dates, specification types (dimensional, material, performance), critical parameters to test, and acceptable value ranges with units of measure. Specifications ensure manufactured products meet",
-        "Physical Storage Location: A Warehouse represents a physical storage location where materials, components, and finished goods are stored.",
-        "Work Order: A work order is a formal document or record that authorizes and details a specific production job or manufacturing task to produce a designated quantity of a product.",
-        "Component Supplier Relationship: A Component is an atomic raw material or purchased part used in manufacturing, which may be referenced in specifications, inventory, or as part of a product.",
-        "Technical Specification: A technical specification is a detailed document that defines the technical requirements, standards, and criteria for materials, products, or processes."
+        "Component: A Component is an atomic raw material or purchased part used as a building block in manufacturing, procured from external suppliers.",
+        "Inventory: A data entity that records stock levels of components and products at warehouse locations, including quantity_on_hand, quantity_reserved, and reorder_threshold.",
+        "Bom: The Bill of Materials (BOM) defines the composition of products by specifying which components and sub-assemblies are required to manufacture a parent product. | Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure. | BOM level (depth in hierarchy)",
+        "Work Order: A work_order is a manufacturing production job used to plan and track production, consuming inventory components and producing products, with support for hierarchical decomposition into sub work orders.",
+        "Manufacturing Route: A Route represents the defined sequence of manufacturing operations, their associated work centers, and timing parameters (cycle and setup times) required to produce a product."
       ],
       "grounded": true,
       "query_type": "direct_mapping",
       "difficulty": "unknown",
       "retrieval_quality_score": 0.8872045937171068,
-      "retrieval_chunk_count": 20,
+      "retrieval_chunk_count": 26,
       "retrieval_gate_decision": "proceed",
       "context_sufficiency": "adequate",
       "grader_consistency_valid": true,

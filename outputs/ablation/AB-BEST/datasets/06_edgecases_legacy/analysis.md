@@ -1,14 +1,14 @@
 # AB-BEST — 06_edgecases_legacy — Run Analysis
 
-**Timestamp:** 2026-05-04 20:30:26  
-**Run tag:** `run-20260504_221749`
+**Timestamp:** 2026-05-05 13:47:39  
+**Run tag:** `run-20260505_150918`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
-| Extraction model | `LLM (openai/gpt-4.1-nano)` |
-| Reasoning model | `openai/gpt-oss-120b` |
+| Extraction model | `LLM (gpt-5-nano-2025-08-07)` |
+| Reasoning model | `gpt-5.4-nano-2026-03-17` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 190 |
-| Entities resolved | 178 |
+| Triplets extracted | 192 |
+| Entities resolved | 149 |
 | Tables parsed | 10 |
 | Tables completed | 10 |
 
@@ -33,7 +33,7 @@
 | Grounded | **1/1 (100%)** |
 | Avg GT Coverage | 100% |
 | Avg Top Score | 0.9921 |
-| Avg Chunk Count | 20.0 |
+| Avg Chunk Count | 24.0 |
 | Abstained | 0 |
 
 ## RAGAS Metrics

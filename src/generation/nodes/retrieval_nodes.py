@@ -272,10 +272,10 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
             try:
                 seed_ids = list({c.node_id for c in valid if c.source_type in ("vector", "graph", "parent_chunk")})[:8]
                 if seed_ids:
-                    client = Neo4jClient()
-                    neighbor_chunks = graph_traversal(
-                        seed_names=seed_ids, client=client, depth=1,
-                    )
+                    with Neo4jClient() as client:
+                        neighbor_chunks = graph_traversal(
+                            seed_names=seed_ids, client=client, depth=2,
+                        )
                     existing_ids = {c.node_id for c in valid}
                     new_neighbors = [
                         c for c in neighbor_chunks if c.node_id not in existing_ids

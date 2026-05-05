@@ -255,11 +255,11 @@ def graph_traversal(
 
     cypher = (
         f"MATCH (start)-[r*1..{d}]-(neighbor) "
-        "WHERE start.name IN $seed_names "
-        "RETURN neighbor.name AS name, "
+        "WHERE start.name IN $seed_names OR start.table_name IN $seed_names "
+        "RETURN COALESCE(neighbor.name, neighbor.table_name) AS name, "
         "COALESCE(neighbor.definition, neighbor.table_name, '') AS definition, "
         "labels(neighbor)[0] AS node_type, type(r[0]) AS rel_type "
-        "LIMIT 20"
+        "LIMIT 30"
     )
     records = client.execute_cypher(cypher, {"seed_names": seed_names})
 

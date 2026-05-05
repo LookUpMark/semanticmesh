@@ -1,27 +1,14 @@
 study_id,dataset_id,run_tag,query_id,question,query_type,difficulty,grounded,gt_coverage,retrieval_quality_score,retrieval_chunk_count,retrieval_gate_decision,context_sufficiency,grader_rejection_count,grader_consistency_valid,expected_answer,generated_answer
-AB-BEST,04_complex_manufacturing,run-20260504_220332,QA-001,What information is stored about products in the manufacturing system?,direct_mapping,unknown,True,1.0,0.8872045937171068,20,proceed,adequate,0,True,"Products are tracked with a unique identifier (product_id), descriptive name (product_name), classification as finished good, assembly, or component (product_type), optional parent product reference for hierarchical structures (parent_product_id), standard unit cost (base_cost), typical procurement or production lead time (lead_time_days), and active status flag (is_active).","The manufacturing system stores product information in the **product** table and the same concepts are described in the business glossary entry “Product.”
+AB-BEST,04_complex_manufacturing,run-20260505_150918,QA-001,What information is stored about products in the manufacturing system?,direct_mapping,unknown,True,1.0,0.8872045937171068,26,proceed,adequate,0,True,"Products are tracked with a unique identifier (product_id), descriptive name (product_name), classification as finished good, assembly, or component (product_type), optional parent product reference for hierarchical structures (parent_product_id), standard unit cost (base_cost), typical procurement or production lead time (lead_time_days), and active status flag (is_active).","Products are stored in the **`product`** table, which represents all manufactured items (finished goods, sub-assemblies, and components) and supports hierarchical product structures.
 
-**Table‑level attributes (product table)**  
-- **product_id** – VARCHAR(20) primary key that uniquely identifies the product.  
-- **product_name** – VARCHAR(100) NOT NULL, the product’s name or description.  
-- **product_type** – product_type_t NOT NULL with a default of ‘FINISHED_GOOD’; values are FINISHED_GOOD, ASSEMBLY, COMPONENT.  
-- **parent_product_id** – VARCHAR(20) foreign key that references product(product_id); it links a product to its parent for hierarchical Bill‑of‑Materials (BOM) structures.  
-- **base_cost** – DECIMAL(10,2) NOT NULL, default 0.00, with a CHECK ≥ 0; the base manufacturing cost.  
-- **lead_time_days** – INT NOT NULL, default 0, with a CHECK ≥ 0; the procurement or production lead time in days.  
-- **is_active** – yes_no_t NOT NULL, default ‘Y’; a flag indicating whether the product is currently active.  
+For each product, the system stores:
 
-The table also defines an index (`idx_product_parent`) on parent_product_id to support hierarchical queries and a self‑referencing relationship that enables unlimited nesting of assemblies【1†L1-L2】.
+`product_id` (VARCHAR(20), primary key): unique product identifier.  
+`product_name` (VARCHAR(100), NOT NULL): product name.  
+`product_type` (product_type_t, NOT NULL, default `FINISHED_GOOD`): classification, with allowed values **FINISHED_GOOD**, **ASSEMBLY**, **COMPONENT**.  
+`parent_product_id` (VARCHAR(20), foreign key → `product(product_id)`): links the product into a hierarchical assembly structure (BOM-style). This self-referencing relationship enables multi-level assemblies and supports unlimited nesting depth. The table also has index `idx_product_parent` on `parent_product_id` (WHERE `parent_product_id` IS NOT NULL) to support hierarchical queries.  
+`base_cost` (DECIMAL(10,2), NOT NULL, default 0.00, CHECK `>= 0`): base manufacturing cost.  
+`lead_time_days` (INT, NOT NULL, default 0, CHECK `>= 0`): procurement or production lead time expressed in days.  
+`is_active` (yes_no_t, NOT NULL, default `Y`): active/inactive status flag.
 
-**Business‑glossary description (Product)**  
-A product represents any manufactured item—finished goods, sub‑assemblies, or individual components. Each product has:  
-- a unique 20‑character identifier,  
-- a name/description,  
-- a type classification (FINISHED_GOOD, ASSEMBLY, COMPONENT),  
-- an optional hierarchical link via parent_product_id so that complex products can contain simpler products as parts,  
-- base cost and lead‑time information for cost and scheduling, and  
-- an active‑status flag indicating whether it is currently used in manufacturing.  
-
-Products can have multiple child products (BOM hierarchy), can be referenced in work orders, appear in shipments, and are stored in inventory records【5†L1-L2】.
-
-**Combined answer**  
-Thus, the manufacturing system records for each product: its unique ID, name, classification type, parent‑product reference (enabling multi‑level BOM hierarchies), base manufacturing cost, lead time in days, and an active/inactive status flag. These attributes support product identification, cost calculation, production planning, and hierarchical assembly management"
+The manufacturing business glossary’s “Product” concept matches this: it defines products as manufactured items organized hierarchically via `parent_product_id`, with a unique identifier, name/description, type classification, base cost, lead time, and an active status flag."

@@ -2,14 +2,14 @@
   "meta": {
     "study_id": "AB-BEST",
     "dataset_id": "03_advanced_healthcare",
-    "timestamp": "2026-05-04T19:46:10.605324+00:00",
+    "timestamp": "2026-05-05T13:29:20.240008+00:00",
     "bundle_version": "1.0"
   },
   "config": {
-    "extraction_mode": "LLM (openai/gpt-4.1-nano)",
+    "extraction_mode": "LLM (gpt-5-nano-2025-08-07)",
     "embedding_model": "BAAI/bge-m3",
-    "reasoning_model": "openai/gpt-oss-120b",
-    "extraction_model": "openai/gpt-4.1-nano",
+    "reasoning_model": "gpt-5.4-nano-2026-03-17",
+    "extraction_model": "gpt-5-nano-2025-08-07",
     "chunk_size": 128,
     "chunk_overlap": 16,
     "retrieval_mode": "hybrid",
@@ -32,8 +32,8 @@
     }
   },
   "builder_report": {
-    "triplets_extracted": 132,
-    "entities_resolved": 157,
+    "triplets_extracted": 252,
+    "entities_resolved": 207,
     "tables_parsed": 10,
     "tables_completed": 10,
     "cypher_failed": false,
@@ -51,8 +51,8 @@
     "grounded_rate": 1.0,
     "abstained_count": 0,
     "avg_gt_coverage": 1.0,
-    "avg_top_score": 0.8860265358862826,
-    "avg_chunk_count": 20.0,
+    "avg_top_score": 0.9945940999219731,
+    "avg_chunk_count": 23.0,
     "elapsed_s": 0
   },
   "per_question": [
@@ -66,32 +66,32 @@
         "Patient",
         "patients"
       ],
-      "generated_answer": "The patient‑related data are spread across several tables in the advanced‑healthcare database:\n\n- The **PATIENTS** table holds the core demographic and administrative record for each patient (patient_id, MRN, name, date of birth, gender)【3†L1-L2】.  \n- The **CLAIMS** table stores insurance claim and billing information and links each claim to a patient via the patient_id foreign key【1†L1-L2】.  \n- The **APPOINTMENTS** table records scheduled patient appointments, also referencing the patient with patient_id【5†L1-L2】.  \n- The **MEDICATIONS** table keeps prescription and administration details for patients, using patient_id to associate each medication record with a patient【6†L1-L2】.  \n- The **TREATMENTS** table captures medical treatments or procedures performed on patients, linked by patient_id【7†L1-L2】.  \n- The **DIAGNOSES** table stores diagnosis records (ICD‑10 codes, diagnosis type, etc.) for patients, identified by patient_id【8†L1-L2】.  \n- The **LAB_RESULTS** table contains laboratory test results associated with patients, also using patient_id as a foreign key【9†L1-L2】.  \n\nTogether, these tables constitute the full set of structures that store information about patients in the system.",
+      "generated_answer": "Patient information is stored in these tables:\n\nThe **PATIENTS** table stores the patient’s demographic and administrative record. Related patient data are stored in **CLAIMS** (via `patient_id` to link claims to patients), **APPOINTMENTS** (via `patient_id` for scheduled encounters), **MEDICATIONS** (via `patient_id` for medication prescriptions/administrations), **TREATMENTS** (via `patient_id` for treatments/procedures), **DIAGNOSES** (via `patient_id` for diagnosis records), and **LAB_RESULTS** (via `patient_id` for diagnostic lab test results).",
       "sources_retrieved": [
         "parent_chunk_data_dictionary.md_10",
         "parent_chunk_data_dictionary.md_11",
+        "Patients Table",
         "parent_chunk_data_dictionary.md_3",
-        "Diagnosis",
+        "Patient Diagnoses",
         "parent_chunk_data_dictionary.md_9",
         "parent_chunk_data_dictionary.md_6",
         "parent_chunk_data_dictionary.md_5",
         "parent_chunk_data_dictionary.md_4",
         "parent_chunk_data_dictionary.md_7",
-        "parent_chunk_business_glossary.md_0",
-        "parent_chunk_business_glossary.md_1"
+        "parent_chunk_business_glossary.md_0"
       ],
       "contexts_retrieved": [
         "## CLAIMS Table\n**Purpose**: Store insurance claims and billing information for services rendered. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | claim_id | INTEGER | PRIMARY KEY | Surrogate key for claim records | | patient_id | INTEGER | FK → patients.patient_id, NOT NULL | Patient associated with claim | | insurance_plan_id | INTEGER | FK → insurance_plans.plan_id, NOT NULL | Insurance plan billed | | claim_number | VARCHAR(50) ",
         "## General Conventions\n\n### Temporal Validity Pattern\nAll major tables use `valid_from` and `valid_to` timestamps for historization: - Current records have `valid_to = NULL` - Historical records have non-NULL `valid_to` - Queries must include `WHERE valid_to IS NULL` to retrieve current data - Historical analysis possible by querying all records ### Soft Delete Pattern All tables include `is_deleted` flag: - `is_deleted = FALSE` for active records - `is_deleted = TRUE` for logically deleted reco",
+        "Patients Table: PATIENTS Table. Purpose: Store current and historical patient demographic and administrative information.",
         "# Data Dictionary - Advanced Healthcare Management System\n\n## Database Overview\n**Database Name**: `advanced_healthcare_db` **Schema Version**: `3.2.1` **Environment**: Production **Last Updated**: 2025-03-15 --- ## PATIENTS Table **Purpose**: Store current and historical patient demographic and administrative information. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | patient_id | INTEGER | PRIMARY KEY | Surrogate key for patient ",
-        "Diagnosis: This table stores medical diagnosis records, including diagnosis codes, names, types, associated patient and provider identifiers, and relevant timestamps for record validity and updates.",
+        "Patient Diagnoses: A Diagnosis record stored in the diagnoses table, identified by a surrogate integer key (diagnosis_id) and described by its full name (diagnosis_name).",
         "## APPOINTMENTS Table\n**Purpose**: Store patient appointment scheduling and encounter information. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | appointment_id | INTEGER | PRIMARY KEY | Surrogate key for appointment records | | patient_id | INTEGER | FK → patients.patient_id, NOT NULL | Patient scheduled for appointment | | provider_id | INTEGER | FK → providers.provider_id, NOT NULL | Provider conducting appointment | | departmen",
         "## MEDICATIONS Table\n**Purpose**: Store patient medication prescriptions and administrations. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | medication_id | INTEGER | PRIMARY KEY | Surrogate key for medication records | | patient_id | INTEGER | FK → patients.patient_id, NOT NULL | Patient receiving medication | | medication_name | VARCHAR(255) | NOT NULL | Generic or brand medication name | | ndc_code | VARCHAR(11) | National Drug ",
         "## TREATMENTS Table\n**Purpose**: Store medical treatments and procedures performed on patients. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | treatment_id | INTEGER | PRIMARY KEY | Surrogate key for treatment records | | patient_id | INTEGER | FK → patients.patient_id, NOT NULL | Patient receiving treatment | | diagnosis_id | INTEGER | FK → diagnoses.diagnosis_id | Primary diagnosis indication for treatment | | treatment_name | VA",
         "## DIAGNOSES Table\n**Purpose**: Store patient diagnosis records with ICD-10 coding and temporal tracking. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | diagnosis_id | INTEGER | PRIMARY KEY | Surrogate key for diagnosis records | | patient_id | INTEGER | FK → patients.patient_id, NOT NULL | Patient receiving the diagnosis | | icd_10_code | VARCHAR(10) | NOT NULL | ICD-10-CM diagnosis code (e.g., I10, E11.9) | | diagnosis_name | VAR",
         "## LAB_RESULTS Table\n**Purpose**: Store diagnostic laboratory test results for patients. | Column Name | Data Type | Constraint | Description | |-------------|-----------|------------|-------------| | lab_result_id | INTEGER | PRIMARY KEY | Surrogate key for lab result records | | patient_id | INTEGER | FK → patients.patient_id, NOT NULL | Patient associated with result | | test_name | VARCHAR(255) | NOT NULL | Name of laboratory test performed | | loinc_code | VARCHAR(10) | Logical Observation ",
-        "# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patient has a unique medical record number and may have multiple episodes of care across different time periods. Patients can be identified by their medical record number (MRN), which is distinct from any external insurance identifiers. **Patient Registration** The process of capturing essential demograph",
-        "## Financial & Administrative **Insurance** A third-party payer contract that provides coverage for medical services. Insurance types include private commercial plans, Medicare (federal), Medicaid (state), and TRICARE (military). Each insurance plan has specific coverage policies, prior authorization requirements, and cost-sharing structures. **Prior Authorization** The process of obtaining advance approval from an insurance payer before certain services, treatments, or medications can be provid"
+        "# Business Glossary - Advanced Healthcare Management System ## Patient Management **Patient** An individual receiving medical care, treatment, or services from the healthcare organization. Each patient has a unique medical record number and may have multiple episodes of care across different time periods. Patients can be identified by their medical record number (MRN), which is distinct from any external insurance identifiers. **Patient Registration** The process of capturing essential demograph"
       ],
       "covered_sources": [
         "Patient",
@@ -100,8 +100,8 @@
       "gt_coverage": 1.0,
       "grounded": true,
       "gate_decision": "proceed",
-      "retrieval_quality_score": 0.8860265358862826,
-      "chunk_count": 20,
+      "retrieval_quality_score": 0.9945940999219731,
+      "chunk_count": 23,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"

@@ -2,14 +2,14 @@
   "meta": {
     "study_id": "AB-BEST",
     "dataset_id": "02_intermediate_finance",
-    "timestamp": "2026-05-04T17:00:47.761355+00:00",
+    "timestamp": "2026-05-05T13:21:57.531883+00:00",
     "bundle_version": "1.0"
   },
   "config": {
-    "extraction_mode": "LLM (openai/gpt-4.1-nano)",
+    "extraction_mode": "LLM (gpt-5-nano-2025-08-07)",
     "embedding_model": "BAAI/bge-m3",
-    "reasoning_model": "openai/gpt-oss-120b",
-    "extraction_model": "openai/gpt-4.1-nano",
+    "reasoning_model": "gpt-5.4-nano-2026-03-17",
+    "extraction_model": "gpt-5-nano-2025-08-07",
     "chunk_size": 128,
     "chunk_overlap": 16,
     "retrieval_mode": "hybrid",
@@ -32,8 +32,8 @@
     }
   },
   "builder_report": {
-    "triplets_extracted": 215,
-    "entities_resolved": 228,
+    "triplets_extracted": 218,
+    "entities_resolved": 193,
     "tables_parsed": 8,
     "tables_completed": 8,
     "cypher_failed": false,
@@ -52,7 +52,7 @@
     "abstained_count": 0,
     "avg_gt_coverage": 1.0,
     "avg_top_score": 0.6476868057700992,
-    "avg_chunk_count": 20.0,
+    "avg_chunk_count": 25.0,
     "elapsed_s": 0
   },
   "per_question": [
@@ -66,7 +66,7 @@
         "Account",
         "accounts"
       ],
-      "generated_answer": "A **checking account** is one of the deposit‑account types recorded in the **accounts** master table. In the table definition the `account_type` column can hold the value **“Checking”**, indicating that the row represents a checking account—a standard deposit account that allows a customer to place deposits, make withdrawals, and manage funds on a day‑to‑day basis【1†L1-L3】",
+      "generated_answer": "In this manufacturing/banking data model, a checking account is a type of bank account recorded in the **accounts** table with **`account_type` = 'Checking'**.\n\nMore generally, the **accounts** table is the deposit account master that supports multiple account types (including checking, savings, money market, CD, and investment) and tracks account details such as balances, interest accrual, fees, and account lifecycle status.",
       "sources_retrieved": [
         "parent_chunk_data_dictionary.md_7",
         "parent_chunk_data_dictionary.md_8",
@@ -76,9 +76,9 @@
         "parent_chunk_data_dictionary.md_11",
         "CUSTOMER_ACCOUNT→CUSTOMERS",
         "CUSTOMER_ACCOUNT→ACCOUNTS",
-        "Account",
+        "Bank Account",
         "Payment Card",
-        "Bank Branch",
+        "Customer Account",
         "parent_chunk_business_glossary.md_3"
       ],
       "contexts_retrieved": [
@@ -90,9 +90,9 @@
         "## cards\n\n**Description: ** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, and card status. Supports multiple networks (Visa, Mastercard, Discover, American Express). **Primary Key:** `card_id` (INTEGER, auto-increment) **Column Details:** | Column | Type | Description | Nullable | |--------|------|-------------|----------| | card_id | INTEGER | Unique card identifier (pri",
         "Relationship: CUSTOMER_ACCOUNT references CUSTOMERS via foreign key CUSTOMER_ID -> CUSTOMERS.CUSTOMER_ID.",
         "Relationship: CUSTOMER_ACCOUNT references ACCOUNTS via foreign key ACCOUNT_ID -> ACCOUNTS.ACCOUNT_ID.",
-        "Account: An account is a financial arrangement between a customer and a bank that allows deposit, withdrawal, and management of funds.",
-        "Payment Card: A payment card issued to a customer, linked to their bank account or credit line, enabling electronic transactions at POS terminals, ATMs, and online merchants.",
-        "Bank Branch: A bank branch is a physical location where customers can access in-person banking services, including teller transactions, account management, and financial advisory.",
+        "Bank Account: A bank account is a financial arrangement between a customer and the bank that allows deposits, withdrawals, and management of funds, identified by a unique account_id and account_number.",
+        "Payment Card: A payment card issued to a customer that is linked to their bank account or credit line and enables electronic transactions at points of sale, ATMs, and online merchants.",
+        "Customer Account: A junction table that implements the many-to-many relationship between customers and accounts, capturing joint ownership, authorized signers, custodial relationships, ownership percentages, and the primary owner designation for billing and legal purposes.",
         "## ATM\n\n**Definition: ** Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance. **Business Context:** ATMs extend banking access beyond branch hours and locations. They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores. **Key Attributes:** - ATM ID and Code - Location (address and GPS coordinates) - ATM Type (Standalone, Branch, DriveThrough)"
       ],
       "covered_sources": [
@@ -103,7 +103,7 @@
       "grounded": true,
       "gate_decision": "proceed",
       "retrieval_quality_score": 0.6476868057700992,
-      "chunk_count": 20,
+      "chunk_count": 25,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"

@@ -35,7 +35,8 @@ ON MATCH SET  bc.definition = CASE WHEN bc.definition IS NULL OR bc.definition =
               bc.updated_at = datetime()
 
 MERGE (pt:PhysicalTable {table_name: $table_name})
-ON CREATE SET pt.schema_name = $schema_name,
+ON CREATE SET pt.name = $table_name,
+              pt.schema_name = $schema_name,
               pt.column_names = $column_names,
               pt.column_types = $column_types,
               pt.ddl_source = $ddl_source,
@@ -120,7 +121,9 @@ def build_upsert_cypher(
 
 _FK_CYPHER = """\
 MERGE (src:PhysicalTable {table_name: $src_table})
+ON CREATE SET src.name = $src_table
 MERGE (tgt:PhysicalTable {table_name: $tgt_table})
+ON CREATE SET tgt.name = $tgt_table
 MERGE (src)-[r:REFERENCES {column: $fk_column}]->(tgt)
 ON CREATE SET r.references_column = $ref_column, r.created_at = datetime()
 """

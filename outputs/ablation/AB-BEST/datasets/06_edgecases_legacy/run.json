@@ -1,13 +1,13 @@
 {
   "study_id": "AB-BEST",
   "dataset_id": "06_edgecases_legacy",
-  "run_tag": "run-20260504_221749",
-  "timestamp": "2026-05-04T20:30:26.611259+00:00",
+  "run_tag": "run-20260505_150918",
+  "timestamp": "2026-05-05T13:47:39.821125+00:00",
   "config": {
-    "extraction_mode": "LLM (openai/gpt-4.1-nano)",
+    "extraction_mode": "LLM (gpt-5-nano-2025-08-07)",
     "embedding_model": "BAAI/bge-m3",
-    "reasoning_model": "openai/gpt-oss-120b",
-    "extraction_model": "openai/gpt-4.1-nano",
+    "reasoning_model": "gpt-5.4-nano-2026-03-17",
+    "extraction_model": "gpt-5-nano-2025-08-07",
     "chunk_size": 128,
     "chunk_overlap": 16,
     "retrieval_mode": "hybrid",
@@ -17,11 +17,11 @@
     "er_similarity_threshold": 0.65
   },
   "builder": {
-    "triplets": 190,
-    "entities": 178,
+    "triplets": 192,
+    "entities": 149,
     "tables_parsed": 10,
     "tables_completed": 10,
-    "elapsed_s": 751.7
+    "elapsed_s": 440.5
   },
   "query": {
     "total_questions": 1,
@@ -29,7 +29,7 @@
     "grounded_rate": 1.0,
     "avg_gt_coverage": 1.0,
     "avg_top_score": 0.9921232932834126,
-    "avg_chunk_count": 20.0,
+    "avg_chunk_count": 24.0,
     "abstained_count": 0
   },
   "per_question": [
@@ -37,7 +37,7 @@
       "query_id": "1",
       "question": "What is the purpose of the tblCustomer table?",
       "expected_answer": "The tblCustomer table stores customer master data including customer codes, names, email addresses, and region information. It uses Hungarian notation with the str prefix for string fields and contains both legacy fields (strCustID, strFullName) and new migration compatibility fields (cust_id, customer_name).",
-      "generated_answer": "The **tblCustomer** table is used to **store the customer master data from the legacy CRM system**. Its purpose is to hold each customer\u2019s core record (the legacy alphanumeric customer code\u202f`strCustID` and the customer\u2019s full name) so that the data can be migrated to the new ERP system and used for all downstream processes such as order entry\u30101\u2020L1-L3\u3011. Additionally, the migration priority guide lists **tblCustomer as a critical\u2011path table that must be migrated first because it is required for all orders**\u30104\u2020L1-L4\u3011",
+      "generated_answer": "The **`tblCustomer`** table stores **customer master data from the legacy CRM system** (CustomerMaster v3.2.1), using the **legacy customer identifier `strCustID` inherited from the AS/400 system**. This customer master data is required for downstream processes such as **orders** (it is listed as a critical-path table that **must be migrated first because it is required for all orders**).",
       "expected_sources": [
         "tblCustomer"
       ],
@@ -54,24 +54,27 @@
         "VW_SALESORDERHDR\u2192TBLCUSTOMER",
         "parent_chunk_business_glossary.md_2",
         "parent_chunk_data_dictionary.txt_6",
-        "Product Category Group",
+        "TBLCUSTOMER",
+        "parent_chunk_data_dictionary.txt_8",
         "ORD_LINE_ITEM\u2192TBLPRODUCT",
-        "INV_TXN_LOG\u2192TBLPRODUCT",
-        "TBLPAYMENT\u2192VW_SALESORDERHDR"
+        "INV_TXN_LOG\u2192TBLPRODUCT"
       ],
       "entity_names": [
-        "Product",
-        "VW_SALESORDERHDR\u2192TBLCUSTOMER",
-        "Line Item",
-        "Payment Data",
-        "GROUP\u2192GROUP",
-        "INV_TXN_LOG\u2192TBLPRODUCT",
         "Customer",
-        "TBLPAYMENT\u2192VW_SALESORDERHDR",
-        "Product Category Group",
-        "Sales Order",
-        "TBLORDERSTATUSHISTORY\u2192VW_SALESORDERHDR",
-        "ORD_LINE_ITEM\u2192TBLPRODUCT"
+        "Order Line Item",
+        "Inventory Transaction",
+        "System User",
+        "INV_TXN_LOG\u2192TBLPRODUCT",
+        "VW_SALESORDERHDR",
+        "TBLPRODUCT",
+        "TBLCUSTOMER",
+        "ORD_LINE_ITEM\u2192TBLPRODUCT",
+        "Sales Order Header",
+        "ORD_LINE_ITEM",
+        "Shipping Carrier",
+        "Product Category",
+        "GROUP\u2192GROUP",
+        "VW_SALESORDERHDR\u2192TBLCUSTOMER"
       ],
       "retrieved_contexts": [
         "================================================================================\nCUSTOMERMASTER DATABASE - DATA DICTIONARY\n================================================================================\nLegacy System: CustomerMaster v3.2.1 Last Updated: 2015-08-14 Migration Status: PENDING to new ERP system ================================================================================ TABLE: tblCustomer -------------------------------------------------------------------------------- Purpose: Stores customer master data from the legacy CRM system Naming Convention: Hungarian notation (str = string, dtm = datetime, bol = boolean) Primary Key: strCustID (alphanumeric customer code inherited from AS/400 system) Field Specifications: -------------------- strCustID (VARCHAR 50, PK) - Customer identifier in format C-XXXXX or REG-XXXX - Legacy AS/400 customer number - Contains letters, numbers, hyphens - NOT NULL, UNIQUE strFullName (VARCHAR 255) - Customer's full name (free text field) - Format: \"FirstName L",
@@ -82,16 +85,16 @@
         "Relationship: VW_SALESORDERHDR references TBLCUSTOMER via foreign key INTCUSTID -> TBLCUSTOMER.STRCUSTID.",
         "## Legacy System Quirks\n\n### Hungarian Notation\nThe legacy system uses Hungarian notation prefixes: - `str` = string (VARCHAR) - `int` = integer (INT) - `lng` = long integer (INT) - `flt` = float/money (DECIMAL) - `bol` = boolean (BIT) - `dtm` = datetime (DATETIME) **Migration Note**: These prefixes are inconsistent. For example, `intCustID` is actually a VARCHAR, and `lngOrderID` is a regular INT. ### Table Naming Inconsistency Different parts of the system use different naming conventions: - `tbl` prefix: tblCustomer, tblProduct, tblPayment - `vw_` prefix (but actually tables): vw_SalesOrderHdr - `ord_` prefix: ord_line_item - `inv_` prefix: inv_txn_log - No prefix: Group, User (reserved words!) ### Reserved Words as Names Several tables use SQL reserved words as names: - `Group` (product categories) - must be quoted as `[Group]` - `User` (system users) - must be quoted as `[User]` ###",
         "qty (INT)\n    - Quantity ordered\n    - Must be positive integer\n\namt (DECIMAL 10,2)\n    - Line item total amount (qty * unit_price)\n    - At time of order (snapshotted, not current price)\n\ndisc_amt (DECIMAL 10,2)\n    - Discount amount applied to this line\n    - Can be zero\n\nline_status (VARCHAR 20)\n    - Line item status\n    - Values: \"PENDING\", \"PICKED\", \"SHIPPED\", \"BACKORDERED\" product_code (VARCHAR 50) - REDUNDANT: Copy of tblProduct.strSKU - Denormalized for reporting performance - May be out of sync with master item_name (VARCHAR 255) - REDUNDANT: Copy of product name at order time - Snapshotted for historical accuracy - Does NOT update if product name changes ================================================================================ TABLE: inv_txn_log -------------------------------------------------------------------------------- Purpose: Inventory transaction log Naming Convention: Heavily abbreviated Field Specifications: -------------------- txn_id (INT, PK) - Transaction identifier - Auto-increment prod_id (INT, FK) - Foreign key to tblProduct.intProdID - Product being adjusted txn_type (VARCHAR 10) - T",
-        "Product Category Group: An entity representing a group of product categories organized in a hierarchical, tree-like structure for classification purposes.",
+        "TBLCUSTOMER: TBLCUSTOMER",
+        "CardNumberText (VARCHAR 100)\n    - SECURITY ISSUE: Full card number stored as text! - Should be tokenized - Contains unencrypted PAN (Primary Account Number) CardHolderName (VARCHAR 100) - Cardholder name - As provided by customer AuthorizationCode (VARCHAR 50) - Payment gateway auth code - Proof of successful authorization ================================================================================ MIGRATION NOTES: ================================================================================ Known Issues: 1. Hungarian notation inconsistent (intCustID is VARCHAR, lngOrderID is INT) 2. Reserved words used as table names (Group, User) require quoting 3. Inappropriate data types (unit_cost is VARCHAR, should be DECIMAL) 4. Security violations (card numbers stored in plaintext) 5. Denormalized redundant fields (product_code, item_name i",
         "Relationship: ORD_LINE_ITEM references TBLPRODUCT via foreign key PROD_ID -> TBLPRODUCT.INTPRODID.",
-        "Relationship: INV_TXN_LOG references TBLPRODUCT via foreign key PROD_ID -> TBLPRODUCT.INTPRODID.",
-        "Relationship: TBLPAYMENT references VW_SALESORDERHDR via foreign key ORDERID -> VW_SALESORDERHDR.LNGORDERID."
+        "Relationship: INV_TXN_LOG references TBLPRODUCT via foreign key PROD_ID -> TBLPRODUCT.INTPRODID."
       ],
       "grounded": true,
       "query_type": "unknown",
       "difficulty": "unknown",
       "retrieval_quality_score": 0.9921232932834126,
-      "retrieval_chunk_count": 20,
+      "retrieval_chunk_count": 24,
       "retrieval_gate_decision": "proceed",
       "context_sufficiency": "adequate",
       "grader_consistency_valid": true,

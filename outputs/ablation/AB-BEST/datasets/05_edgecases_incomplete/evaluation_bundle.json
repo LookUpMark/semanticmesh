@@ -2,14 +2,14 @@
   "meta": {
     "study_id": "AB-BEST",
     "dataset_id": "05_edgecases_incomplete",
-    "timestamp": "2026-05-04T20:17:38.674052+00:00",
+    "timestamp": "2026-05-05T13:40:16.040809+00:00",
     "bundle_version": "1.0"
   },
   "config": {
-    "extraction_mode": "LLM (openai/gpt-4.1-nano)",
+    "extraction_mode": "LLM (gpt-5-nano-2025-08-07)",
     "embedding_model": "BAAI/bge-m3",
-    "reasoning_model": "openai/gpt-oss-120b",
-    "extraction_model": "openai/gpt-4.1-nano",
+    "reasoning_model": "gpt-5.4-nano-2026-03-17",
+    "extraction_model": "gpt-5-nano-2025-08-07",
     "chunk_size": 128,
     "chunk_overlap": 16,
     "retrieval_mode": "hybrid",
@@ -32,8 +32,8 @@
     }
   },
   "builder_report": {
-    "triplets_extracted": 55,
-    "entities_resolved": 48,
+    "triplets_extracted": 78,
+    "entities_resolved": 87,
     "tables_parsed": 5,
     "tables_completed": 5,
     "cypher_failed": false,
@@ -51,8 +51,8 @@
     "grounded_rate": 1.0,
     "abstained_count": 0,
     "avg_gt_coverage": 1.0,
-    "avg_top_score": 0.998798108681489,
-    "avg_chunk_count": 7.0,
+    "avg_top_score": 0.8713654401007822,
+    "avg_chunk_count": 13.0,
     "elapsed_s": 0
   },
   "per_question": [
@@ -65,24 +65,34 @@
       "expected_sources": [
         "Customer"
       ],
-      "generated_answer": "A **customer** is defined as *an individual or organization that purchases goods or services from a business*【4†L1-L2】. In the enterprise business glossary the term is used interchangeably with “client,” which is described as “a person or company that purchases goods or services”【5†L1-L4】",
+      "generated_answer": "A **customer** is defined in the business glossary as an **individual or organization that purchases goods or services**. The glossary also notes that the term **Client** may be used interchangeably with **Customer** in some contexts.",
       "sources_retrieved": [
         "parent_chunk_data_dictionary.txt_1",
         "parent_chunk_data_dictionary.txt_2",
         "parent_chunk_data_dictionary.txt_3",
-        "Customer",
         "parent_chunk_business_glossary.txt_0",
-        "Sales Order Item",
-        "Product"
+        "Customers",
+        "CUSTOMERS",
+        "Payment",
+        "Order Details",
+        "Sales Order",
+        "PRODUCTS",
+        "PAYMENTS",
+        "Inventory Item"
       ],
       "contexts_retrieved": [
         "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation) Last Updated: 2024-02-28 ========================================== CUSTOMERS ========================================== Primary Key: customer_id (or is it CustomerID? check with DBA) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | customer_id | INTEGER | PK | [missing documentation] | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | fi",
         "Foreign Keys: - customer_id → CUSTOMERS(customer_id or CustomerID?) - [missing other FK definitions] ========================================== ORDER_ITEMS (or ORDER_DETAILS?) ========================================== Primary Key: [undocumented] | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | order_item_id | INTEGER | PK | [missing documentation] | | order_id | INTEGER | FK | References ORDERS | | product_id | INTEGER | FK | Refe",
         "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified) | Column Name | Data Type | Constraints | Description | |-------------|-----------|-------------|-------------| | payment_id | INTEGER | PK | [missing documentation] | | PaymentID | INTEGER | ? | [possible duplicate] | | order_id | INTEGER | FK | References ORDERS | | customer_id | INTEGER | FK | References CUSTOMERS | | payment_date | DATETIME | ? | [missing docum",
-        "Customer: An individual or organization that purchases goods or services from a business.",
         "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15 Status: Partial (pending review) ========================================== CUSTOMER MANAGEMENT ========================================== Customer An individual or organization that... [definition incomplete] Client A person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) Account Holder The person designated as the primary owner of an account. Similar to Customer but wi",
-        "Sales Order Item: A sales order is a documented request from a customer to purchase products or services, with confirmed pricing and inventory allocation, serving as a formal record for processing sales transactions.",
-        "Product: Inventory Item"
+        "Customers: Primary Key: customer_id (or is it CustomerID? check with DBA) | customer_id → CUSTOMERS(customer_id or CustomerID?) | CustomerID | INTEGER | FK | [FK reference unclear]",
+        "CUSTOMERS: CUSTOMERS",
+        "Payment: The monetary transfer of funds to settle an order, represented by individual payment transactions in a payments system.",
+        "Order Details: The line items within a sales order, i.e., the products, quantities, and prices that comprise the order.",
+        "Sales Order: Sales Order An order with confirmed pricing and inventory allocation. Distinct from Quote.",
+        "PRODUCTS: PRODUCTS",
+        "PAYMENTS: PAYMENTS",
+        "Inventory Item: Inventory Item"
       ],
       "covered_sources": [
         "Customer"
@@ -90,8 +100,8 @@
       "gt_coverage": 1.0,
       "grounded": true,
       "gate_decision": "proceed",
-      "retrieval_quality_score": 0.998798108681489,
-      "chunk_count": 7,
+      "retrieval_quality_score": 0.8713654401007822,
+      "chunk_count": 13,
       "grader_rejection_count": 0,
       "grader_consistency_valid": true,
       "context_sufficiency": "adequate"

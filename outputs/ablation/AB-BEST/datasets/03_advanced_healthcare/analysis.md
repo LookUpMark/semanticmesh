@@ -1,14 +1,14 @@
 # AB-BEST — 03_advanced_healthcare — Run Analysis
 
-**Timestamp:** 2026-05-04 19:46:10  
-**Run tag:** `run-20260504_213821`
+**Timestamp:** 2026-05-05 13:29:20  
+**Run tag:** `run-20260505_150918`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
-| Extraction model | `LLM (openai/gpt-4.1-nano)` |
-| Reasoning model | `openai/gpt-oss-120b` |
+| Extraction model | `LLM (gpt-5-nano-2025-08-07)` |
+| Reasoning model | `gpt-5.4-nano-2026-03-17` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 132 |
-| Entities resolved | 157 |
+| Triplets extracted | 252 |
+| Entities resolved | 207 |
 | Tables parsed | 10 |
 | Tables completed | 10 |
 
@@ -32,8 +32,8 @@
 | Questions | 1 |
 | Grounded | **1/1 (100%)** |
 | Avg GT Coverage | 100% |
-| Avg Top Score | 0.8860 |
-| Avg Chunk Count | 20.0 |
+| Avg Top Score | 0.9946 |
+| Avg Chunk Count | 23.0 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (11):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_3`, `Diagnosis`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`
+**Sources retrieved (11):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_11`, `Patients Table`, `parent_chunk_data_dictionary.md_3`, `Patient Diagnoses`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`
 
 ---
 
