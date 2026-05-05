@@ -405,7 +405,9 @@ def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
     records = client.execute_cypher(
         "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
         "RETURN bc.name AS concept_name, bc.definition AS concept_def, "
-        "pt.table_name AS table_name, pt.column_names AS column_names"
+        "pt.table_name AS table_name, pt.column_names AS column_names, "
+        "pt.table_description AS table_description, "
+        "pt.enriched_columns AS enriched_columns"
     )
     chunks: list[RetrievedChunk] = []
     for rec in records:
@@ -415,11 +417,27 @@ def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
             continue
         concept_def = (rec.get("concept_def") or "").strip()
         columns = rec.get("column_names") or []
-        col_part = f" (columns: {', '.join(columns)})" if columns else ""
+        table_desc = (rec.get("table_description") or "").strip()
+        enriched_cols_raw = rec.get("enriched_columns") or ""
+
+        # Build enriched column display: prefer enriched names over raw names
+        enriched_names: list[str] = []
+        if enriched_cols_raw:
+            try:
+                import json as _json_mod  # noqa: PLC0415
+                ec_list = (_json_mod.loads(enriched_cols_raw)
+                           if isinstance(enriched_cols_raw, str) else enriched_cols_raw)
+                enriched_names = [e.get("enriched", e.get("original", "")) for e in ec_list if e]
+            except (TypeError, ValueError):
+                pass
+        col_display = enriched_names if enriched_names else columns
+        col_part = f" Stored fields: {', '.join(col_display)}." if col_display else ""
+
         def_part = f" — {concept_def}" if concept_def else ""
+        desc_part = f" {table_desc}" if table_desc else ""
         text = (
             f"Business concept '{concept}'{def_part} is implemented by "
-            f"physical table {table}{col_part}."
+            f"physical table {table}.{desc_part}{col_part}"
         )
         chunks.append(
             RetrievedChunk(
