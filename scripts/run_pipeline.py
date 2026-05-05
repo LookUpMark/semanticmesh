@@ -609,7 +609,7 @@ def _run_single(
                     "expected_sources": pq.get("expected_sources", []),
                     "generated_answer": pq.get("generated_answer", ""),
                     "sources_retrieved": pq.get("sources", []),
-                    "contexts_retrieved": [c[:500] for c in pq.get("retrieved_contexts", [])],
+                    "contexts_retrieved": list(pq.get("retrieved_contexts", [])),
                     "covered_sources": pq.get("covered_sources", []),
                     "gt_coverage": pq.get("gt_coverage", 0.0),
                     "grounded": pq.get("grounded", False),

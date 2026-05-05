@@ -244,6 +244,28 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         else:
             candidates = rerank(query, pool, top_k=settings.reranker_top_k)
 
+        # Diversity boost: the top keyword-relevant ParentChunk from the pool
+        # often contains enumerated values (CHECK constraints, status lists)
+        # that cross-encoders score poorly due to chunking artifacts.
+        # The pool is sorted by (keyword_hits, source_rank, ...) so the first
+        # ParentChunk is the most query-relevant one.
+        top_pool_parent: RetrievedChunk | None = None
+        for pc in pool:
+            if pc.node_type == "ParentChunk":
+                top_pool_parent = pc
+                break
+        if top_pool_parent:
+            reranked_ids = {c.node_id for c in candidates}
+            if top_pool_parent.node_id not in reranked_ids:
+                candidates.append(top_pool_parent.model_copy(update={"score": 0.15}))
+                logger.info("Diversity inject: '%s' (top pool parent, reranker dropped)", top_pool_parent.node_id)
+            else:
+                for i, cand in enumerate(candidates):
+                    if cand.node_id == top_pool_parent.node_id and cand.score < 0.10:
+                        candidates[i] = cand.model_copy(update={"score": 0.15})
+                        logger.info("Diversity boost: '%s' %.4f->0.15", top_pool_parent.node_id, cand.score)
+                        break
+
         valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
         if not valid:
             logger.warning(

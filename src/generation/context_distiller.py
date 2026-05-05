@@ -49,10 +49,24 @@ def _distill_text(chunk: RetrievedChunk) -> str:
     if any(marker in lower for marker in _NOISE_MARKERS):
         return f"Entity hint: {chunk.node_id}."
 
+    # Fix mid-sentence chunk starts: if text doesn't begin with a capital
+    # letter or Markdown marker, trim up to the first sentence boundary.
+    if text and text[0].islower():
+        # Find first sentence-like boundary (. or newline followed by capital/marker)
+        for i, ch in enumerate(text):
+            if ch == "\n" and i + 1 < len(text):
+                text = text[i + 1:]
+                break
+        else:
+            # No newline found, try period
+            dot = text.find(". ")
+            if dot != -1 and dot < 80:
+                text = text[dot + 2:]
+
     if ":" in text and len(text) > 800:
         head, body = text.split(":", 1)
         compact = " ".join(body.split())
-        return f"{head.strip()}: {compact[:800].rstrip()}"
+        return f"{head.strip()}: {compact}"
 
     return " ".join(text.split())
 
