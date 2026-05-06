@@ -228,12 +228,14 @@ ABLATION_DESC: dict[str, dict[str, str]] = {
         "affected_components": "Query graph: hallucination grader node",
     },
     "AB-BEST": {
-        "title": "Data-driven best configuration (AI-Judge, DS01)",
+        "title": "Data-driven best configuration (AI-Judge v1.1.1, DS01)",
         "group": "Optimised",
         "hypothesis": (
-            "Per-dimension AI-Judge winner: hybrid retrieval, reranker ON top_k=20, "
-            "chunk 128/16, ER threshold=0.65 top_k=5, HITL=0.85, grader OFF — "
-            "derived from 22 ablation studies on DS01 (2026-04-21)."
+            "v1.1.1 re-run (2026-05-06): reranker top_k=5 is the only parameter "
+            "that improves over baseline (+0.40). Neutral parameters set for "
+            "robustness on complex datasets: chunk 256/32, ER 0.75/10, "
+            "extraction 8192. All safety components ON (cypher healing essential, "
+            "hallucination grader as safety net). AB-04=AB-05=4.90 > baseline=4.50."
         ),
         "affected_components": "All (data-driven optimised)",
     },
@@ -388,45 +390,54 @@ ABLATION_MATRIX: dict[str, dict[str, Any]] = {
         "primary_metric": "faithfulness",
         "run_ragas": False,  # Disables the component being measured
     },
-    # AB-BEST: Data-driven best config — derived from AI-Judge scores on DS01 (2026-04-21)
-    # Per-dimension winners (AI Judge /5):
-    #   Retrieval mode:       hybrid        (AB-00=4.25 > AB-01=3.80, AB-02=4.10)
-    #   Reranker:             ON + top_k=20 (AB-05=4.65 > AB-03 OFF=4.35 > AB-00 top_k=12=4.25)
-    #   Chunk size:           128/16        (AB-06=4.65, tied AB-08 512/64=4.65;
-    #                                         128 favours top_k=20 diversity)
-    #   Extraction tokens:    4096          (AB-09=4.35 > baseline=4.25 > AB-10=4.25)
-    #   ER threshold:         0.65          (AB-11=4.65 > baseline=4.25)
-    #   ER blocking top_k:    5             (AB-13=4.55 > baseline=4.25 = AB-14=4.25)
-    #   Schema enrichment:    ON            (tie; keep ON)
-    #   Actor-Critic:         ON            (AB-16 OFF=3.90, worst outcome)
-    #   HITL threshold:       0.85          (AB-18=4.75, highest overall score)
-    #   Cypher healing:       ON            (0.05 margin vs OFF; keep ON for resilience)
-    #   Hallucination grader: OFF           (AB-20=4.65 > AB-00 ON=4.25)
+    # AB-BEST: Data-driven best config — derived from AI-Judge scores on DS01 (2026-05-06, v1.1.1)
+    #
+    # v1.1.1 Results Summary (DS01):
+    #   ONLY reranker_top_k moved the needle:
+    #     AB-04 (top_k=5)  = 4.90  (+0.40 vs baseline)
+    #     AB-05 (top_k=20) = 4.90  (+0.40 vs baseline)
+    #     AB-03 (OFF)      = 4.80  (+0.30 vs baseline, surprising)
+    #   Everything else was neutral (4.50) EXCEPT:
+    #     AB-01 (vector-only)  = 3.40  (−1.10, catastrophic)
+    #     AB-10 (tokens=16384) = 4.25  (−0.25, over-extraction noise)
+    #     AB-19 (healing OFF)  = 4.05  (−0.45, critical safety component)
+    #
+    # Design Rationale for neutral parameters (complex dataset compromise):
+    #   chunk_size=256:        Balanced context density; 128 too granular for long docs
+    #   chunk_overlap=32:      Standard 12.5% overlap ratio
+    #   extraction_tokens=8192: Safe default; 16384 adds noise, 4096 neutral but risky on dense docs
+    #   er_threshold=0.75:     Avoids false merges on datasets with similar-but-distinct entities
+    #   er_blocking_top_k=10:  Balanced recall vs LLM cost for larger entity sets
+    #   confidence=0.80:       Compromise between safety (0.70=too many HITL) and autonomy (0.85)
+    #   hallucination_grader=ON: Reversed from v1.0.x; v1.1.1 retrieval quality makes grader
+    #                            neutral, but essential safety net on harder datasets
+    #
+    # Efficiency note: top_k=5 chosen over top_k=20 (same 4.90 score, 4x fewer reranker calls)
     "AB-BEST": {
         "description": (
-            "Data-driven best config (AI-Judge DS01, 2026-04-21): "
-            "hybrid retrieval, reranker ON top_k=20, chunk 128/16, "
-            "ER threshold=0.65 top_k=5, HITL=0.85, grader OFF"
+            "Data-driven best config (AI-Judge DS01, v1.1.1 2026-05-06): "
+            "hybrid retrieval, reranker ON top_k=5, chunk 256/32, "
+            "ER threshold=0.75 top_k=10, HITL=0.80, all safety ON"
         ),
         "env_overrides": {
-            # Retrieval
+            # Retrieval — hybrid confirmed essential (AB-01 catastrophic at 3.40)
             "RETRIEVAL_MODE": "hybrid",
             "ENABLE_RERANKER": "true",
-            "RERANKER_TOP_K": "20",
-            # Chunking
-            "CHUNK_SIZE": "128",
-            "CHUNK_OVERLAP": "16",
-            # Extraction
-            "LLM_MAX_TOKENS_EXTRACTION": "4096",
-            # Entity Resolution
-            "ER_SIMILARITY_THRESHOLD": "0.65",
-            "ER_BLOCKING_TOP_K": "5",
-            # Pipeline components
+            "RERANKER_TOP_K": "5",  # AB-04=4.90, same as top_k=20 but 4x more efficient
+            # Chunking — neutral on DS01; 256/32 is robust default for complex docs
+            "CHUNK_SIZE": "256",
+            "CHUNK_OVERLAP": "32",
+            # Extraction — 8192 default is safe (AB-10 16384 -> -0.25; AB-09 4096 -> neutral)
+            "LLM_MAX_TOKENS_EXTRACTION": "8192",
+            # Entity Resolution — baseline values; safe for heterogeneous datasets
+            "ER_SIMILARITY_THRESHOLD": "0.75",
+            "ER_BLOCKING_TOP_K": "10",
+            # Pipeline components — all ON for robustness
             "ENABLE_SCHEMA_ENRICHMENT": "true",
             "ENABLE_CRITIC_VALIDATION": "true",
-            "CONFIDENCE_THRESHOLD": "0.85",
-            "ENABLE_CYPHER_HEALING": "true",
-            "ENABLE_HALLUCINATION_GRADER": "false",
+            "CONFIDENCE_THRESHOLD": "0.80",  # Balanced: less HITL than 0.70, more than 0.85
+            "ENABLE_CYPHER_HEALING": "true",  # AB-19 confirms -0.45 without it
+            "ENABLE_HALLUCINATION_GRADER": "true",  # Safety net on complex datasets
             "ENABLE_RETRIEVAL_QUALITY_GATE": "true",
             "ENABLE_GRADER_CONSISTENCY_VALIDATOR": "true",
             "ENABLE_LAZY_EXPANSION": "true",
