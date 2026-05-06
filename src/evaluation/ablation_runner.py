@@ -239,6 +239,17 @@ ABLATION_DESC: dict[str, dict[str, str]] = {
         ),
         "affected_components": "All (data-driven optimised)",
     },
+    "AB-BEST-K20": {
+        "title": "AB-BEST variant with reranker top_k=20",
+        "group": "Optimised",
+        "hypothesis": (
+            "Tests whether increasing reranker pool from 5 to 20 candidates "
+            "improves quality on complex/edge-case datasets (DS02-DS06) where "
+            "GT coverage was lower than DS01. Trades 4x compute for potentially "
+            "higher retrieval diversity."
+        ),
+        "affected_components": "Retrieval (reranker pool size)",
+    },
 }
 
 
@@ -438,6 +449,32 @@ ABLATION_MATRIX: dict[str, dict[str, Any]] = {
             "CONFIDENCE_THRESHOLD": "0.80",  # Balanced: less HITL than 0.70, more than 0.85
             "ENABLE_CYPHER_HEALING": "true",  # AB-19 confirms -0.45 without it
             "ENABLE_HALLUCINATION_GRADER": "true",  # Safety net on complex datasets
+            "ENABLE_RETRIEVAL_QUALITY_GATE": "true",
+            "ENABLE_GRADER_CONSISTENCY_VALIDATOR": "true",
+            "ENABLE_LAZY_EXPANSION": "true",
+        },
+        "primary_metric": "faithfulness",
+        "run_ragas": True,
+    },
+    "AB-BEST-K20": {
+        "description": (
+            "AB-BEST variant with reranker top_k=20 (vs top_k=5) — "
+            "tests whether expanded reranker pool improves quality on complex datasets"
+        ),
+        "env_overrides": {
+            "RETRIEVAL_MODE": "hybrid",
+            "ENABLE_RERANKER": "true",
+            "RERANKER_TOP_K": "20",  # Changed from 5 to 20
+            "CHUNK_SIZE": "256",
+            "CHUNK_OVERLAP": "32",
+            "LLM_MAX_TOKENS_EXTRACTION": "8192",
+            "ER_SIMILARITY_THRESHOLD": "0.75",
+            "ER_BLOCKING_TOP_K": "10",
+            "ENABLE_SCHEMA_ENRICHMENT": "true",
+            "ENABLE_CRITIC_VALIDATION": "true",
+            "CONFIDENCE_THRESHOLD": "0.80",
+            "ENABLE_CYPHER_HEALING": "true",
+            "ENABLE_HALLUCINATION_GRADER": "true",
             "ENABLE_RETRIEVAL_QUALITY_GATE": "true",
             "ENABLE_GRADER_CONSISTENCY_VALIDATOR": "true",
             "ENABLE_LAZY_EXPANSION": "true",

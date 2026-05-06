@@ -1,0 +1,168 @@
+{
+  "study_id": "AB-BEST-K20",
+  "timestamp": "2026-05-06T20:29:30.626813+00:00",
+  "trace_id": "AB-BEST-K20.2026-05-06T20-29-30.626813+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "tests/fixtures/01_basics_ecommerce/business_glossary.txt",
+    "tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+  ],
+  "ddl_files": [
+    "tests/fixtures/01_basics_ecommerce/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase.\n\n**Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, an... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "766"
+    },
+    {
+      "chunk_id": 1,
+      "text": "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering.\n\n**Key Attributes**:\n- Unique line identifier\n- References exactly one Product\n- Quantity of units ordered\n- Unit price at time of order (historical, not current)\n- Extended amount = quantity \u00d7 unit price\n\n**Business Rules**:\n- A Sales Order must contain at least one line item\n- Cannot be modified after order confirmation\n- Unit price is fixed and does not chan... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "759"
+    },
+    {
+      "chunk_id": 2,
+      "text": "Sales Order Relationships:\n- A Sales Order is placed by exactly one Customer\n- A Sales Order has one or more Order Line Items\n- A Sales Order has one or more Payments\n- A Sales Order has one or more Shipments\n\nOrder Line Item Relationships:\n- An Order Line Item is part of exactly one Sales Order\n- An Order Line Item references exactly one Product\n\nPayment Relationships:\n- A Payment is for exactly one Sales Order\n\nShipment Relationships:\n- A Shipment is for exactly one Sales Order\n- A Shipment co... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "124"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## MODIFIED FOR TEST A\nRefund: A reimbursement issued to a customer when an order is cancelled.\n\n## SECOND MODIFICATION \u2014 extra term\nReturn Policy: Products can be returned within 30 days of purchase for a full refund.",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "48"
+    },
+    {
+      "chunk_id": 4,
+      "text": "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers.\n\n**Primary Key**: CUST_ID (INT, auto-increment)\n\n**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-----------... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "776"
+    },
+    {
+      "chunk_id": 5,
+      "text": "**Foreign Keys**:\n- CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID)\n\n**Business Concept Mapping**: SalesOrder\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nORDER_LINE_ITEM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Individual product lines within a sales order.\n\n**Primary Key**: LINE_ID (INT, auto-increment)\n\n**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| LINE_ID | INT | Unique line identifier | NO... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "757"
+    },
+    {
+      "chunk_id": 6,
+      "text": "CUSTOMER_MASTER.CUST_ID\n  \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID\n\nTB_PRODUCT.PRODUCT_ID\n  \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID\n\nTB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID\n  \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference)\n\nSALES_ORDER_HDR.ORDER_ID\n  \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID\n  \u251c\u2500\u2500 PAYMENT.ORDER_ID\n  \u2514\u2500\u2500 SHIPMENT.ORDER_ID\n\nBUSINESS CONCEPT TO TABLE MAPPING\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nCustomer         \u2192 CUSTOMER_MASTER\nProduct          \u2192 TB_PRODUCT\nSalesOrder     ... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "187"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 7,
+    "total_tokens": 3417,
+    "avg_tokens": 488.14285714285717
+  },
+  "triplets": [],
+  "extraction_summary": {
+    "total_triplets": 0,
+    "avg_confidence": 0.0,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [],
+  "resolution_summary": {
+    "entities_post": 0
+  },
+  "tables_parsed": [
+    {
+      "name": "CUSTOMER_MASTER",
+      "columns": 6
+    },
+    {
+      "name": "TB_PRODUCT",
+      "columns": 6
+    },
+    {
+      "name": "TB_CATEGORY",
+      "columns": 3
+    },
+    {
+      "name": "SALES_ORDER_HDR",
+      "columns": 8
+    },
+    {
+      "name": "ORDER_LINE_ITEM",
+      "columns": 6
+    },
+    {
+      "name": "PAYMENT",
+      "columns": 7
+    },
+    {
+      "name": "SHIPMENT",
+      "columns": 6
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customer Master",
+      "description": "Stores core customer records including identifiers, contact details, regional assignment, account status, and the date the customer was created in the system."
+    },
+    {
+      "name": "Product",
+      "description": "Stores information about products, including identifiers, names, category association, pricing, and whether the product is active."
+    },
+    {
+      "name": "Category",
+      "description": "Stores category data for products, including each category's name and its parent-child relationships to enable hierarchical categorization."
+    },
+    {
+      "name": "Sales Order Header",
+      "description": "Stores the header information for each customer order, including identifiers, order date, total amount, status, payment confirmation time, delivery time, and record creation time."
+    },
+    {
+      "name": "Order Line Item",
+      "description": "Stores line-item details for each order, including which product was ordered, its quantity, unit price, and the line total amount."
+    },
+    {
+      "name": "Payment",
+      "description": "Stores payment transactions related to customer orders, including method, amount, status, and timestamps for confirmation and creation."
+    },
+    {
+      "name": "Shipment",
+      "description": "Stores records of physical shipments tied to orders, including destination warehouse, shipment timestamp, tracking details, and current shipment status."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 7,
+    "tables_enriched": 7,
+    "total_columns": 42
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 85,
+    "total_relationships": 75,
+    "completed_tables": 7
+  },
+  "stage_timings": {}
+}
