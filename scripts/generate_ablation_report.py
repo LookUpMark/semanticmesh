@@ -24,27 +24,12 @@ DATA = json.loads((BASE / "all_scores_full.json").read_text())
 STUDIES = [f"AB-{i:02d}" for i in range(21)]
 DATASETS = [
     "01_basics_ecommerce",
-    "02_intermediate_finance",
-    "03_advanced_healthcare",
-    "04_complex_manufacturing",
-    "05_edgecases_incomplete",
-    "06_edgecases_legacy",
 ]
 DS_SHORT = {
     "01_basics_ecommerce": "DS01",
-    "02_intermediate_finance": "DS02",
-    "03_advanced_healthcare": "DS03",
-    "04_complex_manufacturing": "DS04",
-    "05_edgecases_incomplete": "DS05",
-    "06_edgecases_legacy": "DS06",
 }
 DS_FULL = {
     "01_basics_ecommerce": "E-commerce Basics (7 tables, 15 Q)",
-    "02_intermediate_finance": "Finance Intermediate (9 tables, 15 Q)",
-    "03_advanced_healthcare": "Healthcare Advanced (11 tables, 15 Q)",
-    "04_complex_manufacturing": "Manufacturing Complex (12 tables, 15 Q)",
-    "05_edgecases_incomplete": "Edge Cases: Incomplete DDL (6 tables, 12 Q)",
-    "06_edgecases_legacy": "Edge Cases: Legacy naming (8 tables, 12 Q)",
 }
 
 # Extend ABLATION_DESC with description and env from ABLATION_MATRIX
@@ -357,7 +342,7 @@ for ab in STUDIES:
     ablation_avg = sum(ablation_scores) / len(ablation_scores) if ablation_scores else None
 
     # vs baseline
-    baseline_overall = sum(DATA["AB-00"][ds]["overall"] for ds in DATASETS) / 6
+    baseline_overall = sum(DATA["AB-00"][ds]["overall"] for ds in DATASETS) / len(DATASETS)
     delta = overall_avg - baseline_overall
     delta_str = f"+{delta:.2f}" if delta >= 0 else f"{delta:.2f}"
 
@@ -380,7 +365,7 @@ for ab in STUDIES:
     w("| Dimension | Score | vs. AB-00 |")
     w("|-----------|:-----:|:---------:|")
 
-    b00 = lambda k: sum((DATA["AB-00"][ds].get(k) or 0) for ds in DATASETS) / 6
+    b00 = lambda k: sum((DATA["AB-00"][ds].get(k) or 0) for ds in DATASETS) / len(DATASETS)
 
     def delta_str_dim(k):
         d_val = a(k) - b00(k)
