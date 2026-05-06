@@ -1,7 +1,7 @@
 # AB-BEST — 06_edgecases_legacy — Run Analysis
 
-**Timestamp:** 2026-05-06 11:01:47  
-**Run tag:** `run-20260506_124937`
+**Timestamp:** 2026-05-06 20:17:46  
+**Run tag:** `run-20260506_210258`
 
 ## Configuration
 
@@ -12,16 +12,16 @@
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
-| Reranker top_k | `20` |
-| Chunk size / overlap | `128 / 16` |
-| ER similarity threshold | `0.65` |
+| Reranker top_k | `5` |
+| Chunk size / overlap | `256 / 32` |
+| ER similarity threshold | `0.75` |
 
 ## Builder Results
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 199 |
-| Entities resolved | 164 |
+| Triplets extracted | 159 |
+| Entities resolved | 129 |
 | Tables parsed | 10 |
 | Tables completed | 10 |
 
@@ -31,9 +31,9 @@
 |--------|-------|
 | Questions | 25 |
 | Grounded | **25/25 (100%)** |
-| Avg GT Coverage | 99% |
-| Avg Top Score | 0.8050 |
-| Avg Chunk Count | 34.6 |
+| Avg GT Coverage | 76% |
+| Avg Top Score | 0.8053 |
+| Avg Chunk Count | 13.8 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_2`, `VW_SALESORDERHDR→TBLCUSTOMER`, `parent_chunk_data_dictionary.txt_6`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `TBLCUSTOMER.CUSTOMER_NAME`, `TBLCUSTOMER.CUST_ID`, `TBLCUSTOMER.DTMCREATED`, `TBLCUSTOMER.STRCUSTID`, `TBLCUSTOMER`, `TBLCUSTOMER.STRFULLNAME`
 
 ---
 
@@ -68,7 +68,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_3`, `Customer`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_6`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `Customer`, `Line Item`, `TBLCUSTOMER`, `TBLCUSTOMER.STRFULLNAME`
 
 ---
 
@@ -83,14 +83,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `VW_SALESORDERHDR.STRORDERSTATUS`, `VW_SALESORDERHDR.INTCUSTID`, `VW_SALESORDERHDR.LNGORDERID`, `VW_SALESORDERHDR.DTMORDERDATE`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_8`, `VW_SALESORDERHDR.LNGORDERID`, `VW_SALESORDERHDR.STRORDERSTATUS`, `VW_SALESORDERHDR.INTCUSTID`, `VW_SALESORDERHDR.DTMORDERDATE`, `VW_SALESORDERHDR.DTMSHIPDATE`, `VW_SALESORDERHDR`, `Sales Order`
 
 ---
 
 ### ✅ 4 — Which table in the schema uses a SQL reserved word as its name?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 0% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The schema includes two tables that use SQL reserved words: 'Group' (for product categories) and 'User' (for system users). These require square bracket quoting [Group] and [User] in SQL queries to avoid syntax errors.
@@ -98,7 +98,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`, `USER.PASSWORDHASH`
+**Sources retrieved (6):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_1`
 
 ---
 
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `VW_SALESORDERHDR→TBLCUSTOMER`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `TBLPAYMENT→VW_SALESORDERHDR`, `TBLORDERSTATUSHISTORY→VW_SALESORDERHDR`, `ORD_LINE_ITEM→VW_SALESORDERHDR`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `VW_SALESORDERHDR→TBLCUSTOMER`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`, `TBLPAYMENT→VW_SALESORDERHDR`, `VW_SALESORDERHDR.INTCUSTID`, `VW_SALESORDERHDR`, `TBLCUSTOMER`
 
 ---
 
@@ -128,7 +128,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_5`, `INV_TXN_LOG.TXN_TYPE`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_8`, `Inventory Transaction`, `INV_TXN_LOG.TXN_TYPE`, `INV_TXN_LOG.REF_NUM`, `INV_TXN_LOG.TXN_DT`, `INV_TXN_LOG`, `INV_TXN_LOG.TXN_ID`
 
 ---
 
@@ -143,7 +143,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_data_dictionary.txt_6`, `TBLPRODUCT.PROD_NUM`, `TBLPRODUCT.UNIT_COST`, `parent_chunk_business_glossary.md_1`, `TBLPRODUCT`
 
 ---
 
@@ -158,7 +158,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`, `ORD_LINE_ITEM.ITEM_NAME`, `ORD_LINE_ITEM.PROD_ID`, `ORD_LINE_ITEM.PRODUCT_CODE`, `ORD_LINE_ITEM.LINE_STATUS`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_8`, `ORD_LINE_ITEM→TBLPRODUCT`, `ORD_LINE_ITEM.ITEM_NAME`, `ORD_LINE_ITEM.PROD_ID`, `ORD_LINE_ITEM.LINE_STATUS`, `ORD_LINE_ITEM.PRODUCT_CODE`, `Line Item`, `ORD_LINE_ITEM`
 
 ---
 
@@ -173,7 +173,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.txt_4`, `VW_SALESORDERHDR.STRORDERSTATUS`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `VW_SALESORDERHDR.STRORDERSTATUS`, `VW_SALESORDERHDR`, `VW_SALESORDERHDR.INTCUSTID`, `VW_SALESORDERHDR.FLTTAXAMOUNT`
 
 ---
 
@@ -188,7 +188,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `TBLPAYMENT.PAYMENTSTATUS`, `TBLPAYMENT.CARDHOLDERNAME`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_8`, `TBLPAYMENT.PAYMENTSTATUS`, `TBLPAYMENT.CARDHOLDERNAME`, `TBLPAYMENT.PAYMENTMETHOD`, `TBLPAYMENT.PAYMENTDATE`, `TBLPAYMENT.AUTHORIZATIONCODE`, `TBLPAYMENT`, `Payment Transaction Records`
 
 ---
 
@@ -203,7 +203,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_2`, `TBLCUSTOMER.BOLACTIVE`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_7`, `TBLCUSTOMER.BOLACTIVE`, `TBLPRODUCT.BOLACTIVE`, `parent_chunk_data_dictionary.txt_8`, `TBLCUSTOMER`, `TBLCUSTOMER.STRFULLNAME`
 
 ---
 
@@ -218,7 +218,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_3`, `Inventory Transaction`, `System User`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `Inventory Transaction`, `INV_TXN_LOG.QTY`, `INV_TXN_LOG.TXN_ID`, `INV_TXN_LOG.TXN_DT`, `INV_TXN_LOG.NOTES`, `Customer`, `Line Item`
 
 ---
 
@@ -233,7 +233,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `Group`, `parent_chunk_data_dictionary.txt_6`, `GROUP.ISACTIVE`, `GROUP.DESCRIPTION`, `GROUP.GROUPNAME`, `GROUP.GROUPID`, `GROUP.PARENTGROUPID`
+**Sources retrieved (10):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `GROUP.ISACTIVE`, `GROUP.DESCRIPTION`, `GROUP.GROUPNAME`, `GROUP→GROUP`, `GROUP`, `Product Group`
 
 ---
 
@@ -248,7 +248,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `VW_SALESORDERHDR→TBLCUSTOMER`, `Customer`
+**Sources retrieved (6):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_1`
 
 ---
 
@@ -263,14 +263,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `TBLORDERSTATUSHISTORY→VW_SALESORDERHDR`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_4`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `TBLORDERSTATUSHISTORY.ORDERID`, `TBLORDERSTATUSHISTORY.NEWSTATUS`, `TBLORDERSTATUSHISTORY.HISTORYID`, `TBLORDERSTATUSHISTORY`, `Order Status History`
 
 ---
 
 ### ✅ 16 — What is the inconsistent naming pattern between order tables?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 0% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The schema shows inconsistent naming: order headers use 'vw_SalesOrderHdr' with Hungarian notation, while line items use 'ord_line_item' with abbreviated underscore notation. Additionally, the line item table references lngOrderID but names its foreign key 'ord_id' instead of 'order_id' or 'lngOrder…
@@ -278,7 +278,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_4`, `ORD_LINE_ITEM.ITEM_NAME`, `ORD_LINE_ITEM.PRODUCT_CODE`
+**Sources retrieved (5):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`
 
 ---
 
@@ -293,7 +293,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `ORD_LINE_ITEM→TBLPRODUCT`, `INV_TXN_LOG→TBLPRODUCT`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `TBLPRODUCT.PROD_NUM`, `parent_chunk_business_glossary.md_1`, `TBLPRODUCT`, `TBLPRODUCT.STRNAME`
 
 ---
 
@@ -308,7 +308,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `TBLSHIPPINGCARRIER.BOLACTIVE`, `TBLSHIPPINGCARRIER.CARRIERNAME`, `TBLSHIPPINGCARRIER.CARRIERID`, `TBLSHIPPINGCARRIER.TRACKINGURL`
+**Sources retrieved (9):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.txt_7`, `TBLSHIPPINGCARRIER.BOLACTIVE`, `TBLSHIPPINGCARRIER.CARRIERNAME`, `TBLSHIPPINGCARRIER.CARRIERID`, `TBLSHIPPINGCARRIER`, `Shipping Carrier Master Data`, `TBLSHIPPINGCARRIER.TRACKINGURL`
 
 ---
 
@@ -323,7 +323,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_6`, `USER.PASSWORDHASH`, `USER.USERNAME`, `USER.LASTLOGIN`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_7`, `USER.PASSWORDHASH`, `USER.LASTLOGIN`, `USER.USERNAME`, `parent_chunk_business_glossary.md_1`, `USER`, `User Password Hash`
 
 ---
 
@@ -338,14 +338,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_7`, `VW_SALESORDERHDR.FLTTAXAMOUNT`
+**Sources retrieved (12):** `VW_SALESORDERHDR.FLTTAXAMOUNT`, `VW_SALESORDERHDR.FLTSUBTOTAL`, `VW_SALESORDERHDR.INTCUSTID`, `VW_SALESORDERHDR.LNGORDERID`, `VW_SALESORDERHDR.DTMORDERDATE`, `parent_chunk_business_glossary.md_1`, `VW_SALESORDERHDR.FLTTOTALAMOUNT`, `VW_SALESORDERHDR`
 
 ---
 
 ### ✅ 21 — How does the schema handle the different date/time field naming conventions?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 0% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The schema uses 'dtm' (datetime) Hungarian notation prefix consistently: dtmCreated and dtmLastModified in tblCustomer, dtmOrderDate/dtmShipDate/dtmRequiredDate in vw_SalesOrderHdr, dtmIntroduced/dtmDiscontinued in tblProduct, and txn_dt in inv_txn_log (abbreviated exception). The User table breaks …
@@ -353,14 +353,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (6):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_1`
 
 ---
 
 ### ✅ 22 — What table prefix patterns exist in the schema and what do they indicate?
 
 **Status:** GROUNDED  
-**GT Coverage:** 88% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 12% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The schema uses multiple inconsistent table prefixes: 'tbl' for standard tables (tblCustomer, tblProduct, tblPayment, tblShippingCarrier, tblOrderStatusHistory), 'vw_' for a misnamed table (vw_SalesOrderHdr), and domain-specific prefixes 'ord_' (ord_line_item) and 'inv_' (inv_txn_log). Two tables (G…
@@ -368,7 +368,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_data_dictionary.txt_6`, `ORD_LINE_ITEM.ITEM_NAME`, `parent_chunk_data_dictionary.txt_4`
+**Sources retrieved (5):** `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_0`
 
 ---
 
@@ -383,14 +383,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `VW_SALESORDERHDR→TBLCUSTOMER`, `TBLPAYMENT→VW_SALESORDERHDR`, `ORD_LINE_ITEM→VW_SALESORDERHDR`, `TBLORDERSTATUSHISTORY→VW_SALESORDERHDR`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_7`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (6):** `VW_SALESORDERHDR→TBLCUSTOMER`, `TBLPAYMENT→VW_SALESORDERHDR`, `ORD_LINE_ITEM→VW_SALESORDERHDR`, `TBLORDERSTATUSHISTORY→VW_SALESORDERHDR`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_8`
 
 ---
 
 ### ✅ 24 — How does the legacy system handle product SKU format and uniqueness?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 0% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Product SKUs are stored in the strSKU field with a UNIQUE constraint. The format follows Category-Color-Size pattern (e.g., 'SHIRT-BLU-L'). The deprecated prod_num field also exists but should not be used. SKUs are used in foreign key references from ord_line_item through the denormalized product_co…
@@ -398,14 +398,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_business_glossary.md_1`, `Customer`
+**Sources retrieved (5):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_business_glossary.md_1`
 
 ---
 
 ### ✅ 25 — What are the critical data quality issues identified for migration?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 0% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Critical issues include: (1) PCI compliance violation - unencrypted card numbers in tblPayment.CardNumberText, (2) inappropriate data types - unit_cost as VARCHAR instead of DECIMAL, (3) missing foreign key constraints - inv_txn_log.user_id has no FK to User table, (4) security vulnerability - User.…
@@ -413,7 +413,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_data_dictionary.txt_5`, `parent_chunk_data_dictionary.txt_6`, `parent_chunk_data_dictionary.txt_7`
+**Sources retrieved (5):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.txt_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_1`
 
 ---
 

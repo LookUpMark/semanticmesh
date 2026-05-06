@@ -1,7 +1,7 @@
 # AB-BEST — 04_complex_manufacturing — Run Analysis
 
-**Timestamp:** 2026-05-06 10:13:53  
-**Run tag:** `run-20260506_115848`
+**Timestamp:** 2026-05-06 19:56:50  
+**Run tag:** `run-20260506_210258`
 
 ## Configuration
 
@@ -12,16 +12,16 @@
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
-| Reranker top_k | `20` |
-| Chunk size / overlap | `128 / 16` |
-| ER similarity threshold | `0.65` |
+| Reranker top_k | `5` |
+| Chunk size / overlap | `256 / 32` |
+| ER similarity threshold | `0.75` |
 
 ## Builder Results
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 220 |
-| Entities resolved | 214 |
+| Triplets extracted | 197 |
+| Entities resolved | 135 |
 | Tables parsed | 13 |
 | Tables completed | 13 |
 
@@ -31,9 +31,9 @@
 |--------|-------|
 | Questions | 40 |
 | Grounded | **40/40 (100%)** |
-| Avg GT Coverage | 93% |
-| Avg Top Score | 0.7548 |
-| Avg Chunk Count | 33.0 |
+| Avg GT Coverage | 86% |
+| Avg Top Score | 0.7379 |
+| Avg Chunk Count | 18.4 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -45,7 +45,7 @@ RAGAS evaluation not enabled for this run.
 ### ✅ QA-001 — What information is stored about products in the manufacturing system?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Products are tracked with a unique identifier (product_id), descriptive name (product_name), classification as finished good, assembly, or component (product_type), optional parent product reference for hierarchical structures (parent_product_id), standard unit cost (base_cost), typical procurement …
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_7`, `PRODUCT.LEAD_TIME_DAYS`, `Inventory`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `PRODUCT.PRODUCT_ID`, `Product`, `BATCH.QUANTITY_PRODUCED`, `Work Order`, `Specification`, `Batch`
 
 ---
 
@@ -68,14 +68,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `Supplier`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `Component`, `Product`, `Warehouse`, `Work Order`, `Specification`
 
 ---
 
 ### ✅ QA-003 — What is the purpose of the Bill of Materials (BOM) table?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The BOM table defines the hierarchical structure of products by specifying which components or sub-assemblies are required to manufacture each parent product. It records the unique BOM entry identifier (bom_id), parent product being built (parent_product_id), component or sub-assembly product (compo…
@@ -83,7 +83,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `BOM.UNIT_OF_MEASURE`, `BOM.IS_OPTIONAL`, `BOM.BOM_LEVEL`, `BOM.BOM_ID`, `BOM.QUANTITY`, `Composition Of Products`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `BOM.BOM_ID`, `parent_chunk_business_glossary.md_0`, `Bill Of Materials`, `BOM.IS_OPTIONAL`, `BOM.UNIT_OF_MEASURE`, `BOM`, `BOM.BOM_LEVEL`
 
 ---
 
@@ -98,7 +98,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `SHIPMENT→SUPPLIER`, `parent_chunk_data_dictionary.md_8`, `COMPONENT_SUPPLIER→SUPPLIER`, `SUPPLIER.SUPPLIER_NAME`, `SUPPLIER.SUPPLIER_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `SUPPLIER.SUPPLIER_ID`, `SUPPLIER.SUPPLIER_NAME`, `SUPPLIER.IS_PREFERRED`, `SHIPMENT.SUPPLIER_ID`, `COMPONENT_SUPPLIER.SUPPLIER_ID`, `SUPPLIER`, `Supplier`
 
 ---
 
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `Inventory`, `Shipment`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `INVENTORY→WAREHOUSE`, `parent_chunk_data_dictionary.md_6`, `BATCH→WAREHOUSE`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `WAREHOUSE.STATE`, `WAREHOUSE.WAREHOUSE_NAME`, `WAREHOUSE.CITY`, `parent_chunk_business_glossary.md_1`, `Shipment`, `Warehouse`, `WAREHOUSE`
 
 ---
 
@@ -128,7 +128,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `Inventory`, `Production Batch`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `INVENTORY→PRODUCT`
+**Sources retrieved (12):** `Stock Levels`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `INVENTORY→PRODUCT`, `INVENTORY.QUANTITY_ON_HAND`, `INVENTORY.INVENTORY_ID`, `INVENTORY`, `INVENTORY.PRODUCT_ID`
 
 ---
 
@@ -143,7 +143,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_6`, `Work Order`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `WORK_ORDER.QUANTITY_ORDERED`, `WORK_ORDER.PARENT_WORK_ORDER`, `WORK_ORDER.PRIORITY`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_1`, `Work Order`, `WORK_ORDER.QUANTITY_ORDERED`, `WORK_ORDER→PRODUCT`, `WORK_ORDER`, `WORK_ORDER.PRODUCT_ID`, `WORK_ORDER.PLANNED_END_DATE`
 
 ---
 
@@ -158,14 +158,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `SHIPMENT→WAREHOUSE`, `SHIPMENT→SUPPLIER`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `SHIPMENT.STATUS`, `SHIPMENT.SHIPMENT_TYPE`, `SHIPMENT.SHIP_DATE`, `SHIPMENT.ACTUAL_ARRIVAL`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `SHIPMENT.STATUS`, `SHIPMENT.SHIPMENT_TYPE`, `SHIPMENT.SHIP_DATE`, `SHIPMENT.ACTUAL_ARRIVAL`, `SHIPMENT.ESTIMATED_ARRIVAL`, `SHIPMENT`, `Shipment`
 
 ---
 
 ### ✅ QA-009 — How does the quality control system record inspections?
 
 **Status:** GROUNDED  
-**GT Coverage:** 60% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 33% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Quality control records are stored with a unique identifier (qc_id), associated production batch (batch_id), applicable specification requirements (specification_id), inspection date (qc_date), inspection type (INCOMING for supplier materials, IN_PROCESS during manufacturing, FINAL for finished good…
@@ -173,7 +173,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_6`, `QUALITY_CONTROL.INSPECTOR_ID`, `QUALITY_CONTROL.DEFECT_COUNT`, `QUALITY_CONTROL.SPECIFICATION_ID`, `QUALITY_CONTROL.NOTES`, `QUALITY_CONTROL.QC_ID`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `QUALITY_CONTROL.INSPECTOR_ID`, `QUALITY_CONTROL.DEFECT_COUNT`, `QUALITY_CONTROL.QC_DATE`, `QUALITY_CONTROL.NOTES`, `QUALITY_CONTROL.QC_ID`, `Quality Control`, `QUALITY_CONTROL`
 
 ---
 
@@ -188,7 +188,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_7`, `QUALITY_CONTROL.SPECIFICATION_ID`, `Technical Specification`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `SPECIFICATION.VERSION`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_6`, `Specification`, `QUALITY_CONTROL.SPECIFICATION_ID`, `SPECIFICATION.SPECIFICATION_NAME`, `SPECIFICATION.SPECIFICATION_ID`, `Quality Control`, `SPECIFICATION`
 
 ---
 
@@ -203,22 +203,22 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `COMPONENT_SUPPLIER.COMPONENT_SUPPLIER_ID`, `COMPONENT_SUPPLIER.SUPPLIER_ID`, `COMPONENT_SUPPLIER.COMPONENT_ID`, `COMPONENT_SUPPLIER.UNIT_PRICE`, `COMPONENT_SUPPLIER.LEAD_TIME_DAYS`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `COMPONENT_SUPPLIER.COMPONENT_SUPPLIER_ID`, `Component Via Component Supplier`, `COMPONENT_SUPPLIER.SUPPLIER_ID`, `COMPONENT_SUPPLIER.COMPONENT_ID`, `COMPONENT_SUPPLIER`, `SUPPLIER`
 
 ---
 
 ### ✅ QA-012 — How do I trace which components are needed to fulfill a work order?
 
 **Status:** GROUNDED  
-**GT Coverage:** 75% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
-> Start with the work_order table to get the product_id being manufactured. Join to the bom table using product_id as parent_product_id to find all direct components and sub-assemblies. For each component_product_id, if it is an ASSEMBLY type product, recursively query the bom table again to explode m…
+> Start with the work_order table to get the product_id being manufactured. Join to the bom table using product_id as parent_product_id to find all direct sub-assemblies and leaf products. For each component_product_id of type ASSEMBLY, recursively query the bom table to explode multi-level BOM struct…
 
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`, `Work Order`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `Work Order`, `WORK_ORDER.QUANTITY_COMPLETED`, `WORK_ORDER`, `WORK_ORDER.PRODUCT_ID`, `WORK_ORDER.PLANNED_END_DATE`, `WORK_ORDER.STATUS`
 
 ---
 
@@ -233,7 +233,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `Inventory`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`, `Stock Levels`, `Warehouse`, `Specification`, `INVENTORY.COMPONENT_ID`, `INVENTORY`, `Product`
 
 ---
 
@@ -248,14 +248,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `Supplier`, `parent_chunk_data_dictionary.md_4`, `Shipment`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_3`, `SHIPMENT.SUPPLIER_ID`, `SHIPMENT.SHIPMENT_TYPE`, `SHIPMENT.STATUS`, `SHIPMENT.ACTUAL_ARRIVAL`, `Shipment`, `SUPPLIER`
 
 ---
 
 ### ✅ QA-015 — How can I determine which quality control inspections were performed on a specific production batch?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 25% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the quality_control table filtered by batch_id. Join with the specification table to get requirement details (specification_name, spec_type, acceptable ranges). Include qc_date, qc_type (INCOMING, IN_PROCESS, FINAL), result (PASS, FAIL, CONDITIONAL), and defect_count. This shows the complete i…
@@ -263,7 +263,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_6`, `Production Batch`, `QUALITY_CONTROL.SPECIFICATION_ID`, `QUALITY_CONTROL.BATCH_ID`, `QUALITY_CONTROL.INSPECTOR_ID`, `QUALITY_CONTROL.QC_DATE`, `QUALITY_CONTROL.QC_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_6`, `QUALITY_CONTROL.BATCH_ID`, `QUALITY_CONTROL.QC_ID`, `QUALITY_CONTROL.INSPECTOR_ID`, `QUALITY_CONTROL.SPECIFICATION_ID`, `Quality Control`, `QUALITY_CONTROL`
 
 ---
 
@@ -278,7 +278,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `Inventory`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_0`, `WORK_ORDER.WAREHOUSE_ID`, `Stock Levels`, `WORK_ORDER.STATUS`, `Work Order`, `Shipment`
 
 ---
 
@@ -293,7 +293,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `INVENTORY.COMPONENT_ID`, `Inventory`, `INVENTORY.INVENTORY_ID`, `INVENTORY.PRODUCT_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`, `INVENTORY.COMPONENT_ID`, `INVENTORY.INVENTORY_ID`, `INVENTORY.PRODUCT_ID`, `Stock Levels`, `INVENTORY`, `INVENTORY.LAST_RESTOCK_DATE`
 
 ---
 
@@ -308,14 +308,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_3`, `Manufacturing Route`, `Production Batch`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `Manufacturing Workflow Steps`, `ROUTE.PRODUCT_ID`, `ROUTE.ROUTE_NAME`, `ROUTE.OPERATION_NAME`, `ROUTE.SEQUENCE_NUMBER`, `ROUTE.ROUTE_ID`, `ROUTE`
 
 ---
 
 ### ✅ QA-019 — How can I find which batches are stored at a specific warehouse and their QC status?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 75% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the batch table filtering by warehouse_id. Join with the product table to get product names and types. Include production_date, quantity_produced, expiry_date, and qc_status (PENDING, PASSED, FAILED, QUARANTINED). Filter by qc_status to isolate batches requiring quality attention or ready for …
@@ -323,7 +323,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`, `Inventory`, `parent_chunk_data_dictionary.md_5`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `BATCH.QC_STATUS`, `BATCH.WAREHOUSE_ID`, `BATCH.BATCH_ID`, `BATCH.QUANTITY_PRODUCED`, `parent_chunk_data_dictionary.md_5`, `Batch`, `WAREHOUSE`
 
 ---
 
@@ -338,14 +338,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `COMPONENT.SPECIFICATION_ID`, `COMPONENT.COMPONENT_ID`, `parent_chunk_business_glossary.md_1`, `Inventory`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `COMPONENT.SPECIFICATION_ID`, `COMPONENT.COMPONENT_NAME`, `parent_chunk_data_dictionary.md_5`, `Specification`, `SPECIFICATION`, `SPECIFICATION.EFFECTIVE_DATE`
 
 ---
 
 ### ✅ QA-021 — How can I perform a complete BOM explosion to find all components required for a finished product?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Use a recursive query starting from the product_id of the finished good. At each level, join the bom table to find component_product_id entries. For each component, check if product_type is 'ASSEMBLY' or 'FINISHED_GOOD'. If so, recursively query bom again using that component_product_id as the new p…
@@ -353,7 +353,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `Product`, `BOM.COMPONENT_PRODUCT_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `BOM.COMPONENT_PRODUCT_ID`, `BOM.QUANTITY`, `BOM.BOM_LEVEL`, `BOM.PARENT_PRODUCT_ID`, `BOM`
 
 ---
 
@@ -368,14 +368,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_8`, `Product`, `Composition Of Products`, `PRODUCT.BASE_COST`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_4`, `Product`, `PRODUCT.BASE_COST`, `Specification`, `Batch`
 
 ---
 
 ### ✅ QA-023 — How can I find all parent products that contain a specific component anywhere in their BOM structure?
 
 **Status:** GROUNDED  
-**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Use a recursive reverse traversal of the BOM. Start with the component_id as the initial parent_product_id. Find all records where this product appears as component_product_id in the bom table. For each parent_product_id found, check if it appears as a component_product_id in other bom records (is a…
@@ -383,14 +383,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `BOM.PARENT_PRODUCT_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_4`, `BOM.PARENT_PRODUCT_ID`, `BOM.COMPONENT_PRODUCT_ID`, `BOM.BOM_ID`, `BOM.BOM_LEVEL`, `BOM`, `Bill Of Materials`
 
 ---
 
 ### ✅ QA-024 — How do I identify work orders that require a specific component, considering nested sub-assemblies?
 
 **Status:** GROUNDED  
-**GT Coverage:** 75% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > First, perform reverse BOM traversal to find all parent products that contain the target component at any level. Then query the work_order table where product_id is in the set of parent products found. This includes work orders for finished goods that contain the component indirectly through sub-ass…
@@ -398,7 +398,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `Work Order`, `Composition Of Products`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `Stock Levels`, `Work Order`, `WORK_ORDER`, `WORK_ORDER.PRODUCT_ID`
 
 ---
 
@@ -413,7 +413,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `BOM.BOM_LEVEL`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `BOM.BOM_LEVEL`, `BOM.UNIT_OF_MEASURE`, `BOM.QUANTITY`, `parent_chunk_business_glossary.md_1`, `BOM.PARENT_PRODUCT_ID`, `BOM.COMPONENT_PRODUCT_ID`
 
 ---
 
@@ -428,7 +428,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_2`, `Inventory`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_7`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_4`, `Specification`, `Batch`, `Product`
 
 ---
 
@@ -443,14 +443,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `PRODUCT.LEAD_TIME_DAYS`, `PRODUCT.BASE_COST`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_7`, `COMPONENT_SUPPLIER.LEAD_TIME_DAYS`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `PRODUCT.LEAD_TIME_DAYS`, `Product`, `COMPONENT_SUPPLIER.LEAD_TIME_DAYS`, `Batch`, `PRODUCT`, `PRODUCT.PRODUCT_TYPE`
 
 ---
 
 ### ✅ QA-028 — How do I generate a complete indented BOM report showing the hierarchical structure?
 
 **Status:** GROUNDED  
-**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Use a recursive query on the bom table that tracks the current depth level. Start with the top-level product (parent_product_id where product has no parent_product_id). At each level, output component details indented by depth level. Include product_name, quantity, and unit_of_measure. Recursively p…
@@ -458,14 +458,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `Product`, `parent_chunk_data_dictionary.md_6`, `BOM.BOM_LEVEL`, `BOM.BOM_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `BOM.BOM_LEVEL`, `BOM.BOM_ID`, `BOM`, `Bill Of Materials`
 
 ---
 
 ### ✅ QA-029 — How can I find which components appear most frequently across all product BOMs?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Perform BOM explosion for all products and aggregate occurrences of each leaf-level component. Count how many distinct product hierarchies contain each component. Join with component table for component names. Order by frequency descending to identify common components that should be prioritized for…
@@ -473,14 +473,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`, `BOM.COMPONENT_PRODUCT_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `BOM.COMPONENT_PRODUCT_ID`, `BOM.BOM_ID`, `BOM.QUANTITY`, `BOM.IS_OPTIONAL`, `PRODUCT`, `BOM.PARENT_PRODUCT_ID`
 
 ---
 
 ### ✅ QA-030 — How do I detect circular references in the BOM structure to prevent infinite loops?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Use a recursive query with a cycle detection check. Track the path of visited product_ids at each recursion level. If a product_id appears twice in the same path, a circular reference exists. Alternatively, check if any bom record has parent_product_id = component_product_id (direct self-reference),…
@@ -488,7 +488,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `BOM→PRODUCT`, `BOM.UNIT_OF_MEASURE`, `Product`, `BOM.QUANTITY`, `BOM.BOM_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `BOM→PRODUCT`, `BOM.UNIT_OF_MEASURE`, `BOM.QUANTITY`, `BOM`, `Bill Of Materials`
 
 ---
 
@@ -503,14 +503,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `Product`, `Work Order`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_4`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_4`, `Product`, `Work Order`, `Batch`, `Component`, `PRODUCT`
 
 ---
 
 ### ✅ QA-032 — How do I check if sufficient inventory exists across all warehouses to fulfill a work order?
 
 **Status:** GROUNDED  
-**GT Coverage:** 83% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > For the work_order's product_id, perform recursive BOM explosion to get all required components with quantities. For each component, sum the available quantity (quantity_on_hand - quantity_reserved) across all warehouses from the inventory table. Compare aggregated available inventory against requir…
@@ -518,14 +518,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_7`, `Inventory`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_6`, `WORK_ORDER.QUANTITY_COMPLETED`, `WORK_ORDER.WAREHOUSE_ID`, `WORK_ORDER`, `Work Order`, `WORK_ORDER.PRODUCT_ID`, `WORK_ORDER.PLANNED_END_DATE`
 
 ---
 
 ### ✅ QA-033 — How can I find which quality control inspections failed for components from specific suppliers?
 
 **Status:** GROUNDED  
-**GT Coverage:** 86% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 71% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the quality_control table filtering by result = 'FAIL'. Join with the batch table to get product_id and production_date. Join with the bom table recursively to trace which products contain failed components. Join with component_supplier and supplier tables to identify the source supplier. Filt…
@@ -533,7 +533,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_8`, `QUALITY_CONTROL.SPECIFICATION_ID`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `QUALITY_CONTROL.DEFECT_COUNT`, `QUALITY_CONTROL.QC_ID`, `QUALITY_CONTROL.BATCH_ID`, `Stock Levels`, `Component`, `COMPONENT.SPECIFICATION_ID`, `Product`
 
 ---
 
@@ -548,29 +548,29 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `WORK_ORDER.QUANTITY_COMPLETED`, `WORK_ORDER.QUANTITY_ORDERED`, `WORK_ORDER.PLANNED_END_DATE`, `WORK_ORDER.PRODUCT_ID`, `WORK_ORDER.PLANNED_START_DATE`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_3`, `Work Order`, `ROUTE.CYCLE_TIME_MINUTES`, `ROUTE.SETUP_TIME_MINUTES`, `WORK_ORDER`, `WORK_ORDER.PRODUCT_ID`, `WORK_ORDER.PLANNED_END_DATE`
 
 ---
 
 ### ✅ QA-035 — How can I identify which shipments are overdue and their impact on work orders?
 
 **Status:** GROUNDED  
-**GT Coverage:** 71% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 60% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
-> Query the shipment table filtering for status = 'SHIPPED' where actual_arrival is NULL and estimated_arrival is in the past (overdue). Join with the component_supplier table via supplier_id and component_id to identify which components are delayed. Perform reverse BOM lookup to find which parent pro…
+> Query the shipment table filtering for status = 'SHIPPED' where actual_arrival IS NULL and estimated_arrival < current date (overdue). The shipment table links to suppliers via supplier_id but does not specify which components are in a given shipment. To infer impacted components, join component_sup…
 
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_6`, `Work Order`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_5`, `WORK_ORDER→PRODUCT`
+**Sources retrieved (5):** `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_5`
 
 ---
 
 ### ✅ QA-036 — How do I find which batches are approaching or past expiry and contain components from specific suppliers?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 29% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the batch table filtering for expiry_date within a warning window (e.g., next 30 days) or past expiry. Join with the bom table recursively on product_id to trace all components used in those batches. Join with component_supplier and supplier tables to filter by specific suppliers. Results iden…
@@ -578,14 +578,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_4`, `Inventory`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_5`, `BATCH.EXPIRY_DATE`, `BATCH.BATCH_ID`, `BATCH.PRODUCTION_DATE`, `BATCH.QUANTITY_PRODUCED`, `Batch`, `BATCH`, `PRODUCT`
 
 ---
 
 ### ✅ QA-037 — How can I generate a material requirements plan showing when to order components based on work order schedules?
 
 **Status:** GROUNDED  
-**GT Coverage:** 86% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 71% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query all work_orders with status 'PENDING' ordered by planned_start_date. For each work_order, perform BOM explosion to get required components and quantities. For each component, query inventory for current available stock across warehouses. Calculate net requirements = (required quantity * work_o…
@@ -593,14 +593,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`, `Work Order`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_5`, `Work Order`, `WORK_ORDER.PLANNED_START_DATE`, `WORK_ORDER.PLANNED_END_DATE`, `WORK_ORDER`, `WORK_ORDER.PRODUCT_ID`
 
 ---
 
 ### ✅ QA-038 — How do I trace the complete genealogy of a component from supplier through batch to finished goods?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 90% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Start with a shipment from the supplier (shipment table with supplier_id and shipment_type = 'INBOUND'). Track to inventory updates via component_id and warehouse_id. Identify batches that consumed the component via reverse BOM lookup (batch.product_id → bom hierarchy → component_id). Query quality_…
@@ -608,7 +608,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `Supplier`, `Product`, `Warehouse`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_8`, `Product`, `Warehouse`, `parent_chunk_data_dictionary.md_5`, `Work Order`, `Component`, `BATCH`
 
 ---
 
@@ -623,22 +623,22 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `Supplier`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_8`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `Stock Levels`, `Component`, `Product`, `Warehouse`
 
 ---
 
 ### ✅ QA-040 — How do I calculate the total landed cost for a product including component costs, supplier lead times, and manufacturing operations?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 86% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
-> Perform recursive BOM explosion to get all leaf components. For each component, query component_supplier to get unit_price from primary supplier. Multiply by accumulated BOM quantity for material cost. Add shipping costs (estimated from shipment history). Query route table for the product to get all…
+> Perform recursive BOM explosion to get all leaf products/components. For material cost: join component_supplier (using component_id from components matching BOM leaf products) to get unit_price from preferred supplier (is_preferred='Y'), then multiply by accumulated BOM quantity. For manufacturing t…
 
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_4`, `COMPONENT_SUPPLIER.LEAD_TIME_DAYS`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_1`, `Product`, `COMPONENT_SUPPLIER.LEAD_TIME_DAYS`, `PRODUCT.LEAD_TIME_DAYS`, `PRODUCT.BASE_COST`, `Component`, `Work Order`
 
 ---
 

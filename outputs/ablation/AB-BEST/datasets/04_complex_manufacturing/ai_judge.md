@@ -7,298 +7,431 @@
 # Ablation Study Evaluation: AB-BEST — 04_complex_manufacturing
 
 ## Executive Summary
-AB-BEST shows a *healthy end-to-end* run: the builder completed all parsed tables with no Cypher failures or ingestion/mapping errors, and the query phase produced answers that are fully grounded in retrieved context for all 40 questions. Retrieval confidence is strong overall (avg_top_score ≈ 0.755), though some multi-hop/complex tasks show reduced ground-truth coverage and/or slightly less precise alignment (e.g., QA-012, QA-013, QA-032, QA-037), likely due to schema-expression gaps (e.g., “component vs product” IDs and missing explicit crosswalks).  
-
-Overall, the system appears functionally correct and robust for this dataset; the main improvement opportunities are around query *schema-dependent join specifics* for multi-hop/complex reasoning rather than hallucination or pipeline instability.
-
----
+AB-BEST shows **excellent end-to-end performance** on the 40 questions: **builder completed all 13 tables**, **no cypher failures**, and **grounded_rate=1.0 with 0 grader rejections**. Retrieval confidence is also high overall (**avg_top_score ≈ 0.74**, **avg_gt_coverage ≈ 0.856**) with no abstentions.  
+The main observed weakness is not correctness but **context/coverage granularity for some complex QC/BOM-recursive questions** (e.g., lower `gt_coverage` on QA-003, QA-009, QA-012, QA-015, QA-021/027/032), suggesting the system can answer well even when it doesn’t retrieve every expected KG-relevant source perfectly—consistent with the architecture’s contextual compression and semantic verification loop.
 
 ## Scores
 
 | Dimension | Score (1-5) | Weight | Weighted |
 |---|---:|---:|---:|
 | Builder Quality | 5 | 25% | 1.25 |
-| Retrieval Effectiveness | 5 | 25% | 1.25 |
+| Retrieval Effectiveness | 4 | 25% | 1.00 |
 | Answer Quality | 5 | 30% | 1.50 |
 | Pipeline Health | 5 | 10% | 0.50 |
-| Ablation Impact | N/A | 10% | 0.00 |
-| **Overall** |  |  | **4.50** |
-
----
+| Ablation Impact | 5 | 10% | 0.50 |
+| **Overall** |  |  | **4.75** |
 
 ## Dimension Analysis
 
 ### 1. Builder Quality (5/5)
-- `tables_parsed=13`, `tables_completed=13`, `all_tables_completed=true`
-- `cypher_failed=false`, `failed_mappings=[]`, `ingestion_errors=[]`
-- Triplet extraction is substantial: `triplets_extracted=220`, and entity resolution is consistent (`entities_resolved=214`).
+- `tables_parsed = 13`, `tables_completed = 13`, `all_tables_completed = true`
+- `cypher_failed = false`
+- `failed_mappings = []`
+- `ingestion_errors = []`
+- Extraction/graph signal: `triplets_extracted = 197`, `entities_resolved = 135` (ER not obviously under/over aggressive; no evidence of extraction collapse)
+**Verdict:** Meets and exceeds the “score 5” criteria: full completion, no mapping/cypher failures.
 
-These satisfy the rubric’s top tier: *all tables completed, no cypher failures, no failed mappings*.
-
-### 2. Retrieval Effectiveness (5/5)
-- `grounded_rate=1.0` (grounded for all 40)
-- `avg_gt_coverage=0.9804` (very high)
-- `avg_top_score=0.7548` (healthy for cross-encoder reranker confidence)
-- `abstained_count=0` and pipeline health reports `gate_abstentions=0`, with `questions_with_low_retrieval_score=0`.
-
-This matches (or exceeds) the score-5 retrieval conditions: high coverage, strong top-score, and no missed questions.
+### 2. Retrieval Effectiveness (4/5)
+Key aggregate metrics:
+- `avg_gt_coverage = 0.8559` (strong; exceeds 0.6 threshold for score 4)
+- `avg_top_score = 0.7379` (healthy reranker confidence)
+- `questions_with_low_retrieval_score = 0` (from pipeline_health)
+- `abstained_count = 0` (and no negative-query failures indicated)
+However, several individual questions show **meaningful but not catastrophic GT coverage dips**:
+- QA-003 `gt_coverage=0.6667`
+- QA-009 `gt_coverage=0.3333`
+- QA-012 `gt_coverage=0.6667`
+- QA-015 `gt_coverage=0.25`
+- QA-021 `gt_coverage=0.6667`
+- QA-027 `gt_coverage=0.6`
+- QA-029 `gt_coverage=0.5`
+- QA-032 `gt_coverage=0.6`
+These suggest that while the top contexts are semantically sufficient, **some expected KG sources are not consistently retrieved**, likely due to context compression caps (vector≤4, bm25≤4, graph≤5) and the difficulty of multi-hop/recursive tracing.
 
 ### 3. Answer Quality (5/5)
-- Since `grounded_rate=1.0` and `grader_rejection_count=0` for every shown question, the answers are consistently semantically aligned with expected answers and do not introduce hallucinated KG facts.
-- Even where some questions contain “optional / schema limitation” caveats (e.g., inability to fully map shipment-to-work-order line-item, or component vs product ID mapping ambiguity), the system stays correct by not fabricating missing joins.
-
-**Notable minor complexity-related looseness (not penalized to reduce score):**
-- QA-012 explicitly states a join mapping it *cannot fully determine*—this is consistent with schema constraints and therefore *correctly conservative*.
-- QA-032 and QA-035+ style questions show limitations of the schema for certain “component-level” inferences; answers reflect that limitation rather than inventing missing tables/edges.
-
-Given the rubric weighting (“grounded and semantically correct”), this merits 5/5.
+- `query_report.grounded_rate = 1.0` (all answers verifiably grounded)
+- `pipeline_health.total_grader_rejections = 0` and per-question `grader_rejection_count=0`
+- `gate_decision` is `proceed` for all shown questions; no “wrong but grounded” pattern is present.
+Sample spot-checks:
+- QA-001, QA-002, QA-004, QA-008, QA-010, QA-011, QA-013, QA-014, QA-019: generated answers closely match expected schema/glossary facts.
+- Worst reported GT coverage (e.g., QA-015, QA-009) still produced grounded answers with no grader rejections—so correctness appears robust even when retrieval recall is incomplete.
 
 ### 4. Pipeline Health (5/5)
-- `total_grader_rejections=0`
-- `grader_inconsistencies=0`
-- `gate_abstentions=0`
-- `cypher_failed=false`
-- `failed_mappings_count=0`, `ingestion_errors_count=0`
+- `total_grader_rejections = 0`
+- `grader_inconsistencies = 0`
+- `gate_abstentions = 0`
+- `cypher_failed = false`, `failed_mappings_count = 0`, `ingestion_errors_count = 0`
+- Latency metrics are reported as `elapsed_s=0` for builder/query; while this is likely a reporting artifact, there are **no instability indicators** in the bundle.
 
-No instability signals: healing loops were unnecessary, and the grader never forced regeneration.
-
-### 5. Ablation Impact (N/A)
-- Study is `AB-BEST`, not `AB-00` baseline, but the bundle does **not** state the specific ablation deltas versus baseline (e.g., which flags were toggled). Therefore ablation-impact causality cannot be judged from the provided information.
+### 5. Ablation Impact (5/5)
+Study is `AB-BEST` (combined optimal) with documented change vs baseline:
+- `reranker_top_k: 20 → 5` (expected 4× fewer reranker calls)
+- other parameters neutral/retained (`enable_hallucination_grader=true`, `er_similarity_threshold=0.75`, confidence threshold unchanged)
+Observed outcomes match the hypothesis:
+- No degradation: grounded_rate remains perfect, grader rejections remain zero, and retrieval confidence remains high (`avg_top_score ≈ 0.74`).
+- So AB-BEST achieves the expected **efficiency gain with no quality loss** → score 5.
 
 ---
 
-## Per-Question Deep Dive
+## Dimension Analysis: Best/Worst Question Examples (Semantic & Coverage)
 
-> Legend: **Verdict** = CORRECT | PARTIALLY_CORRECT | INCORRECT | CORRECTLY_ABSTAINED | WRONGLY_ABSTAINED  
-> Retrieval shown as: `gt_coverage` + `top_score` + `gate` (gate is “proceed” for all provided items)
+### Best 3 (highest confidence + full or near-full GT coverage)
+- **QA-001**: `gt_coverage=1.0`, grounded, top-score high; generated answer correctly lists product schema attributes and hierarchy relation.
+- **QA-007**: `gt_coverage=1.0`, grounded; matches work_order columns including constraints/enums and parent_work_order recursion.
+- **QA-018**: `gt_coverage=1.0`, grounded; accurately enumerates shipment fields, types, and status semantics.
 
-1) **QA-001: What information is stored about products in the manufacturing system?**  
+### Worst 3 (lowest GT coverage; still grounded and accepted)
+- **QA-015** (QC inspections for a batch): `gt_coverage=0.25`, grounded, `grader_rejection_count=0`. The answer correctly describes filtering `QUALITY_CONTROL` by `batch_id`, but retrieved/covered sources are sparse.
+- **QA-009** (QC inspections record structure): `gt_coverage=0.3333`, grounded, `grader_rejection_count=0`. Answer is still schema-accurate; context sufficiency appears adequate even if GT source coverage was incomplete.
+- **QA-032** (inventory sufficiency across warehouses): `gt_coverage=0.6667`, grounded, `grader_rejection_count=0`. Answer provides a correct “net availability” framing but notes missing BOM component mapping; importantly, it does not hallucinate component-demand linkage.
+
+---
+
+## Per-Question Deep Dive (all questions in the bundle)
+
+> Verdict rubric mapping used:  
+> **CORRECT** = semantically matches expected; **PARTIALLY_CORRECT** = missing some expected key elements but not wrong; **INCORRECT** = wrong/fabricated; **CORRECTLY_ABSTAINED**/**WRONGLY_ABSTAINED** = not present in this run (no abstentions).
+
+### QA-001: What information is stored about products in the manufacturing system?
 - **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
 - **Expected:** product_id, product_name, product_type, parent_product_id, base_cost, lead_time_days, is_active  
-- **Generated:** Correctly enumerates `product` table fields and hierarchy/product usage context  
-- **Analysis:** Semantic match; no extra incorrect facts  
-- **Retrieval:** gt_coverage=1.0, top_score=0.8872, gate=proceed  
+- **Generated:** Correctly lists `product` table fields + self-referential hierarchy and notes downstream usage  
+- **Analysis:** Matches expected schema/glossary content; no contradictions.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.8872, gate=proceed
 
-2) **QA-002: How are components defined in the manufacturing database?**  
+### QA-002: How are components defined in the manufacturing database?
+- **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Matches component schema + supplier/atomic definition  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** component_id, component_name, component_category, unit_of_measure, standard_cost, specification_id; atomic/non-decomposable  
+- **Generated:** Correctly enumerates component fields + “cannot be further broken down” + optional spec reference  
+- **Analysis:** Good schema alignment; minor extra warehouse/glossary content is still consistent.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-3) **QA-003: What is the purpose of the Bill of Materials (BOM) table?**  
+### QA-003: What is the purpose of the Bill of Materials (BOM) table?
+- **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct purpose and columns including recursion/parent/component/optional  
-- **Retrieval:** gt_coverage=1.0, top_score=0.9326, gate=proceed  
+- **Expected:** hierarchical composition; bom_id, parent_product_id, component_product_id, quantity, unit_of_measure, bom_level, is_optional  
+- **Generated:** Correctly describes hierarchy/recursive BOM explosion and lists the fields  
+- **Analysis:** Slightly incomplete GT coverage but answer intent matches.  
+- **Retrieval:** gt_coverage=0.6667, top_score=0.9398, gate=proceed
 
-4) **QA-004: What supplier information does the system maintain?**  
+### QA-004: What supplier information does the system maintain?
+- **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Matches supplier columns + component_supplier relationship details  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** supplier_id, supplier_name, contact_email, contact_phone, rating, is_preferred  
+- **Generated:** Correctly enumerates supplier attributes and preference flag  
+- **Analysis:** Extra joins (shipment/component_supplier) don’t harm correctness.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-5) **QA-005: How are warehouses represented in the schema?**  
+### QA-005: How are warehouses represented in the schema?
+- **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct warehouse columns and relationships  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** warehouse_id, warehouse_name, address, city, state, capacity, manager_id  
+- **Generated:** Correctly identifies `warehouse` fields and relationships  
+- **Analysis:** Matches expected semantics.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-6) **QA-006: What does the inventory table track?**  
+### QA-006: What does the inventory table track?
+- **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct inventory fields and component/product mutual exclusivity  
-- **Retrieval:** gt_coverage=1.0, top_score=0.9656, gate=proceed  
+- **Expected:** inventory_id, warehouse_id, component_id or product_id, quantity_on_hand, quantity_reserved, reorder_threshold, last_restock_date  
+- **Generated:** Correctly matches all inventory tracking fields + exclusivity constraint  
+- **Analysis:** Good.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-7) **QA-007: How are work orders structured in the manufacturing system?**  
+### QA-007: How are work orders structured in the manufacturing system?
+- **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct hierarchy, quantities, status/priority constraints, dates, warehouse linkage  
-- **Retrieval:** gt_coverage=1.0, top_score=0.8832, gate=proceed  
+- **Expected:** work_order_id, product_id, parent_work_order, quantity_ordered, quantity_completed, status, priority, dates, warehouse_id  
+- **Generated:** Fully matches fields, constraints, and self-referential decomposition  
+- **Analysis:** Accurate and complete.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.9099, gate=proceed
 
-8) **QA-008: What information is captured in the shipment table?**  
+### QA-008: What information is captured in the shipment table?
+- **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct shipment columns, constraints, and logic notes  
-- **Retrieval:** gt_coverage=1.0, top_score=0.8652, gate=proceed  
+- **Expected:** shipment_id, shipment_type, warehouse_id, supplier_id (inbound), customer_id (outbound), ship_date, estimated/actual arrival, status  
+- **Generated:** Correctly enumerates all shipment fields + constraints  
+- **Analysis:** Matches expected precisely.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.9017, gate=proceed
 
-9) **QA-009: How does the quality control system record inspections?**  
+### QA-009: How does the quality control system record inspections?
+- **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct qc_id/batch/spec/qc_date/type/inspector/result/defect/notes  
-- **Retrieval:** gt_coverage=1.0, top_score=0.9868, gate=proceed  
+- **Expected:** qc_id, batch_id, specification_id, qc_date, qc_type, inspector_id, result, defect_count, notes  
+- **Generated:** Correctly enumerates QC inspection record fields  
+- **Analysis:** GT coverage low, but answer is semantically correct and grounded.  
+- **Retrieval:** gt_coverage=0.3333, top_score=0.7039, gate=proceed
 
-10) **QA-010: What do specification records define?**  
+### QA-010: What do specification records define?
+- **Type:** direct_mapping | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct mapping to specification fields and acceptance ranges  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7558, gate=proceed  
+- **Expected:** specification_id/name/version/effective_date/spec_type/critical_parameter/min/max/unit_of_measure  
+- **Generated:** Correctly describes specification attributes including acceptance ranges  
+- **Analysis:** Matches expected intent.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7868, gate=proceed
 
-11) **QA-011: How can I find which suppliers provide specific components?**  
+### QA-011: How can I find which suppliers provide specific components?
+- **Type:** multi_hop | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct join path component_supplier → supplier; includes offering fields  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7631, gate=proceed  
+- **Expected:** use component_supplier; include component_id/supplier_id/is_preferred/lead_time_days/unit_price; join supplier for names/ratings  
+- **Generated:** Correctly explains junction table join path and included attributes  
+- **Analysis:** Accurate; may omit explicit supplier_name/rating in text but context indicates it.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-12) **QA-012: How do I trace which components are needed to fulfill a work order?**  
-- **Verdict:** PARTIALLY_CORRECT (schema-join gap acknowledged; core logic is right)  
-- **Expected:** BOM explode, quantities, recursion, inventory join guidance  
-- **Generated:** Correct BOM traversal + recursion; explicitly states it cannot fully determine mechanical join to `inventory.component_id`/`product_id` from context  
-- **Analysis:** Answer is aligned conceptually but incomplete at the “exact join” level; the system is properly conservative rather than hallucinating  
-- **Retrieval:** gt_coverage=0.6667, top_score=0.7000, gate=proceed  
+### QA-012: How do I trace which components are needed to fulfill a work order?
+- **Type:** multi_hop | **Difficulty:** unknown  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** work_order→bom via parent_product_id; recursively explode; use bom.quantity rollups; relate bom.component_product_id to components (note BOM references products not component master directly)  
+- **Generated:** Correctly traces work_order→product hierarchy and identifies leaf components via `product_type='COMPONENT'`, and properly admits inability to map leaf `product_id` to `component_id`  
+- **Analysis:** Partially matches: it answers the “trace needed items” goal, but the expected approach explicitly uses `bom.quantity` rollups; the generated answer doesn’t produce the quantity-multiplication method.  
+- **Retrieval:** gt_coverage=0.6667, top_score=0.7, gate=proceed
 
-13) **QA-013: What does the inventory table track? (warehouses not required)**  
+### QA-013: How can I identify which warehouses have available inventory for specific components?
+- **Type:** multi_hop | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Matches inventory definition; adequate context  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** inventory filtered by component_id; join warehouse; compute available = quantity_on_hand - quantity_reserved; available > 0  
+- **Generated:** Correct join and net-availability computation; returns warehouse identifiers/names  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.8215, gate=proceed
 
-14) **QA-014: What do suppliers deliver? (shipments delivered from supplier)**  
+### QA-014: How do I find which shipments delivered materials from a specific supplier?
+- **Type:** multi_hop | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct filtering logic and optional joins to warehouse/supplier  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** shipment where supplier_id + shipment_type='INBOUND' + status='DELIVERED' + include actual_arrival; show destination warehouses  
+- **Generated:** Correctly filters by supplier_id and delivered status and suggests restricting to INBOUND  
+- **Analysis:** Matches expected semantics.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-15) **QA-015: Determine which QC inspections were performed on a specific batch**  
+### QA-015: How can I determine which quality control inspections were performed on a specific production batch?
+- **Type:** multi_hop | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct QC filter by batch_id and possible specification enrichment  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** quality_control filtered by batch_id; join specification for details; include qc_date/qc_type/result/defect_count  
+- **Generated:** Correctly explains filtering `QUALITY_CONTROL` by `QUALITY_CONTROL.BATCH_ID`; lists key QC fields; does not explicitly include join-to-specification output fields  
+- **Analysis:** Likely missing the “join with specification to get parameter ranges” detail, but remains correct for identifying inspections for a batch.  
+- **Retrieval:** gt_coverage=0.25, top_score=0.9779, gate=proceed
 
-16) **QA-016: Track which work orders are in progress at a warehouse**  
+### QA-016: How do I track which work orders are in progress at a specific warehouse?
+- **Type:** multi_hop | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct status/warehouse filter; does not invent progress % computation but still answers schema-based query  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7311, gate=proceed  
+- **Expected:** work_order filter by warehouse_id + status='IN_PROGRESS'; join product for names/types; include progress %  
+- **Generated:** Correctly filters by status and warehouse; suggests join to warehouse; does not compute progress % but conceptually consistent  
+- **Analysis:** Semantically correct for main retrieval/filtering.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-17) **QA-017: Find components needing reordering from current inventory**  
+### QA-017: How can I find which components need reordering based on current inventory levels?
+- **Type:** multi_hop | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct available stock calc and component-only restriction  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** inventory net availability < reorder_threshold; join component names/categories/cost; include warehouse locations  
+- **Generated:** Correct net availability logic and suggests joining component for attributes (though it doesn’t enumerate all component fields explicitly)  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-18) **QA-018: Determine the manufacturing route for a specific product**  
+### QA-018: How do I determine the manufacturing route for a specific product?
+- **Type:** multi_hop | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct route selection, ordered by sequence_number, includes operation fields  
-- **Retrieval:** gt_coverage=1.0, top_score=0.8758, gate=proceed  
+- **Expected:** route table by product_id ordered by sequence_number; include operation_name/work_center/cycle_time_minutes/setup_time_minutes  
+- **Generated:** Correctly describes route usage, fields, ordering, and uniqueness constraint  
+- **Analysis:** Matches expected.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-19) **QA-019: Find batches in a warehouse and their QC status**  
+### QA-019: How can I find which batches are stored at a specific warehouse and their QC status?
+- **Type:** multi_hop | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct batch-level qc_status filtering + optional QC join  
-- **Retrieval:** gt_coverage=1.0, top_score=0.8382, gate=proceed  
+- **Expected:** batch filtered by warehouse_id; join product for names/types; include production_date/quantity/expiry/qc_status  
+- **Generated:** Correctly filters by BATCH.warehouse_id, joins warehouse name, selects qc_status and batch info; does not explicitly include product fields and all expected date/quantity fields  
+- **Analysis:** Correct core; may be missing some expected columns.  
+- **Retrieval:** gt_coverage=0.75, top_score=0.8854, gate=proceed
 
-20) **QA-020: Identify which specifications apply to specific components**  
+### QA-020: How do I identify which specifications apply to specific components?
+- **Type:** multi_hop | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct component.specification_id → specification join with nullability caveat  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7558, gate=proceed  
+- **Expected:** join component to specification via specification_id; show spec parameters  
+- **Generated:** Correctly uses COMPONENT.SPECIFICATION_ID → SPECIFICATION and notes nullability  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-21) **QA-021: Complete BOM explosion for finished product**  
+### QA-021: How can I perform a complete BOM explosion to find all components required for a finished product?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Recursive CTE correct; handles multi-level; optional notes on leaf restriction  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** recursive BOM explosion using bom.quantity rollups until leaf components  
+- **Generated:** Correct recursive CTE structure using bom.parent_product_id/component_product_id and quantity multiplication (cumulative_quantity) and optional filtering  
+- **Analysis:** Matches expected method.  
+- **Retrieval:** gt_coverage=0.6667, top_score=0.7, gate=proceed
 
-22) **QA-022: Total material cost including sub-assemblies**  
+### QA-022: How do I calculate the total material cost for a product including all sub-assemblies?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct recursive BOM reasoning + sum over leaf components; optional-components caveat  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** BOM explosion to leaf components; join component for standard_cost; multiply by accumulated quantities; sum  
+- **Generated:** Correct conceptual formula and uses standard_cost; properly discusses optional-component rule as unspecified  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-23) **QA-023: Find all parent products containing a component anywhere in BOM**  
+### QA-023: How can I find all parent products that contain a specific component anywhere in their BOM structure?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct reverse recursive traversal concept using bom.component_product_id edges  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** reverse traversal (component→parent_product_id), recursively ascend to top-level  
+- **Generated:** Correct recursive parent search over bom.component_product_id to bom.parent_product_id with CTE  
+- **Analysis:** Matches expected.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-24) **QA-024: Work orders that require a specific component (nested)**  
-- **Verdict:** CORRECT (with correct schema caveat)  
-- **Analysis:** Correct recursive approach from work_order.product_id via bom; caveat about component table vs product table mapping  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
-
-25) **QA-025: Max BOM depth for any product**  
+### QA-024: How do I identify work orders that require a specific component, considering nested sub-assemblies?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Uses bom.bom_level stored depth; correct MAX aggregation  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** reverse BOM traversal to parent products; then work_order.product_id IN those parents  
+- **Generated:** Correctly uses recursive explosion from work_order.product_id through bom to find exploded_product_id matching target  
+- **Analysis:** Correct approach for nested sub-assemblies.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-26) **QA-026: Products that have a specific sub-assembly at any level**  
+### QA-025: How can I determine the maximum BOM depth level for any product?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct recursive “climb parents” approach  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** use bom_level with MAX across product hierarchies  
+- **Generated:** Correct MAX(bom_level) by parent_product_id / product_id  
+- **Analysis:** Matches expected.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-27) **QA-027: Total lead time including sub-assemblies**  
-- **Verdict:** CORRECT (optional interpretation differences noted)  
-- **Analysis:** Correct use of product.lead_time_days + recursive traversal; sums (may differ from “max chain” expectation but still schema-grounded and flagged conceptually)  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
-
-28) **QA-028: Indented BOM report**  
+### QA-026: How do I find all products that have a specific product as a sub-assembly at any level?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Uses bom.bom_level as depth; outputs indented hierarchy fields  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** reverse BOM traversal to find all ancestors containing target sub-assembly  
+- **Generated:** Correct recursive climb using bom.component_product_id → bom.parent_product_id  
+- **Analysis:** Matches expected.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-29) **QA-029: Components appearing most frequently across BOMs**  
+### QA-027: How can I calculate the total lead time for a product including all sub-assembly lead times?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct frequency computed via COUNT of bom.component_product_id rows; optional filter to product_type=COMPONENT  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** recursive BOM explosion; total lead time as max of lead times (or optionally sum depending on parallel vs sequential)  
+- **Generated:** Uses PRODUCT hierarchy and **sums** lead_time_days; notes assumption about including all hierarchy nodes  
+- **Analysis:** Semantics differ from “max” default in expected, but the expected answer explicitly allows an optional sum interpretation; thus this is correct given the provided flexibility.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-30) **QA-030: Detect circular references in BOM**  
+### QA-028: How do I generate a complete indented BOM report showing the hierarchical structure?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct cycle detection concept: track path / visited product_ids; guards for infinite recursion  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** recursive query producing product_name indented by bom depth, include quantity and unit_of_measure  
+- **Generated:** Correct recursive CTE pattern and references bom_level for depth; provides example SQL  
+- **Analysis:** Indentation is conceptually addressed via bom_level.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-31) **QA-031: Complete supplier chain for finished product incl. sub-assemblies**  
+### QA-029: How can I find which components appear most frequently across all product BOMs?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Recursive BOM to leaf components + component_supplier mapping to suppliers  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** BOM explosion/aggregation for leaf components; frequency across product hierarchies; order by frequency  
+- **Generated:** Computes frequency as count of BOM rows referencing component_product_id (and suggests DISTINCT parent_product_id alternative) and filters product_type='COMPONENT'  
+- **Analysis:** Slight mismatch vs “leaf-only explosion” phrasing, but still answers frequency across BOM structure; grounded and accepted.  
+- **Retrieval:** gt_coverage=0.5, top_score=0.7, gate=proceed
 
-32) **QA-032: Sufficient inventory exists across all warehouses to fulfill a work order**  
-- **Verdict:** PARTIALLY_CORRECT (conservative due to missing component-consumption BOM link)  
-- **Expected:** BOM explosion → component-level required quantities → compare against available inventory totals  
-- **Generated:** Computes sufficiency at *product_id level* (direct inventory.product_id), explicitly noting it cannot map work-order consumption to components because schema/context lacks the required BOM link  
-- **Analysis:** Correctly avoids unsupported joins; therefore only partial fulfillment of the expected “component” logic  
-- **Retrieval:** gt_coverage=0.8333, top_score=0.7000, gate=proceed  
-
-33) **QA-033: QC inspections failed for components from specific suppliers**  
-- **Verdict:** CORRECT (though expected asked for BOM trace-back; answer focuses on spec→component)  
-- **Analysis:** Uses qc.result=FAIL and links QC spec to component via component.specification_id + component_supplier to supplier. This is a valid conservative mapping given available schema relationships; does not fabricate BOM-based product trace-back  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
-
-34) **QA-034: Total manufacturing time for a work order incl. sub-assembly work orders**  
+### QA-030: How do I detect circular references in the BOM structure to prevent infinite loops?
+- **Type:** recursive | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct recursion via work_order.parent_work_order and route lookup (cycle + setup)  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** recursive cycle detection using visited path; direct self-reference check; depth-limit fallback  
+- **Generated:** Correctly describes visited-set approach + notes uq_bom_structure doesn’t prevent multi-step cycles  
+- **Analysis:** Matches expected.  
+- **Retrieval:** gt_coverage=0.6667, top_score=0.7, gate=proceed
 
-35) **QA-035: Overdue shipments and impact on work orders**  
-- **Verdict:** CORRECT (conservative “warehouse-level impact” framing)  
-- **Analysis:** Correct overdue identification approach and join by shared warehouse; explicitly states schema lacks shipment line-item consumption mapping  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
-
-36) **QA-036: Batches approaching/past expiry containing components from specific suppliers**  
+### QA-031: How can I determine the complete supplier chain for a finished product, including suppliers for all sub-assemblies?
+- **Type:** complex | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Uses batch.expiry_date + BOM traversal + component_supplier to supplier filter; notes “approaching” window is parameterized  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** recursive BOM explosion to leaf components; component_supplier join to supplier; include lead_time/unit_price  
+- **Generated:** Correct multi-level BOM recursion and component_supplier join concept; includes is_optional and quantities notionally  
+- **Analysis:** Matches expected.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
 
-37) **QA-037: Material requirements plan showing when to order components based on work order schedules**  
-- **Verdict:** CORRECT (with reasonable schema-based interpretation)  
-- **Analysis:** Correct integration of work orders → BOM explosion → inventory netting → back-calc order dates via lead_time_days (at least conceptually). Does not claim exact formula beyond context-supported fields  
-- **Retrieval:** gt_coverage=0.8571, top_score=0.7000, gate=proceed  
-
-38) **QA-038: Genealogy from supplier through batch to finished goods**  
-- **Verdict:** CORRECT (with correct mapping caveat)  
-- **Analysis:** Uses component_supplier + BOM to finished goods + batch to QC optional. Explicitly acknowledges missing direct component_id↔product_id foreign key and handles conceptually.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
-
-39) **QA-039: Alternative suppliers for components critical for multiple products**  
+### QA-032: How do I check if sufficient inventory exists across all warehouses to fulfill a work order?
+- **Type:** complex | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Analysis:** Correct “critical component” identification via BOM grouping + component_supplier + supplier filtering; focuses on alternative non-preferred suppliers  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+- **Expected:** explode BOM to components; sum available by warehouse; compare to required quantities scaled by work_order quantity_ordered; flag shortages  
+- **Generated:** Correctly checks inventory sufficiency at the product level using inventory.product_id and net availability; explicitly states inability to map work_order product to required component_id items from retrieved context  
+- **Analysis:** This is semantically aligned with expected approach *plus* correct limitation handling—so it is accepted as correct under grounding constraints.  
+- **Retrieval:** gt_coverage=0.6667, top_score=0.7, gate=proceed
 
-40) **QA-040: Total landed cost for product incl. component costs, supplier lead times, and operations**  
-- **Verdict:** PARTIALLY_CORRECT (expected includes “total landed cost” valuation; answer stays at measurable components + time)  
-- **Expected:** total landed cost explicitly constrained; also notes schema lacks monetary conversion  
-- **Generated:** Properly separates monetary component cost vs time/lead-time aggregation; avoids inventing labor_rate/shipping_cost/day-to-money conversion  
-- **Analysis:** This is semantically aligned with the “what can be determined” caveat; fully grounded and correct, but may be less explicit about “base_cost inclusion vs operations cost monetization” than expected  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed  
+### QA-033: How can I find which quality control inspections failed for components from specific suppliers?
+- **Type:** complex | **Difficulty:** unknown  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** QC.result='FAIL'; join batch/specification; trace to products containing failed components via BOM; map to component_supplier and supplier; filter supplier_id  
+- **Generated:** Correctly explains what’s conceptually required and identifies missing join keys/columns in the retrieved context; does **not** provide final exact query  
+- **Analysis:** Because it cannot complete due to missing schema details in context, it is partially correct but not fully complete. Still grounded and careful (no hallucinated joins).  
+- **Retrieval:** gt_coverage=0.7143, top_score=0.7, gate=proceed
+
+### QA-034: How do I calculate the total manufacturing time for a work order including all sub-assembly work orders?
+- **Type:** complex | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** work_order decomposition via parent_work_order; join route by product_id to sum cycle_time*quantity + setup_time; aggregate across hierarchy  
+- **Generated:** Correctly uses work_order tree + route cycle/setup fields and multiplies by quantity_ordered; sums across hierarchy  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+
+### QA-035: How can I identify which shipments are overdue and their impact on work orders?
+- **Type:** complex | **Difficulty:** unknown  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** shipment overdue (status='SHIPPED', actual_arrival IS NULL, estimated_arrival < now); infer impacted components via component_supplier and reverse BOM; link to work_order by product_id  
+- **Generated:** Correctly explains overdue identification (uses estimated_arrival and status notion), and correlates to work orders via shared warehouse_id; then states that schema lacks explicit shipment→component/work_order consumption link; provides conservative risk framing  
+- **Analysis:** Impacts are inferred at warehouse/work_order level, not via BOM/component as expected; but it explicitly notes schema limitation.  
+- **Retrieval:** gt_coverage=0.6, top_score=0.7, gate=proceed
+
+### QA-036: How do I find which batches are approaching or past expiry and contain components from specific suppliers?
+- **Type:** complex | **Difficulty:** unknown  
+- **Verdict:** CORRECTLY_PARTIALLY (treated as PARTIALLY_CORRECT)
+- **Expected:** expiry window + past due; recursive BOM to trace batch components; component_supplier→supplier filtering  
+- **Generated:** Correctly handles expiry_date filtering; explicitly cannot complete supplier/component containment due to missing batch→components and component→supplier linkage in context  
+- **Analysis:** It does not fully answer supplier-specific component containment, but it does not hallucinate.  
+- **Retrieval:** gt_coverage=0.2857, top_score=0.7, gate=proceed
+
+### QA-037: How can I generate a material requirements plan showing when to order components based on work order schedules?
+- **Type:** complex | **Difficulty:** unknown  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** BOM explosion to components; inventory component availability; lead_time from component_supplier; calculate order dates from planned_start_date minus lead time  
+- **Generated:** Correctly explains missing BOM/component mapping in retrieved context; then provides a product-level scheduling/order timing approach based on reorder thresholds and work_order dates  
+- **Analysis:** Partial alignment; limitation handled correctly.  
+- **Retrieval:** gt_coverage=0.7143, top_score=0.7, gate=proceed
+
+### QA-038: How do I trace the complete genealogy of a component from supplier through batch to finished goods?
+- **Type:** complex | **Difficulty:** unknown  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** supplier→shipment→inventory(component_id/warehouse)→reverse BOM to batches→QC→forward to work_orders and shipments to finished goods  
+- **Generated:** Provides a conceptually coherent genealogy (supplier→component_supplier→component→recursive bom→finished goods→batch) but admits missing key relationships: component_id ↔ product_id for BOM traversal and batch→product join  
+- **Analysis:** Partial but careful; no fabricated joins.  
+- **Retrieval:** gt_coverage=0.9, top_score=0.7, gate=proceed
+
+### QA-039: How can I find alternative suppliers for components that are critical for multiple products?
+- **Type:** complex | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** BOM usage frequency across products; component_supplier to get alternatives; filter rating≥4 and is_preferred='Y' (note expected says preferred; alternatives implied)  
+- **Generated:** Computes critical components as appearing in multiple parent_product_id; restricts to product_type='COMPONENT'; then selects suppliers via component_supplier and excludes preferred ones using is_preferred='N'  
+- **Analysis:** Slight mismatch with the expected rating/filter logic (rating≥4 and preferred exclusion nuance), but the core “alternative suppliers” mechanism is correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+
+### QA-040: How do I calculate the total landed cost for a product including component costs, supplier lead times, and manufacturing operations?
+- **Type:** complex | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** compute material cost from BOM/components + component_supplier preferred pricing; sum cycle/setup times; explicitly note landed-cost monetary conversion not possible without labor_rate/shipping_cost  
+- **Generated:** Correctly states what can and cannot be computed from schema; highlights missing BOM links and monetary conversion rules  
+- **Analysis:** Matches expected constraints and limitation handling.  
+- **Retrieval:** gt_coverage=0.8571, top_score=0.7, gate=proceed
 
 ---
 
 ## Anomalies & Recommendations
 
 ### Red Flags
-- **Schema join ambiguity appears frequently in multi-hop reasoning** (e.g., QA-012, QA-032, QA-037, QA-038): the system correctly *acknowledges* missing explicit crosswalks, but this can limit completeness.
-- **Some answers are “correctly conservative” but not fully meeting the expected decomposition/join specificity**, resulting in partial correctness for a few questions (not due to hallucination).
+1. **Low GT coverage on several complex QC/BOM-recursive questions** (QA-009, QA-015, QA-012, QA-032, QA-036, QA-038, QA-040).  
+   - This does *not* cause wrong answers (grounded+accepted), but it indicates that retrieval may not be fully capturing the expected KG sources needed for “query authoring” tasks with precise join paths.
+2. Some answers provide correct conceptual logic but may miss expected specifics like **explicit join to `specification`** (QA-015) or **component-quantity rollups** (QA-012) even though the architecture supports doing so—suggesting context compression sometimes prunes the exact fields needed.
 
 ### Recommendations
-1. **Add a standardized “ID mapping policy” in query generation**:  
-   Teach the LLM that `inventory` stores either `component_id` or `product_id` (mutually exclusive), and that the system should explicitly determine whether BOM leafs are represented as `product_type='COMPONENT'` vs `component` table entities—if the corpus lacks a crosswalk, the system should clearly constrain which queries can be fully executable.
-2. **Improve “component vs product” grounding templates** for multi-hop tasks:
-   - If `bom.component_product_id` refers to `product.product_id`, then component-level joins should be conditional on whether `product.product_type='COMPONENT'` is sufficient.
-3. **For complex MRP / landed-cost prompts**, enforce an explicit “scope limitation” section:
-   - “Monetary cost is computable using X; monetary conversion of lead/cycle requires external parameters not present in schema.”
-4. **Ablation tracking**: ensure future ablation bundles include explicit baseline comparison (AB-00 config diffs), so “Ablation Impact” can be scored causally.
+1. **Increase graph retrieval budget for recursive queries** (e.g., raise graph cap above 5 for `recursive/complex` query_type), or make caps adaptive based on query complexity.
+2. Add a **“join-completeness checker”** for questions that ask for *exact join paths / SQL* (e.g., QA-015, QA-012, QA-033, QA-036, QA-037, QA-038), ensuring that the necessary columns (join keys) are present in distilled context.
+3. For multi-hop questions where GT coverage is low but correctness is good, consider logging:  
+   - which expected sources were omitted, and  
+   - whether omission corresponds to missing *fields* (join keys) vs missing *tables* (higher-level mapping).
+4. For QA-039, ensure rubric compliance around expected additional filters (rating thresholds / preferred logic) by enforcing a template that mirrors expected answer requirements when explicitly listed.
 
---- 
+---
 
-## Comparison Notes (if applicable)
-- This bundle is `AB-BEST` but does not include baseline comparison fields or explicit ablation flag diffs vs AB-00. Therefore, only qualitative performance against rubric criteria is evaluated here.
+## Comparison Notes (AB-BEST vs baseline AB-00)
+- According to `ablation_context`, AB-BEST reduced `reranker_top_k` from **20 → 5** expecting **4× fewer reranker calls** with **no quality degradation**.
+- The observed results support this: `grounded_rate=1.0`, `grader_rejection_count=0`, high `avg_top_score`, and builder health is perfect.
+- Therefore the ablation impact is consistent with the causal hypothesis: **efficiency gain without quality loss**.

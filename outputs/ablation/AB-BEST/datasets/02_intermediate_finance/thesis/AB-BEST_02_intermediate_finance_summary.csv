@@ -1,2 +1,2 @@
 study_id,dataset_id,run_tag,timestamp,extraction_mode,reasoning_model,embedding_model,retrieval_mode,enable_reranker,reranker_top_k,chunk_size,chunk_overlap,er_similarity_threshold,triplets,entities,tables_parsed,tables_completed,builder_elapsed_s,total_questions,grounded_count,grounded_rate,avg_gt_coverage,avg_top_score,avg_chunk_count,abstained_count
-AB-BEST,02_intermediate_finance,,2026-05-06T09:32:46.746705+00:00,LLM (gpt-5-nano-2025-08-07),gpt-5.4-nano-2026-03-17,BAAI/bge-m3,hybrid,True,20,128,16,0.65,0,0,8,8,0,25,25,1.0,1.0,0.7448339299493313,38.76,0
+AB-BEST,02_intermediate_finance,,2026-05-06T19:15:33.285568+00:00,LLM (gpt-5-nano-2025-08-07),gpt-5.4-nano-2026-03-17,BAAI/bge-m3,hybrid,True,5,256,32,0.75,0,0,8,8,0,25,25,1.0,0.99,0.7445157656664761,22.68,0
