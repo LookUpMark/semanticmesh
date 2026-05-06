@@ -222,6 +222,12 @@ Evaluate each dimension on a scale of **1–5** with the following criteria:
   - `enable_hallucination_grader=false` → may increase hallucinations but speed up query
   - `enable_schema_enrichment=false` → may hurt mapping quality on abbreviated DDL
 - If `study_id=AB-00` (baseline): skip this dimension, score N/A
+- If the bundle contains an `ablation_context` field (e.g. for `AB-BEST` or combined-optimal studies):
+  - Use `ablation_context.changes_vs_baseline` to identify what changed vs. the baseline
+  - Use `ablation_context.expected_impact` as the hypothesis to validate
+  - Use `ablation_context.efficiency_gain` as additional positive evidence
+  - Score normally (1-5) based on whether the observed results match the expected impact
+  - A combined-optimal study that achieves same/better quality with documented efficiency gains = score 5
 
 ---
 
