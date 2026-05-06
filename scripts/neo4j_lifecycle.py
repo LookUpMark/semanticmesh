@@ -16,9 +16,9 @@ persisted across runs via the named volume ``neo4j-thesis-data``.
 from __future__ import annotations
 
 import atexit
+import os
 import subprocess
 import time
-import os
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 

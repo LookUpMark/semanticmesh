@@ -82,7 +82,6 @@ def _split_oversized_cluster(
     Returns:
         List of ``EntityCluster`` objects, each within ``max_size``.
     """
-    idx_arr = np.array(member_indices)
     sub_sim = local_sim
     n_sub = len(member_indices)
 

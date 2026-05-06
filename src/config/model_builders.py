@@ -72,8 +72,8 @@ def _validate_base_url(url: str | None) -> str | None:
     """
     if not url:
         return url
-    from urllib.parse import urlparse
     import ipaddress
+    from urllib.parse import urlparse
 
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):

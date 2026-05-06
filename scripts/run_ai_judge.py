@@ -81,7 +81,6 @@ def _bundle_meta(bundle_path: Path) -> dict:
     with open(bundle_path, encoding="utf-8") as f:
         d = json.load(f)
     meta = d.get("meta", {})
-    cfg = d.get("config", {})
     qr = d.get("query_report", {})
     br = d.get("builder_report", {})
     return {

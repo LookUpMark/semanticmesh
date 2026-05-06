@@ -23,7 +23,7 @@ import os
 import re as _re
 import sys
 import time as _time
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -230,10 +230,10 @@ def _generate_analysis_md(summary: dict, dataset_id: str) -> str:
             f"**GT Coverage:** {'N/A' if gt_cov is None else f'{gt_cov:.0%}'} | **Top Score:** {top_score:.4f} | **Gate:** `{gate}`",
             "",
             "**Expected answer:**",
-            f"> {expected[:300]}{'\u2026' if len(expected) > 300 else ''}",
+            f"> {expected[:300]}{'…' if len(expected) > 300 else ''}",
             "",
             "**System answer:**",
-            f"> {answer[:400]}{'\u2026' if len(answer) > 400 else ''}",
+            f"> {answer[:400]}{'…' if len(answer) > 400 else ''}",
             "",
         ]
 
@@ -295,14 +295,12 @@ def _run_single(
     output_dir: Path,
 ) -> dict[str, Any]:
     """Execute the full pipeline for one study on one dataset."""
-    from src.config.llm_factory import reconfigure_from_env  # noqa: PLC0415
     from src.config.settings import get_settings  # noqa: PLC0415
+    from src.evaluation.ablation_runner import ABLATION_MATRIX, _settings_override  # noqa: PLC0415
     from src.evaluation.bundle_writer import write_evaluation_bundle  # noqa: PLC0415
     from src.evaluation.gold_standard_loader import load_gold_standard  # noqa: PLC0415
     from src.generation.query_graph import run_query  # noqa: PLC0415
     from src.utils.text_utils import normalize_source_name as _ns  # noqa: PLC0415
-
-    from src.evaluation.ablation_runner import ABLATION_MATRIX, _settings_override  # noqa: PLC0415
 
     config = ABLATION_MATRIX.get(study_id, {})
     env_overrides = config.get("env_overrides", {})
@@ -555,7 +553,7 @@ def _run_single(
                 "study_id": study_id,
                 "dataset_id": dataset_id,
                 "run_tag": run_tag,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "config": config_snapshot,
                 "builder": {
                     "triplets": len(builder_state.get("triplets", [])) if builder_state else 0,
@@ -811,8 +809,8 @@ def main() -> None:
     run_tag = args.run_tag or f"run-{timestamp_str}"
 
     # Run
-    from src.config.logging import setup_notebook_logging  # noqa: PLC0415
     from src.config.llm_factory import reconfigure_from_env  # noqa: PLC0415
+    from src.config.logging import setup_notebook_logging  # noqa: PLC0415
 
     reconfigure_from_env()
     setup_notebook_logging()

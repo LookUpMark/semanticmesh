@@ -13,15 +13,14 @@ from __future__ import annotations
 import csv
 import json
 import statistics
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import matplotlib
+
 matplotlib.use("Agg")  # non-interactive backend for headless generation
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 import numpy as np
 import seaborn as sns
 
@@ -714,7 +713,7 @@ def generate_all_thesis_artifacts(
     plot_paths = export_ablation_plots(all_scores, plot_dir, ablation_desc=ablation_desc)
 
     print(f"\n{'='*60}")
-    print(f"  THESIS ARTIFACTS GENERATED")
+    print("  THESIS ARTIFACTS GENERATED")
     print(f"{'='*60}")
     print(f"  CSVs:  {len(csv_paths)} files in {csv_dir}")
     for p in csv_paths:
