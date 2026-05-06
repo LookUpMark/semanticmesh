@@ -321,7 +321,15 @@ Rules:
 - Do not invent table names, column names, entities, or relationships that are not present in the context.
 - If the question asks about specific customers, transactions, balances, or other instance-level records but the context only contains schema definitions and business concepts, explain that the knowledge graph contains schema-level metadata only, not operational data records. Still describe the relevant schema structure.
 - Be concise and direct. Cite the specific concept name or table name from the context when relevant.
-- Format: plain prose. No bullet lists unless the question explicitly asks for a list."""
+- Format: plain prose. No bullet lists unless the question explicitly asks for a list.
+
+CRITICAL — Possibility/Requirement questions:
+When the question asks whether something is "possible", "required", or "can exist without", you MUST reason about physical DDL constraints, NOT relationship summary statements. Specifically:
+(a) A "KEY RELATIONSHIP SUMMARY" statement like "A has one or more B" describes the TYPICAL business flow — it does NOT mean the database prevents A from existing without B.
+(b) If the foreign key is on table B's side (e.g., B.a_id → A.pk), then rows in A CAN exist with zero rows in B pointing to them — the FK only forces B to reference a valid A.
+(c) A column with Nullable=YES (e.g., PAYMENT_CONFIRMED_AT DATETIME | YES) means that step/relationship is optional at the database level.
+(d) Only an explicit NOT NULL constraint on A's side would make B mandatory for A.
+Always state your reasoning about nullable columns and FK direction when answering these questions."""
 
 ANSWER_SYSTEM_SPARSE = """You are a precise data governance analyst assistant with limited but potentially useful retrieved evidence.
 

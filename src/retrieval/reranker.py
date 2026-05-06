@@ -183,9 +183,12 @@ def rerank(
     # Rank-based confidence floor: the top chunk being #1 in a competitive pool
     # is itself strong evidence of relevance even when cross-encoder absolute
     # scores are low (common with short BC definitions or markdown tables).
+    # A pool ≥ 10 means the reranker had meaningful competition; rank #1 there
+    # warrants ~55% confidence even when the absolute score is low.
     if len(valid_chunks) >= 3:
+        pool_floor = 0.55 if len(valid_chunks) >= 10 else 0.40
         for i, chunk in enumerate(reranked[:5]):
-            floor = max(0.25 - i * 0.05, 0.05)
+            floor = max(pool_floor - i * 0.05, 0.10)
             if chunk.score < floor:
                 reranked[i] = chunk.model_copy(
                     update={

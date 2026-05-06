@@ -311,9 +311,18 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
                 logger.debug("Post-rerank expansion failed, continuing without it")
 
         log_node_event(logger, "rerank", f"pool={len(pool)} candidates={len(candidates)}", f"{len(valid)} chunks score={top_score:.4f}", timer.elapsed_ms)
+
+        # Pool-aware retrieval confidence: being rank #1 in a large competitive
+        # pool is stronger evidence of relevance than the raw cross-encoder
+        # absolute score suggests (CE scores are known to be low on technical
+        # multi-section content like data dictionaries).
+        quality_score = top_score
+        if len(pool) >= 10 and top_score < 0.70:
+            quality_score = max(top_score, 0.65)
+
         return {
             "reranked_chunks": valid,
-            "retrieval_quality_score": top_score,
+            "retrieval_quality_score": quality_score,
             "retrieval_chunk_count": len(valid),
             "retrieval_filtered_by_threshold": False,
             "context_sufficiency": sufficiency,
