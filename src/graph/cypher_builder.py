@@ -160,3 +160,98 @@ def build_fk_cypher(table: EnrichedTableSchema) -> list[tuple[str, dict]]:
                 )
             )
     return statements
+
+
+_ATTRIBUTE_CYPHER = """\
+MERGE (a:Attribute {name: $attr_name})
+ON CREATE SET a.table_name = $table_name,
+              a.column_name = $column_name,
+              a.data_type = $data_type,
+              a.nullable = $nullable,
+              a.is_pk = $is_pk,
+              a.is_fk = $is_fk,
+              a.fk_target = $fk_target,
+              a.enriched_name = $enriched_name,
+              a.description = $description,
+              a.created_at = datetime()
+ON MATCH SET  a.data_type = $data_type,
+              a.nullable = $nullable,
+              a.is_pk = $is_pk,
+              a.is_fk = $is_fk,
+              a.fk_target = $fk_target,
+              a.enriched_name = $enriched_name,
+              a.description = $description,
+              a.updated_at = datetime()
+WITH a
+MATCH (pt:PhysicalTable {table_name: $table_name})
+MERGE (pt)-[:HAS_COLUMN]->(a)
+"""
+
+
+def build_attribute_cypher(table: EnrichedTableSchema) -> list[tuple[str, dict]]:
+    """Build MERGE statements for Attribute nodes (one per column).
+
+    Each column becomes an individually retrievable node in the KG with its own
+    embedding, enabling direct vector search for specific columns without
+    needing the full DDL parent chunk.
+
+    Args:
+        table: The enriched table whose columns should be upserted.
+
+    Returns:
+        A list of ``(cypher, params)`` tuples — one per column.
+    """
+    # Build enriched name lookup
+    enriched_map: dict[str, str] = {}
+    if table.enriched_columns:
+        enriched_map = {ec.original_name: ec.enriched_name for ec in table.enriched_columns}
+
+    statements: list[tuple[str, dict]] = []
+    for col in table.columns:
+        nullable = not col.is_primary_key and col.name not in _get_not_null_columns(table)
+        enriched_name = enriched_map.get(col.name, col.name)
+        fk_target = col.references or ""
+
+        # Build description text (used for embedding)
+        nullable_str = "nullable" if nullable else "NOT NULL"
+        desc = (
+            f"{table.table_name}.{col.name} ({col.data_type}, {nullable_str}) — {enriched_name}."
+        )
+        if table.table_description:
+            desc += f" Column in table {table.table_name}: {table.table_description}"
+
+        statements.append(
+            (
+                _ATTRIBUTE_CYPHER,
+                {
+                    "attr_name": f"{table.table_name}.{col.name}",
+                    "table_name": table.table_name,
+                    "column_name": col.name,
+                    "data_type": col.data_type,
+                    "nullable": nullable,
+                    "is_pk": col.is_primary_key,
+                    "is_fk": col.is_foreign_key,
+                    "fk_target": fk_target,
+                    "enriched_name": enriched_name,
+                    "description": desc,
+                },
+            )
+        )
+    return statements
+
+
+def _get_not_null_columns(table: EnrichedTableSchema) -> set[str]:
+    """Heuristic: columns that are PK or have NOT NULL in DDL source."""
+    not_null: set[str] = set()
+    ddl = (table.ddl_source or "").upper()
+    for col in table.columns:
+        if col.is_primary_key:
+            not_null.add(col.name)
+        elif f"{col.name.upper()} " in ddl:
+            # Check if NOT NULL follows the column name in DDL
+            idx = ddl.find(col.name.upper())
+            if idx >= 0:
+                segment = ddl[idx : idx + len(col.name) + 50]
+                if "NOT NULL" in segment and "DEFAULT" not in segment.split("NOT NULL")[0][-10:]:
+                    not_null.add(col.name)
+    return not_null

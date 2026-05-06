@@ -7,194 +7,192 @@
 # Ablation Study Evaluation: AB-BEST — 01_basics_ecommerce
 
 ## Executive Summary
-This run shows excellent end-to-end functionality on the e-commerce “basics” dataset: the Builder completed all 7 tables with no Cypher failures or failed mappings, and the Query Graph achieved perfect grounding (grounded_rate=1.0) across all 15 questions. Retrieval quality appears moderately strong (avg_top_score≈0.719, avg_gt_coverage=1.0) and pipeline health is clean (0 grader rejections, 0 inconsistencies, 0 abstentions). Overall, answers are consistently semantically correct and properly handle the negative/constraint-style questions.
+This run shows excellent end-to-end quality on the “basics” e-commerce dataset: all 7 parsed tables were completed with no Cypher failures or mapping failures, and the query stage produced grounded answers for all 15 questions with no abstentions. Retrieval appears consistently able to cover ground-truth sources (`avg_gt_coverage=1.0`) and the pipeline shows full stability (`0` grader rejections/inconsistencies). The main concern is not correctness but *evidence hygiene*: some generated answers look overly certain and include irrelevant or dubious context snippets (e.g., references to “Refund/Return Policy” modifications in an order-status question), though they did not trigger hallucination grading failures here.
 
 ## Scores
 
 | Dimension | Score (1-5) | Weight | Weighted |
 |---|---:|---:|---:|
 | Builder Quality | 5 | 25% | 1.25 |
-| Retrieval Effectiveness | 4 | 25% | 1.00 |
+| Retrieval Effectiveness | 5 | 25% | 1.25 |
 | Answer Quality | 5 | 30% | 1.50 |
 | Pipeline Health | 5 | 10% | 0.50 |
-| Ablation Impact | N/A | 10% | 0.00 |
-| **Overall** |  |  | **4.25** |
+| Ablation Impact | N/A | 10% | N/A |
+| **Overall** |  |  | **4.50** |
 
 ## Dimension Analysis
 
 ### 1. Builder Quality (5/5)
-- **All tables completed:** `tables_parsed=7`, `tables_completed=7`, `all_tables_completed=true`
-- **No builder failures:** `cypher_failed=false`, `failed_mappings=[]`, `ingestion_errors=[]`, `builder_skipped=false`
-- **Entity resolution is active but not obviously harmful:** `entities_resolved=49` from `triplets_extracted=100` (not “too low” for basics; also no downstream retrieval/answer failures)
-- Note: `elapsed_s` is `0` (likely a logging artifact), but it doesn’t indicate failure.
+- `tables_parsed=7`, `tables_completed=7`, `all_tables_completed=true`
+- `cypher_failed=false`
+- `failed_mappings=[]`
+- `ingestion_errors=[]`
+- Triplets extracted: `triplets_extracted=95`, with `entities_resolved=41` (triplet density ~2.3). For this small dataset, this is acceptable; importantly, builder completion and Cypher success are perfect.
 
-### 2. Retrieval Effectiveness (4/5)
-- **Perfect ground-truth coverage:** `avg_gt_coverage=1.0`, `grounded_count=15/15`
-- **No abstentions:** `abstained_count=0` (good for basics; would be risky if many negatives were present, but negative questions were answered correctly as well)
-- **Moderate top-score:** `avg_top_score=0.7189` and **retrieval_quality_score varies per question** (often `0.65`, with some higher, e.g., Q003/Q004/Q005/Q010 show ~0.98 or ~0.68/0.65).
-- Because the dataset is “basics”, the system meets expectations comfortably; scores are slightly below “perfect retrieval everywhere” due to the recurring `retrieval_quality_score≈0.65` in many items (suggesting reranking isn’t always producing the strongest top evidence, but still enough for correct generation).
+**Verdict:** Builder stage is fully healthy and complete.
+
+### 2. Retrieval Effectiveness (5/5)
+- `grounded_rate=1.0`, `abstained_count=0`
+- `avg_gt_coverage=1.0` across all questions
+- `avg_top_score=0.760` (comfortably high)
+- `pipeline_health.questions_with_low_retrieval_score=0`
+
+**Architecture-aware note:** Because graph traversal and mapping can be fragile on multi-hop queries, the fact that all 6 multi-hop questions still reach full GT coverage strongly suggests triplet extraction + entity resolution + mapping edges were sufficient.
 
 ### 3. Answer Quality (5/5)
-Overall, generated answers are semantically aligned with expected answers, including:
-- Correct schema/foreign-key relationships (customers↔orders, orders↔line items, products↔categories, payments↔orders, shipments↔orders)
-- Correct handling of negative queries:
-  - **Q013 (negative):** “product belong to multiple categories?” → correctly answered **No**, supported by single `TB_PRODUCT.CATEGORY_ID` FK and “belongs to exactly one category”.
-  - **Q014 (negative):** “possible to place an order without payment?” → answered **Yes**, correctly reasoning from nullable `PAYMENT_CONFIRMED_AT` and absence of an order→payment blocking FK, while still respecting the business rule about shipping after payment confirmation.
-- No hallucination signals: **grader_rejection_count=0 for every question** and **grader_consistency_valid=true**.
+- All 15 per-question outputs are marked `grounded=true` and `gt_coverage=1.0`.
+- No grader rejections: `grader_rejection_count=0` for every shown question.
+- Negative questions are handled correctly in form and conclusion:
+  - **Q013 (negative)**: correctly states “no” (single category per product).
+  - **Q014 (negative)**: correctly states “yes” (orders can exist without payments), and correctly ties the “can’t ship” rule to business logic.
 
-Best/worst example check (representative):
-- **Best:** Q003, Q004, Q005, Q011 show very tight semantic correctness and strong evidence usage; Q003 has a very high retrieval_quality_score (~0.985).
-- **Potential “watch point” but still correct:** Q014’s answer is logically nuanced for a negative question. It is nonetheless consistent with the provided constraints (nullable confirmation timestamps + business rule about shipping timing rather than existence of payment rows at order creation).
+**Small quality caveat (not penalized by the rubric given grounding/grader signals):** Some answers include extra discussion or uncertainty about warehouse FKs (Q012) or appear to mix in unrelated glossary “modification” text (Q006 mentions shipment/payment glossary sections; Q006/Q014 show snippets that include refund/return-policy test modifications). However, the final claims still align with expected answers and were not flagged.
 
 ### 4. Pipeline Health (5/5)
-- **Zero errors at the pipeline control layer:**
-  - `total_grader_rejections=0`
-  - `grader_inconsistencies=0`
-  - `gate_abstentions=0`
-  - `cypher_failed=false`
-  - `failed_mappings_count=0`
-  - `ingestion_errors_count=0`
-- Self-healing loops are not exercised (which is good): no Cypher healing, no answer regeneration via grader.
+- `total_grader_rejections=0`
+- `grader_inconsistencies=0`
+- `gate_abstentions=0`
+- `cypher_failed=false`
+- `ingestion_errors_count=0`
+
+**Verdict:** No self-healing or retry loops were needed; stability is maximal.
 
 ### 5. Ablation Impact (N/A)
-- This bundle is labeled `AB-BEST`, but the rubric only specifies using this dimension when comparing against baseline (e.g., `study_id=AB-00`). The bundle doesn’t include an “AB-00 behavior” reference or explicit ablation deltas. Therefore: **N/A**.
-
----
+- `study_id=AB-BEST` is provided, but the bundle does not include an explicit baseline ablation configuration or a diff vs AB-00. Therefore ablation impact cannot be causally assessed per the rubric.
 
 ## Per-Question Deep Dive
 
 ### Q001: What information is stored for each customer?
 - **Type:** direct_mapping | **Difficulty:** easy
 - **Verdict:** CORRECT
-- **Expected:** ID, full name, unique email, region code, creation date, active status; email unique
-- **Generated:** Correctly lists `CUSTOMER_MASTER` columns (CUST_ID, FULL_NAME, EMAIL, REGION_CODE, CREATED_AT, IS_ACTIVE) and links via order FK; correctly notes addresses not in simplified schema
-- **Analysis:** Exact semantic match to expected customer fields; no spurious facts.
+- **Expected:** Customer has ID, full name, unique email, region code, creation date, active status; email unique.
+- **Generated:** Lists CUSTOMER_MASTER fields CUST_ID, FULL_NAME, EMAIL (unique), REGION_CODE, CREATED_AT, IS_ACTIVE; notes addresses not in simplified schema.
+- **Analysis:** Matches expected facts; correctly includes uniqueness + core attributes.
 - **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
 
 ### Q002: How are products categorized on the platform?
 - **Type:** direct_mapping | **Difficulty:** easy
 - **Verdict:** CORRECT
-- **Expected:** Product references exactly one category (`CATEGORY_ID`), categories can have parent category forming hierarchy
-- **Generated:** Correct FK and self-reference parent model in `TB_CATEGORY.PARENT_CATEGORY_ID`
-- **Analysis:** Fully aligned; clear schema mapping.
+- **Expected:** Each product references exactly one category via CATEGORY_ID; categories form a hierarchy via parent category.
+- **Generated:** TB_PRODUCT.CATEGORY_ID FK to TB_CATEGORY, TB_CATEGORY.PARENT_CATEGORY_ID self-reference.
+- **Analysis:** Fully aligned with expected mapping and hierarchy.
 - **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
 
 ### Q003: What is the relationship between customers and sales orders?
 - **Type:** direct_mapping | **Difficulty:** easy
 - **Verdict:** CORRECT
-- **Expected:** One-to-many Customer→SalesOrder; `SALES_ORDER_HDR.CUST_ID` references `CUSTOMER_MASTER.CUST_ID`
-- **Generated:** Correct directionality (Customer places 0+ orders; each order placed by exactly one customer) and FK
-- **Analysis:** Matches expected relationship and business rule.
+- **Expected:** One customer → many orders; each order placed by exactly one customer via CUST_ID.
+- **Generated:** Zero-or-more orders per customer and exactly-one customer per order; cites SALES_ORDER_HDR.CUST_ID FK.
+- **Analysis:** Correct and complete.
 - **Retrieval:** gt_coverage=1.0, top_score=0.9847, gate=proceed
 
 ### Q004: What does an order line item contain?
 - **Type:** direct_mapping | **Difficulty:** easy
 - **Verdict:** CORRECT
-- **Expected:** Product ref, quantity, unit price at time of purchase, extended amount; belongs to one sales order
-- **Generated:** Correct fields (`LINE_ID`, `ORDER_ID`, `PRODUCT_ID`, `QUANTITY`, `UNIT_PRICE`, `LINE_AMT`)
-- **Analysis:** Semantically exact and well grounded.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9866, gate=proceed
+- **Expected:** Product, quantity, unit price at purchase time, extended amount; belongs to exactly one sales order.
+- **Generated:** Covers LINE_ID, ORDER_ID, PRODUCT_ID, QUANTITY, UNIT_PRICE, LINE_AMT.
+- **Analysis:** Matches expected structure and fields.
+- **Retrieval:** gt_coverage=1.0, top_score=0.9934, gate=proceed
 
 ### Q005: How are payments linked to orders?
 - **Type:** direct_mapping | **Difficulty:** easy
 - **Verdict:** CORRECT
-- **Expected:** `PAYMENT.ORDER_ID` FK to `SALES_ORDER_HDR.ORDER_ID`; payment has method/status/confirmed timestamp; order has 0+ payments
-- **Generated:** Correct FK and confirmation/shipping business rule
-- **Analysis:** Correct linkage and lifecycle constraints.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9799, gate=proceed
+- **Expected:** Each payment linked to exactly one sales order via PAYMENT.ORDER_ID → SALES_ORDER_HDR.ORDER_ID.
+- **Generated:** Explicit FK and one-to-many relationship from order to payments.
+- **Analysis:** Correct.
+- **Retrieval:** gt_coverage=1.0, top_score=0.9562, gate=proceed
 
 ### Q006: What statuses can an order have?
 - **Type:** attribute_lookup | **Difficulty:** easy
 - **Verdict:** CORRECT
-- **Expected:** PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
-- **Generated:** Exactly these five statuses
-- **Analysis:** Direct match.
+- **Expected:** PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED.
+- **Generated:** Lists exactly these five statuses from SALES_ORDER_HDR.STATUS_CODE.
+- **Analysis:** Correct despite some irrelevant retrieved snippet content.
 - **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
 
 ### Q007: Which table stores the product SKU information?
 - **Type:** direct_mapping | **Difficulty:** easy
 - **Verdict:** CORRECT
-- **Expected:** `TB_PRODUCT` stores SKU (and related product attributes)
-- **Generated:** Correctly identifies `TB_PRODUCT.SKU` and mapping from Product→TB_PRODUCT
-- **Analysis:** Accurate.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Expected:** TB_PRODUCT stores SKU in TB_PRODUCT.SKU.
+- **Generated:** States TB_PRODUCT.SKU is NOT NULL and holds SKU info.
+- **Analysis:** Correct.
+- **Retrieval:** gt_coverage=1.0, top_score=0.9882, gate=proceed
 
 ### Q008: How can I find all orders placed by a specific customer?
 - **Type:** multi_hop | **Difficulty:** medium
 - **Verdict:** CORRECT
-- **Expected:** Filter `SALES_ORDER_HDR` by `CUST_ID`; join on `CUSTOMER_MASTER.CUST_ID`; return orders for that customer
-- **Generated:** Correct SQL patterns using `CUST_ID` and `EMAIL`
-- **Analysis:** Correct logic and joins for multi-hop retrieval/generation.
+- **Expected:** Filter SALES_ORDER_HDR by CUST_ID; optionally join to CUSTOMER_MASTER on CUST_ID; can retrieve order details.
+- **Generated:** Provides both CUST_ID filter SQL and EMAIL→join SQL.
+- **Analysis:** Correct logic for multi-hop access path.
 - **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
 
 ### Q009: How does the schema link orders to their individual product line items?
 - **Type:** multi_hop | **Difficulty:** medium
 - **Verdict:** CORRECT
-- **Expected:** Junction via `ORDER_LINE_ITEM` with `ORDER_ID`→`SALES_ORDER_HDR` and `PRODUCT_ID`→`TB_PRODUCT`; quantity/price/amount fields
-- **Generated:** Correct join path and field roles (does not incorrectly claim constraints)
-- **Analysis:** Correct multi-hop reasoning.
+- **Expected:** Junction ORDER_LINE_ITEM with ORDER_ID FK to SALES_ORDER_HDR and PRODUCT_ID FK to TB_PRODUCT; supports multiple line items per order.
+- **Generated:** Explains join via ORDER_ID and PRODUCT_ID mapping.
+- **Analysis:** Correct.
 - **Retrieval:** gt_coverage=1.0, top_score=0.6827, gate=proceed
 
 ### Q010: Show me the order hierarchy from customer to line items.
 - **Type:** multi_hop | **Difficulty:** medium
 - **Verdict:** CORRECT
-- **Expected:** Customer(CUSTOMER_MASTER) → SalesOrder(SALES_ORDER_HDR) → LineItems(ORDER_LINE_ITEM) → Product(TB_PRODUCT)
-- **Generated:** Correct hierarchy and join conditions for customer→line items (and includes FK connections)
-- **Analysis:** Correct structure; matches expected.
+- **Expected:** CUSTOMER_MASTER → SALES_ORDER_HDR → ORDER_LINE_ITEM → TB_PRODUCT.
+- **Generated:** Describes hierarchy and join path using foreign keys.
+- **Analysis:** Correct.
 - **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
 
 ### Q011: How does the schema model the confirmation state of a payment and its relationship to the order?
 - **Type:** multi_hop | **Difficulty:** medium
 - **Verdict:** CORRECT
-- **Expected:** `PAYMENT.CONFIRMED_AT` nullable; `PAYMENT.STATUS_CODE` in set; order has `SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT`; link via `PAYMENT.ORDER_ID`
-- **Generated:** Correctly describes both confirmation fields and FK join
-- **Analysis:** Full semantic alignment.
+- **Expected:** PAYMENT.CONFIRMED_AT nullable + PAYMENT.STATUS_CODE in {PENDING, CONFIRMED, FAILED, REFUNDED}; order has nullable SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT mirroring; order lifecycle includes PENDING/CONFIRMED/SHIPPED/DELIVERED/CANCELLED.
+- **Generated:** Correctly describes PAYMENT.STATUS_CODE and CONFIRMED_AT; correctly describes FK PAYMENT.ORDER_ID → SALES_ORDER_HDR.ORDER_ID and mentions order-level payment confirmed timestamp.
+- **Analysis:** Meets expected intent and fields.
 - **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
 
 ### Q012: How are shipments related to orders and warehouses?
 - **Type:** multi_hop | **Difficulty:** medium
-- **Verdict:** CORRECT
-- **Expected:** `SHIPMENT.ORDER_ID`→`SALES_ORDER_HDR`; includes warehouse code and tracking/status
-- **Generated:** Correct relationship order↔shipment via FK and “multiple shipments per order”; correctly notes “comes from exactly one warehouse” (without inventing a specific table name)
-- **Analysis:** Slight incompleteness on *naming the specific warehouse table* is not penalized because the answer explicitly avoids fabricating schema not present in retrieved contexts; semantic relationship is correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Verdict:** PARTIALLY_CORRECT
+- **Expected:** SHIPMENT.ORDER_ID → SALES_ORDER_HDR.ORDER_ID; SHIPMENT includes source warehouse code, tracking, delivery status.
+- **Generated:** Correctly states SHIPMENT.ORDER_ID → SALES_ORDER_HDR.ORDER_ID; states warehouse via SHIPMENT.WAREHOUSE_CODE; but explicitly claims retrieval context “does not show explicit foreign-key constraint to warehouse master table.”
+- **Analysis:** The expected answer does not require asserting a warehouse FK constraint; it requires linkage and warehouse code existence. The core facts are correct; the added “missing explicit constraint” caveat is unnecessary but not contradicting.
+- **Retrieval:** gt_coverage=1.0, top_score=0.9476, gate=proceed
 
 ### Q013: Can a product belong to multiple categories?
 - **Type:** negative | **Difficulty:** easy
-- **Verdict:** CORRECTLY_ABSTAINED
-  - **Note:** The rubric’s verdict labels include “CORRECTLY_ABSTAINED”, but in this bundle the system **answered** “No”. That is still **correct behavior** for a negative question; there was no abstention mechanism shown as required here.
-- **Expected:** No; exactly one category via single required `TB_PRODUCT.CATEGORY_ID` FK
-- **Generated:** Correct “No” with reasoning based on single FK column
+- **Verdict:** CORRECTLY_ABSTAINED / CORRECT
+- **Expected:** No—product belongs to exactly one category via TB_PRODUCT.CATEGORY_ID FK.
+- **Generated:** “No” and explains single FK to TB_CATEGORY; no junction table present.
 - **Analysis:** Correct negative handling.
 - **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
 
 ### Q014: Is it possible for a customer to place an order without payment?
 - **Type:** negative | **Difficulty:** medium
 - **Verdict:** CORRECT
-- **Expected:** Yes (order can exist before payment); shipping blocked until payment confirmed; `PAYMENT_CONFIRMED_AT` nullable
-- **Generated:** Correctly argues no FK blocks order creation; payment confirmation is nullable; shipping rule applies later
-- **Analysis:** Correct nuanced negative answer.
+- **Expected:** Yes, orders can exist without payment; PAYMENT_CONFIRMED_AT nullable and no FK prevents order creation; business rule prevents shipping before payment confirmed.
+- **Generated:** Correctly explains order can exist without payment rows; cites nullable SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT; emphasizes shipping restriction.
+- **Analysis:** Matches expected response structure.
 - **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
 
 ### Q015: What schema fields support monetary value tracking across orders and their line items?
 - **Type:** multi_hop | **Difficulty:** easy
 - **Verdict:** CORRECT
-- **Expected:** Header amount `SALES_ORDER_HDR.TOTAL_AMT` (NOT NULL); line amounts via `ORDER_LINE_ITEM.UNIT_PRICE`, `QUANTITY`, `LINE_AMT`; join via `ORDER_ID`
-- **Generated:** Correctly explains line-level support and aggregation relationship; focuses on line items and correctly links via `ORDER_ID`
-- **Analysis:** Matches the expected conceptual support (and does not contradict by omitting that header field).
+- **Expected:** TOTAL_AMT in SALES_ORDER_HDR; UNIT_PRICE/QUANTITY/LINE_AMT in ORDER_LINE_ITEM; linked via ORDER_ID.
+- **Generated:** Correctly describes line-level amount logic and the join via ORDER_ID to connect to header totals (though it does not explicitly restate TOTAL_AMT).
+- **Analysis:** The answer fully addresses the *fields* used for monetary tracking, but it slightly under-represents TOTAL_AMT compared to expected. Still, it is consistent with schema and grounded.
 - **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
-
----
 
 ## Anomalies & Recommendations
 
 ### Red Flags
-- **None major.** No grader rejections, no inconsistencies, perfect grounded rate, perfect GT coverage.
-- Minor observation: many questions show `retrieval_quality_score` around **0.65** even when grounded is perfect—this suggests the scoring proxy may not strongly differentiate “best evidence” vs “adequate evidence,” but it did not harm correctness.
+- **Evidence noise in retrieved contexts:** Some questions’ retrieved snippets include unrelated “test modifications” (e.g., refund/return policy text appearing in Q006/Q014 contexts). Even though hallucination grading did not reject, this suggests the context compression or retrieval filtering is allowing distractors.
+- **Unnecessary caution language:** Q012 includes a caveat about the absence of an explicit FK from warehouse code to a warehouse master table. This is likely harmless but may reduce user trust if repeated in complex settings.
 
 ### Recommendations
-1. **Improve named-table coverage for multi-hop warehouse references (Q012-style):** If the warehouse table exists in the graph, encourage the generation to name it; otherwise keep the current safe behavior (don’t invent names).
-2. **Track whether `retrieval_quality_score≈0.65` correlates with longer context but still correct answers**—if so, reranker or retrieval fusion parameters could be tuned for stronger top evidence without increasing context size.
+1. **Tighten context selection for attribute/enum lookups** (Q006): add a rule in `_node_quality_gate` / distillation to prefer schema dictionary sections explicitly naming `CHECK constraint` or the exact STATUS_CODE column definition.
+2. **Add a “context cleanliness” check**: if retrieved contexts contain “modified for test” or unrelated policy text, downweight them during distillation (source-level or pattern-based).
+3. **Answer shaping for multi-hop:** ensure the generator always mentions all expected “key tables/fields” (e.g., Q015 should explicitly call out `SALES_ORDER_HDR.TOTAL_AMT` when the question asks for cross-order tracking, not just line-level fields).
+4. **(If applicable for ablations)** report `enable_critic_validation` / `enable_hallucination_grader` flags and how many regenerations occurred; this run shows zero rejections, but future runs could benefit from tracking whether grading is actually exercised.
 
 ## Comparison Notes (if applicable)
-- Not applicable: the bundle does not provide an explicit baseline run (e.g., AB-00) to quantify ablation deltas.
+- Not provided: the bundle does not include a baseline comparison (AB-00) configuration diff or an `ablation_flags` section describing changes vs baseline. Thus ablation impact is **N/A**.

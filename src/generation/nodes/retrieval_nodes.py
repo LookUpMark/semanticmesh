@@ -17,6 +17,7 @@ from src.models.schemas import RetrievedChunk
 from src.models.state import QueryState
 from src.retrieval.embeddings import get_embeddings
 from src.retrieval.hybrid_retriever import (
+    attribute_vector_search,
     bm25_search,
     build_node_index,
     chunk_vector_search,
@@ -176,6 +177,10 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                     query, client, top_k=settings.retrieval_vector_top_k, model=model,
                     query_vector=shared_qv,
                 )
+                attr_results = attribute_vector_search(
+                    query, client, top_k=5, model=model,
+                    query_vector=shared_qv,
+                )
                 trav_results = graph_traversal(
                     seed_names=[c.node_id for c in vec_results[:5]],
                     client=client,
@@ -186,7 +191,7 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                 mapping_chunks = fetch_concept_table_mappings(client)
                 bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
                 merged = merge_results(
-                    vec_results + chunk_vec_results,
+                    vec_results + chunk_vec_results + attr_results,
                     bm25_results,
                     trav_results + all_concepts + fk_chunks + mapping_chunks,
                 )
@@ -210,7 +215,7 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                             depth=max(1, settings.retrieval_graph_depth + 1),
                         )
                         merged = merge_results(
-                            vec_results + chunk_vec_results,
+                            vec_results + chunk_vec_results + attr_results,
                             bm25_results,
                             trav_results + extra + all_concepts + fk_chunks,
                         )

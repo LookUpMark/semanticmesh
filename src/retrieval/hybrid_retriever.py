@@ -161,6 +161,59 @@ def vector_search(
     return chunks
 
 
+# ── Attribute Vector Search ────────────────────────────────────────────────────
+
+
+def attribute_vector_search(
+    query: str,
+    client: Neo4jClient,
+    top_k: int = 5,
+    model=None,
+    query_vector: list[float] | None = None,
+) -> list[RetrievedChunk]:
+    """Search the ``attribute_embedding`` vector index for column-level nodes.
+
+    Returns Attribute nodes as RetrievedChunks with ``source_type="vector"``
+    and ``node_type="Attribute"``.
+    """
+    qv: list[float] = query_vector if query_vector is not None else embed_text(query, model=model)
+
+    cypher = (
+        "CALL db.index.vector.queryNodes('attribute_embedding', $k, $embedding) "
+        "YIELD node, score "
+        "RETURN node.name AS name, node.description AS description, "
+        "node.table_name AS table_name, node.column_name AS column_name, "
+        "node.data_type AS data_type, node.nullable AS nullable, "
+        "node.is_fk AS is_fk, node.fk_target AS fk_target, "
+        "score, 'Attribute' AS node_type"
+    )
+    records = client.execute_cypher(cypher, {"k": top_k, "embedding": qv})
+
+    chunks: list[RetrievedChunk] = []
+    for rec in records:
+        name = (rec.get("name") or "").strip()
+        desc = rec.get("description") or ""
+        if not name:
+            continue
+        chunks.append(
+            RetrievedChunk(
+                node_id=name,
+                node_type="Attribute",
+                text=desc,
+                score=float(rec.get("score", 0.0)),
+                source_type="vector",
+                metadata={
+                    key: val
+                    for key, val in rec.items()
+                    if key not in ("name", "description", "score", "node_type")
+                    and val is not None
+                },
+            )
+        )
+    logger.debug("attribute_vector_search: %d results for query '%s'.", len(chunks), query[:60])
+    return chunks
+
+
 # ── Chunk Vector Search ────────────────────────────────────────────────────────
 
 

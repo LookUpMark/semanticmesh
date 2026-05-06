@@ -13,7 +13,7 @@ from typing import Any
 from src.config.llm_factory import get_reasoning_llm
 from src.config.logging import NodeTimer, get_logger, log_node_event
 from src.config.settings import get_settings
-from src.graph.cypher_builder import build_fk_cypher, build_upsert_cypher
+from src.graph.cypher_builder import build_attribute_cypher, build_fk_cypher, build_upsert_cypher
 from src.graph.cypher_generator import generate_cypher
 from src.graph.cypher_healer import heal_cypher
 from src.graph.neo4j_client import Neo4jClient
@@ -361,6 +361,26 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     logger.info("FK edges: %d batched for table '%s'.", len(fk_statements), table.table_name)
                 except Exception as exc:
                     logger.warning("Could not write FK edges for '%s': %s", table.table_name, exc)
+
+            # ── Attribute nodes: one per column for fine-grained retrieval ──
+            attr_statements = build_attribute_cypher(table)
+            if attr_statements:
+                try:
+                    client.execute_batch(attr_statements)
+                    logger.info("Attribute nodes: %d upserted for table '%s'.", len(attr_statements), table.table_name)
+                    # Set embeddings on Attribute nodes
+                    model = get_embeddings()
+                    attr_texts = [params["description"] for _, params in attr_statements]
+                    attr_names = [params["attr_name"] for _, params in attr_statements]
+                    vectors = model.encode(attr_texts, batch_size=len(attr_texts))
+                    for attr_name, vec in zip(attr_names, vectors):
+                        client.execute_cypher(
+                            "MATCH (a:Attribute {name: $name}) SET a.embedding = $emb",
+                            {"name": attr_name, "emb": vec.tolist()},
+                        )
+                    logger.info("Embeddings set for %d Attribute nodes.", len(attr_names))
+                except Exception as exc:
+                    logger.warning("Could not write Attribute nodes for '%s': %s", table.table_name, exc)
 
             if proposal.mapped_concept:
                 try:
