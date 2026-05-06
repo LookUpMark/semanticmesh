@@ -1,0 +1,1727 @@
+{
+  "study_id": "AB-BEST",
+  "timestamp": "2026-05-06T09:58:52.800662+00:00",
+  "trace_id": "AB-BEST.2026-05-06T09-58-52.800662+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 128,
+    "chunk_overlap": 16,
+    "er_similarity_threshold": 0.65,
+    "er_blocking_top_k": 5,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "tests/fixtures/04_complex_manufacturing/business_glossary.md",
+    "tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+  ],
+  "ddl_files": [
+    "tests/fixtures/04_complex_manufacturing/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Manufacturing Business Glossary\n\nThis glossary defines the core business concepts and terminology used in the manufacturing supply chain domain. It covers product structures, materials management, production workflows, and quality assurance processes.\n\n## Product\n\nA Product represents any manufactured item in the system, including finished goods ready for sale, sub-assemblies used in production, and individual components. Products are organized in a hierarchical structure where complex product... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "713"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Warehouse\n\nA Warehouse represents a physical storage location where materials, components, and finished goods are stored. Warehouses have defined capacity limits, geographic location information, and are managed by designated managers. Warehouses serve as nodes in the supply chain network where inventory is held, shipments are received, and products are staged for production or distribution.\n\n**Key Attributes:**\n- Unique warehouse identifier\n- Warehouse name and location\n- Address, city, and ... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "670"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## QualityControl\n\nQuality Control (QC) represents inspection and testing activities performed on materials, in-process production, or finished goods. QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes. QC activities are associated with specific production batches and may reference technical specifications being tested.\n\n**Key Attributes:**\n- Unique QC identifier\n- Batch reference (pr... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "649"
+    },
+    {
+      "chunk_id": 3,
+      "text": "# Manufacturing Data Dictionary\n\nThis data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationships. Special attention is given to self-referential relationships that support hierarchical product structures.\n\n## product\n\nStores all manufactured items including finished goods, assemblies, and components. Supports hierarchical product relationships via self-referencing foreign key.\n\n| Column | Da... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "519"
+    },
+    {
+      "chunk_id": 4,
+      "text": "## bom\n\nBill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier |\n| parent_product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Parent product (what is being built) |\n| component_product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 produc... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "721"
+    },
+    {
+      "chunk_id": 5,
+      "text": "## warehouse\n\nStores physical storage location information for inventory management.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| warehouse_id | VARCHAR(20) | PRIMARY KEY | Unique warehouse identifier |\n| warehouse_name | VARCHAR(100) | NOT NULL | Warehouse name |\n| address | VARCHAR(200) | | Street address |\n| city | VARCHAR(50) | | City location |\n| state | VARCHAR(50) | | State or province |\n| capacity | INT | NOT NULL, DEFAULT 0, CH... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "460"
+    },
+    {
+      "chunk_id": 6,
+      "text": "## work_order\n\nRepresents production jobs for manufacturing products with hierarchical work order support.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| work_order_id | VARCHAR(20) | PRIMARY KEY | Unique work order identifier |\n| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product to manufacture |\n| parent_work_order | VARCHAR(20) | FOREIGN KEY \u2192 work_order(work_order_id) | Parent work order for decomposition... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "613"
+    },
+    {
+      "chunk_id": 7,
+      "text": "## specification\n\nDefines technical requirements and acceptance criteria for materials and products.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| specification_id | VARCHAR(20) | PRIMARY KEY | Unique specification identifier |\n| specification_name | VARCHAR(100) | NOT NULL | Specification name |\n| version | VARCHAR(10) | NOT NULL | Specification version |\n| effective_date | DATE | NOT NULL | Effective date |\n| spec_type | spec_type_t | ... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "723"
+    },
+    {
+      "chunk_id": 8,
+      "text": "## shipment\n\nTracks material transfers between warehouses, suppliers, and customers.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| shipment_id | VARCHAR(20) | PRIMARY KEY | Unique shipment identifier |\n| shipment_type | shipment_type_t | NOT NULL | INBOUND, OUTBOUND, INTERNAL |\n| warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Warehouse reference |\n| supplier_id | VARCHAR(20) | FOREIGN KEY \u2192 supplier(supplier_id) | S... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "710"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 9,
+    "total_tokens": 5778,
+    "avg_tokens": 642.0
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "represents",
+      "object": "any manufactured item in the system",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "unique identifier",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "lead time",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "base cost",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "type classification",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "name",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "parent_product_id",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "lead time for procurement or production",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "is",
+      "object": "active",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "is",
+      "object": "inactive",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "child Products",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "references",
+      "object": "parent Product",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "used in",
+      "object": "Work Orders",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "appear in",
+      "object": "Shipments",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "stored in",
+      "object": "Inventory records",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "represents",
+      "object": "atomic raw materials or purchased parts",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "procured from",
+      "object": "external suppliers",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "has",
+      "object": "standard cost",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "has",
+      "object": "unit of measure",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "references",
+      "object": "Technical specification",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "supplied by",
+      "object": "Suppliers",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "has",
+      "object": "Inventory records",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "references",
+      "object": "Specifications",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "defines",
+      "object": "composition of products",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "specifies",
+      "object": "parent product",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "specifies",
+      "object": "component product",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "has",
+      "object": "required quantity",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "has",
+      "object": "unit of measure",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "has",
+      "object": "level",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "connects",
+      "object": "Products",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "is used for",
+      "object": "material requirements planning",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "supports",
+      "object": "hierarchical product explosions",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "is",
+      "object": "external vendor",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "provides",
+      "object": "Components",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "linked to",
+      "object": "Inbound Shipments",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "has",
+      "object": "pricing",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "represents",
+      "object": "a physical storage location",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has",
+      "object": "defined capacity limits",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has",
+      "object": "geographic location information",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "is managed by",
+      "object": "designated managers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "serves as",
+      "object": "node in the supply chain network",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "holds",
+      "object": "inventory",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "receives",
+      "object": "shipments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "stages",
+      "object": "products",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "tracks",
+      "object": "quantity on hand",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "tracks",
+      "object": "quantity reserved",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "has",
+      "object": "reorder threshold",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "last restock date",
+      "object": "Last restock date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "belongs to",
+      "object": "a Warehouse",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "tracks",
+      "object": "either a Component or Product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "WorkOrder",
+      "predicate": "represents",
+      "object": "a production job",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "WorkOrder",
+      "predicate": "tracks",
+      "object": "planned versus completed quantities",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "WorkOrder",
+      "predicate": "has",
+      "object": "hierarchical relationships",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "WorkOrder",
+      "predicate": "consumes",
+      "object": "Inventory",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "WorkOrder",
+      "predicate": "produces",
+      "object": "Product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "WorkOrder",
+      "predicate": "associated with",
+      "object": "Warehouses",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "represents",
+      "object": "transfer of materials",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "tracks",
+      "object": "dates for ship",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "updates",
+      "object": "Inventory levels",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "fulfills",
+      "object": "Work Order outputs",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC",
+      "predicate": "represents",
+      "object": "inspection and testing activities",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "the type of inspection",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "inspection date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "inspector",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "test results",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "defect counts",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC activities",
+      "predicate": "associated with",
+      "object": "production batches",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Specification",
+      "predicate": "defines",
+      "object": "technical requirements, standards, and acceptance criteria",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Specifications",
+      "predicate": "define",
+      "object": "requirements",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Specifications",
+      "predicate": "used in",
+      "object": "Quality Control inspections",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batch",
+      "predicate": "represents",
+      "object": "production lot",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batches",
+      "predicate": "record",
+      "object": "product produced",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batches",
+      "predicate": "undergo",
+      "object": "Quality Control inspections",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Route",
+      "predicate": "defines",
+      "object": "manufacturing operations",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Route steps",
+      "predicate": "ordered by",
+      "object": "sequence_number",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Routes",
+      "predicate": "determine",
+      "object": "production capacity requirements",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Routes",
+      "predicate": "used for",
+      "object": "scheduling Work Orders",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product",
+      "predicate": "stores",
+      "object": "all manufactured items",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product",
+      "predicate": "supports",
+      "object": "hierarchical product relationships",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product_id",
+      "predicate": "is",
+      "object": "PRIMARY KEY",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product_name",
+      "predicate": "is",
+      "object": "Product name",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product_type",
+      "predicate": "is",
+      "object": "product_type_t",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "parent_product_id",
+      "predicate": "references",
+      "object": "product_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "base_cost",
+      "predicate": "has",
+      "object": "DEFAULT 0.00",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "lead_time_days",
+      "predicate": "has",
+      "object": "DEFAULT 0",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "is_active",
+      "predicate": "has",
+      "object": "NOT NULL, DEFAULT 'Y'",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product",
+      "predicate": "has",
+      "object": "idx_product_parent",
+      "confidence": 0.4
+    },
+    {
+      "chunk_index": 3,
+      "subject": "parent_product_id",
+      "predicate": "references",
+      "object": "product_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "A product",
+      "predicate": "contains",
+      "object": "other products as components",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Self-Referential Relationship",
+      "predicate": "enables",
+      "object": "multi-level product assemblies",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "component",
+      "predicate": "stores",
+      "object": "atomic raw materials and purchased parts",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "component_id",
+      "predicate": "is",
+      "object": "PRIMARY KEY",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "component_name",
+      "predicate": "is",
+      "object": "Component name",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "component_category",
+      "predicate": "is",
+      "object": "component_category",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "unit_of_measure",
+      "predicate": "is",
+      "object": "EA",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "standard_cost",
+      "predicate": "has",
+      "object": "DEFAULT 0.00",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "specification_id",
+      "predicate": "references",
+      "object": "VARCHAR(20)",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "supplier",
+      "predicate": "relates_to",
+      "object": "component_supplier",
+      "confidence": 0.4
+    },
+    {
+      "chunk_index": 3,
+      "subject": "inventory",
+      "predicate": "has",
+      "object": "one-to-many",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 3,
+      "subject": "specification",
+      "predicate": "optional",
+      "object": "relationship",
+      "confidence": 0.5
+    },
+    "... [120 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 220,
+    "avg_confidence": 0.8931818181818182,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Ea (Each)",
+      "definition": "A unit of measure representing 'each' used to count individual items in inventory or transactional data.",
+      "synonyms": [
+        "'EA'",
+        "EA"
+      ],
+      "provenance_text": "| unit_of_measure | VARCHAR(10) | NOT NULL, DEFAULT 'EA' | Unit of measure | | | unit_of_measure | VARCHAR(10) | NOT NULL, DEFAULT 'EA' | Unit of measure (EA, KG, M, L, etc.) |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Production Batch",
+      "definition": "A production batch (also known as a lot) is a specific quantity of product produced in a single manufacturing run, tracked for traceability, inventory control, and quality assurance.",
+      "synonyms": [
+        "Batch",
+        "Batches",
+        "batch"
+      ],
+      "provenance_text": "A Batch represents a specific production lot or run of a product, tracking all units produced together in a single manufacturing cycle. | Tracks production lots for traceability and inventory management. | Indexes:\n- `idx_batch_product` on product_id | Indexes:\n- `idx_batch_date` on production_date | Indexes:\n- `idx_batch_warehouse` on warehouse_id | Indexes:\n- `idx_batch_qc_status` on qc_status | Batches record the product produced, production date, quantity produced, warehouse location, expiry date (if applicable), and quality control status. | Batches undergo Quality Control inspections | One-to-many with batch",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Component",
+      "definition": "A Component is a basic building block used in manufacturing, representing atomic raw materials or purchased parts that are procured from external suppliers.",
+      "synonyms": [
+        "Components"
+      ],
+      "provenance_text": "A Component represents atomic raw materials or purchased parts that cannot be further broken down into simpler manufactured items. | Components are the building blocks used in manufacturing and are procured from external suppliers. | Each component has a standard cost, unit of measure, and may be associated with technical specifications that define quality requirements. | may be associated with technical specifications that define quality requirements. | Components are supplied by multiple Suppliers (many-to-many) | Components have Inventory records tracking stock levels | Components may reference Specifications for quality requirements | Suppliers provide multiple Components (many-to-many via component_supplier)",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Component Product",
+      "definition": "A component product is an item included as a part of a parent product in a bill of materials, which can be a component or sub-assembly required to assemble the parent product.",
+      "synonyms": [
+        "Component product"
+      ],
+      "provenance_text": "Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure. | | component_product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Component product (what goes into it) |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Inspection Date",
+      "definition": "The date on which an inspection was performed, as recorded in quality control (QC) records.",
+      "synonyms": [
+        "inspection date"
+      ],
+      "provenance_text": " | qc_date | DATE | NOT NULL | Inspection date | | QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Last Restock Date",
+      "definition": "The date of the most recent restock event for an inventory item or component.",
+      "synonyms": [
+        "Last restock date",
+        "Last restock timestamp"
+      ],
+      "provenance_text": "| last_restock_date | DATE | | Last restock timestamp | | Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement. Inventory records support either components or products (but not both in the same record) and include timestamps for the last restock date.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Parent Product",
+      "definition": "The parent product is the assembly or sub-assembly that contains one or more component products within a bill of materials or product structure, i.e., the item being built.",
+      "synonyms": [
+        "parent Product",
+        "parent product"
+      ],
+      "provenance_text": "| parent_product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Parent product (what is being built) | | A Product can reference a parent Product (for multi-level assemblies) | Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Planned End Date",
+      "definition": "A DATE attribute representing the planned (target) end date for a project, task, or activity.",
+      "synonyms": [
+        "Planned end date"
+      ],
+      "provenance_text": "| planned_end_date | DATE | | Planned end date |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Planned Start Date",
+      "definition": "The planned_start_date is the scheduled date on which a project, task, or activity is intended to commence.",
+      "synonyms": [
+        "Planned start date"
+      ],
+      "provenance_text": "| planned_start_date | DATE | | Planned start date |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Product",
+      "definition": "Product is the manufactured item in the supply chain system, including finished goods, sub-assemblies, and components, uniquely identifiable and capable of hierarchical relationships (e.g., parent-child via BOM / self-referencing structures).",
+      "synonyms": [
+        "Products",
+        "product",
+        "products"
+      ],
+      "provenance_text": "A Product represents any manufactured item in the system, including finished goods ready for sale, sub-assemblies used in production, and individual components. | Each product has a unique identifier, name, type classification, base cost, and lead time for procurement or production. | Hierarchical relationship via parent_product_id | Products can be active or inactive based on current manufacturing requirements. | A Product can have multiple child Products (via BOM hierarchy) | A Product can reference a parent Product (for multi-level assemblies) | Products are used in Work Orders for production | Products appear in Shipments (outbound) | Products are stored in Inventory records | Work Orders produce Products | BOM connects Products to other Products (parent-child) | # Manufacturing Data Dictionary\n\nThis data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationships. Special attention ",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Production Batch",
+      "definition": "A production batch is a discrete group of items produced in a single manufacturing run, identified by a batch reference, that undergoes QC inspections, tests against specifications, and status decisions.",
+      "synonyms": [
+        "production batches"
+      ],
+      "provenance_text": " | batch_id | VARCHAR(20) | | Production batch reference | | **Relationships:**\n- QC inspections are performed on Batches\n- QC tests against Specifications\n- QC results determine Batch status\n- QC failures trigger rework or scrap decisions",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Quantity Completed",
+      "definition": "A decimal field representing the quantity completed for an order, non-negative and not exceeding the ordered quantity.",
+      "synonyms": [
+        "Quantity completed"
+      ],
+      "provenance_text": "| quantity_completed | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0, <= ordered | Quantity completed |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Shipment",
+      "definition": "A Shipment represents the record of a physical transfer of materials between locations (inbound from suppliers to warehouses and outbound to customers), including shipment type, source and destination, dates, status, and related tracking information.",
+      "synonyms": [
+        "Shipments"
+      ],
+      "provenance_text": "A Shipment represents the physical transfer of materials between warehouses, from suppliers to warehouses (inbound), or from warehouses to customers (outbound). | Shipments track shipment type, source and destination locations, dates for ship, estimated arrival, and actual delivery, along with current status. | Shipments update Inventory levels | Shipments fulfill Work Order outputs | Products appear in Shipments (outbound)",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Specification",
+      "definition": "A Specification is a formal document that defines technical requirements, standards, acceptance criteria, and quality requirements for materials, products, or components, used to guide design, production, and verification.",
+      "synonyms": [
+        "Specifications",
+        "specification"
+      ],
+      "provenance_text": "A Specification defines technical requirements, standards, and acceptance criteria for materials or products. |  | specification_id | VARCHAR(20) | | Specification being tested | | Defines technical requirements and acceptance criteria for materials and products. | Components may reference Specifications for quality requirements | Specifications define requirements for Components | Specifications are used in Quality Control inspections | - Optional relationship with specification",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Warehouse",
+      "definition": "A warehouse is a physical storage facility used to store materials, components, and finished goods, with defined capacity limits, geographic location information, and designated management.",
+      "synonyms": [
+        "Warehouses",
+        "warehouse"
+      ],
+      "provenance_text": "A Warehouse represents a physical storage location where materials, components, and finished goods are stored. | Warehouses have defined capacity limits, geographic location information, and are managed by designated managers. | Warehouses serve as nodes in the supply chain network where inventory is held, shipments are received, and products are staged for production or distribution. | Work Orders are associated with Warehouses | Stores physical storage location information for inventory management. | One-to-many with inventory | One-to-many with shipment | One-to-many with work_order | One-to-many with batch",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Atomic Raw Materials",
+      "definition": "A Component representing atomic raw materials or purchased parts that cannot be further broken down into simpler manufactured items.",
+      "synonyms": [
+        "atomic raw materials and purchased parts"
+      ],
+      "provenance_text": "A Component represents atomic raw materials or purchased parts that cannot be further broken down into simpler manufactured items. | ## component\n\nStores atomic raw materials and purchased parts that are procured from external suppliers.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Base Manufacturing Cost",
+      "definition": "The base manufacturing cost is the standard per-unit production cost used as the starting point for pricing and cost planning.",
+      "synonyms": [
+        "base cost",
+        "base_cost"
+      ],
+      "provenance_text": "Each product has a unique identifier, name, type classification, base cost, and lead time for procurement or production. | | base_cost | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Base manufacturing cost |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Component Supplier Id",
+      "definition": "A unique identifier that serves as the primary key for a component and is used to reference the component in related records.",
+      "synonyms": [
+        "component_id",
+        "component_product_id"
+      ],
+      "provenance_text": "| component_supplier_id | VARCHAR(20) | PRIMARY KEY | Unique relationship identifier | | | component_id | VARCHAR(20) | PRIMARY KEY | Unique component identifier | | | component_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 component(component_id) | Component reference | | | component_id | VARCHAR(20) | FOREIGN KEY \u2192 component(component_id) | Component reference (exclusive with product_id) | | Indexes: - `idx_inventory_component` on component_id (WHERE NOT NULL) | | component_product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Component product (what goes into it) |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Product Type",
+      "definition": "A product classification attribute indicating the kind of product: FINISHED_GOOD, ASSEMBLY, or COMPONENT.",
+      "synonyms": [
+        "product_type_t"
+      ],
+      "provenance_text": "| product_type | product_type_t | NOT NULL, DEFAULT 'FINISHED_GOOD' | Product classification: FINISHED_GOOD, ASSEMBLY, COMPONENT |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Production Lot",
+      "definition": "A production lot is a batch of product units produced in a single manufacturing run, tracked for traceability and inventory management.",
+      "synonyms": [
+        "production lots"
+      ],
+      "provenance_text": "A Batch represents a specific production lot or run of a product, tracking all units produced together in a single manufacturing cycle. | Tracks production lots for traceability and inventory management.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Qc Status T",
+      "definition": "An enumerated quality-control status type used to indicate the outcome of QC checks, with values PENDING, PASSED, FAILED, and QUARANTINED.",
+      "synonyms": [
+        "qc_status"
+      ],
+      "provenance_text": "| qc_status | qc_status_t | NOT NULL, DEFAULT 'PENDING' | PENDING, PASSED, FAILED, QUARANTINED |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Quantity On Hand",
+      "definition": "Quantity on hand (quantity_on_hand) is the current stock level of inventory stored in warehouses that is available for fulfillment.",
+      "synonyms": [
+        "quantity on hand"
+      ],
+      "provenance_text": "| quantity_on_hand | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Available quantity | | Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Shipment",
+      "definition": "A Shipment represents the transfer of goods or inventory between supply chain locations (warehouses, suppliers, and customers) as a logical unit in logistics.",
+      "synonyms": [
+        "shipment",
+        "shipments"
+      ],
+      "provenance_text": "A Shipment represents the physical transfer of materials between warehouses, from suppliers to warehouses (inbound), or from warehouses to customers (outbound). | Shipments track shipment type, source and destination locations, dates for ship, estimated arrival, and actual delivery, along with current status. | Shipments update Inventory levels | Shipments fulfill Work Order outputs | Products appear in Shipments (outbound) | One-to-many with shipment | Tracks material transfers between warehouses, suppliers, and customers. | Warehouses serve as nodes in the supply chain network where inventory is held, shipments are received, and products are staged for production or distribution.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Standard Procurement Cost",
+      "definition": "A predefined cost benchmark used for budgeting and procurement of components or materials, against which actual procurement costs are measured.",
+      "synonyms": [
+        "standard cost",
+        "standard_cost"
+      ],
+      "provenance_text": "Each component has a standard cost, unit of measure, and may be associated with technical specifications that define quality requirements. | | standard_cost | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Standard procurement cost |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Unit Of Measure",
+      "definition": "A unit of measure (UOM) used to quantify item quantities in manufacturing BOMs and inventory records, such as EA, KG, M, L.",
+      "synonyms": [
+        "unit of measure"
+      ],
+      "provenance_text": "| unit_of_measure | VARCHAR(10) | NOT NULL, DEFAULT 'EA' | Unit of measure (EA, KG, M, L, etc.) | | | unit_of_measure | VARCHAR(10) | NOT NULL, DEFAULT 'EA' | Unit of measure | | | unit_of_measure | VARCHAR(10) | | Test unit of measure | | Each component has a standard cost, unit of measure, and may be associated with technical specifications that define quality requirements. | Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Warehouse(Warehouse Id)",
+      "definition": "A unique identifier for a warehouse, used as the key in the warehouse table and as a foreign key reference from other tables.",
+      "synonyms": [
+        "warehouse_id"
+      ],
+      "provenance_text": "| warehouse_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 warehouse(warehouse_id) | Warehouse location | | | warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Production location | | | warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Warehouse reference | | | warehouse_id | VARCHAR(20) | PRIMARY KEY | Unique warehouse identifier | | Indexes: - `idx_inventory_warehouse` on warehouse_id | | warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Storage location |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Work Order Id",
+      "definition": "The unique identifier (primary key) of a work order, used to reference a specific work order in the system and as the target of foreign-key relationships.",
+      "synonyms": [
+        "work_order(work_order_id)"
+      ],
+      "provenance_text": "| work_order_id | VARCHAR(20) | PRIMARY KEY | Unique work order identifier | | | parent_work_order | VARCHAR(20) | FOREIGN KEY \u2192 work_order(work_order_id) | Parent work order for decomposition |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Null Default",
+      "definition": "A numeric field named quantity that is NOT NULL, defaults to 1.000, and must be greater than 0, representing the required quantity in inventory or procurement.",
+      "synonyms": [
+        ">= 0",
+        "DEFAULT 0",
+        "DEFAULT 0.00",
+        "NOT NULL",
+        "NOT NULL, DEFAULT 'Y'"
+      ],
+      "provenance_text": "| quantity | DECIMAL(10,3) | NOT NULL, DEFAULT 1.000, CHECK > 0 | Required quantity | | | quantity_on_hand | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Available quantity | | | lead_time_days | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Procurement or production lead time | | | base_cost | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Base manufacturing cost | | | standard_cost | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Standard procurement cost | | | specification_name | VARCHAR(100) | NOT NULL | Specification name | | | version | VARCHAR(10) | NOT NULL | Specification version | | | effective_date | DATE | NOT NULL | Effective date | | | spec_type | spec_type_t | NOT NULL | DIMENSIONAL, MATERIAL, PERFORMANCE | | | production_date | DATE | NOT NULL | Production date | | | route_name | VARCHAR(100) | NOT NULL | Route name | | | is_active | yes_no_t | NOT NULL, DEFAULT 'Y' | Active status flag |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Decimal(10,2)",
+      "definition": "A SQL character varying column type for storing text with a maximum length of 100 characters.",
+      "synonyms": [
+        "DECIMAL(10,3)",
+        "DECIMAL(8,2)",
+        "VARCHAR(10)",
+        "VARCHAR(100)",
+        "VARCHAR(20)",
+        "VARCHAR(50)"
+      ],
+      "provenance_text": "| quantity_produced | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK > 0 | Quantity produced | | | min_value | DECIMAL(10,3) | | Minimum acceptable value | | | max_value | DECIMAL(10,3) | | Maximum acceptable value | | | cycle_time_minutes | DECIMAL(8,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Per-unit processing time | | | setup_time_minutes | DECIMAL(8,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Fixed setup time | | | unit_of_measure | VARCHAR(10) | | Test unit of measure | | | critical_parameter | VARCHAR(100) | | Parameter being tested | | | operation_name | VARCHAR(100) | NOT NULL | Operation description | | | specification_id | VARCHAR(20) | | Technical specification reference | | | bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier | | | work_center | VARCHAR(50) | | Work center location |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Defect Count",
+      "definition": "A non-negative integer field representing the total number of defects found in a product or process during inspection.",
+      "synonyms": [
+        "Number of defects",
+        "defect counts"
+      ],
+      "provenance_text": " | defect_count | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Number of defects found | | QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Cycle Time Minutes",
+      "definition": "The time, in minutes, required to process a single unit of product (per-unit processing time).",
+      "synonyms": [
+        "setup_time_minutes"
+      ],
+      "provenance_text": "| cycle_time_minutes | DECIMAL(8,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Per-unit processing time | | | setup_time_minutes | DECIMAL(8,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Fixed setup time |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Lead Time For",
+      "definition": "The duration required to procure or produce a product.",
+      "synonyms": [
+        "lead time",
+        "lead_time_days"
+      ],
+      "provenance_text": "Each product has a unique identifier, name, type classification, base cost, and lead time for procurement or production. | | lead_time_days | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Procurement or production lead time | | | lead_time_days | INT | NOT NULL, DEFAULT 0 | Procurement lead time |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Material Transfers Between",
+      "definition": "An operational concept representing the physical movement of materials across the supply chain between suppliers, warehouses, and customers, typically captured as inbound and outbound shipments.",
+      "synonyms": [
+        "transfer of materials"
+      ],
+      "provenance_text": "Tracks material transfers between warehouses, suppliers, and customers. | A Shipment represents the physical transfer of materials between warehouses, from suppliers to warehouses (inbound), or from warehouses to customers (outbound).",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Max Value",
+      "definition": "max_value is the upper bound defining the maximum permissible value for a numeric field in validation or constraint rules.",
+      "synonyms": [
+        "min_value"
+      ],
+      "provenance_text": "| max_value | DECIMAL(10,3) | | Maximum acceptable value | | | min_value | DECIMAL(10,3) | | Minimum acceptable value |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Reorder Threshold",
+      "definition": "A numeric quantity in inventory records that specifies the stock level at which a replenishment order should be triggered.",
+      "synonyms": [
+        "reorder threshold"
+      ],
+      "provenance_text": "| reorder_threshold | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00 | Reorder trigger level | | Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "N",
+      "definition": "| is_optional | yes_no_t | NOT NULL, DEFAULT 'N' | Whether component is optional |",
+      "synonyms": [],
+      "provenance_text": "| is_optional | yes_no_t | NOT NULL, DEFAULT 'N' | Whether component is optional |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Parent Product Id",
+      "definition": "**Constraints:**\n- `uq_bom_structure` UNIQUE (parent_product_id, component_product_id) \u2014 prevents duplicate entries",
+      "synonyms": [],
+      "provenance_text": "**Constraints:**\n- `uq_bom_structure` UNIQUE (parent_product_id, component_product_id) \u2014 prevents duplicate entries",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Product",
+      "definition": "- A product can contain other products as components via BOM",
+      "synonyms": [],
+      "provenance_text": "- A product can contain other products as components via BOM",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Actual Arrival Date",
+      "definition": "| actual_arrival | DATE | | Actual arrival date |",
+      "synonyms": [],
+      "provenance_text": "| actual_arrival | DATE | | Actual arrival date |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Bom",
+      "definition": "The Bill of Materials (BOM) defines the composition of products by specifying which components and sub-assemblies are required to manufacture a parent product. | Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure. | Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure.",
+      "synonyms": [],
+      "provenance_text": "The Bill of Materials (BOM) defines the composition of products by specifying which components and sub-assemblies are required to manufacture a parent product. | Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure. | Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "City Location",
+      "definition": "| city | VARCHAR(50) | | City location |",
+      "synonyms": [],
+      "provenance_text": "| city | VARCHAR(50) | | City location |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Component Name",
+      "definition": "| component_name | VARCHAR(100) | NOT NULL | Component name |",
+      "synonyms": [],
+      "provenance_text": "| component_name | VARCHAR(100) | NOT NULL | Component name |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Customer Reference (Outbound)",
+      "definition": "| customer_id | VARCHAR(20) | | Customer reference (outbound) |",
+      "synonyms": [],
+      "provenance_text": "| customer_id | VARCHAR(20) | | Customer reference (outbound) |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Date",
+      "definition": "| expiry_date | DATE | | Expiry date (if applicable) |",
+      "synonyms": [],
+      "provenance_text": "| expiry_date | DATE | | Expiry date (if applicable) |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Depth In Product Hierarchy",
+      "definition": "| bom_level | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Depth in product hierarchy |",
+      "synonyms": [],
+      "provenance_text": "| bom_level | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Depth in product hierarchy |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Estimated Arrival Date",
+      "definition": "| estimated_arrival | DATE | | Estimated arrival date |",
+      "synonyms": [],
+      "provenance_text": "| estimated_arrival | DATE | | Estimated arrival date |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Key",
+      "definition": "| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product produced | | | product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product reference |",
+      "synonyms": [],
+      "provenance_text": "| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product produced | | | product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product reference |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Key",
+      "definition": "| warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Storage location |",
+      "synonyms": [],
+      "provenance_text": "| warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Storage location |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Inbound, Outbound, Internal",
+      "definition": "| shipment_type | shipment_type_t | NOT NULL | INBOUND, OUTBOUND, INTERNAL |",
+      "synonyms": [],
+      "provenance_text": "| shipment_type | shipment_type_t | NOT NULL | INBOUND, OUTBOUND, INTERNAL |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Incoming, In Process, Final",
+      "definition": " | qc_type | qc_type_t | NOT NULL | INCOMING, IN_PROCESS, FINAL |",
+      "synonyms": [],
+      "provenance_text": " | qc_type | qc_type_t | NOT NULL | INCOMING, IN_PROCESS, FINAL |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Int",
+      "definition": "| sequence_number | INT | NOT NULL, CHECK > 0 | Operation sequence |",
+      "synonyms": [],
+      "provenance_text": "| sequence_number | INT | NOT NULL, CHECK > 0 | Operation sequence |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Inbound Shipments",
+      "definition": "Suppliers are linked to Inbound Shipments",
+      "synonyms": [],
+      "provenance_text": "Suppliers are linked to Inbound Shipments",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Inspection Notes",
+      "definition": " | notes | TEXT | | Inspection notes |",
+      "synonyms": [],
+      "provenance_text": " | notes | TEXT | | Inspection notes |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Inspector",
+      "definition": " | inspector_id | VARCHAR(20) | | Inspector reference |",
+      "synonyms": [],
+      "provenance_text": " | inspector_id | VARCHAR(20) | | Inspector reference |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Inventory",
+      "definition": "Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement. | Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement. | Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement.",
+      "synonyms": [],
+      "provenance_text": "Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement. | Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement. | Inventory represents the actual stock levels of components and products stored in specific warehouses. Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Inventory Levels",
+      "definition": "Shipments update Inventory levels",
+      "synonyms": [],
+      "provenance_text": "Shipments update Inventory levels",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Inventory Records",
+      "definition": "Products are stored in Inventory records | Components have Inventory records tracking stock levels",
+      "synonyms": [],
+      "provenance_text": "Products are stored in Inventory records | Components have Inventory records tracking stock levels",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Junction Table",
+      "definition": "## component_supplier\nJunction table linking components to their approved suppliers with pricing and lead time information.",
+      "synonyms": [],
+      "provenance_text": "## component_supplier\nJunction table linking components to their approved suppliers with pricing and lead time information.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Low, Medium, High, Urgent",
+      "definition": "| priority | priority_t | NOT NULL, DEFAULT 'MEDIUM' | LOW, MEDIUM, HIGH, URGENT |",
+      "synonyms": [],
+      "provenance_text": "| priority | priority_t | NOT NULL, DEFAULT 'MEDIUM' | LOW, MEDIUM, HIGH, URGENT |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Pass, Fail, Conditional",
+      "definition": " | result | qc_result_t | NOT NULL | PASS, FAIL, CONDITIONAL |",
+      "synonyms": [],
+      "provenance_text": " | result | qc_result_t | NOT NULL | PASS, FAIL, CONDITIONAL |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "In Progress Completed Closed",
+      "definition": "| status | status_t | NOT NULL, DEFAULT 'PENDING' | PENDING, IN_PROGRESS, COMPLETED, CLOSED |",
+      "synonyms": [],
+      "provenance_text": "| status | status_t | NOT NULL, DEFAULT 'PENDING' | PENDING, IN_PROGRESS, COMPLETED, CLOSED |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Pending, Shipped, Delivered, Cancelled",
+      "definition": "| status | shipment_status_t | NOT NULL, DEFAULT 'PENDING' | PENDING, SHIPPED, DELIVERED, CANCELLED |",
+      "synonyms": [],
+      "provenance_text": "| status | shipment_status_t | NOT NULL, DEFAULT 'PENDING' | PENDING, SHIPPED, DELIVERED, CANCELLED |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Product Name",
+      "definition": "| product_name | VARCHAR(100) | NOT NULL | Product name |",
+      "synonyms": [],
+      "provenance_text": "| product_name | VARCHAR(100) | NOT NULL | Product name |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Product To Manufacture",
+      "definition": "| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product to manufacture |",
+      "synonyms": [],
+      "provenance_text": "| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product to manufacture |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Qc",
+      "definition": "Quality Control (QC) represents inspection and testing activities performed on materials, in-process production, or finished goods.",
+      "synonyms": [],
+      "provenance_text": "Quality Control (QC) represents inspection and testing activities performed on materials, in-process production, or finished goods.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Qc Activities",
+      "definition": "**Relationships:**\n- QC inspections are performed on Batches\n- QC tests against Specifications\n- QC results determine Batch status\n- QC failures trigger rework or scrap decisions",
+      "synonyms": [],
+      "provenance_text": "**Relationships:**\n- QC inspections are performed on Batches\n- QC tests against Specifications\n- QC results determine Batch status\n- QC failures trigger rework or scrap decisions",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Qc Records",
+      "definition": "QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes. | QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes. | QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes.",
+      "synonyms": [],
+      "provenance_text": "QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes. | QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes. | QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Quality Control Inspections",
+      "definition": "Specifications are used in Quality Control inspections | Batches undergo Quality Control inspections",
+      "synonyms": [],
+      "provenance_text": "Specifications are used in Quality Control inspections | Batches undergo Quality Control inspections",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Quantity To Produce",
+      "definition": "| quantity_ordered | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK > 0 | Quantity to produce |",
+      "synonyms": [],
+      "provenance_text": "| quantity_ordered | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK > 0 | Quantity to produce |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Route",
+      "definition": "A Route defines the sequence of manufacturing operations or steps required to produce a product. | Indexes:\n- `idx_route_product` on product_id | Indexes:\n- `idx_route_sequence` on (product_id, sequence_number)",
+      "synonyms": [],
+      "provenance_text": "A Route defines the sequence of manufacturing operations or steps required to produce a product. | Indexes:\n- `idx_route_product` on product_id | Indexes:\n- `idx_route_sequence` on (product_id, sequence_number)",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Route Steps",
+      "definition": "- Route steps are ordered by sequence_number",
+      "synonyms": [],
+      "provenance_text": "- Route steps are ordered by sequence_number",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Routes",
+      "definition": "Routes determine production capacity requirements | Routes are used for scheduling Work Orders",
+      "synonyms": [],
+      "provenance_text": "Routes determine production capacity requirements | Routes are used for scheduling Work Orders",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Self Referential Relationship",
+      "definition": "Self-Referential Relationship:\n- `parent_product_id` references `product_id` \u2014 enables multi-level product assemblies",
+      "synonyms": [],
+      "provenance_text": "Self-Referential Relationship:\n- `parent_product_id` references `product_id` \u2014 enables multi-level product assemblies",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Shipment Date",
+      "definition": "| ship_date | DATE | NOT NULL | Shipment date |",
+      "synonyms": [],
+      "provenance_text": "| ship_date | DATE | NOT NULL | Shipment date |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "State Or Province",
+      "definition": "| state | VARCHAR(50) | | State or province |",
+      "synonyms": [],
+      "provenance_text": "| state | VARCHAR(50) | | State or province |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Street Address",
+      "definition": "| address | VARCHAR(200) | | Street address |",
+      "synonyms": [],
+      "provenance_text": "| address | VARCHAR(200) | | Street address |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Supplier",
+      "definition": "A Supplier is an external vendor or company that provides raw materials, components, or finished goods to the manufacturing organization. | Suppliers provide multiple Components (many-to-many via component_supplier) | Suppliers are linked to Inbound Shipments",
+      "synonyms": [],
+      "provenance_text": "A Supplier is an external vendor or company that provides raw materials, components, or finished goods to the manufacturing organization. | Suppliers provide multiple Components (many-to-many via component_supplier) | Suppliers are linked to Inbound Shipments",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Suppliers",
+      "definition": "Components are supplied by multiple Suppliers (many-to-many)",
+      "synonyms": [],
+      "provenance_text": "Components are supplied by multiple Suppliers (many-to-many)",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Technical Specification",
+      "definition": "may be associated with technical specifications that define quality requirements.",
+      "synonyms": [],
+      "provenance_text": "may be associated with technical specifications that define quality requirements.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Unique Bom Identifier",
+      "definition": "| bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier |",
+      "synonyms": [],
+      "provenance_text": "| bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Unique Qc Identifier",
+      "definition": "## quality_control\n\nStores inspection and testing records for quality assurance.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| qc_id | VARCHAR(20) | PRIMARY KEY | Unique QC identifier |",
+      "synonyms": [],
+      "provenance_text": "## quality_control\n\nStores inspection and testing records for quality assurance.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| qc_id | VARCHAR(20) | PRIMARY KEY | Unique QC identifier |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Unique Relationship Identifier",
+      "definition": "| component_supplier_id | VARCHAR(20) | PRIMARY KEY | Unique relationship identifier |",
+      "synonyms": [],
+      "provenance_text": "| component_supplier_id | VARCHAR(20) | PRIMARY KEY | Unique relationship identifier |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Unique Shipment Identifier",
+      "definition": "| shipment_id | VARCHAR(20) | PRIMARY KEY | Unique shipment identifier |",
+      "synonyms": [],
+      "provenance_text": "| shipment_id | VARCHAR(20) | PRIMARY KEY | Unique shipment identifier |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Unique Work Order Identifier",
+      "definition": "| work_order_id | VARCHAR(20) | PRIMARY KEY | Unique work order identifier |",
+      "synonyms": [],
+      "provenance_text": "| work_order_id | VARCHAR(20) | PRIMARY KEY | Unique work order identifier |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Work Order Outputs",
+      "definition": "Shipments fulfill Work Order outputs",
+      "synonyms": [],
+      "provenance_text": "Shipments fulfill Work Order outputs",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Work Orders",
+      "definition": "Products are used in Work Orders for production",
+      "synonyms": [],
+      "provenance_text": "Products are used in Work Orders for production",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Work Order",
+      "definition": "A Work Order represents a production job or manufacturing run to produce a specified quantity of a product. | Work Orders track planned versus completed quantities, status through the production lifecycle, priority levels, and planned dates. | Work Orders can have hierarchical relationships where a parent work order may decompose into child work orders for different production stages or sub-assemblies.",
+      "synonyms": [],
+      "provenance_text": "A Work Order represents a production job or manufacturing run to produce a specified quantity of a product. | Work Orders track planned versus completed quantities, status through the production lifecycle, priority levels, and planned dates. | Work Orders can have hierarchical relationships where a parent work order may decompose into child work orders for different production stages or sub-assemblies.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Warehouse",
+      "definition": "Inventory belongs to a Warehouse",
+      "synonyms": [],
+      "provenance_text": "Inventory belongs to a Warehouse",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Physical Storage Location",
+      "definition": "A Warehouse represents a physical storage location where materials, components, and finished goods are stored.",
+      "synonyms": [],
+      "provenance_text": "A Warehouse represents a physical storage location where materials, components, and finished goods are stored.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Production Job",
+      "definition": "A Work Order represents a production job or manufacturing run to produce a specified quantity of a product.",
+      "synonyms": [],
+      "provenance_text": "A Work Order represents a production job or manufacturing run to produce a specified quantity of a product.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Active",
+      "definition": "Products can be active or inactive based on current manufacturing requirements.",
+      "synonyms": [],
+      "provenance_text": "Products can be active or inactive based on current manufacturing requirements.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Actual Arrival",
+      "definition": "| actual_arrival | DATE | | Actual arrival date |",
+      "synonyms": [],
+      "provenance_text": "| actual_arrival | DATE | | Actual arrival date |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Address",
+      "definition": "| address | VARCHAR(200) | | Street address |",
+      "synonyms": [],
+      "provenance_text": "| address | VARCHAR(200) | | Street address |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "All Manufactured Items",
+      "definition": "# Manufacturing Data Dictionary\n\nThis data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationships. Special attention is given to self-referential relationships that support hierarchical product structures.\n\n## product\n\nStores all manufactured items including finished goods, assemblies, and components. Supports hierarchical product relationships via self-referencing foreign key.",
+      "synonyms": [],
+      "provenance_text": "# Manufacturing Data Dictionary\n\nThis data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationships. Special attention is given to self-referential relationships that support hierarchical product structures.\n\n## product\n\nStores all manufactured items including finished goods, assemblies, and components. Supports hierarchical product relationships via self-referencing foreign key.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Manufactured Item In",
+      "definition": "A Product represents any manufactured item in the system, including finished goods ready for sale, sub-assemblies used in production, and individual components.",
+      "synonyms": [],
+      "provenance_text": "A Product represents any manufactured item in the system, including finished goods ready for sale, sub-assemblies used in production, and individual components.",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Batch Id",
+      "definition": " | batch_id | VARCHAR(20) | | Production batch reference | | | batch_id | VARCHAR(20) | PRIMARY KEY | Unique batch identifier |",
+      "synonyms": [],
+      "provenance_text": " | batch_id | VARCHAR(20) | | Production batch reference | | | batch_id | VARCHAR(20) | PRIMARY KEY | Unique batch identifier |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Bom Id",
+      "definition": "| bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier | | | bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier |",
+      "synonyms": [],
+      "provenance_text": "| bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier | | | bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Bom Level",
+      "definition": "| bom_level | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Depth in product hierarchy | | | bom_level | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Depth in product hierarchy | | **Indexes:**\n- `idx_bom_level` on bom_level \u2014 hierarchical queries",
+      "synonyms": [],
+      "provenance_text": "| bom_level | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Depth in product hierarchy | | | bom_level | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Depth in product hierarchy | | **Indexes:**\n- `idx_bom_level` on bom_level \u2014 hierarchical queries",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Capacity",
+      "definition": "| capacity | INT | NOT NULL, DEFAULT 0, CHECK > 0 | Storage capacity | | | capacity | INT | NOT NULL, DEFAULT 0, CHECK > 0 | Storage capacity | | | capacity | INT | NOT NULL, DEFAULT 0, CHECK > 0 | Storage capacity |",
+      "synonyms": [],
+      "provenance_text": "| capacity | INT | NOT NULL, DEFAULT 0, CHECK > 0 | Storage capacity | | | capacity | INT | NOT NULL, DEFAULT 0, CHECK > 0 | Storage capacity | | | capacity | INT | NOT NULL, DEFAULT 0, CHECK > 0 | Storage capacity |",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    },
+    {
+      "name": "Child Products",
+      "definition": "A Product can have multiple child Products (via BOM hierarchy)",
+      "synonyms": [],
+      "provenance_text": "A Product can have multiple child Products (via BOM hierarchy)",
+      "source_doc": "tests/fixtures/04_complex_manufacturing/business_glossary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 214
+  },
+  "tables_parsed": [
+    {
+      "name": "PRODUCT",
+      "columns": 7
+    },
+    {
+      "name": "COMPONENT",
+      "columns": 6
+    },
+    {
+      "name": "BOM",
+      "columns": 7
+    },
+    {
+      "name": "SUPPLIER",
+      "columns": 6
+    },
+    {
+      "name": "WAREHOUSE",
+      "columns": 7
+    },
+    {
+      "name": "INVENTORY",
+      "columns": 8
+    },
+    {
+      "name": "WORK_ORDER",
+      "columns": 10
+    },
+    {
+      "name": "SHIPMENT",
+      "columns": 9
+    },
+    {
+      "name": "QUALITY_CONTROL",
+      "columns": 9
+    },
+    {
+      "name": "SPECIFICATION",
+      "columns": 9
+    },
+    {
+      "name": "BATCH",
+      "columns": 7
+    },
+    {
+      "name": "ROUTE",
+      "columns": 8
+    },
+    {
+      "name": "COMPONENT_SUPPLIER",
+      "columns": 6
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Product",
+      "description": "Stores information about products, including identifiers, names, types, hierarchical relationships to parent products, cost basis, lead time for fulfillment, and active status."
+    },
+    {
+      "name": "Component",
+      "description": "Stores information about individual components, including identification, naming, category, measurement unit, cost, and associated specification."
+    },
+    {
+      "name": "Bill of Materials",
+      "description": "Stores the structure of the Bill of Materials, listing components required to build a parent product along with quantities and whether each component is optional."
+    },
+    {
+      "name": "Supplier",
+      "description": "Stores data about suppliers, including contact details and a preferred supplier indicator."
+    },
+    {
+      "name": "Warehouse",
+      "description": "Stores information about each warehouse, including its identity, location, capacity, and the manager responsible for the facility."
+    },
+    {
+      "name": "Inventory",
+      "description": "Stores current inventory levels and restocking information for products across warehouses, including on-hand quantities, reserved quantities, and reorder thresholds."
+    },
+    {
+      "name": "Work Order",
+      "description": "Stores records of work orders for products, including quantities, status, priority, planned timeline, and associated warehouse."
+    },
+    {
+      "name": "Shipment",
+      "description": "Stores shipment records detailing what is being shipped, who is supplying it, where it is coming from, and timing milestones including ship date, estimated and actual arrival, along with the shipment ... [TRUNCATED]"
+    },
+    {
+      "name": "Quality Control",
+      "description": "Stores records of quality control checks performed on batches, including the type of check, inspector, date, result, defect counts, and any notes."
+    },
+    {
+      "name": "Specification",
+      "description": "Stores specifications and their valid ranges or thresholds, including type, effective date, and measurement units used for validation or configuration in business processes."
+    },
+    {
+      "name": "Batch",
+      "description": "Stores batch-level production data, including which product was produced, the quantity, production and expiry dates, the warehouse location, and quality control status."
+    },
+    {
+      "name": "Route",
+      "description": "Stores the sequence of operations and timing for a product route, including the route identifiers, associated product, operation details, and the time required for setup and cycle execution."
+    },
+    {
+      "name": "Component Supplier",
+      "description": "Stores the relationship between components and suppliers, including whether a supplier is preferred and the lead time and price for providing a specific component."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 13,
+    "tables_enriched": 13,
+    "total_columns": 99
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 210,
+    "total_relationships": 240,
+    "completed_tables": 13
+  },
+  "stage_timings": {}
+}
