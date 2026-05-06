@@ -71,8 +71,9 @@ Full adversarial audit (9 agents, 68 findings) — all findings resolved. Securi
 | Check | Result |
 |-------|--------|
 | `pytest tests/unit/ -q` | **508 passed**, 0 failed |
-| `ruff check src/ scripts/` | 38 pre-existing (E501, B008, A002, TC) — 0 new |
-| Pipeline AB-01→AB-20 | Running (AB-12/20 at time of release) |
+| `ruff check src/ scripts/` | **All checks passed!** (0 errors, 0 warnings) |
+| `ruff format --check src/ scripts/` | All files formatted |
+| Pipeline AB-01→AB-20 | In progress |
 
 ## Commits
 
@@ -86,3 +87,18 @@ Full adversarial audit (9 agents, 68 findings) — all findings resolved. Securi
 | `2dd95ff` | Config drift C-023→C-031 |
 | `a151c6c` | SSRF URL validation + input bounds + 66 new tests |
 | `0a60345` | 4 test gap files (kg_registry, conversations, node_utils, mapping/retrieval) |
+| `7443783` | Code cleanup: ruff --fix (290 fixes), dead code removal, drop TCH rule |
+| `d7f91c3` | Code style: ruff format (40 files) |
+| `0249354` | Fix all remaining ruff warnings (E501, B023, N806, B905, UP031, SIM103) |
+
+### Code Cleanup (Post-Audit)
+
+- **Ruff --fix** (290 auto-fixes): import sorting (I001), syntax upgrades (UP), simplifications (SIM)
+- **Ruff format**: 40 files reformatted to consistent style
+- **Dead code removal**: 3 unused variables (`cfg`, `candidate_text`, `idx_arr`)
+- **TCH rule dropped**: Incompatible with LangGraph runtime TypedDict resolution (`from __future__ import annotations` + `TYPE_CHECKING` breaks StateGraph channel introspection)
+- **E501 resolved**: All 68 long lines broken across 15 files
+- **B023 resolved**: Loop variable binding via default argument pattern
+- **B905/UP031/SIM103**: `zip(strict=False)`, f-string upgrades, inline returns
+- **Per-file-ignores**: Added for framework patterns (A002 shadow in Pydantic models, BLE001 in resilient pipeline nodes)
+- **Final state**: `ruff check src/ scripts/` → **All checks passed!**
