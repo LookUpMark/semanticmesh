@@ -261,7 +261,7 @@ def export_run_plots(summary: dict[str, Any], output_dir: Path) -> list[Path]:
 
         df_rows = [
             {"difficulty": d, "gt_coverage": c}
-            for d, c in zip(difficulties, coverages)
+            for d, c in zip(difficulties, coverages, strict=False)
             if c is not None
         ]
         df = pd.DataFrame(df_rows)
@@ -382,9 +382,9 @@ def export_ablation_master_csv(
                 continue
             n = len(vals)
 
-            def _mean(k: str) -> float:
-                s = [v.get(k, 0) or 0 for v in vals]
-                return sum(s) / n if n else 0
+            def _mean(k: str, _vals: list = vals, _n: int = n) -> float:
+                s = [v.get(k, 0) or 0 for v in _vals]
+                return sum(s) / _n if _n else 0
 
             overalls = [v.get("overall", 0) or 0 for v in vals]
             writer.writerow(
@@ -433,9 +433,9 @@ def export_ablation_master_csv(
                 continue
             n = len(vals)
 
-            def _mean(k: str) -> float:
-                s = [v.get(k, 0) or 0 for v in vals]
-                return sum(s) / n if n else 0
+            def _mean(k: str, _vals: list = vals, _n: int = n) -> float:
+                s = [v.get(k, 0) or 0 for v in _vals]
+                return sum(s) / _n if _n else 0
 
             overalls = [v.get("overall", 0) or 0 for v in vals]
             writer.writerow(
@@ -558,7 +558,7 @@ def export_ablation_plots(
     fig, ax = plt.subplots(figsize=(14, 6))
     colors_bar = [
         "#3498db" if s == "AB-00" else ("#2ecc71" if m >= baseline_val else "#e74c3c")
-        for s, m in zip(study_agg["study_id"], study_agg["mean"])
+        for s, m in zip(study_agg["study_id"], study_agg["mean"], strict=False)
     ]
     ax.bar(
         study_agg["study_id"].astype(str),

@@ -259,9 +259,7 @@ def propose_mapping_heuristic(
             return True
         if len(n_tokens) == 0 or len(n_tokens) > 8:
             return True
-        if n.lower() in generic_noise_tokens:
-            return True
-        return False
+        return n.lower() in generic_noise_tokens
 
     table_tokens = {
         t

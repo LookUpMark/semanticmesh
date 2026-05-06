@@ -309,7 +309,9 @@ def get_reasoning_llm() -> LLMProtocol:
 
 @lru_cache(maxsize=1)
 def get_extraction_llm() -> LLMProtocol:
-    """Extraction SLM — provider auto-detected from model name (or from settings.llm_provider), T=0.0.
+    """Extraction SLM — provider auto-detected from model name, T=0.0.
+
+    (or from settings.llm_provider)
 
     Used for: triplet extraction from PDF chunks.
 

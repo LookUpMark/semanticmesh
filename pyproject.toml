@@ -72,8 +72,11 @@ line-length = 100
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
-"scripts/*.py" = ["E402", "E501"]  # E402: dotenv first, E501: borderline line length
+"scripts/*.py" = ["E402", "E501", "B023", "SIM108", "E731"]  # report scripts: loop-scoped helpers
 "src/prompts/templates.py" = ["E501"]  # Line too long (prompt strings can be long)
+"src/api/demo_router.py" = ["B008"]  # FastAPI requires File()/Form() in defaults
+"src/config/llm_client.py" = ["A002"]  # `input` is LangChain BaseChatModel interface
+"src/generation/query_graph.py" = ["E402"]  # warnings.filterwarnings before imports
 
 [tool.mypy]
 python_version = "3.11"

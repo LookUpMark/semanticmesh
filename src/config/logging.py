@@ -52,7 +52,7 @@ def setup_notebook_logging() -> None:
     handler.setFormatter(_NotebookFormatter())
     root.addHandler(handler)
     root.setLevel(logging.INFO)
-    _SILENT = (
+    silent_loggers = (
         "httpx",
         "httpcore",
         "urllib3",
@@ -63,7 +63,7 @@ def setup_notebook_logging() -> None:
         "openai",
         "anthropic",
     )
-    for name in _SILENT:
+    for name in silent_loggers:
         logging.getLogger(name).setLevel(logging.WARNING)
 
     logging.getLogger("src.graph.neo4j_client").setLevel(logging.WARNING)

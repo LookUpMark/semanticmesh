@@ -39,127 +39,192 @@ ABLATION_DESC: dict[str, dict[str, str]] = {
     "AB-00": {
         "title": "Baseline — default settings",
         "group": "Baseline",
-        "hypothesis": "The full-featured pipeline should achieve the best possible quality across all dimensions.",
+        "hypothesis": (
+            "The full-featured pipeline should achieve the best "
+            "possible quality across all dimensions."
+        ),
         "affected_components": "None (reference point)",
     },
     "AB-01": {
         "title": "Retrieval: Vector-only (no BM25, no graph)",
         "group": "Retrieval Mode",
-        "hypothesis": "Vector-only retrieval should underperform hybrid retrieval, particularly on exact-match and structural queries.",
+        "hypothesis": (
+            "Vector-only retrieval should underperform hybrid retrieval, "
+            "particularly on exact-match and structural queries."
+        ),
         "affected_components": "Query graph: retrieval node",
     },
     "AB-02": {
         "title": "Retrieval: BM25-only (no vector, no graph)",
         "group": "Retrieval Mode",
-        "hypothesis": "BM25 should perform better than vector-only for exact schema/column name queries, but worse for semantic queries.",
+        "hypothesis": (
+            "BM25 should perform better than vector-only for exact "
+            "schema/column name queries, but worse for semantic queries."
+        ),
         "affected_components": "Query graph: retrieval node",
     },
     "AB-03": {
         "title": "Retrieval: Reranker OFF (raw hybrid ranking)",
         "group": "Retrieval Mode",
-        "hypothesis": "Without reranking, context ordering may be suboptimal, slightly reducing answer quality on boundary cases.",
+        "hypothesis": (
+            "Without reranking, context ordering may be suboptimal, "
+            "slightly reducing answer quality on boundary cases."
+        ),
         "affected_components": "Query graph: reranker node",
     },
     "AB-04": {
         "title": "Reranker top_k=5 (smaller pool)",
         "group": "Reranker Pool Size",
-        "hypothesis": "Smaller pool reduces reranking overhead but may miss relevant documents that ranked 6-12 in the fusion stage.",
+        "hypothesis": (
+            "Smaller pool reduces reranking overhead but may miss relevant "
+            "documents that ranked 6-12 in the fusion stage."
+        ),
         "affected_components": "Query graph: reranker node",
     },
     "AB-05": {
         "title": "Reranker top_k=20 (larger pool)",
         "group": "Reranker Pool Size",
-        "hypothesis": "Larger pool gives the reranker more material to work with, potentially improving recall at the cost of latency.",
+        "hypothesis": (
+            "Larger pool gives the reranker more material to work with, "
+            "potentially improving recall at the cost of latency."
+        ),
         "affected_components": "Query graph: reranker node",
     },
     "AB-06": {
         "title": "Chunking 128/16 (smaller chunks)",
         "group": "Chunk Size",
-        "hypothesis": "Smaller chunks increase precision but may fragment single-concept context, hurting multi-hop questions.",
+        "hypothesis": (
+            "Smaller chunks increase precision but may fragment "
+            "single-concept context, hurting multi-hop questions."
+        ),
         "affected_components": "Builder graph: chunk node, embeddings",
     },
     "AB-07": {
         "title": "Chunking 384/48 (larger chunks)",
         "group": "Chunk Size",
-        "hypothesis": "Larger chunks preserve more context per retrieval unit at the cost of retrieval precision.",
+        "hypothesis": (
+            "Larger chunks preserve more context per retrieval unit "
+            "at the cost of retrieval precision."
+        ),
         "affected_components": "Builder graph: chunk node, embeddings",
     },
     "AB-08": {
         "title": "Chunking 512/64 (largest chunks)",
         "group": "Chunk Size",
-        "hypothesis": "Very large chunks may harm precision but benefit complex multi-hop questions that need broad context.",
+        "hypothesis": (
+            "Very large chunks may harm precision but benefit complex "
+            "multi-hop questions that need broad context."
+        ),
         "affected_components": "Builder graph: chunk node, embeddings",
     },
     "AB-09": {
         "title": "Extraction max tokens=4096 (conservative)",
         "group": "Extraction Token Limit",
-        "hypothesis": "Fewer tokens per extraction call may reduce triplet completeness on dense documents.",
+        "hypothesis": (
+            "Fewer tokens per extraction call may reduce triplet "
+            "completeness on dense documents."
+        ),
         "affected_components": "Builder graph: triplet extraction node",
     },
     "AB-10": {
         "title": "Extraction max tokens=16384 (generous)",
         "group": "Extraction Token Limit",
-        "hypothesis": "Higher token budget improves extraction completeness; may improve KG density.",
+        "hypothesis": (
+            "Higher token budget improves extraction completeness; "
+            "may improve KG density."
+        ),
         "affected_components": "Builder graph: triplet extraction node",
     },
     "AB-11": {
         "title": "ER similarity threshold=0.65 (aggressive merging)",
         "group": "Entity Resolution",
-        "hypothesis": "More aggressive merging may collapse distinct entities into erroneous super-nodes, hurting precision.",
+        "hypothesis": (
+            "More aggressive merging may collapse distinct entities into "
+            "erroneous super-nodes, hurting precision."
+        ),
         "affected_components": "Builder graph: entity resolution",
     },
     "AB-12": {
         "title": "ER similarity threshold=0.85 (conservative merging)",
         "group": "Entity Resolution",
-        "hypothesis": "Conservative merging preserves entity distinctness, possibly at the cost of missing synonymous concepts.",
+        "hypothesis": (
+            "Conservative merging preserves entity distinctness, possibly "
+            "at the cost of missing synonymous concepts."
+        ),
         "affected_components": "Builder graph: entity resolution",
     },
     "AB-13": {
         "title": "ER blocking top_k=5 (smaller candidate set)",
         "group": "Entity Resolution",
-        "hypothesis": "Smaller K reduces LLM judge calls but may miss similar entities ranked 6-10 in embedding space.",
+        "hypothesis": (
+            "Smaller K reduces LLM judge calls but may miss similar "
+            "entities ranked 6-10 in embedding space."
+        ),
         "affected_components": "Builder graph: ER blocking",
     },
     "AB-14": {
         "title": "ER blocking top_k=20 (larger candidate set)",
         "group": "Entity Resolution",
-        "hypothesis": "Larger K increases recall for entity deduplication at the cost of more LLM judge invocations.",
+        "hypothesis": (
+            "Larger K increases recall for entity deduplication at the "
+            "cost of more LLM judge invocations."
+        ),
         "affected_components": "Builder graph: ER blocking",
     },
     "AB-15": {
         "title": "Schema enrichment OFF",
         "group": "Pipeline Components",
-        "hypothesis": "Without enrichment, the mapping node may produce lower-confidence proposals on legacy/acronym-heavy schemas.",
+        "hypothesis": (
+            "Without enrichment, the mapping node may produce "
+            "lower-confidence proposals on legacy/acronym-heavy schemas."
+        ),
         "affected_components": "Builder graph: schema enrichment node",
     },
     "AB-16": {
         "title": "Actor–Critic validation OFF",
         "group": "Pipeline Components",
-        "hypothesis": "Without validation, low-confidence or erroneous proposals pass directly to Cypher generation, potentially reducing KG quality.",
+        "hypothesis": (
+            "Without validation, low-confidence or erroneous proposals "
+            "pass directly to Cypher generation, potentially reducing "
+            "KG quality."
+        ),
         "affected_components": "Builder graph: validate mapping node",
     },
     "AB-17": {
         "title": "HITL confidence threshold=0.70",
         "group": "HITL Threshold",
-        "hypothesis": "More HITL interrupts may slow pipeline but improve mapping accuracy on borderline proposals.",
+        "hypothesis": (
+            "More HITL interrupts may slow pipeline but improve mapping "
+            "accuracy on borderline proposals."
+        ),
         "affected_components": "Builder graph: validate mapping, HITL interrupt",
     },
     "AB-18": {
         "title": "HITL confidence threshold=0.85",
         "group": "HITL Threshold",
-        "hypothesis": "Higher threshold filters more proposals to human review, potentially improving quality.",
+        "hypothesis": (
+            "Higher threshold filters more proposals to human review, "
+            "potentially improving quality."
+        ),
         "affected_components": "Builder graph: validate mapping, HITL interrupt",
     },
     "AB-19": {
         "title": "Cypher healing OFF",
         "group": "Pipeline Components",
-        "hypothesis": "Without healing, any Cypher syntax errors from LLM generation cause table failures, reducing graph completeness.",
+        "hypothesis": (
+            "Without healing, any Cypher syntax errors from LLM "
+            "generation cause table failures, reducing graph "
+            "completeness."
+        ),
         "affected_components": "Builder graph: cypher heal node",
     },
     "AB-20": {
         "title": "Hallucination grader OFF",
         "group": "Pipeline Components",
-        "hypothesis": "Without grading, hallucinated or unsupported answers may pass through, reducing answer quality.",
+        "hypothesis": (
+            "Without grading, hallucinated or unsupported answers may "
+            "pass through, reducing answer quality."
+        ),
         "affected_components": "Query graph: hallucination grader node",
     },
     "AB-BEST": {
@@ -186,7 +251,10 @@ ABLATION_DESC: dict[str, dict[str, str]] = {
 ABLATION_MATRIX: dict[str, dict[str, Any]] = {
     # AB-00: Baseline with default settings
     "AB-00": {
-        "description": "Baseline — default settings (hybrid retrieval, reranker ON, chunking 256/32)",
+        "description": (
+            "Baseline — default settings "
+            "(hybrid retrieval, reranker ON, chunking 256/32)"
+        ),
         "env_overrides": {},
         "primary_metric": "faithfulness",
         "run_ragas": True,
@@ -324,7 +392,8 @@ ABLATION_MATRIX: dict[str, dict[str, Any]] = {
     # Per-dimension winners (AI Judge /5):
     #   Retrieval mode:       hybrid        (AB-00=4.25 > AB-01=3.80, AB-02=4.10)
     #   Reranker:             ON + top_k=20 (AB-05=4.65 > AB-03 OFF=4.35 > AB-00 top_k=12=4.25)
-    #   Chunk size:           128/16        (AB-06=4.65, tied AB-08 512/64=4.65; 128 favours top_k=20 diversity)
+    #   Chunk size:           128/16        (AB-06=4.65, tied AB-08 512/64=4.65;
+    #                                         128 favours top_k=20 diversity)
     #   Extraction tokens:    4096          (AB-09=4.35 > baseline=4.25 > AB-10=4.25)
     #   ER threshold:         0.65          (AB-11=4.65 > baseline=4.25)
     #   ER blocking top_k:    5             (AB-13=4.55 > baseline=4.25 = AB-14=4.25)

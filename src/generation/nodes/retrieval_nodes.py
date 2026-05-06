@@ -81,9 +81,7 @@ def _is_noise_chunk(chunk: RetrievedChunk) -> bool:
     text = chunk.text.lower()
     if any(marker in text for marker in _NOISE_MARKERS):
         return True
-    if len(chunk.text.strip()) < 18 and "→" not in chunk.node_id:
-        return True
-    return False
+    return len(chunk.text.strip()) < 18 and "→" not in chunk.node_id
 
 
 def _pre_filter_rerank_pool(

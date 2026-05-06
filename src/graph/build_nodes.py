@@ -226,7 +226,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
         concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
 
         # Reject concept names that are still garbage after normalization
-        # Fallback to enriched_table_name (e.g. "Shipment" for SHIPMENT) instead of skipping entirely
+        # Fallback to enriched_table_name (e.g. "Shipment" for SHIPMENT)
+        # instead of skipping entirely
         if not is_valid_entity_name(concept_name):
             fallback_name = normalize_concept_name(
                 getattr(table, "enriched_table_name", None) or table.table_name
@@ -242,7 +243,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 concept_name = fallback_name
             else:
                 logger.warning(
-                    "Concept name '%s' (raw: '%s') rejected by quality gate — skipping graph write.",
+                    "Concept name '%s' (raw: '%s') rejected by quality "
+                    "gate — skipping graph write.",
                     concept_name,
                     proposal.mapped_concept,
                 )
@@ -277,7 +279,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             for kw in blocked_keywords:
                 if kw in upper_cypher:
                     logger.warning(
-                        "LLM Cypher contains blocked keyword '%s' — falling back to deterministic builder.",
+                        "LLM Cypher contains blocked keyword '%s' — "
+                    "falling back to deterministic builder.",
                         kw.strip(),
                     )
                     cypher_failed = True
@@ -335,7 +338,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     "MATCH (bc:BusinessConcept {name: $bc_name}) "
                     "MATCH (pt:PhysicalTable) WHERE toLower(pt.table_name) = toLower($tbl) "
                     "MERGE (bc)-[r:MAPPED_TO]->(pt) "
-                    "ON CREATE SET r.confidence = $conf, r.validated_by = 'llm_judge', r.created_at = datetime() "
+                    "ON CREATE SET r.confidence = $conf, "
+                    "r.validated_by = 'llm_judge', r.created_at = datetime() "
                     "ON MATCH SET r.confidence = $conf, r.updated_at = datetime()",
                     {"bc_name": concept_name, "tbl": table.table_name, "conf": proposal.confidence},
                 )
@@ -400,7 +404,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     attr_texts = [params["description"] for _, params in attr_statements]
                     attr_names = [params["attr_name"] for _, params in attr_statements]
                     vectors = model.encode(attr_texts, batch_size=len(attr_texts))
-                    for attr_name, vec in zip(attr_names, vectors):
+                    for attr_name, vec in zip(attr_names, vectors, strict=False):
                         client.execute_cypher(
                             "MATCH (a:Attribute {name: $name}) SET a.embedding = $emb",
                             {"name": attr_name, "emb": vec.tolist()},

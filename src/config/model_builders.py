@@ -81,8 +81,8 @@ def _validate_base_url(url: str | None) -> str | None:
 
     hostname = parsed.hostname or ""
     # Block cloud metadata endpoints
-    _BLOCKED_HOSTS = {"169.254.169.254", "metadata.google.internal", "100.100.100.200"}
-    if hostname in _BLOCKED_HOSTS:
+    blocked_hosts = {"169.254.169.254", "metadata.google.internal", "100.100.100.200"}
+    if hostname in blocked_hosts:
         raise ValueError(f"Blocked metadata endpoint: {hostname}")
 
     # Block private/link-local IPs (allow localhost for local dev servers)

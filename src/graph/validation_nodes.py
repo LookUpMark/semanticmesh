@@ -46,7 +46,8 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
         if error:
             if attempts >= settings.max_reflection_attempts:
                 logger.warning(
-                    "Pydantic validation failed after %d attempts for '%s' — accepting best proposal.",
+                    "Pydantic validation failed after %d attempts for "
+                    "'%s' — accepting best proposal.",
                     attempts,
                     proposal.table_name,
                 )

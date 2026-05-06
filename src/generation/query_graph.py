@@ -77,14 +77,14 @@ def _make_checkpointer():
     try:
         from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer  # type: ignore[import]
 
-        _ALLOWED_MODULES = [
+        allowed_modules = [
             ("src.models.schemas", "RetrievedChunk"),
             ("src.models.schemas", "GraderDecision"),
             ("src.config.tracing", "QueryTrace"),
         ]
         serde = JsonPlusSerializer()
         existing: list = getattr(serde, "allowed_msgpack_modules", []) or []
-        for entry in _ALLOWED_MODULES:
+        for entry in allowed_modules:
             if entry not in existing:
                 existing.append(entry)
         serde.allowed_msgpack_modules = existing  # type: ignore[attr-defined]
@@ -234,7 +234,8 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
             and chunk_count <= 2
         ):
             logger.info(
-                "Retrieval gate: near-zero score (%.4f) without structural evidence (chunks=%d); abstaining early.",
+                "Retrieval gate: near-zero score (%.4f) without structural "
+                "evidence (chunks=%d); abstaining early.",
                 top_score,
                 chunk_count,
             )
@@ -249,7 +250,8 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
 
         if top_score < settings.retrieval_gate_structural_threshold and has_structural_evidence:
             logger.info(
-                "Retrieval gate: low-score but structural evidence present (chunks=%d); proceeding with warning.",
+                "Retrieval gate: low-score but structural evidence present "
+                "(chunks=%d); proceeding with warning.",
                 chunk_count,
             )
             log_node_event(
@@ -341,7 +343,8 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
         )
         return {
             # Persist accepted answer as AIMessage via add_messages reducer.
-            # Next invocation will see [..., HumanMessage(prev_q), AIMessage(prev_a), HumanMessage(curr_q)].
+            # Next invocation will see:
+            # [..., HumanMessage(prev_q), AIMessage(prev_a), HumanMessage(curr_q)].
             "messages": [AIMessage(content=answer)],
             "final_answer": answer,
             "sources": sources,

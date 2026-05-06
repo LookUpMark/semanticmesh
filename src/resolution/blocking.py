@@ -91,16 +91,16 @@ def _split_oversized_cluster(
         # Fresh Union-Find on sub-matrix
         parent = list(range(n_sub))
 
-        def find(i: int) -> int:
-            while parent[i] != i:
-                parent[i] = parent[parent[i]]
-                i = parent[i]
+        def find(i: int, _parent: list[int] = parent) -> int:
+            while _parent[i] != i:
+                _parent[i] = _parent[_parent[i]]
+                i = _parent[i]
             return i
 
-        def union(i: int, j: int) -> None:
-            ri, rj = find(i), find(j)
+        def union(i: int, j: int, _parent: list[int] = parent) -> None:
+            ri, rj = find(i, _parent), find(j, _parent)
             if ri != rj:
-                parent[ri] = rj
+                _parent[ri] = rj
 
         for i in range(n_sub):
             for j in range(i + 1, n_sub):

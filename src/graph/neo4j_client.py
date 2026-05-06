@@ -74,23 +74,23 @@ _SCHEMA_STATEMENTS: list[str] = [
     (
         "CREATE VECTOR INDEX businessconcept_embedding IF NOT EXISTS "
         "FOR (n:BusinessConcept) ON n.embedding "
-        "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
-    )
-    % _EMBEDDING_DIMENSION,
+        f"OPTIONS {{indexConfig: {{`vector.dimensions`: {_EMBEDDING_DIMENSION}, "
+        "`vector.similarity_function`: 'cosine'}}}"
+    ),
     (
         "CREATE VECTOR INDEX chunk_embedding IF NOT EXISTS "
         "FOR (c:Chunk) ON c.embedding "
-        "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
-    )
-    % _EMBEDDING_DIMENSION,
+        f"OPTIONS {{indexConfig: {{`vector.dimensions`: {_EMBEDDING_DIMENSION}, "
+        "`vector.similarity_function`: 'cosine'}}}"
+    ),
     "CREATE CONSTRAINT attribute_name_unique IF NOT EXISTS "
     "FOR (a:Attribute) REQUIRE a.name IS UNIQUE",
     (
         "CREATE VECTOR INDEX attribute_embedding IF NOT EXISTS "
         "FOR (a:Attribute) ON a.embedding "
-        "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
-    )
-    % _EMBEDDING_DIMENSION,
+        f"OPTIONS {{indexConfig: {{`vector.dimensions`: {_EMBEDDING_DIMENSION}, "
+        "`vector.similarity_function`: 'cosine'}}}"
+    ),
 ]
 
 

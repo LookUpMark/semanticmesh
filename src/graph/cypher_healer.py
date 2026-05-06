@@ -70,7 +70,7 @@ def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
         the Reflection Prompt verbatim.
     """
     # Safety: reject Cypher containing destructive or admin operations.
-    _BLOCKED_KEYWORDS = (
+    blocked_keywords = (
         "DROP ",
         "DETACH DELETE",
         "DELETE ",
@@ -91,16 +91,16 @@ def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
         "LOAD CSV",
     )
     upper = cypher.upper()
-    for kw in _BLOCKED_KEYWORDS:
+    for kw in blocked_keywords:
         if kw in upper:
             msg = f"Cypher contains blocked keyword '{kw.strip()}' — rejecting."
             logger.warning(msg)
             return False, msg
 
     # Positive allowlist: first keyword must be a safe read/write operation
-    _ALLOWED_FIRST_KEYWORDS = ("MERGE", "MATCH", "WITH", "UNWIND", "RETURN", "OPTIONAL", "CALL {")
+    allowed_first_keywords = ("MERGE", "MATCH", "WITH", "UNWIND", "RETURN", "OPTIONAL", "CALL {")
     stripped = cypher.strip().upper()
-    if not any(stripped.startswith(kw) for kw in _ALLOWED_FIRST_KEYWORDS):
+    if not any(stripped.startswith(kw) for kw in allowed_first_keywords):
         msg = "Cypher does not start with an allowed keyword — rejecting."
         logger.warning(msg)
         return False, msg

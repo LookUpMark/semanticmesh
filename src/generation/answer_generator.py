@@ -157,14 +157,16 @@ def generate_answer(
         top_score = max(float(c.score) for c in chunks)
         if top_score >= get_settings().retrieval_context_score_gate:
             logger.warning(
-                "Abstention with non-empty context (chunks=%d, top_score=%.3f) — forcing best-effort rewrite.",
+                "Abstention with non-empty context "
+                "(chunks=%d, top_score=%.3f) — forcing best-effort rewrite.",
                 len(chunks),
                 top_score,
             )
             corrective_critique = (
                 "The previous answer abstained despite available retrieved context. "
                 "Provide the best grounded answer from context and explicitly state uncertainty "
-                "for missing details. Do not use the generic abstention sentence unless context is empty."
+                "for missing details. Do not use the generic abstention sentence "
+                "unless context is empty."
             )
             corrective_prompt = ANSWER_WITH_CRITIQUE_USER.format(
                 context_chunks=context_block,
@@ -178,15 +180,18 @@ def generate_answer(
         top_score = max(float(c.score) for c in chunks)
         if top_score >= get_settings().partial_abstention_score_threshold:
             logger.info(
-                "Partial abstention detected (chunks=%d, top_score=%.3f) — requesting synthesis from available evidence.",
+                "Partial abstention detected (chunks=%d, top_score=%.3f) "
+                "— requesting synthesis from available evidence.",
                 len(chunks),
                 top_score,
             )
             partial_critique = (
                 "Your answer said you cannot find certain information, but the context includes "
                 "relevant schema and concept evidence. Extract and synthesize ALL facts that ARE "
-                "present in the context. State explicitly which specific details remain unavailable, "
-                "but provide a complete answer for every part that CAN be answered from the context."
+                "present in the context. State explicitly which specific details "
+                "remain unavailable, "
+                "but provide a complete answer for every part that CAN be "
+                "answered from the context."
             )
             partial_prompt = ANSWER_WITH_CRITIQUE_USER.format(
                 context_chunks=context_block,

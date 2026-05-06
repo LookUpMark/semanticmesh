@@ -205,7 +205,8 @@ def grade_answer(
         decision.consistency_corrections = consistency_corrections
 
         logger.info(
-            "Grader verdict: grounded=%s, action=%s, certainty=%.2f, parse_attempts=%d, critique=%r.",
+            "Grader verdict: grounded=%s, action=%s, certainty=%.2f, "
+            "parse_attempts=%d, critique=%r.",
             decision.grounded,
             decision.action,
             decision.certainty,

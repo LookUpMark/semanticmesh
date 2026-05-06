@@ -672,7 +672,10 @@ class BuildRequest(BaseModel):
     )
     config: PipelineConfig | None = Field(
         default=None,
-        description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
+        description=(
+            "Optional per-run configuration overrides "
+            "(models, temperatures, feature flags, etc.)."
+        ),
     )
 
 
@@ -805,7 +808,10 @@ class QueryRequest(BaseModel):
     )
     config: PipelineConfig | None = Field(
         default=None,
-        description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
+        description=(
+            "Optional per-run configuration overrides "
+            "(models, temperatures, feature flags, etc.)."
+        ),
     )
     session_id: str | None = Field(
         default=None,
@@ -870,7 +876,10 @@ class PipelineRequest(BaseModel):
     )
     run_ragas: bool = Field(
         default=False,
-        description="Compute RAGAS faithfulness/AR/CP/CR after answering (requires expected answers in the fixture).",
+        description=(
+            "Compute RAGAS faithfulness/AR/CP/CR after answering "
+            "(requires expected answers in the fixture)."
+        ),
     )
     study_id: str = Field(
         default="demo",
@@ -878,7 +887,10 @@ class PipelineRequest(BaseModel):
     )
     config: PipelineConfig | None = Field(
         default=None,
-        description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
+        description=(
+            "Optional per-run configuration overrides "
+            "(models, temperatures, feature flags, etc.)."
+        ),
     )
 
 

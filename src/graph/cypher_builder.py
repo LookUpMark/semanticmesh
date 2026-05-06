@@ -26,11 +26,18 @@ ON CREATE SET bc.definition = $definition,
               bc.synonyms = $synonyms,
               bc.confidence_score = $confidence_score,
               bc.created_at = datetime()
-ON MATCH SET  bc.definition = CASE WHEN bc.definition IS NULL OR bc.definition = '' THEN $definition ELSE bc.definition END,
+ON MATCH SET  bc.definition = CASE WHEN bc.definition IS NULL OR bc.definition = ''
+              THEN $definition ELSE bc.definition END,
               bc.mapping_reasoning = $mapping_reasoning,
-              bc.provenance_text = CASE WHEN bc.provenance_text IS NULL OR bc.provenance_text = '' THEN $provenance_text ELSE bc.provenance_text END,
-              bc.source_doc = CASE WHEN bc.source_doc IS NULL OR bc.source_doc = '' THEN $source_doc ELSE bc.source_doc END,
-              bc.synonyms = CASE WHEN bc.synonyms IS NULL OR size(bc.synonyms) = 0 THEN $synonyms ELSE bc.synonyms END,
+              bc.provenance_text = CASE WHEN bc.provenance_text IS NULL
+              OR bc.provenance_text = ''
+              THEN $provenance_text ELSE bc.provenance_text END,
+              bc.source_doc = CASE WHEN bc.source_doc IS NULL
+              OR bc.source_doc = ''
+              THEN $source_doc ELSE bc.source_doc END,
+              bc.synonyms = CASE WHEN bc.synonyms IS NULL
+              OR size(bc.synonyms) = 0
+              THEN $synonyms ELSE bc.synonyms END,
               bc.confidence_score = $confidence_score,
               bc.updated_at = datetime()
 
@@ -46,15 +53,26 @@ ON CREATE SET pt.name = $table_name,
               pt.table_description = $table_description,
               pt.enriched_columns = $enriched_columns,
               pt.created_at = datetime()
-ON MATCH SET  pt.schema_name = CASE WHEN pt.schema_name IS NULL THEN $schema_name ELSE pt.schema_name END,
-              pt.column_names = CASE WHEN pt.column_names IS NULL OR size(pt.column_names) = 0 THEN $column_names ELSE pt.column_names END,
-              pt.column_types = CASE WHEN pt.column_types IS NULL OR pt.column_types = '' THEN $column_types ELSE pt.column_types END,
+ON MATCH SET  pt.schema_name = CASE WHEN pt.schema_name IS NULL
+              THEN $schema_name ELSE pt.schema_name END,
+              pt.column_names = CASE WHEN pt.column_names IS NULL
+              OR size(pt.column_names) = 0
+              THEN $column_names ELSE pt.column_names END,
+              pt.column_types = CASE WHEN pt.column_types IS NULL
+              OR pt.column_types = ''
+              THEN $column_types ELSE pt.column_types END,
               pt.ddl_source = $ddl_source,
               pt.source_file = $source_file,
-              pt.comment = CASE WHEN pt.comment IS NULL OR pt.comment = '' THEN $table_comment ELSE pt.comment END,
-              pt.enriched_table_name = CASE WHEN pt.enriched_table_name IS NULL THEN $enriched_table_name ELSE pt.enriched_table_name END,
-              pt.table_description = CASE WHEN pt.table_description IS NULL OR pt.table_description = '' THEN $table_description ELSE pt.table_description END,
-              pt.enriched_columns = CASE WHEN pt.enriched_columns IS NULL OR pt.enriched_columns = '' THEN $enriched_columns ELSE pt.enriched_columns END,
+              pt.comment = CASE WHEN pt.comment IS NULL OR pt.comment = ''
+              THEN $table_comment ELSE pt.comment END,
+              pt.enriched_table_name = CASE WHEN pt.enriched_table_name IS NULL
+              THEN $enriched_table_name ELSE pt.enriched_table_name END,
+              pt.table_description = CASE WHEN pt.table_description IS NULL
+              OR pt.table_description = ''
+              THEN $table_description ELSE pt.table_description END,
+              pt.enriched_columns = CASE WHEN pt.enriched_columns IS NULL
+              OR pt.enriched_columns = ''
+              THEN $enriched_columns ELSE pt.enriched_columns END,
               pt.updated_at = datetime()
 
 MERGE (bc)-[r:MAPPED_TO]->(pt)

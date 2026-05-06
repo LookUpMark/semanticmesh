@@ -283,7 +283,8 @@ def post_build(req: BuildRequest) -> BuildResultResponse:
     description=(
         "Upload documentation (PDF, MD, TXT) and SQL DDL files directly — "
         "no server-side paths required. "
-        "Files are saved to a temporary directory and processed identically to the path-based endpoint. "
+        "Files are saved to a temporary directory and processed "
+        "identically to the path-based endpoint. "
         "Returns a `job_id` — poll **GET /demo/build/{job_id}** for results."
     ),
 )
@@ -455,10 +456,15 @@ async def post_pipeline_upload(
     doc_files: list[UploadFile] = File(
         ..., description="Business documentation files (PDF, MD, TXT)."
     ),
-    ddl_files: list[UploadFile] = File(..., description="DDL SQL files to map onto the ontology."),
+    ddl_files: list[UploadFile] = File(
+        ..., description="DDL SQL files to map onto the ontology."
+    ),
     questions: list[str] = Form(
         ...,
-        description="One or more natural-language questions (send multiple 'questions' fields for a list).",
+        description=(
+            "One or more natural-language questions "
+            "(send multiple 'questions' fields for a list)."
+        ),
     ),
     clear_graph: bool = True,
     lazy_extraction: bool = False,

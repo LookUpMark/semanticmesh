@@ -225,9 +225,14 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
             src = props.get("source_doc", "")
             if idx is None:
                 return None
-            rest = {k: v for k, v in props.items() if k not in ("parent_chunk_index", "source_doc")}
+            rest = {
+                k: v for k, v in props.items()
+                if k not in ("parent_chunk_index", "source_doc")
+            }
             return (
-                "MERGE (n:ParentChunk {parent_chunk_index: $idx, source_doc: $src}) SET n += $props",
+                "MERGE (n:ParentChunk "
+                "{parent_chunk_index: $idx, source_doc: $src}) "
+                "SET n += $props",
                 {"idx": idx, "src": src, "props": rest},
             )
         if "Chunk" in labels:
@@ -324,12 +329,16 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
                     )
                 if label == "ParentChunk":
                     return (
-                        f"MATCH ({alias}:ParentChunk {{parent_chunk_index: ${alias}_idx, source_doc: ${alias}_src}})",
+                        f"MATCH ({alias}:ParentChunk "
+                        f"{{parent_chunk_index: ${alias}_idx, "
+                        f"source_doc: ${alias}_src}})",
                         {f"{alias}_idx": int(parts[1]), f"{alias}_src": parts[2]},
                     )
                 if label == "Chunk":
                     return (
-                        f"MATCH ({alias}:Chunk {{chunk_index: ${alias}_idx, source_doc: ${alias}_src}})",
+                        f"MATCH ({alias}:Chunk "
+                        f"{{chunk_index: ${alias}_idx, "
+                        f"source_doc: ${alias}_src}})",
                         {f"{alias}_idx": int(parts[1]), f"{alias}_src": parts[2]},
                     )
                 return "", {}
@@ -419,7 +428,9 @@ def save_snapshot(name: str, description: str = "") -> dict[str, Any]:
     created_at = datetime.now(UTC).isoformat()
     with _db() as conn:
         conn.execute(
-            "INSERT INTO kg_snapshots (id, name, description, created_at, node_count, edge_count, snapshot_path) "
+            "INSERT INTO kg_snapshots "
+            "(id, name, description, created_at, "
+            "node_count, edge_count, snapshot_path) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
             (snap_id, name, description, created_at, len(nodes), len(edges), str(snapshot_path)),
         )

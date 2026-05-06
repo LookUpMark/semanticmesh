@@ -354,7 +354,10 @@ def is_valid_entity_name(name: str) -> bool:
         False
         >>> is_valid_entity_name("Valid Category Before")
         False
-        >>> is_valid_entity_name("a unique numeric identifier assigned to each customer in the system")
+        >>> is_valid_entity_name(
+        ...     "a unique numeric identifier assigned to each"
+        ...     " customer in the system"
+        ... )
         False
         >>> is_valid_entity_name("")
         False
