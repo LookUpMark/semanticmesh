@@ -38,7 +38,7 @@ def _get_shared_driver(uri: str, auth: tuple[str, str]):
             try:
                 _singleton_driver.close()
             except Exception:
-                logger.debug("Old driver close failed", exc_info=True)
+                logger.warning("Old driver close failed", exc_info=True)
         _singleton_driver = GraphDatabase.driver(uri, auth=auth)
         _singleton_driver.verify_connectivity()
         _singleton_uri = uri

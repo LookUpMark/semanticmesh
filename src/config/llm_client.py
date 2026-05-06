@@ -228,7 +228,9 @@ class FallbackLLM:
         self._logger: logging.Logger = get_logger(f"llm.{name}")
 
     def __getattr__(self, item: str) -> Any:
-        return getattr(self._get_current_model(), item)
+        with self._fallback_lock:
+            model = self._get_current_model()
+        return getattr(model, item)
 
     @property
     def temperature(self) -> float:

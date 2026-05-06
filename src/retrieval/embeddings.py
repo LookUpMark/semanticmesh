@@ -140,7 +140,7 @@ def embed_texts(
         return []
     if model is None:
         model = get_embeddings()
-    embeddings = model.encode(texts, batch_size=32)
+    embeddings = model.encode(texts, batch_size=get_settings().embedding_batch_size)
     return embeddings.tolist()
 
 

@@ -186,9 +186,14 @@ def rerank(
     # Linear interpolation: pool=3 → floor 0.40, pool≥10 → floor 0.55.
     if len(valid_chunks) >= 3:
         pool_size = len(valid_chunks)
-        pool_floor = min(0.55, 0.40 + (pool_size - 3) * (0.55 - 0.40) / (10 - 3))
+        settings = get_settings()
+        w_rerank = settings.reranker_weight_rerank
+        w_vector = settings.reranker_weight_vector
+        w_bm25 = settings.reranker_weight_bm25
+        w_graph = settings.reranker_weight_graph
+        pool_floor = min(w_vector, w_rerank + (pool_size - 3) * (w_vector - w_rerank) / (10 - 3))
         for i, chunk in enumerate(reranked[:5]):
-            floor = max(pool_floor - i * 0.05, 0.10)
+            floor = max(pool_floor - i * w_bm25, w_graph)
             if chunk.score < floor:
                 reranked[i] = chunk.model_copy(
                     update={

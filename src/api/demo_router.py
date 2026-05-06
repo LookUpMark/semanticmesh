@@ -32,7 +32,7 @@ from src.api.models import (
     SaveSnapshotRequest,
 )
 from src.config.logging import get_logger
-from src.evaluation.ablation_runner import _settings_override as _settings_override
+from src.evaluation.ablation_runner import _settings_override
 
 logger = get_logger(__name__)
 
@@ -343,6 +343,8 @@ async def stream_build_status(job_id: str):
 
     from fastapi.responses import StreamingResponse
 
+    from src.config.settings import get_settings as _get_settings
+
     async def _event_generator():
         last_step: str | None = "__init__"
         last_status: str = "__init__"
@@ -368,7 +370,7 @@ async def stream_build_status(job_id: str):
             if status in ("done", "failed"):
                 return
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(_get_settings().api_polling_interval)
 
     return StreamingResponse(
         _event_generator(),

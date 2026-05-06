@@ -96,7 +96,7 @@ def _extract_from_sentence(sentence: str, chunk_index: int) -> list[Triplet]:
                 predicate=predicate,
                 object=obj,
                 provenance_text=sentence,
-                confidence=0.55,
+                confidence=get_settings().heuristic_extraction_confidence,
                 source_chunk_index=chunk_index,
             )
         )

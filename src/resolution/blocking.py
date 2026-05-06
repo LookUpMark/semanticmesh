@@ -88,7 +88,7 @@ def _split_oversized_cluster(
     n_sub = len(member_indices)
 
     # Re-cluster with a tighter threshold (step up by 0.05 each iteration)
-    threshold = base_threshold + 0.10
+    threshold = base_threshold + get_settings().er_threshold_step
     max_iterations = 5
 
     for _ in range(max_iterations):

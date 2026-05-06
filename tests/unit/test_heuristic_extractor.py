@@ -77,7 +77,7 @@ def test_spacy_missing_falls_back_to_regex(monkeypatch) -> None:
     monkeypatch.setattr(
         heuristic_extractor,
         "get_settings",
-        lambda: SimpleNamespace(enable_spacy_heuristics=False),
+        lambda: SimpleNamespace(enable_spacy_heuristics=False, heuristic_extraction_confidence=0.55),
     )
 
     chunks = [_chunk("Customer maps to CUSTOMER_MASTER.", 2)]

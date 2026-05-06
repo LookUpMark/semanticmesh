@@ -59,13 +59,19 @@ class Settings(BaseSettings):
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = DEFAULT_CONFIG.embedding_model
     embedding_dimensions: int = DEFAULT_CONFIG.embedding_dimensions
+    embedding_batch_size: int = DEFAULT_CONFIG.embedding_batch_size
     reranker_model: str = DEFAULT_CONFIG.reranker_model
     reranker_top_k: int = DEFAULT_CONFIG.reranker_top_k
+    reranker_weight_rerank: float = DEFAULT_CONFIG.reranker_weight_rerank
+    reranker_weight_vector: float = DEFAULT_CONFIG.reranker_weight_vector
+    reranker_weight_bm25: float = DEFAULT_CONFIG.reranker_weight_bm25
+    reranker_weight_graph: float = DEFAULT_CONFIG.reranker_weight_graph
 
     # ── Entity Resolution ──────────────────────────────────────────────────────
     er_blocking_top_k: int = DEFAULT_CONFIG.er_blocking_top_k
     er_similarity_threshold: float = DEFAULT_CONFIG.er_similarity_threshold
     er_max_cluster_size: int = DEFAULT_CONFIG.er_max_cluster_size
+    er_threshold_step: float = DEFAULT_CONFIG.er_threshold_step
 
     # ── API Server ──────────────────────────────────────────────────────────────
     api_server_host: str = DEFAULT_CONFIG.api_server_host
@@ -75,6 +81,7 @@ class Settings(BaseSettings):
     api_job_ttl_seconds: int = DEFAULT_CONFIG.api_job_ttl_seconds
     api_rate_limit_max_attempts: int = DEFAULT_CONFIG.api_rate_limit_max_attempts
     api_rate_limit_window_seconds: int = DEFAULT_CONFIG.api_rate_limit_window_seconds
+    api_polling_interval: float = DEFAULT_CONFIG.api_polling_interval
 
     # ── Confidence & Loop Guards ───────────────────────────────────────────────
     confidence_threshold: float = DEFAULT_CONFIG.confidence_threshold
@@ -97,6 +104,8 @@ class Settings(BaseSettings):
     retrieval_min_score: float = DEFAULT_CONFIG.retrieval_min_score
     retrieval_min_score_ratio: float = DEFAULT_CONFIG.retrieval_min_score_ratio
     retrieval_salvage_min_score: float = DEFAULT_CONFIG.retrieval_salvage_min_score
+    retrieval_rrf_constant: int = DEFAULT_CONFIG.retrieval_rrf_constant
+    retrieval_context_score_gate: float = DEFAULT_CONFIG.retrieval_context_score_gate
 
     # ── Few-Shot ───────────────────────────────────────────────────────────────
     few_shot_cypher_examples: int = DEFAULT_CONFIG.few_shot_cypher_examples
@@ -118,6 +127,7 @@ class Settings(BaseSettings):
     heuristic_mapping_confidence_threshold: float = (
         DEFAULT_CONFIG.heuristic_mapping_confidence_threshold
     )
+    heuristic_extraction_confidence: float = DEFAULT_CONFIG.heuristic_extraction_confidence
     enable_lazy_expansion: bool = DEFAULT_CONFIG.enable_lazy_expansion
     lazy_expansion_confidence_threshold: float = DEFAULT_CONFIG.lazy_expansion_confidence_threshold
     enable_post_rerank_expansion: bool = DEFAULT_CONFIG.enable_post_rerank_expansion

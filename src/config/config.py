@@ -59,13 +59,19 @@ class AppConfig:
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = "BAAI/bge-m3"
     embedding_dimensions: int = 1024
+    embedding_batch_size: int = 32
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
     reranker_top_k: int = 20
+    reranker_weight_rerank: float = 0.40
+    reranker_weight_vector: float = 0.55
+    reranker_weight_bm25: float = 0.05
+    reranker_weight_graph: float = 0.10
 
     # ── Entity Resolution ──────────────────────────────────────────────────────
     er_blocking_top_k: int = 10
     er_similarity_threshold: float = 0.75
     er_max_cluster_size: int = 10
+    er_threshold_step: float = 0.10
 
     # ── Confidence & Loop Guards ───────────────────────────────────────────────
     confidence_threshold: float = 0.90
@@ -90,6 +96,8 @@ class AppConfig:
     retrieval_min_score: float = 0.05
     retrieval_min_score_ratio: float = 0.35
     retrieval_salvage_min_score: float = 0.07
+    retrieval_rrf_constant: int = 60
+    retrieval_context_score_gate: float = 0.10
 
     # ── Few-Shot ───────────────────────────────────────────────────────────────
     few_shot_cypher_examples: int = 5
@@ -102,6 +110,7 @@ class AppConfig:
     api_job_ttl_seconds: int = 3600
     api_rate_limit_max_attempts: int = 5
     api_rate_limit_window_seconds: int = 60
+    api_polling_interval: float = 0.5
 
     # ── Ablation Flags ─────────────────────────────────────────────────────────
     enable_schema_enrichment: bool = True
@@ -118,6 +127,7 @@ class AppConfig:
     spacy_model_name: str = "en_core_web_sm"
     er_judge_threshold: float = 0.80
     heuristic_mapping_confidence_threshold: float = 0.60
+    heuristic_extraction_confidence: float = 0.55
     enable_lazy_expansion: bool = True
     lazy_expansion_confidence_threshold: float = 0.40
     enable_post_rerank_expansion: bool = True

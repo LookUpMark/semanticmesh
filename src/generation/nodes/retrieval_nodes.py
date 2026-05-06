@@ -194,6 +194,7 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                     vec_results + chunk_vec_results + attr_results,
                     bm25_results,
                     trav_results + all_concepts + fk_chunks + mapping_chunks,
+                    rrf_k=settings.retrieval_rrf_constant,
                 )
 
                 if getattr(settings, "enable_lazy_expansion", False):
@@ -218,6 +219,7 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                             vec_results + chunk_vec_results + attr_results,
                             bm25_results,
                             trav_results + extra + all_concepts + fk_chunks,
+                            rrf_k=settings.retrieval_rrf_constant,
                         )
         logger.info(
             "Retrieval complete: %d merged chunks (mode=%s).",

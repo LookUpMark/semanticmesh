@@ -54,7 +54,7 @@ def _infer_singleton_definition(
         as a fallback when the LLM call fails.
     """
     if not provenance_texts:
-        return ""
+        return entity_name
     provenance_joined = " | ".join(provenance_texts[:3])
     user_msg = ENTITY_DEFINITION_USER.format(
         entity_name=entity_name,

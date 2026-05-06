@@ -91,6 +91,45 @@ def clean_json(raw: str) -> str:
     return cleaned
 
 
+_MAX_JSON_DEPTH = 50
+
+
+def safe_json_loads(text: str, *, max_depth: int = _MAX_JSON_DEPTH) -> object:
+    """Parse JSON with a nesting depth guard to prevent stack exhaustion.
+
+    Raises:
+        ValueError: If nesting exceeds *max_depth*.
+        json.JSONDecodeError: On invalid JSON.
+    """
+    import json
+
+    depth = 0
+    in_string = False
+    escape = False
+    for ch in text:
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            if in_string:
+                escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch in "{[":
+            depth += 1
+            if depth > max_depth:
+                raise ValueError(
+                    f"JSON nesting depth ({depth}) exceeds maximum ({max_depth})."
+                )
+        elif ch in "}]":
+            depth -= 1
+    return json.loads(text)
+
+
 class ReflectionResult(TypedDict):
     """Result of a reflection retry attempt.
 

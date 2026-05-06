@@ -399,6 +399,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                                 raise
                 except Exception as exc:
                     logger.warning("Could not set embedding for '%s': %s", concept_name, exc)
+                    state.setdefault("embedding_failures", []).append(concept_name)
 
             # ── MENTIONS edges: link Chunk nodes to this BusinessConcept ──
             if proposal.mapped_concept:
