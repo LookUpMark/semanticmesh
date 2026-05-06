@@ -1,18 +1,18 @@
 # AB-01 — 01_basics_ecommerce — Run Analysis
 
-**Timestamp:** 2026-04-21 09:52:52  
-**Run tag:** `run-20260421_110728`
+**Timestamp:** 2026-05-06 14:38:47  
+**Run tag:** `run-20260506_162926`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
-| Extraction model | `LLM (openai/gpt-4.1-nano)` |
-| Reasoning model | `openai/gpt-oss-120b` |
+| Extraction model | `LLM (gpt-5-nano-2025-08-07)` |
+| Reasoning model | `gpt-5.4-nano-2026-03-17` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `vector` |
 | Reranker | `True` |
-| Reranker top_k | `12` |
+| Reranker top_k | `20` |
 | Chunk size / overlap | `256 / 32` |
 | ER similarity threshold | `0.75` |
 
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 94 |
-| Entities resolved | 46 |
+| Triplets extracted | 121 |
+| Entities resolved | 80 |
 | Tables parsed | 7 |
 | Tables completed | 7 |
 
@@ -31,9 +31,9 @@
 |--------|-------|
 | Questions | 15 |
 | Grounded | **15/15 (100%)** |
-| Avg GT Coverage | 86% |
-| Avg Top Score | 0.2273 |
-| Avg Chunk Count | 6.0 |
+| Avg GT Coverage | 100% |
+| Avg Top Score | 0.5193 |
+| Avg Chunk Count | 24.0 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Order Line Item`, `Sales Order`, `Customer`, `Physical Delivery Of`, `Hierarchical Product Category Tree`, `Monetary Transaction That`
+**Sources retrieved (12):** `Customer Master`, `Sales Order Hdr`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CREATED_AT`, `CUSTOMER_MASTER.EMAIL`, `CUSTOMER_MASTER.CUST_ID`, `CUSTOMER_MASTER.FULL_NAME`, `CUSTOMER_MASTER.REGION_CODE`
 
 ---
 
@@ -68,7 +68,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Sales Order`, `Customer`, `Physical Delivery Of`, `Hierarchical Product Category Tree`, `Order Line Item`, `Monetary Transaction That`
+**Sources retrieved (12):** `Customer Master`, `Hierarchical Product Category Tree`, `Product`, `Order Line Item`, `Sales Order Hdr`, `Shipment`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CREATED_AT`
 
 ---
 
@@ -83,7 +83,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Sales Order`, `Order Line Item`, `Customer`, `Monetary Transaction That`, `Physical Delivery Of`, `Hierarchical Product Category Tree`
+**Sources retrieved (12):** `Sales Order Hdr`, `Shipment`, `Payment`, `Order Line Item`, `Customer Master`, `SALES_ORDER_HDR`, `Product`, `CUSTOMER_MASTER`
 
 ---
 
@@ -98,14 +98,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Order Line Item`, `Sales Order`, `Monetary Transaction That`, `Customer`, `Hierarchical Product Category Tree`, `Physical Delivery Of`
+**Sources retrieved (12):** `Order Line Item`, `ORDER_LINE_ITEM`, `Sales Order Hdr`, `Shipment`, `Payment`, `SALES_ORDER_HDR`, `Product`, `Customer Master`
 
 ---
 
 ### ✅ Q005 — How are payments linked to orders?
 
 **Status:** GROUNDED  
-**GT Coverage:** 33% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Each payment is associated with exactly one sales order through the ORDER_ID foreign key. Payments track the payment method, amount, status, and confirmation timestamp.
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Order Line Item`, `Sales Order`, `Monetary Transaction That`, `Customer`, `Physical Delivery Of`, `Hierarchical Product Category Tree`
+**Sources retrieved (12):** `Payment`, `Shipment`, `Order Line Item`, `Sales Order Hdr`, `Customer Master`, `Hierarchical Product Category Tree`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CREATED_AT`
 
 ---
 
@@ -128,7 +128,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Sales Order`, `Order Line Item`, `Monetary Transaction That`, `Customer`, `Physical Delivery Of`, `Hierarchical Product Category Tree`
+**Sources retrieved (12):** `Payment`, `Shipment`, `Order Line Item`, `Sales Order Hdr`, `SALES_ORDER_HDR`, `ORDER_LINE_ITEM`, `Customer Master`, `Product`
 
 ---
 
@@ -143,7 +143,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Order Line Item`, `Sales Order`, `Hierarchical Product Category Tree`, `Customer`, `Physical Delivery Of`, `Monetary Transaction That`
+**Sources retrieved (12):** `Product`, `TB_PRODUCT.SKU`, `Order Line Item`, `Hierarchical Product Category Tree`, `TB_PRODUCT`, `TB_PRODUCT.IS_ACTIVE`, `TB_PRODUCT.PRODUCT_NAME`, `TB_PRODUCT.UNIT_PRICE`
 
 ---
 
@@ -158,7 +158,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Order Line Item`, `Sales Order`, `Customer`, `Physical Delivery Of`, `Hierarchical Product Category Tree`, `Monetary Transaction That`
+**Sources retrieved (12):** `Customer Master`, `Sales Order Hdr`, `Payment`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CREATED_AT`, `CUSTOMER_MASTER.EMAIL`, `CUSTOMER_MASTER.CUST_ID`, `CUSTOMER_MASTER.FULL_NAME`
 
 ---
 
@@ -173,7 +173,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Order Line Item`, `Hierarchical Product Category Tree`, `Sales Order`, `Customer`, `Physical Delivery Of`, `Monetary Transaction That`
+**Sources retrieved (12):** `Order Line Item`, `Hierarchical Product Category Tree`, `Product`, `TB_PRODUCT`, `TB_PRODUCT.IS_ACTIVE`, `TB_PRODUCT.PRODUCT_NAME`, `TB_PRODUCT.UNIT_PRICE`, `TB_PRODUCT.PRODUCT_ID`
 
 ---
 
@@ -188,14 +188,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Order Line Item`, `Sales Order`, `Physical Delivery Of`, `Customer`, `Monetary Transaction That`, `Hierarchical Product Category Tree`
+**Sources retrieved (12):** `Order Line Item`, `Sales Order Hdr`, `ORDER_LINE_ITEM`, `Customer Master`, `Shipment`, `Payment`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CREATED_AT`
 
 ---
 
 ### ✅ Q011 — How does the schema model the confirmation state of a payment and its relationship to the order?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Payment confirmation is tracked through two schema fields: PAYMENT.CONFIRMED_AT (nullable DATETIME — NULL means not yet confirmed) and PAYMENT.STATUS_CODE constrained to PENDING, CONFIRMED, FAILED, or REFUNDED. At the order level, SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT is a nullable datetime that mirr…
@@ -203,14 +203,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Sales Order`, `Monetary Transaction That`, `Order Line Item`, `Hierarchical Product Category Tree`, `Customer`, `Physical Delivery Of`
+**Sources retrieved (12):** `Payment`, `Shipment`, `Sales Order Hdr`, `Order Line Item`, `SALES_ORDER_HDR`, `ORDER_LINE_ITEM`, `Customer Master`, `Hierarchical Product Category Tree`
 
 ---
 
 ### ✅ Q012 — How are shipments related to orders and warehouses?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Each shipment is for exactly one sales order (ORDER_ID in SHIPMENT references SALES_ORDER_HDR). The shipment also specifies the source warehouse code and includes tracking information and delivery status.
@@ -218,7 +218,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Order Line Item`, `Physical Delivery Of`, `Sales Order`, `Monetary Transaction That`, `Customer`, `Hierarchical Product Category Tree`
+**Sources retrieved (12):** `Shipment`, `Order Line Item`, `Payment`, `Sales Order Hdr`, `Customer Master`, `Product`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CREATED_AT`
 
 ---
 
@@ -233,14 +233,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Hierarchical Product Category Tree`, `Order Line Item`, `Sales Order`, `Customer`, `Physical Delivery Of`, `Monetary Transaction That`
+**Sources retrieved (12):** `Hierarchical Product Category Tree`, `Order Line Item`, `Product`, `TB_PRODUCT`, `TB_PRODUCT.IS_ACTIVE`, `TB_PRODUCT.PRODUCT_NAME`, `TB_PRODUCT.UNIT_PRICE`, `TB_PRODUCT.PRODUCT_ID`
 
 ---
 
 ### ✅ Q014 — Is it possible for a customer to place an order without payment?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Yes, an order can exist without payment. SALES_ORDER_HDR has STATUS_CODE defaulting to PENDING and PAYMENT_CONFIRMED_AT is nullable (NULL when no payment yet). The PAYMENT table links via ORDER_ID foreign key but nothing prevents an order from existing without a payment row. However, the business gl…
@@ -248,7 +248,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Sales Order`, `Order Line Item`, `Monetary Transaction That`, `Customer`, `Physical Delivery Of`, `Hierarchical Product Category Tree`
+**Sources retrieved (12):** `Payment`, `Sales Order Hdr`, `Customer Master`, `Order Line Item`, `Shipment`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CREATED_AT`, `CUSTOMER_MASTER.EMAIL`
 
 ---
 
@@ -263,7 +263,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (6):** `Order Line Item`, `Sales Order`, `Monetary Transaction That`, `Hierarchical Product Category Tree`, `Customer`, `Physical Delivery Of`
+**Sources retrieved (12):** `Order Line Item`, `Payment`, `Shipment`, `ORDER_LINE_ITEM`, `Product`, `Sales Order Hdr`, `Customer Master`, `CUSTOMER_MASTER`
 
 ---
 
