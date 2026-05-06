@@ -237,22 +237,29 @@ Campaign results across 126 runs (21 studies x 6 datasets). All scores are AI Ju
 
 ### 6.2 Key Findings
 
-1. **Best configuration:** AB-10 (extraction tokens=16384) achieved the highest mean score of 4.46, outperforming the baseline by +0.31. More extraction budget allows richer triplets.
+> **Note:** Section 6.1 table above shows v1.0.x multi-dataset averages. The v1.1.1 re-run (DS01 only) produced different rankings due to pipeline improvements — see Appendix A for the updated AB-BEST rationale.
+
+**v1.1.1 Re-run Results (DS01, 2026-05-06):**
+
+1. **Best configuration:** AB-04 and AB-05 (reranker top_k=5 and top_k=20) both achieved **4.90/5**, outperforming baseline by +0.40. The reranker pool size is the most impactful tunable parameter.
 
 2. **Most critical components (large degradation when OFF):**
-   - **Hybrid retrieval** is essential: vector-only (AB-01, -1.66) and BM25-only (AB-02, -0.82) perform dramatically worse
-   - **Hallucination grader** (AB-20, -0.80): removing grading significantly hurts answer quality
-   - **Cypher healing** (AB-19, -0.52): direct fail on syntax errors causes measurable degradation
-   - **Reranker** (AB-03, -0.50): raw hybrid pool without reranking is notably worse
+   - **Hybrid retrieval** is essential: vector-only (AB-01, −1.10) remains catastrophically worse
+   - **Cypher healing** (AB-19, −0.45): immediate fail on syntax errors causes significant degradation
+   - **Extraction tokens** (AB-10, −0.25): over-extraction budget introduces noise
 
-3. **Chunking:** Larger chunks (AB-08, 512/64, +0.22) slightly outperform the baseline, suggesting the default 256/32 is somewhat conservative.
+3. **Surprising result — Reranker OFF (AB-03) scores 4.80 (+0.30):**
+   On the small DS01 dataset, raw RRF fusion is already adequate. The reranker adds value only when the pool is explicitly sized (top_k=5 or 20), suggesting the default baseline top_k=10 may be a suboptimal middle ground.
 
-4. **Entity resolution:** Conservative merging (AB-12, threshold=0.85, +0.18) slightly improves over the default 0.75, suggesting fewer false merges help quality.
+4. **Neutral components (all at 4.50 = baseline):**
+   - Chunking (128/256/384/512): no discriminative power on this dataset
+   - Entity Resolution (threshold 0.65/0.75/0.85, blocking 5/10/20): clean entities make ER irrelevant
+   - Schema enrichment, Actor-Critic, HITL threshold, Hallucination grader: all neutral
 
-5. **Low-impact components:**
-   - Schema enrichment (AB-15, -0.04): minimal impact, likely because LLMs can already interpret abbreviated names
-   - Actor-Critic (AB-16, +0.07): disabling the critic did not hurt — possibly because current LLMs produce high-quality first-pass mappings
-   - ER blocking top_k (AB-13/14): nearly identical to baseline regardless of candidate set size
+5. **Delta from v1.0.x findings:**
+   - AB-10 (extraction=16384) was previously best (+0.31) → now −0.25. v1.1.1's improved extraction quality makes extra token budget counterproductive (noise).
+   - AB-20 (grader OFF) was previously −0.80 → now neutral (4.50). v1.1.1's retrieval quality eliminates hallucinations at source.
+   - Reranker studies (AB-03/04/05) previously all negative → now all positive. Pipeline improvements make the pipeline more robust to reranker variations.
 
 ---
 
@@ -321,7 +328,79 @@ Each ablation result is documented in the following format:
 
 ---
 
-## Appendix: ABLATION_MATRIX Source
+## Appendix A: AB-BEST Construction Methodology
+
+### Rationale
+
+AB-BEST is a **data-driven optimal configuration** derived from the ablation campaign results. It is NOT simply the best-scoring single study — it is a composite configuration that selects the optimal value for each parameter dimension, with neutral parameters set to favour **robustness on complex datasets** and **computational efficiency**.
+
+### Construction Process (v1.1.1, 2026-05-06)
+
+1. **Identify discriminative parameters** — only parameters that significantly moved the Overall score from baseline (4.50):
+   - `RERANKER_TOP_K`: AB-04 (top_k=5) = 4.90 (+0.40), AB-05 (top_k=20) = 4.90 (+0.40)
+   - `ENABLE_CYPHER_HEALING`: AB-19 (OFF) = 4.05 (−0.45) — confirms ON is essential
+   - `RETRIEVAL_MODE`: AB-01 (vector) = 3.40 (−1.10) — confirms hybrid is mandatory
+   - `LLM_MAX_TOKENS_EXTRACTION`: AB-10 (16384) = 4.25 (−0.25) — too generous hurts
+
+2. **Select winners for discriminative parameters:**
+   - `RERANKER_TOP_K = 5` → same score as 20, but 4× fewer cross-encoder calls (efficiency)
+   - `RETRIEVAL_MODE = hybrid` → mandatory
+   - `ENABLE_CYPHER_HEALING = true` → mandatory
+   - `LLM_MAX_TOKENS_EXTRACTION = 8192` → default (4096 neutral but risky on dense docs)
+
+3. **Set neutral parameters for complex-dataset robustness:**
+   - `CHUNK_SIZE = 256` (all sizes neutral on DS01; 256 is balanced for long documents)
+   - `CHUNK_OVERLAP = 32` (12.5% ratio, standard in literature)
+   - `ER_SIMILARITY_THRESHOLD = 0.75` (baseline; avoids false merges on similar-but-distinct entities)
+   - `ER_BLOCKING_TOP_K = 10` (balanced recall vs LLM cost)
+   - `CONFIDENCE_THRESHOLD = 0.80` (compromise: fewer HITL than 0.70, more safety than 0.85)
+   - `ENABLE_HALLUCINATION_GRADER = true` (reversed from v1.0.x; safety net for complex domains)
+
+### Final AB-BEST Configuration (v1.1.1)
+
+```yaml
+# Discriminative (evidence-backed)
+RETRIEVAL_MODE: hybrid
+ENABLE_RERANKER: true
+RERANKER_TOP_K: 5              # AB-04=4.90, 4× faster than top_k=20
+
+# Neutral (complex-dataset compromise)
+CHUNK_SIZE: 256
+CHUNK_OVERLAP: 32
+LLM_MAX_TOKENS_EXTRACTION: 8192
+ER_SIMILARITY_THRESHOLD: 0.75
+ER_BLOCKING_TOP_K: 10
+CONFIDENCE_THRESHOLD: 0.80
+
+# Safety components (all ON)
+ENABLE_SCHEMA_ENRICHMENT: true
+ENABLE_CRITIC_VALIDATION: true
+ENABLE_CYPHER_HEALING: true    # AB-19 = −0.45 without
+ENABLE_HALLUCINATION_GRADER: true
+ENABLE_RETRIEVAL_QUALITY_GATE: true
+ENABLE_GRADER_CONSISTENCY_VALIDATOR: true
+ENABLE_LAZY_EXPANSION: true
+```
+
+### Comparison with Previous AB-BEST (v1.0.x, 2026-04-21)
+
+| Parameter | v1.0.x AB-BEST | v1.1.1 AB-BEST | Change Reason |
+|---|---|---|---|
+| RERANKER_TOP_K | 20 | **5** | Same 4.90 score, 4× more efficient |
+| CHUNK_SIZE | 128 | **256** | Was neutral; 256 better for complex docs |
+| LLM_MAX_TOKENS_EXTRACTION | 4096 | **8192** | 4096 was neutral; 8192 safer for dense content |
+| ER_SIMILARITY_THRESHOLD | 0.65 | **0.75** | 0.65 risks false merges on complex datasets |
+| ER_BLOCKING_TOP_K | 5 | **10** | Better recall for larger entity sets |
+| CONFIDENCE_THRESHOLD | 0.85 | **0.80** | Balanced autonomy vs safety |
+| HALLUCINATION_GRADER | OFF | **ON** | v1.1.1 made it neutral; keep as safety net |
+
+### Expected Performance
+
+Based on AB-04 results (which differ from AB-BEST only in using baseline for neutral params), the new AB-BEST should achieve **~4.90/5** on DS01. The additional neutral parameter changes should not degrade performance (all individually scored 4.50 = baseline).
+
+---
+
+## Appendix B: ABLATION_MATRIX Source
 
 The canonical definition of all studies lives in `src/evaluation/ablation_runner.py`:
 
