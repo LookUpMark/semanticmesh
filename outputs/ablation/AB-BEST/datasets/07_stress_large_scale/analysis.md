@@ -1,14 +1,14 @@
 # AB-BEST — 07_stress_large_scale — Run Analysis
 
-**Timestamp:** 2026-04-21 22:30:49  
-**Run tag:** `run-20260421_221024`
+**Timestamp:** 2026-05-06 13:54:18  
+**Run tag:** `run-20260506_135633`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
-| Extraction model | `LLM (openai/gpt-4.1-nano)` |
-| Reasoning model | `openai/gpt-oss-120b` |
+| Extraction model | `LLM (gpt-5-nano-2025-08-07)` |
+| Reasoning model | `gpt-5.4-nano-2026-03-17` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 21 |
-| Entities resolved | 14 |
+| Triplets extracted | 48 |
+| Entities resolved | 34 |
 | Tables parsed | 58 |
 | Tables completed | 58 |
 
@@ -31,9 +31,9 @@
 |--------|-------|
 | Questions | 55 |
 | Grounded | **55/55 (100%)** |
-| Avg GT Coverage | 80% |
-| Avg Top Score | 0.2688 |
-| Avg Chunk Count | 20.0 |
+| Avg GT Coverage | 82% |
+| Avg Top Score | 0.7261 |
+| Avg Chunk Count | 42.3 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Customer→CUSTOMER`, `Customer Type→CUSTOMER_TYPE`, `Customer Address→CUSTOMER_ADDRESS`, `Customer Contact→CUSTOMER_CONTACT`, `Shipment`, `User Account→APP_USER`, `Customer`, `Customer Type`
+**Sources retrieved (12):** `CUSTOMER.CREDIT_LIMIT`, `CUSTOMER.WEBSITE`, `CUSTOMER.STATUS`, `CUSTOMER.CURRENCY`, `CUSTOMER.CUSTOMER_ID`, `Customer`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_1`
 
 ---
 
@@ -68,14 +68,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Product Catalog→PRODUCT`, `Bill Of Materials→BILL_OF_MATERIALS`, `Customer Type→CUSTOMER_TYPE`, `Pricing→PRODUCT_PRICE`, `Manufacturing Line→PRODUCTION_LINE`, `Pricing→PRICE_LIST`, `Shipment`, `Bill Of Materials`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_3`, `PRODUCT.PRODUCT_TYPE`, `PRODUCT_CATEGORY.DESCRIPTION`, `PRODUCT_CATEGORY.CATEGORY_NAME`, `PRODUCT_CATEGORY.PARENT_CATEGORY_ID`
 
 ---
 
 ### ✅ QA-003 — What is the structure of the sales order and how does it link to customers and products?
 
 **Status:** GROUNDED  
-**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The sales_order table links to customer via customer_id FK and to warehouse via warehouse_id. It tracks order_number (UNIQUE), order_date, required_date, promised_date, subtotal/tax_amount/freight_amount/total_amount, and status (DRAFT/CONFIRMED/PICKED/SHIPPED/INVOICED/CANCELLED via CHECK). Priority…
@@ -83,7 +83,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Sales Order Line→SALES_ORDER_LINE`, `Receipts Issues Transfers→SALES_ORDER`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `Purchase Order→PURCHASE_ORDER`, `Customer→CUSTOMER`, `Invoice Item→INVOICE_LINE`, `parent_chunk_business_glossary.md_0`, `Sales Order Line`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `SALES_ORDER.CUSTOMER_ID`, `SALES_ORDER.ORDER_NUMBER`, `SALES_ORDER.SALES_REP_ID`, `SALES_ORDER.ORDER_ID`, `SALES_ORDER.PRIORITY`
 
 ---
 
@@ -98,7 +98,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Supplier→SUPPLIER_ADDRESS`, `Supplier→SUPPLIER`, `Supplier Contact→SUPPLIER_CONTACT`, `Purchase Order→PURCHASE_ORDER`, `User Account→APP_USER`, `Warehouse Receipt→PURCHASE_RECEIPT`, `Shipment`, `Supplier`
+**Sources retrieved (12):** `General Ledger Account`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`, `SUPPLIER.SUPPLIER_TYPE`, `SUPPLIER.SUPPLIER_NAME`, `SUPPLIER.STATUS`, `SUPPLIER.QUALITY_RATING`, `Supplier`
 
 ---
 
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Bin Location→BIN_LOCATION`, `Warehouse→WAREHOUSE`, `Warehouse Zone→WAREHOUSE_ZONE`, `Inventory→INVENTORY_ON_HAND`, `Inventory Transaction→INVENTORY_TRANSACTION`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Inventory Transaction`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_4`, `Specific Storage Location`, `BIN_LOCATION.BIN_TYPE`, `BIN_LOCATION.STATUS`, `Warehouse`, `Purchase Receipt`, `Stock Transfer`
 
 ---
 
@@ -128,7 +128,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Inventory Transaction→WORK_ORDER_MATERIAL`, `Inventory Transaction→INVENTORY_TRANSACTION`, `Inventory Transaction`, `Inventory→INVENTORY_ON_HAND`, `Product Catalog→PRODUCT`, `Bin Location→BIN_LOCATION`, `Stock Transfer→STOCK_TRANSFER`, `Shipment`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_3`, `STOCK_TRANSFER.TRACKING_NUMBER`, `STOCK_TRANSFER.SHIPMENT_METHOD`, `STOCK_TRANSFER.TO_WAREHOUSE_ID`, `STOCK_TRANSFER.FROM_WAREHOUSE_ID`
 
 ---
 
@@ -143,14 +143,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Bill Of Materials→BILL_OF_MATERIALS`, `Product Category→PRODUCT_CATEGORY`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Product Catalog→PRODUCT`, `Invoice Item→INVOICE_LINE`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `Bill Of Materials`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `WORK_ORDER_MATERIAL.PRODUCT_ID`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_3`, `WORK_ORDER_MATERIAL.STATUS`, `WORK_ORDER_MATERIAL.BIN_ID`
 
 ---
 
 ### ✅ QA-008 — How are work orders structured and what do they track?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The work_order table references product_id (what to produce), production_line_id (where), and warehouse_id (inventory location). It tracks quantity_ordered, quantity_completed, quantity_scrapped, planned dates (start_date, required_date), actual dates (actual_start_date, actual_finish_date), status …
@@ -158,7 +158,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Work Order→WORK_ORDER`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Work Order Schedule→PRODUCTION_SCHEDULE`, `Work Time→TIME_ENTRY`, `Sales Order Line→SALES_ORDER_LINE`, `Warehouse Receipt→PURCHASE_RECEIPT`, `Work Order`, `Work Order Schedule`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `WORK_ORDER.STATUS`, `WORK_ORDER.CREATED_BY`, `WORK_ORDER.PRIORITY`, `WORK_ORDER.CREATED_AT`, `WORK_ORDER.ACTUAL_START_DATE`, `Purchase Receipt`
 
 ---
 
@@ -173,14 +173,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Quality Standard→QUALITY_STANDARD`, `Quality Inspection→QUALITY_INSPECTION`, `Quality Issue→NON_CONFORMANCE_REPORT`, `Supplier→SUPPLIER`, `Organizational Unit→DEPARTMENT`, `Work Order Schedule→PRODUCTION_SCHEDULE`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`, `QUALITY_INSPECTION.SAMPLE_SIZE`, `QUALITY_INSPECTION.STANDARD_ID`, `QUALITY_STANDARD.DESCRIPTION`, `QUALITY_STANDARD.STANDARD_NAME`, `SUPPLIER.QUALITY_RATING`
 
 ---
 
 ### ✅ QA-010 — What is the complete invoice lifecycle and how are invoices linked to orders and payments?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The invoice table supports four types via CHECK: SALES, PURCHASE, CREDIT_MEMO, and DEBIT_MEMO. Invoices link to customer_id and optionally order_id (FK to sales_order). They track subtotal/tax_amount/total_amount/amount_paid/balance_due and status (DRAFT/POSTED/PAID/OVERDUE/VOID). Each invoice has i…
@@ -188,14 +188,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Financial Transaction→INVOICE`, `Invoice Item→INVOICE_LINE`, `Money Owed To→ACCOUNTS_PAYABLE`, `Money Owed To→PAYMENT`, `Money Owed To→ACCOUNTS_RECEIVABLE`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `parent_chunk_business_glossary.md_0`, `Financial Transaction`
+**Sources retrieved (12):** `Transactional Data`, `parent_chunk_business_glossary.md_4`, `INVOICE.INVOICE_NUMBER`, `INVOICE.INVOICE_DATE`, `INVOICE.TOTAL_AMOUNT`, `INVOICE.DUE_DATE`, `INVOICE.BALANCE_DUE`, `parent_chunk_business_glossary.md_2`
 
 ---
 
 ### ✅ QA-011 — How does the procurement process flow from purchase order to receipt?
 
 **Status:** GROUNDED  
-**GT Coverage:** 60% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Purchase orders (purchase_order) link to supplier_id FK and warehouse_id, with status lifecycle DRAFT/SUBMITTED/ACKNOWLEDGED/PARTIAL/RECEIVED/CLOSED/CANCELLED. Each PO has purchase_order_line items referencing products with quantity tracking (ordered/received/invoiced) and supplier_part_number. When…
@@ -203,7 +203,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Warehouse Receipt→PURCHASE_RECEIPT`, `Receipt Details→PURCHASE_RECEIPT_LINE`, `Purchase Order→PURCHASE_ORDER`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `Receipts Issues Transfers→SALES_ORDER`, `Financial Transaction→INVOICE`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`, `PURCHASE_RECEIPT.PO_ID`, `PURCHASE_RECEIPT.RECEIVED_BY`, `Purchase Receipt`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_4`, `PURCHASE_ORDER.APPROVED_BY`
 
 ---
 
@@ -218,14 +218,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `General Ledger Account→ACCOUNT_TYPE`, `General Ledger Account→GENERAL_LEDGER_ACCOUNT`, `Financial Period→ACCOUNTING_PERIOD`, `System Event Log→AUDIT_LOG`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `General Ledger Account`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_4`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `General Ledger Account`, `GENERAL_LEDGER_ACCOUNT.ACCOUNT_NUMBER`, `GENERAL_LEDGER_ACCOUNT.ACCOUNT_NAME`, `GENERAL_LEDGER_ACCOUNT.DESCRIPTION`, `GENERAL_LEDGER_ACCOUNT.STATUS`, `GENERAL_LEDGER_ACCOUNT.CURRENCY`, `parent_chunk_business_glossary.md_4`
 
 ---
 
 ### ✅ QA-013 — How are accounts receivable and accounts payable tracked?
 
 **Status:** GROUNDED  
-**GT Coverage:** 33% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Accounts receivable (accounts_receivable) links to customer_id and invoice_id, tracking amount_original, amount_due, due_date, and a computed days_overdue column. Status values are CURRENT/DUE/OVERDUE/COLLECTION/WRITE_OFF, with collection_status and next_action_date for collections workflow. Account…
@@ -233,14 +233,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Money Owed To→ACCOUNTS_RECEIVABLE`, `Money Owed To→ACCOUNTS_PAYABLE`, `Money Owed To→PAYMENT`, `Budget→BUDGET`, `Money Owed To`, `parent_chunk_business_glossary.md_1`, `General Ledger Account→ACCOUNT_TYPE`, `General Ledger Account→GENERAL_LEDGER_ACCOUNT`
+**Sources retrieved (12):** `General Ledger Account`, `parent_chunk_business_glossary.md_1`, `Accounts Payable`, `ACCOUNTS_PAYABLE.AP_ID`, `ACCOUNTS_PAYABLE.PAYMENT_PRIORITY`, `ACCOUNTS_PAYABLE.INVOICE_ID`, `ACCOUNTS_PAYABLE.SUPPLIER_ID`, `SALES_ORDER`
 
 ---
 
 ### ✅ QA-014 — How is the employee and organizational structure represented?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 33% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The department table has hierarchical parent_department_id self-reference with status ACTIVE/INACTIVE. Positions (position table) belong to departments via department_id FK, with grade_level, salary range (min/max), and FLSA status (EXEMPT/NON_EXEMPT). Employees reference department_id, position_id,…
@@ -248,7 +248,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Employee→EMPLOYEE`, `Organizational Unit→DEPARTMENT`, `User Account→APP_USER`, `Work Time→TIME_ENTRY`, `parent_chunk_business_glossary.md_2`, `Employee`, `Organizational Unit`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `EMPLOYEE.EMPLOYEE_TYPE`, `EMPLOYEE.EMPLOYEE_ID`, `EMPLOYEE.EMPLOYEE_NUMBER`, `EMPLOYEE.HOURLY_RATE`, `EMPLOYEE.DEPARTMENT_ID`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_4`, `Master Data`
 
 ---
 
@@ -263,14 +263,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Shipment→SHIPMENT`, `Shipment`, `Shipment Line→SHIPMENT_LINE`, `Stock Transfer→STOCK_TRANSFER_LINE`, `Stock Transfer→STOCK_TRANSFER`, `Logistics Carrier→CARRIER`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `SHIPMENT_LINE.WEIGHT`, `SHIPMENT_LINE.SHIPMENT_ID`, `SHIPMENT.STATUS`, `SHIPMENT.SHIPMENT_TYPE`, `STOCK_TRANSFER.SHIPMENT_METHOD`
 
 ---
 
 ### ✅ QA-016 — How does the project management module work?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Projects link to customer_id (for customer-facing projects) and project_manager_id (FK to employee). Project types are CUSTOMER/INTERNAL/R&D/CAPITAL with status PLANNING/ACTIVE/ON_HOLD/COMPLETED/CANCELLED and priority levels. Projects track budget_amount vs actual_cost. Project tasks (project_task) …
@@ -278,7 +278,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Project→PROJECT`, `Project Task→PROJECT_TASK`, `Work Time→TIME_ENTRY`, `Budget→BUDGET`, `Organizational Unit→DEPARTMENT`, `Work Order Schedule→PRODUCTION_SCHEDULE`, `parent_chunk_business_glossary.md_2`, `Project`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `PROJECT_TASK.ASSIGNED_TO`, `PROJECT_TASK.PROJECT_ID`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `PROJECT.PROJECT_MANAGER_ID`, `PROJECT.PROJECT_NAME`
 
 ---
 
@@ -293,14 +293,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `User Account→APP_USER`, `User Role Assignments→USER_ROLE`, `System Event Log→AUDIT_LOG`, `Role→ROLE`, `General Ledger Account→GENERAL_LEDGER_ACCOUNT`, `Customer Contact→CUSTOMER_CONTACT`, `parent_chunk_business_glossary.md_4`, `User Account`
+**Sources retrieved (12):** `User`, `Role`, `parent_chunk_business_glossary.md_4`, `USER_ROLE.USER_ID`, `USER_ROLE.USER_ROLE_ID`, `USER_ROLE.STATUS`, `USER_ROLE.ROLE_ID`, `parent_chunk_business_glossary.md_3`
 
 ---
 
 ### ✅ QA-018 — What is the complete path from a customer placing an order to the product being shipped?
 
 **Status:** GROUNDED  
-**GT Coverage:** 29% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 57% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The order-to-ship path traverses: customer → sales_order (via customer_id FK) → sales_order_line (via order_id FK) → product (via product_id FK). For fulfillment: sales_order references warehouse_id for the fulfillment location. Inventory is checked via inventory_on_hand (product_id + warehouse_id).…
@@ -308,7 +308,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Receipts Issues Transfers→SALES_ORDER`, `Sales Order Line→SALES_ORDER_LINE`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `Stock Transfer→STOCK_TRANSFER_LINE`, `Purchase Order→PURCHASE_ORDER`, `Warehouse Receipt→PURCHASE_RECEIPT`, `parent_chunk_business_glossary.md_0`, `Receipts Issues Transfers`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_4`, `SALES_ORDER.SHIPPING_METHOD`, `SALES_ORDER_LINE.LINE_TOTAL`, `PURCHASE_ORDER_LINE.LINE_TOTAL`, `PURCHASE_ORDER_LINE.QUANTITY_RECEIVED`
 
 ---
 
@@ -323,14 +323,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Purchase Order→PURCHASE_ORDER`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `Contract→SUPPLIER_CONTRACT`, `Supplier→SUPPLIER_ADDRESS`, `Supplier→SUPPLIER`, `Warehouse Receipt→PURCHASE_RECEIPT`, `parent_chunk_business_glossary.md_0`, `Purchase Order`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `PURCHASE_ORDER.SUPPLIER_REFERENCE`, `Purchase Receipt`, `PURCHASE_ORDER.SUPPLIER_ID`, `parent_chunk_business_glossary.md_4`, `SUPPLIER_CONTRACT.CONTRACT_NUMBER`, `SUPPLIER_CONTRACT.SUPPLIER_ID`, `SUPPLIER_CONTRACT.PAYMENT_TERMS`
 
 ---
 
 ### ✅ QA-020 — What self-referencing hierarchies exist in the schema?
 
 **Status:** GROUNDED  
-**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 83% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The schema has five self-referencing hierarchies: (1) product_category.parent_category_id → product_category.category_id for nested product classifications; (2) general_ledger_account.parent_account_id → general_ledger_account.account_id for chart of accounts hierarchy; (3) department.parent_departm…
@@ -338,7 +338,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_1`, `Organizational Unit→DEPARTMENT`, `Product Category→PRODUCT_CATEGORY`, `Journal Entry→JOURNAL_ENTRY_LINE`, `Money Owed To→PAYMENT`, `Inventory Transaction→INVENTORY_TRANSACTION`, `Shipment→SHIPMENT`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_1`, `Inventory Transaction`, `Reference Data`, `JOURNAL_ENTRY_LINE.REFERENCE_ID`, `SHIPMENT.REFERENCE_TYPE`, `JOURNAL_ENTRY_LINE.REFERENCE_TYPE`, `SHIPMENT.REFERENCE_ID`
 
 ---
 
@@ -353,7 +353,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Pricing→PRICE_LIST`, `Pricing→PRODUCT_PRICE`, `Product Catalog→PRODUCT`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `Invoice Item→INVOICE_LINE`, `Sales Order Line→SALES_ORDER_LINE`, `Pricing`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `PRODUCT_PRICE.PRICE_LIST_ID`, `PRODUCT_PRICE.PRICE`, `PRODUCT_PRICE.PRODUCT_ID`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `PRICE_LIST.PRICE_LIST_ID`, `PRICE_LIST.PRICE_LIST_NAME`
 
 ---
 
@@ -368,14 +368,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Inventory Transaction→WORK_ORDER_MATERIAL`, `Quality Issue→NON_CONFORMANCE_REPORT`, `User Account→APP_USER`, `Employee→EMPLOYEE`, `Financial Transaction→INVOICE`, `Receipts Issues Transfers→SALES_ORDER`, `Customer→CUSTOMER`, `Quality Standard→QUALITY_STANDARD`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_2`, `QUALITY_INSPECTION.STATUS`, `POSITION.STATUS`, `PRICE_LIST.STATUS`, `GENERAL_LEDGER_ACCOUNT.STATUS`, `PURCHASE_ORDER.STATUS`, `Purchase Receipt`
 
 ---
 
 ### ✅ QA-023 — How does the stock transfer process work between warehouses?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 75% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Stock transfers use the stock_transfer table with from_warehouse_id and to_warehouse_id (both FK to warehouse), transfer_date, shipment_method, tracking_number, and status (DRAFT/PICKED/SHIPPED/RECEIVED/CANCELLED). Individual items are tracked via stock_transfer_line with from_bin_id and to_bin_id (…
@@ -383,7 +383,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Stock Transfer→STOCK_TRANSFER`, `Stock Transfer→STOCK_TRANSFER_LINE`, `Inventory Transaction→INVENTORY_TRANSACTION`, `Receipts Issues Transfers→SALES_ORDER`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Inventory Transaction`, `Inventory→INVENTORY_ON_HAND`, `Stock Transfer`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_3`, `Stock Transfer`, `Movement Of Inventory`, `STOCK_TRANSFER.TO_WAREHOUSE_ID`, `STOCK_TRANSFER.FROM_WAREHOUSE_ID`, `STOCK_TRANSFER.TRANSFER_ID`, `STOCK_TRANSFER.STATUS`
 
 ---
 
@@ -398,14 +398,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Manufacturing Line→PRODUCTION_LINE`, `Work Order→WORK_ORDER`, `Work Order Schedule→PRODUCTION_SCHEDULE`, `Warehouse→WAREHOUSE`, `Manufacturing Line`, `Work Order`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_4`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `PRODUCTION_LINE.LINE_TYPE`, `PRODUCTION_LINE.LINE_NAME`, `PRODUCTION_LINE.LINE_ID`, `PRODUCTION_LINE.LINE_CODE`, `PRODUCTION_LINE.STATUS`, `parent_chunk_business_glossary.md_4`
 
 ---
 
 ### ✅ QA-025 — How does the budget system integrate with the financial accounts?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The budget table links to both department_id and account_id (FK to general_ledger_account). It tracks budget_type (OPERATING/CAPITAL/PROJECT), fiscal_year, budgeted_amount, actual_amount, and a computed variance column (budgeted minus actual). Budget status follows DRAFT/APPROVED/ACTIVE/CLOSED. This…
@@ -413,7 +413,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Budget→BUDGET`, `General Ledger Account→ACCOUNT_TYPE`, `General Ledger Account→GENERAL_LEDGER_ACCOUNT`, `Financial Period→ACCOUNTING_PERIOD`, `Organizational Unit→DEPARTMENT`, `Journal Entry→JOURNAL_ENTRY_LINE`, `parent_chunk_business_glossary.md_2`, `Budget`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `BUDGET.ACCOUNT_ID`, `BUDGET.FISCAL_YEAR`, `BUDGET.VERSION`, `BUDGET.BUDGET_ID`, `Budget`, `BUDGET.CURRENCY`, `parent_chunk_business_glossary.md_4`
 
 ---
 
@@ -428,7 +428,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Budget→BUDGET`, `Route→SHIPPING_ROUTE`, `Work Order Schedule→PRODUCTION_SCHEDULE`, `Employee→EMPLOYEE`, `Journal Entry→JOURNAL_ENTRY`, `General Ledger Account→GENERAL_LEDGER_ACCOUNT`, `Money Owed To→PAYMENT`, `Journal Entry→JOURNAL_ENTRY_LINE`
+**Sources retrieved (12):** `Transactional Data`, `parent_chunk_business_glossary.md_4`, `PRODUCTION_SCHEDULE.CREATED_AT`, `Inventory Transaction`, `PRODUCTION_LINE.CREATED_AT`, `WORK_ORDER.CREATED_BY`, `SUPPLIER.CREATED_AT`, `parent_chunk_business_glossary.md_2`
 
 ---
 
@@ -443,14 +443,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Customer Address→CUSTOMER_ADDRESS`, `Customer Contact→CUSTOMER_CONTACT`, `Customer→CUSTOMER`, `User Account→APP_USER`, `Supplier Contact→SUPPLIER_CONTACT`, `Project→PROJECT`, `Customer Address`, `Customer Contact`
+**Sources retrieved (12):** `Customer`, `CUSTOMER_CONTACT.EMAIL`, `CUSTOMER_CONTACT.IS_PRIMARY`, `CUSTOMER_CONTACT.CONTACT_NAME`, `CUSTOMER_CONTACT.CREATED_AT`, `CUSTOMER_CONTACT.CONTACT_ID`, `parent_chunk_business_glossary.md_0`, `User`
 
 ---
 
 ### ✅ QA-028 — What CASCADE rules exist in the schema and what tables use them?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > ON DELETE CASCADE is used on child tables that should be automatically removed when the parent is deleted: customer_address and customer_contact (cascade from customer), supplier_address and supplier_contact (cascade from supplier), sales_order_line (cascade from sales_order), purchase_order_line (c…
@@ -458,14 +458,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Inventory Transaction`, `Manufacturing Line→PRODUCTION_LINE`, `User Role Assignments→USER_ROLE`, `Manufacturing Line`, `Quality Standard`, `Role`, `Work Order`, `Quality Issue`
+**Sources retrieved (12):** `INVENTORY_TRANSACTION.REASON_CODE`, `QUALITY_STANDARD.DESCRIPTION`, `QUALITY_STANDARD.STANDARD_CODE`, `QUALITY_STANDARD.STANDARD_NAME`, `Reference Data`, `Inventory Transaction`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`
 
 ---
 
 ### ✅ QA-029 — How does the schema link quality inspections to their source documents?
 
 **Status:** GROUNDED  
-**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Quality inspections use a polymorphic reference pattern: reference_type (VARCHAR) identifies the source table (e.g., 'purchase_receipt', 'work_order') and reference_id (INT) stores the primary key of that source record. The inspection also directly references product_id and warehouse_id via foreign …
@@ -473,7 +473,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Quality Inspection→QUALITY_INSPECTION`, `Quality Standard→QUALITY_STANDARD`, `Journal Entry→JOURNAL_ENTRY`, `Quality Issue→NON_CONFORMANCE_REPORT`, `Supplier→SUPPLIER`, `Supplier→SUPPLIER_ADDRESS`, `parent_chunk_business_glossary.md_3`, `Quality Inspection`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `QUALITY_INSPECTION.NOTES`, `QUALITY_INSPECTION.REFERENCE_TYPE`, `QUALITY_INSPECTION.CREATED_AT`, `QUALITY_INSPECTION.STANDARD_ID`, `QUALITY_INSPECTION.REFERENCE_ID`, `Purchase Receipt`, `parent_chunk_business_glossary.md_0`
 
 ---
 
@@ -488,7 +488,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Journal Entry→JOURNAL_ENTRY`, `Journal Entry→JOURNAL_ENTRY_LINE`, `Work Time→TIME_ENTRY`, `Work Order Schedule→PRODUCTION_SCHEDULE`, `Journal Entry`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `Journal Entry`, `parent_chunk_business_glossary.md_1`, `JOURNAL_ENTRY.ENTRY_TYPE`, `JOURNAL_ENTRY.ENTRY_ID`, `JOURNAL_ENTRY.ENTRY_DATE`, `JOURNAL_ENTRY.ENTRY_NUMBER`, `JOURNAL_ENTRY.STATUS`, `parent_chunk_business_glossary.md_2`
 
 ---
 
@@ -503,7 +503,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Quality Issue→NON_CONFORMANCE_REPORT`, `Quality Standard→QUALITY_STANDARD`, `Customer→CUSTOMER`, `Supplier→SUPPLIER`, `Inventory Transaction`, `Quality Issue`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_4`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_0`, `NON_CONFORMANCE_REPORT.NCR_TYPE`, `NON_CONFORMANCE_REPORT.STATUS`, `NON_CONFORMANCE_REPORT.REPORTED_BY`, `NON_CONFORMANCE_REPORT.ISSUE_DATE`, `NON_CONFORMANCE_REPORT.REFERENCE_ID`
 
 ---
 
@@ -518,14 +518,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Receipt Details→PURCHASE_RECEIPT_LINE`, `Warehouse Receipt→PURCHASE_RECEIPT`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `Inventory→INVENTORY_ON_HAND`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Inventory Transaction→INVENTORY_TRANSACTION`, `Inventory Transaction`, `Receipt Details`
+**Sources retrieved (12):** `PURCHASE_RECEIPT_LINE.QUANTITY_REJECTED`, `PURCHASE_RECEIPT_LINE.QUANTITY_RECEIVED`, `PURCHASE_RECEIPT_LINE.LOT_NUMBER`, `PURCHASE_RECEIPT_LINE.QUANTITY_ORDERED`, `parent_chunk_business_glossary.md_0`, `PURCHASE_RECEIPT.RECEIPT_NUMBER`, `Purchase Receipt`, `parent_chunk_business_glossary.md_1`
 
 ---
 
 ### ✅ QA-033 — What UNIQUE constraints exist across the schema and what do they enforce?
 
 **Status:** GROUNDED  
-**GT Coverage:** 20% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 80% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Key UNIQUE constraints include: customer.customer_number, product.product_number, supplier.supplier_number (business identifiers); invoice.invoice_number, payment.payment_number, shipment.shipment_number (document numbers); sales_order.order_number, purchase_order.po_number; warehouse.warehouse_code…
@@ -533,14 +533,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Inventory Transaction`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Inventory Transaction→INVENTORY_TRANSACTION`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_2`, `Role→ROLE`, `Organizational Unit→DEPARTMENT`, `Quality Standard→QUALITY_STANDARD`
+**Sources retrieved (12):** `Reference Data`, `Warehouse`, `Master Data`, `Budget`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_2`, `Journal Entry`, `Transactional Data`
 
 ---
 
 ### ✅ QA-034 — How does the schema handle the relationship between employees, departments, and projects?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Employees belong to departments via department_id FK and hold positions via position_id FK. Positions also reference department_id, creating a redundant but verifiable link. Employee.manager_id (self-referencing FK) creates reporting chains. Projects link to project_manager_id (FK to employee) and o…
@@ -548,14 +548,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Employee→EMPLOYEE`, `Budget→BUDGET`, `Organizational Unit→DEPARTMENT`, `Work Time→TIME_ENTRY`, `Project→PROJECT`, `Project Task→PROJECT_TASK`, `Employee`, `Organizational Unit`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_1`, `Budget`, `parent_chunk_business_glossary.md_3`, `PROJECT_TASK.TASK_NAME`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_0`, `PROJECT.DESCRIPTION`
 
 ---
 
 ### ✅ QA-035 — What is the relationship between sales orders, invoices, and payments?
 
 **Status:** GROUNDED  
-**GT Coverage:** 57% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 71% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Sales orders are invoiced by creating invoice records with order_id FK referencing sales_order. Invoice line items (invoice_line) can link back to specific sales_order_line items via order_line_id FK. Payments reference invoice_id FK to settle invoices. The invoice tracks amount_paid and balance_due…
@@ -563,7 +563,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Sales Order Line→SALES_ORDER_LINE`, `Financial Transaction→INVOICE`, `Receipts Issues Transfers→SALES_ORDER`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `Purchase Order→PURCHASE_ORDER`, `Customer→CUSTOMER`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `Transactional Data`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_1`, `INVOICE.ORDER_ID`, `SALES_ORDER.PAYMENT_TERMS`, `INVOICE.AMOUNT_PAID`, `INVOICE.DUE_DATE`
 
 ---
 
@@ -578,14 +578,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Inventory Transaction→INVENTORY_TRANSACTION`, `Inventory Transaction`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Stock Transfer→STOCK_TRANSFER`, `Stock Transfer→STOCK_TRANSFER_LINE`, `Inventory→INVENTORY_ON_HAND`, `General Ledger Account→ACCOUNT_TYPE`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`, `INVENTORY_TRANSACTION.TRANSACTION_TYPE`, `INVENTORY_TRANSACTION.PRODUCT_ID`, `INVENTORY_TRANSACTION.TRANSACTION_ID`, `INVENTORY_TRANSACTION.BIN_ID`, `INVENTORY_TRANSACTION.WAREHOUSE_ID`
 
 ---
 
 ### ✅ QA-037 — How does the BOM component type affect manufacturing?
 
 **Status:** GROUNDED  
-**GT Coverage:** 33% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The bill_of_materials table classifies components into four types via CHECK: COMPONENT (standard parts consumed in production), PHANTOM (sub-assemblies that are not stocked — their components are consumed directly), BYPRODUCT (secondary outputs of the production process), and CO_PRODUCT (additional …
@@ -593,14 +593,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Bill Of Materials→BILL_OF_MATERIALS`, `Manufacturing Line→PRODUCTION_LINE`, `Work Order→WORK_ORDER`, `Bin Location→BIN_LOCATION`, `Quality Standard→QUALITY_STANDARD`, `Quality Issue→NON_CONFORMANCE_REPORT`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `WORK_ORDER.QUANTITY_SCRAPPED`, `WORK_ORDER.STATUS`, `Inventory Transaction`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`
 
 ---
 
 ### ✅ QA-038 — How does the audit log track system events and changes?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The audit_log table records every significant system event with event_type, user_id (FK to app_user), entity_type (which table was affected), entity_id (which record), and action (CREATE/READ/UPDATE/DELETE/LOGIN/LOGOUT/EXPORT via CHECK). For data changes, old_value and new_value are stored as JSON. …
@@ -608,14 +608,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `System Event Log→AUDIT_LOG`, `Inventory Transaction→INVENTORY_TRANSACTION`, `Inventory Transaction`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Work Time→TIME_ENTRY`, `General Ledger Account→GENERAL_LEDGER_ACCOUNT`, `General Ledger Account→ACCOUNT_TYPE`, `System Event Log`
+**Sources retrieved (12):** `AUDIT_LOG.EVENT_TYPE`, `AUDIT_LOG.LOG_ID`, `AUDIT_LOG.ENTITY_TYPE`, `AUDIT_LOG.ENTITY_ID`, `AUDIT_LOG.USER_ID`, `Audit Log`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_3`
 
 ---
 
 ### ✅ QA-039 — What are the different address types supported across the schema?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Customer addresses support three types: BILLING, SHIPPING, and BOTH. Supplier addresses support four types: MAIN, BILLING, SHIPPING, and RETURN. Both customer_address and supplier_address have is_default/is_primary flags and cascade delete from their parent. The warehouse table stores location_addre…
@@ -623,14 +623,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Customer Address→CUSTOMER_ADDRESS`, `Supplier→SUPPLIER_ADDRESS`, `System Event Log→AUDIT_LOG`, `Warehouse→WAREHOUSE`, `Customer Type→CUSTOMER_TYPE`, `Warehouse Zone→WAREHOUSE_ZONE`, `Shipment`, `Inventory Transaction`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_0`, `SUPPLIER_ADDRESS.ADDRESS_TYPE`, `CUSTOMER_ADDRESS.ADDRESS_TYPE`, `SUPPLIER_ADDRESS.ADDRESS_LINE2`, `SUPPLIER_ADDRESS.ADDRESS_ID`, `SUPPLIER_ADDRESS.COUNTRY_CODE`, `Reference Data`
 
 ---
 
 ### ✅ QA-040 — How would the schema support tracing a product from purchase receipt to customer shipment?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The full traceability path is: purchase_receipt (inbound from supplier) → purchase_receipt_line (with lot_number) → inventory_on_hand (lot_number at warehouse/bin) → inventory_transaction (RECEIPT type logs the inbound). For production: work_order_material records material consumption → work_order t…
@@ -638,7 +638,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Warehouse Receipt→PURCHASE_RECEIPT`, `Receipt Details→PURCHASE_RECEIPT_LINE`, `Receipts Issues Transfers→SALES_ORDER`, `Shipment→SHIPMENT`, `Shipment Line→SHIPMENT_LINE`, `Stock Transfer→STOCK_TRANSFER`, `Shipment`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_0`, `Product`, `parent_chunk_business_glossary.md_4`, `PURCHASE_RECEIPT.TRACKING_NUMBER`, `Purchase Receipt`, `PURCHASE_RECEIPT.RECEIVED_BY`
 
 ---
 
@@ -653,14 +653,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Supplier→SUPPLIER_ADDRESS`, `Supplier Contact→SUPPLIER_CONTACT`, `Customer Address→CUSTOMER_ADDRESS`, `Supplier→SUPPLIER`, `User Account→APP_USER`, `Customer Contact→CUSTOMER_CONTACT`, `parent_chunk_business_glossary.md_0`, `Supplier Contact`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `SUPPLIER_ADDRESS.IS_PRIMARY`, `SUPPLIER_ADDRESS.ADDRESS_TYPE`, `SUPPLIER_ADDRESS.ADDRESS_ID`, `SUPPLIER_ADDRESS.SUPPLIER_ID`, `SUPPLIER_ADDRESS.CREATED_AT`, `Master Data`, `parent_chunk_business_glossary.md_0`
 
 ---
 
 ### ✅ QA-042 — Does the schema track employee compensation history?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The employee table has current annual_salary and hourly_rate columns and the position table defines min_salary and max_salary ranges. However, there is no compensation history table in the schema — salary changes would overwrite the current values without preserving history. The only historical trac…
@@ -668,14 +668,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Employee→EMPLOYEE`, `Work Time→TIME_ENTRY`, `User Account→APP_USER`, `System Event Log→AUDIT_LOG`, `Employee`, `parent_chunk_business_glossary.md_2`, `Work Time`, `parent_chunk_business_glossary.md_4`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `EMPLOYEE.ANNUAL_SALARY`, `EMPLOYEE.HOURLY_RATE`, `EMPLOYEE.LAST_NAME`, `EMPLOYEE.HIRE_DATE`, `EMPLOYEE.TERMINATION_DATE`, `parent_chunk_business_glossary.md_3`, `Accounts Payable`
 
 ---
 
 ### ✅ QA-043 — How does the shipping route connect two warehouses through a carrier?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The shipping_route table has origin_location_id and destination_location_id (both FK to warehouse), carrier_id (FK to carrier), plus route_code (UNIQUE), distance_km, estimated_hours, cost_per_km, and service_level. Shipments reference route_id FK to use a predefined route, plus independently refere…
@@ -683,7 +683,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Route→SHIPPING_ROUTE`, `Shipment→SHIPMENT`, `Warehouse Receipt→PURCHASE_RECEIPT`, `Stock Transfer→STOCK_TRANSFER`, `Stock Transfer→STOCK_TRANSFER_LINE`, `Shipment`, `Receipts Issues Transfers→SALES_ORDER`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `SHIPPING_ROUTE.ROUTE_NAME`, `SHIPPING_ROUTE.SERVICE_LEVEL`, `SHIPPING_ROUTE.STATUS`, `SHIPPING_ROUTE.ROUTE_CODE`, `parent_chunk_business_glossary.md_3`, `Purchase Receipt`, `STOCK_TRANSFER.SHIPMENT_METHOD`, `parent_chunk_business_glossary.md_1`
 
 ---
 
@@ -698,14 +698,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Work Order Schedule→PRODUCTION_SCHEDULE`, `Work Order→WORK_ORDER`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Manufacturing Line→PRODUCTION_LINE`, `Project Task→PROJECT_TASK`, `Work Time→TIME_ENTRY`, `Work Order Schedule`, `Work Order`
+**Sources retrieved (12):** `PRODUCTION_SCHEDULE.WORK_ORDER_ID`, `PRODUCTION_SCHEDULE.SCHEDULED_END`, `PRODUCTION_SCHEDULE.PRIORITY`, `PRODUCTION_SCHEDULE.STATUS`, `PRODUCTION_SCHEDULE.SCHEDULE_ID`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_4`
 
 ---
 
 ### ✅ QA-045 — How does the invoice line link back to both sales order lines and products?
 
 **Status:** GROUNDED  
-**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Invoice_line references invoice_id FK (parent invoice), product_id FK (what was invoiced), and optionally order_line_id FK (back-reference to the specific sales_order_line). This three-way linkage supports: invoice → sales_order (via invoice.order_id), invoice_line → product (direct), and invoice_li…
@@ -713,7 +713,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Sales Order Line→SALES_ORDER_LINE`, `Invoice Item→INVOICE_LINE`, `Purchase Order Line→PURCHASE_ORDER_LINE`, `Financial Transaction→INVOICE`, `Receipts Issues Transfers→SALES_ORDER`, `Money Owed To→ACCOUNTS_RECEIVABLE`, `parent_chunk_business_glossary.md_0`, `Sales Order Line`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `SALES_ORDER_LINE.QUANTITY_INVOICED`, `INVOICE_LINE.ORDER_LINE_ID`, `parent_chunk_business_glossary.md_1`, `INVOICE_LINE.PRODUCT_ID`, `INVOICE_LINE.INVOICE_LINE_ID`
 
 ---
 
@@ -728,7 +728,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Logistics Carrier→CARRIER`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`, `Logistics Carrier`, `Receipts Issues Transfers→SALES_ORDER`, `Warehouse→WAREHOUSE`, `Manufacturing Line→PRODUCTION_LINE`, `Shipment`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`, `Inventory Transaction`, `Product`, `Transactional Data`, `SHIPMENT.ORIGIN_LOCATION_ID`, `Budget`, `Purchase Receipt`
 
 ---
 
@@ -743,7 +743,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Receipts Issues Transfers→SALES_ORDER`, `Money Owed To→ACCOUNTS_RECEIVABLE`, `Customer→CUSTOMER`, `Money Owed To→PAYMENT`, `Employee→EMPLOYEE`, `Supplier→SUPPLIER`, `Warehouse→WAREHOUSE`, `Journal Entry→JOURNAL_ENTRY`
+**Sources retrieved (12):** `INVOICE.SUBTOTAL`, `SALES_ORDER.TAX_AMOUNT`, `Customer`, `INVOICE.TAX_AMOUNT`, `Master Data`, `Transactional Data`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`
 
 ---
 
@@ -758,14 +758,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Financial Period→ACCOUNTING_PERIOD`, `Budget→BUDGET`, `Journal Entry→JOURNAL_ENTRY`, `General Ledger Account→ACCOUNT_TYPE`, `General Ledger Account→GENERAL_LEDGER_ACCOUNT`, `Work Time→TIME_ENTRY`, `Financial Period`, `parent_chunk_business_glossary.md_4`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `ACCOUNTING_PERIOD.PERIOD_ID`, `ACCOUNTING_PERIOD.PERIOD_NAME`, `ACCOUNTING_PERIOD.START_DATE`, `ACCOUNTING_PERIOD.FISCAL_YEAR`, `ACCOUNTING_PERIOD.PERIOD_CODE`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`
 
 ---
 
 ### ✅ QA-049 — How do work order materials track material consumption against BOM requirements?
 
 **Status:** GROUNDED  
-**GT Coverage:** 25% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 75% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The work_order_material table links work_order_id FK to product_id FK (the material), with quantity_required (from BOM calculation) and quantity_issued (actually consumed). Status tracks progress: PENDING/ISSUED/PARTIAL/COMPLETE. Materials are sourced from specific bins via bin_id FK to bin_location…
@@ -773,7 +773,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Inventory Transaction→WORK_ORDER_MATERIAL`, `Bill Of Materials→BILL_OF_MATERIALS`, `Work Order→WORK_ORDER`, `Work Order Schedule→PRODUCTION_SCHEDULE`, `Inventory Transaction→INVENTORY_TRANSACTION`, `Receipt Details→PURCHASE_RECEIPT_LINE`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_0`, `WORK_ORDER_MATERIAL.QUANTITY_REQUIRED`, `WORK_ORDER_MATERIAL.MATERIAL_ID`, `WORK_ORDER_MATERIAL.PRODUCT_ID`, `WORK_ORDER_MATERIAL.WORK_ORDER_ID`, `WORK_ORDER_MATERIAL.BIN_ID`
 
 ---
 
@@ -788,14 +788,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Customer→CUSTOMER`, `General Ledger Account→GENERAL_LEDGER_ACCOUNT`, `Inventory Transaction→INVENTORY_TRANSACTION`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `Stock Transfer→STOCK_TRANSFER_LINE`, `Stock Transfer→STOCK_TRANSFER`, `Inventory Transaction`, `General Ledger Account→ACCOUNT_TYPE`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `Inventory Transaction`, `Audit Log`, `parent_chunk_business_glossary.md_4`, `SUPPLIER_CONTRACT.CURRENCY`, `PAYMENT.CURRENCY`, `PURCHASE_ORDER.CURRENCY`, `Reference Data`
 
 ---
 
 ### ✅ QA-051 — How does the schema handle product storage requirements for hazardous or temperature-sensitive items?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 75% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Products have three relevant fields: hazardous (BOOLEAN, default FALSE), storage_temperature_min (DECIMAL), and storage_temperature_max (DECIMAL). Warehouse zones have a temperature_controlled (BOOLEAN) flag. When a product requires temperature control, it should be stored in bins within temperature…
@@ -803,7 +803,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Product Catalog→PRODUCT`, `Receipt Details→PURCHASE_RECEIPT_LINE`, `Bill Of Materials→BILL_OF_MATERIALS`, `Quality Inspection→QUALITY_INSPECTION`, `Bin Location→BIN_LOCATION`, `Shipment Line→SHIPMENT_LINE`, `parent_chunk_business_glossary.md_1`, `Product Catalog`
+**Sources retrieved (12):** `PRODUCT.HAZARDOUS`, `PRODUCT.STORAGE_TEMPERATURE_MAX`, `PRODUCT.STORAGE_TEMPERATURE_MIN`, `PRODUCT.SHELF_LIFE_DAYS`, `PRODUCT.WEIGHT`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_3`
 
 ---
 
@@ -818,7 +818,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Journal Entry→JOURNAL_ENTRY_LINE`, `Shipment`, `Shipment→SHIPMENT`, `Inventory Transaction→INVENTORY_TRANSACTION`, `Inventory Transaction`, `Inventory Transaction→WORK_ORDER_MATERIAL`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `Reference Data`, `Inventory Transaction`, `SHIPMENT.REFERENCE_TYPE`, `NON_CONFORMANCE_REPORT.REFERENCE_TYPE`, `JOURNAL_ENTRY_LINE.REFERENCE_TYPE`, `PURCHASE_ORDER.SUPPLIER_REFERENCE`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_1`
 
 ---
 
@@ -833,7 +833,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Customer→CUSTOMER`, `User Account→APP_USER`, `Receipts Issues Transfers→SALES_ORDER`, `Customer Type→CUSTOMER_TYPE`, `Money Owed To→PAYMENT`, `Money Owed To→ACCOUNTS_RECEIVABLE`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`
+**Sources retrieved (12):** `Customer`, `CUSTOMER.PAYMENT_TERMS`, `PROJECT.CUSTOMER_ID`, `CUSTOMER.ANNUAL_REVENUE`, `Master Data`, `CUSTOMER_TYPE.DEFAULT_PAYMENT_TERMS`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`
 
 ---
 
@@ -848,7 +848,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Customer→CUSTOMER`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_1`, `Customer`, `Receipt Details→PURCHASE_RECEIPT_LINE`, `Receipts Issues Transfers→SALES_ORDER`, `Supplier→SUPPLIER_ADDRESS`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_1`, `PURCHASE_ORDER.APPROVED_BY`, `PURCHASE_ORDER.SUPPLIER_ID`, `PURCHASE_ORDER.PAYMENT_TERMS`, `Purchase Receipt`, `PURCHASE_ORDER.SUPPLIER_REFERENCE`
 
 ---
 
@@ -863,7 +863,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Supplier→SUPPLIER`, `Supplier→SUPPLIER_ADDRESS`, `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_2`, `Supplier`, `parent_chunk_business_glossary.md_3`, `Employee→EMPLOYEE`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_4`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `Transactional Data`, `Supplier`, `parent_chunk_business_glossary.md_0`, `QUALITY_INSPECTION.DEFECTS_FOUND`, `QUALITY_INSPECTION.WAREHOUSE_ID`
 
 ---
 
