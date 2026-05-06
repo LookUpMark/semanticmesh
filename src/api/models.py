@@ -589,6 +589,7 @@ class BuildRequest(BaseModel):
     """Trigger the Builder pipeline to ingest docs and populate the Knowledge Graph."""
 
     doc_paths: list[str] = Field(
+        max_length=100,
         description="Paths to business documentation files (PDF, MD, TXT).",
         examples=[
             [
@@ -598,6 +599,7 @@ class BuildRequest(BaseModel):
         ],
     )
     ddl_paths: list[str] = Field(
+        max_length=50,
         description="Paths to DDL SQL files to map onto the ontology.",
         examples=[["tests/fixtures/01_basics_ecommerce/schema.sql"]],
     )
@@ -726,7 +728,7 @@ class SaveConversationRequest(BaseModel):
         description="Human-readable title (defaults to first user message if empty).",
         default="",
     )
-    messages: list[ConversationMessage] = Field(description="Full message list to persist.")
+    messages: list[ConversationMessage] = Field(max_length=500, description="Full message list to persist.")
     active_snapshot_id: str | None = Field(
         default=None,
         description="ID of the KG snapshot that was active during this conversation.",

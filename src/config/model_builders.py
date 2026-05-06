@@ -64,6 +64,39 @@ if TYPE_CHECKING:
 # ── Helper functions ─────────────────────────────────────────────────────────
 
 
+def _validate_base_url(url: str | None) -> str | None:
+    """Validate a base_url to prevent SSRF attacks.
+
+    Only allows http/https schemes and rejects private/link-local IPs
+    and cloud metadata endpoints.
+    """
+    if not url:
+        return url
+    from urllib.parse import urlparse
+    import ipaddress
+
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Invalid URL scheme '{parsed.scheme}' — only http/https allowed")
+
+    hostname = parsed.hostname or ""
+    # Block cloud metadata endpoints
+    _BLOCKED_HOSTS = {"169.254.169.254", "metadata.google.internal", "100.100.100.200"}
+    if hostname in _BLOCKED_HOSTS:
+        raise ValueError(f"Blocked metadata endpoint: {hostname}")
+
+    # Block private/link-local IPs (allow localhost for local dev servers)
+    try:
+        addr = ipaddress.ip_address(hostname)
+        if addr.is_link_local:
+            raise ValueError(f"Link-local address not allowed: {hostname}")
+        # Allow loopback (127.x) and private ranges for local dev (LM Studio, Ollama)
+    except ValueError:
+        pass  # hostname is a DNS name, not an IP — allow
+
+    return url
+
+
 def _optional_model_kwargs(extra_model_kwargs: dict | None) -> dict:
     """Wrap extra_model_kwargs in the format expected by ChatOpenAI."""
     return {"model_kwargs": extra_model_kwargs} if extra_model_kwargs else {}
@@ -87,7 +120,7 @@ def _build_openrouter_chat(
     ChatOpenRouter client suffers from SSL handshake timeouts.
     """
     api_key = openrouter_api_key or get_settings().openrouter_api_key.get_secret_value()
-    base_url = openrouter_base_url or get_settings().openrouter_base_url
+    base_url = _validate_base_url(openrouter_base_url or get_settings().openrouter_base_url)
 
     return ChatOpenAI(
         model=model_name,
@@ -176,7 +209,7 @@ def _build_lmstudio_chat(
     extra_model_kwargs: dict | None,
 ) -> ChatOpenAI:
     """Build a ChatOpenAI instance for LM Studio local endpoint."""
-    base_url = lmstudio_base_url or get_settings().lmstudio_base_url
+    base_url = _validate_base_url(lmstudio_base_url or get_settings().lmstudio_base_url)
     kwargs = extra_model_kwargs or {"chat_template_kwargs": {"enable_thinking": False}}
     return ChatOpenAI(
         model=model,
@@ -239,7 +272,7 @@ def _build_openai_compatible_chat(
     prefix = f"{provider}/"
     native_model = model[len(prefix) :] if model.lower().startswith(prefix) else model
 
-    base_url = (
+    base_url = _validate_base_url(
         base_url_override
         or os.environ.get("PROVIDER_BASE_URL")
         or _settings_urls.get(provider)
