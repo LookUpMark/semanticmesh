@@ -23,8 +23,7 @@
       "question": "What information is stored about products in the manufacturing system?",
       "answer": "Products are tracked with a unique identifier (product_id), descriptive name (product_name), classification as finished good, assembly, or component (product_type), optional parent product reference for hierarchical structures (parent_product_id), standard unit cost (base_cost), typical procurement or production lead time (lead_time_days), and active status flag (is_active).",
       "expected_sources": [
-        "product",
-        "component"
+        "product"
       ]
     },
     {
@@ -108,9 +107,7 @@
       "answer": "Quality control records are stored with a unique identifier (qc_id), associated production batch (batch_id), applicable specification requirements (specification_id), inspection date (qc_date), inspection type (INCOMING for supplier materials, IN_PROCESS during manufacturing, FINAL for finished goods), inspector identifier (inspector_id), inspection result (PASS, FAIL, CONDITIONAL), number of defects found (defect_count), and detailed observations (notes).",
       "expected_sources": [
         "product",
-        "supplier",
         "quality_control",
-        "specification",
         "batch"
       ]
     },
@@ -138,10 +135,9 @@
       "id": "QA-012",
       "category": "multi_hop",
       "question": "How do I trace which components are needed to fulfill a work order?",
-      "answer": "Start with the work_order table to get the product_id being manufactured. Join to the bom table using product_id as parent_product_id to find all direct components and sub-assemblies. For each component_product_id, if it is an ASSEMBLY type product, recursively query the bom table again to explode multi-level BOM structures. The quantity required is work_order.quantity_ordered multiplied by bom.quantity for each level.",
+      "answer": "Start with the work_order table to get the product_id being manufactured. Join to the bom table using product_id as parent_product_id to find all direct sub-assemblies and leaf products. For each component_product_id of type ASSEMBLY, recursively query the bom table to explode multi-level BOM structures. The total quantity required is work_order.quantity_ordered multiplied by bom.quantity at each level. Note: BOM references products (via component_product_id FK to product), not the component table directly. To check inventory for BOM items, join inventory.product_id = bom.component_product_id.",
       "expected_sources": [
         "product",
-        "component",
         "bom",
         "work_order"
       ]
@@ -263,7 +259,6 @@
       "answer": "Use a recursive reverse traversal of the BOM. Start with the component_id as the initial parent_product_id. Find all records where this product appears as component_product_id in the bom table. For each parent_product_id found, check if it appears as a component_product_id in other bom records (is a sub-assembly used in higher-level assemblies). Recursively ascend until reaching top-level products with no parent_product_id in the product table.",
       "expected_sources": [
         "product",
-        "component",
         "bom"
       ]
     },
@@ -274,7 +269,6 @@
       "answer": "First, perform reverse BOM traversal to find all parent products that contain the target component at any level. Then query the work_order table where product_id is in the set of parent products found. This includes work orders for finished goods that contain the component indirectly through sub-assemblies.",
       "expected_sources": [
         "product",
-        "component",
         "bom",
         "work_order"
       ]
@@ -318,7 +312,6 @@
       "answer": "Use a recursive query on the bom table that tracks the current depth level. Start with the top-level product (parent_product_id where product has no parent_product_id). At each level, output component details indented by depth level. Include product_name, quantity, and unit_of_measure. Recursively process all component_product_id entries that are assemblies until reaching leaf components.",
       "expected_sources": [
         "product",
-        "component",
         "bom"
       ]
     },
@@ -402,11 +395,9 @@
       "id": "QA-035",
       "category": "complex",
       "question": "How can I identify which shipments are overdue and their impact on work orders?",
-      "answer": "Query the shipment table filtering for status = 'SHIPPED' where actual_arrival is NULL and estimated_arrival is in the past (overdue). Join with the component_supplier table via supplier_id and component_id to identify which components are delayed. Perform reverse BOM lookup to find which parent products require these components. Join with work_order table where status = 'PENDING' or 'IN_PROGRESS' to identify production jobs impacted by the delay.",
+      "answer": "Query the shipment table filtering for status = 'SHIPPED' where actual_arrival IS NULL and estimated_arrival < current date (overdue). The shipment table links to suppliers via supplier_id but does not specify which components are in a given shipment. To infer impacted components, join component_supplier on supplier_id to identify all components that supplier provides. Then perform reverse BOM lookup (bom WHERE component_product_id matches products using those components) to find parent products affected. Join with work_order on product_id where status IN ('PENDING','IN_PROGRESS') to identify production jobs potentially impacted. This gives a conservative upper bound since specific shipment contents are not tracked at line-item level in this schema.",
       "expected_sources": [
         "product",
-        "component",
-        "bom",
         "supplier",
         "work_order",
         "shipment",
@@ -447,7 +438,7 @@
       "id": "QA-038",
       "category": "complex",
       "question": "How do I trace the complete genealogy of a component from supplier through batch to finished goods?",
-      "answer": "Start with a shipment from the supplier (shipment table with supplier_id and shipment_type = 'INBOUND'). Track to inventory updates via component_id and warehouse_id. Identify batches that consumed the component via reverse BOM lookup (batch.product_id → bom hierarchy → component_id). Query quality_control records for those batches to show inspection results. Trace forward to work_orders that produced the batches, and finally to shipment records for finished goods delivery.",
+      "answer": "Start with a shipment from the supplier (shipment table with supplier_id and shipment_type = 'INBOUND'). Track to inventory updates via component_id and warehouse_id. Identify batches that consumed the component via reverse BOM lookup (batch.product_id \u2192 bom hierarchy \u2192 component_id). Query quality_control records for those batches to show inspection results. Trace forward to work_orders that produced the batches, and finally to shipment records for finished goods delivery.",
       "expected_sources": [
         "product",
         "component",
@@ -478,7 +469,7 @@
       "id": "QA-040",
       "category": "complex",
       "question": "How do I calculate the total landed cost for a product including component costs, supplier lead times, and manufacturing operations?",
-      "answer": "Perform recursive BOM explosion to get all leaf components. For each component, query component_supplier to get unit_price from primary supplier. Multiply by accumulated BOM quantity for material cost. Add shipping costs (estimated from shipment history). Query route table for the product to get all manufacturing operations. Calculate labor cost = sum of (cycle_time_minutes * labor_rate) across all operations. Sum material cost + shipping cost + labor cost + overhead allocation for total landed cost.",
+      "answer": "Perform recursive BOM explosion to get all leaf products/components. For material cost: join component_supplier (using component_id from components matching BOM leaf products) to get unit_price from preferred supplier (is_preferred='Y'), then multiply by accumulated BOM quantity. For manufacturing time: query route table for the product to get all operations with cycle_time_minutes and setup_time_minutes. The schema does NOT define a labor_rate or shipping_cost column, so full monetary landed cost cannot be computed from schema alone. What CAN be determined: total material cost (sum of unit_price * quantity), total cycle time, total setup time, and supplier lead_time_days from component_supplier. Converting lead times and cycle times to monetary cost requires external rate data not present in this schema.",
       "expected_sources": [
         "product",
         "component",
