@@ -120,7 +120,7 @@ def grade_answer(
     max_attempts: int = settings.max_reflection_attempts
     parse_attempts = 0
     consistency_corrections = 0
-    corrected_once = False
+    max_consistency_corrections = 2
 
     for attempt in range(1, max_attempts + 1):
         parse_attempts = attempt
@@ -166,10 +166,12 @@ def grade_answer(
 
         if decision.grounded and decision.action != "pass":
             logger.warning(
-                "Grader inconsistency (grounded=True but action=%s) — requesting one correction.",
+                "Grader inconsistency (grounded=True but action=%s) — correction %d/%d.",
                 decision.action,
+                consistency_corrections + 1,
+                max_consistency_corrections,
             )
-            if corrected_once:
+            if consistency_corrections >= max_consistency_corrections:
                 return _pass_decision(
                     timeout_occurred=False,
                     parse_attempts=parse_attempts,
@@ -177,7 +179,6 @@ def grade_answer(
                     certainty=0.3,
                 )
 
-            corrected_once = True
             consistency_corrections += 1
             correction_prompt = REFLECTION_TEMPLATE.format(
                 role="strict factual auditor",

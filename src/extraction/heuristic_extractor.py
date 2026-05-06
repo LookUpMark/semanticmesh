@@ -42,7 +42,7 @@ def _get_spacy_nlp():
         return None
 
     try:
-        spacy = __import__("spacy")
+        import spacy
     except ImportError:
         logger.warning("spaCy not installed; using regex heuristic extraction fallback.")
         return None

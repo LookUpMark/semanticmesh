@@ -13,6 +13,7 @@ Usage::
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from typing import Any, Protocol, runtime_checkable
 
@@ -223,6 +224,7 @@ class FallbackLLM:
         self._fallback = fallback
         self._name = name
         self._using_fallback = False
+        self._fallback_lock = threading.Lock()
         self._logger: logging.Logger = get_logger(f"llm.{name}")
 
     def __getattr__(self, item: str) -> Any:
@@ -248,8 +250,9 @@ class FallbackLLM:
         **kwargs: Any,
     ) -> AIMessage:
         """Invoke with immediate free→paid fallback on rate limit."""
-        if self._using_fallback:
-            return self._invoke_with_logging(self._fallback, input, **kwargs)
+        with self._fallback_lock:
+            if self._using_fallback:
+                return self._invoke_with_logging(self._fallback, input, **kwargs)
 
         try:
             with NodeTimer() as t:
@@ -261,7 +264,8 @@ class FallbackLLM:
                 self._logger.warning(
                     "Rate limit hit on primary model, switching to fallback for all future calls"
                 )
-                self._using_fallback = True
+                with self._fallback_lock:
+                    self._using_fallback = True
                 return self._invoke_with_logging(self._fallback, input, **kwargs)
             raise
 

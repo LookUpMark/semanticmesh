@@ -31,7 +31,10 @@ from src.api.models import (
     SaveConversationRequest,
     SaveSnapshotRequest,
 )
+from src.config.logging import get_logger
 from src.evaluation.ablation_runner import _settings_override as _settings_override
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/demo", tags=["E2E Demo"])
 
@@ -44,6 +47,9 @@ _ROOT = Path(__file__).parent.parent.parent  # repo root
 def _to_abs(path: str) -> str:
     """Resolve path and validate it's within an allowed directory (symlink-safe)."""
     p = Path(path).resolve(strict=False)
+    # Reject symlinks to prevent directory escape attacks
+    if Path(path).is_symlink():
+        raise ValueError(f"Symlinks are not allowed: {path}")
     root = _ROOT.resolve(strict=False)
     upload_dir = Path(tempfile.gettempdir(), "thesis_uploads").resolve(strict=False)
     # Allow paths under repo root OR the upload temp directory
@@ -184,8 +190,8 @@ def _run_build_task(job_id: str, req: BuildRequest) -> None:
         }
         set_done(job_id, result)
     except Exception as exc:  # noqa: BLE001
-        error_summary = f"{type(exc).__name__}: {str(exc)[:300]}"
-        set_failed(job_id, error_summary)
+        logger.error("Build task failed for job %s: %s", job_id, exc, exc_info=True)
+        set_failed(job_id, f"Build failed ({type(exc).__name__}). Check server logs for details.")
 
 
 def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
@@ -242,8 +248,8 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
 
         set_done(job_id, result)
     except Exception as exc:  # noqa: BLE001
-        error_summary = f"{type(exc).__name__}: {str(exc)[:300]}"
-        set_failed(job_id, error_summary)
+        logger.error("Pipeline task failed for job %s: %s", job_id, exc, exc_info=True)
+        set_failed(job_id, f"Pipeline failed ({type(exc).__name__}). Check server logs for details.")
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -552,6 +558,7 @@ def delete_graph(confirm: bool = False) -> dict[str, int]:
             count_rows = client.execute_cypher("MATCH (n) RETURN count(n) AS n")
             total = int(count_rows[0].get("n", 0)) if count_rows else 0
             client.execute_cypher("MATCH (n) DETACH DELETE n")
+        logger.warning("DESTRUCTIVE: Graph cleared — %d nodes deleted.", total)
         return {"nodes_deleted": total}
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail="Neo4j unavailable.") from exc

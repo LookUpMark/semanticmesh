@@ -11,6 +11,9 @@ from pydantic import BaseModel
 from src.api.ablation_router import router as ablation_router
 from src.api.auth import require_api_key
 from src.api.demo_router import router as demo_router
+from src.config.logging import get_logger
+
+_logger = get_logger(__name__)
 
 app = FastAPI(
     title="GraphRAG Thesis API",
@@ -82,6 +85,12 @@ Run, monitor, and compare ablation experiments:
 )
 
 _cors_origins = os.environ.get("CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(",")
+if _cors_origins == ["*"]:
+    _logger.error(
+        "CORS_ORIGINS='*' is insecure — rejecting wildcard. "
+        "Set explicit origins (e.g. 'http://localhost:5173,http://localhost:8000')."
+    )
+    _cors_origins = ["http://127.0.0.1:8000", "http://localhost:8000"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
@@ -89,8 +98,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-if _cors_origins == ["*"]:
-    _logger.warning("CORS_ORIGINS='*' — all origins allowed. Set CORS_ORIGINS for production.")
 
 # All /api/v1/* routes require an API key (no-op when API_KEY env var is not set)
 app.include_router(demo_router, prefix="/api/v1", dependencies=[Depends(require_api_key)])
@@ -112,6 +119,17 @@ def health() -> dict[str, str]:
 _SENSITIVE_KEYS = frozenset({
     "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
     "GROQ_API_KEY", "MISTRAL_API_KEY", "NEO4J_PASSWORD", "API_KEY",
+    "GOOGLE_API_KEY", "COHERE_API_KEY", "DEEPSEEK_API_KEY",
+    "XAI_API_KEY", "AZURE_OPENAI_API_KEY",
+})
+
+# Keys that must NOT be overridden at runtime (security/infra controls)
+_BLOCKED_OVERRIDE_KEYS = frozenset({
+    "LMSTUDIO_BASE_URL", "OPENROUTER_BASE_URL", "OLLAMA_BASE_URL",
+    "GROQ_BASE_URL", "TOGETHER_BASE_URL", "NVIDIA_BASE_URL",
+    "DEEPSEEK_BASE_URL", "XAI_BASE_URL", "COHERE_BASE_URL",
+    "PROVIDER_BASE_URL", "AZURE_OPENAI_ENDPOINT",
+    "LOG_LEVEL", "ENABLE_DEBUG_TRACE",
 })
 
 
@@ -180,12 +198,17 @@ def set_config(req: ServerConfigRequest) -> dict[str, object]:
     allowed_env_aliases = frozenset(f.upper() for f in allowed_keys)
     applied: list[str] = []
     blocked: list[str] = []
+    errors: list[str] = []
     for key, value in req.overrides.items():
         if key not in allowed_keys and key not in allowed_env_aliases:
             blocked.append(key)
             continue
         # Never allow runtime override of secrets
         if key in _SENSITIVE_KEYS or key.upper() in {k.upper() for k in _SENSITIVE_KEYS}:
+            blocked.append(key)
+            continue
+        # Never allow override of infrastructure/security keys
+        if key.upper() in _BLOCKED_OVERRIDE_KEYS:
             blocked.append(key)
             continue
         if value:
@@ -195,11 +218,18 @@ def set_config(req: ServerConfigRequest) -> dict[str, object]:
     if applied:
         from src.config.llm_factory import reconfigure_from_env
         from src.config.settings import reload_settings
-        reload_settings()
-        reconfigure_from_env()
+        try:
+            reload_settings()
+            reconfigure_from_env()
+        except Exception as exc:
+            # Revert applied env vars on validation failure
+            for key in applied:
+                os.environ.pop(key, None)
+            errors.append(f"Settings validation failed: {type(exc).__name__}")
+            applied.clear()
 
     return {
         "applied": applied,
         "blocked": blocked,
-        "masked": [k for k in applied if k in _SENSITIVE_KEYS],
+        "errors": errors,
     }

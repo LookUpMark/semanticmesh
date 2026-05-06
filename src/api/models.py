@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal, TypeAlias
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, model_validator
+
+# Model name must be alphanumeric with /, _, ., -, : (prevents injection)
+_VALID_MODEL_NAME = re.compile(r"^[a-zA-Z0-9/_.\-:]+$")
 
 # ── Shared LLM override fields ────────────────────────────────────────────────
 
@@ -94,6 +99,30 @@ class PipelineConfig(BaseModel):
         description=_LLM_BASE_URL_DESC,
         examples=["http://localhost:1234/v1", "http://192.168.1.50:1234/v1"],
     )
+
+    @model_validator(mode="after")
+    def _validate_security(self) -> PipelineConfig:
+        """Validate model names and base URL against injection attacks."""
+        # Validate model names (prevent injection via special chars)
+        for field_name in ("reasoning_model", "extraction_model", "midtier_model"):
+            model_name = getattr(self, field_name, None)
+            if model_name and not _VALID_MODEL_NAME.match(model_name):
+                raise ValueError(
+                    f"{field_name} must contain only alphanumerics, /, _, ., -, : "
+                    f"(got: {model_name!r})"
+                )
+        # Validate lmstudio_base_url (prevent SSRF)
+        if self.lmstudio_base_url:
+            parsed = urlparse(self.lmstudio_base_url)
+            if parsed.scheme not in ("http", "https"):
+                raise ValueError(
+                    f"lmstudio_base_url: only http/https schemes allowed (got: {parsed.scheme!r})"
+                )
+            host = parsed.hostname or ""
+            # Block metadata endpoints and non-private destinations
+            if host in ("169.254.169.254", "metadata.google.internal"):
+                raise ValueError("lmstudio_base_url: cloud metadata endpoints are blocked")
+        return self
 
     # ── LLM Parameters ──────────────────────────────────────────────────────
     temperature_extraction: float | None = Field(
@@ -752,6 +781,7 @@ class PipelineRequest(BaseModel):
     """Run a complete E2E pipeline: build KG then answer questions."""
 
     doc_paths: list[str] = Field(
+        max_length=100,
         description="Paths to business documentation files.",
         examples=[
             [
@@ -761,11 +791,13 @@ class PipelineRequest(BaseModel):
         ],
     )
     ddl_paths: list[str] = Field(
+        max_length=50,
         description="Paths to DDL SQL files.",
         examples=[["tests/fixtures/01_basics_ecommerce/schema.sql"]],
     )
     questions: list[str] = Field(
         min_length=1,
+        max_length=500,
         description="One or more natural-language questions to answer after build.",
         examples=[
             [
