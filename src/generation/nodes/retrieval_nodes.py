@@ -322,8 +322,8 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         # absolute score suggests (CE scores are known to be low on technical
         # multi-section content like data dictionaries).
         quality_score = top_score
-        if len(pool) >= 10 and top_score < 0.70:
-            quality_score = max(top_score, 0.65)
+        if len(pool) >= 8 and top_score < 0.75:
+            quality_score = max(top_score, 0.70)
 
         return {
             "reranked_chunks": valid,

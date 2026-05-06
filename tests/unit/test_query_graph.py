@@ -106,7 +106,7 @@ class TestNodeReranking:
             assert out["retrieval_filtered_by_threshold"] is False
 
     def test_quality_score_boosted_for_large_pool(self) -> None:
-        """When pool >= 10 and top_score < 0.70, quality_score boosted to 0.65."""
+        """When pool >= 8 and top_score < 0.75, quality_score boosted to 0.70."""
         settings = MagicMock()
         settings.enable_reranker = True
         settings.reranker_top_k = 5
@@ -122,11 +122,11 @@ class TestNodeReranking:
         ):
             state = {"user_query": "q", "retrieved_chunks": input_chunks}
             out = _node_rerank(state)
-            # top_score = 0.55 < 0.70, pool = 12 >= 10 → quality_score = 0.65
-            assert out["retrieval_quality_score"] == pytest.approx(0.65)
+            # top_score = 0.55 < 0.75, pool = 12 >= 8 → quality_score = 0.70
+            assert out["retrieval_quality_score"] == pytest.approx(0.70)
 
     def test_quality_score_not_boosted_when_high(self) -> None:
-        """When top_score >= 0.70, no boost is applied."""
+        """When top_score >= 0.75, no boost is applied."""
         settings = MagicMock()
         settings.enable_reranker = True
         settings.reranker_top_k = 5
@@ -140,11 +140,11 @@ class TestNodeReranking:
         ):
             state = {"user_query": "q", "retrieved_chunks": input_chunks}
             out = _node_rerank(state)
-            # top_score = 0.85 >= 0.70 → no boost
+            # top_score = 0.85 >= 0.75 → no boost
             assert out["retrieval_quality_score"] == pytest.approx(0.85)
 
     def test_quality_score_not_boosted_for_small_pool(self) -> None:
-        """When pool < 10, no boost is applied (even if score < 0.70)."""
+        """When pool < 8, no boost is applied (even if score < 0.75)."""
         settings = MagicMock()
         settings.enable_reranker = True
         settings.reranker_top_k = 5
@@ -158,7 +158,7 @@ class TestNodeReranking:
         ):
             state = {"user_query": "q", "retrieved_chunks": input_chunks}
             out = _node_rerank(state)
-            # pool = 5 < 10 → no boost, raw score
+            # pool = 5 < 8 → no boost, raw score
             assert out["retrieval_quality_score"] == pytest.approx(0.45)
 
     def test_returns_empty_when_no_valid_chunks(self) -> None:

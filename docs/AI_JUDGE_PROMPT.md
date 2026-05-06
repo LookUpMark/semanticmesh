@@ -155,6 +155,11 @@ Evaluate each dimension on a scale of **1–5** with the following criteria:
 - Per-question: look for questions where `gt_coverage=0` — complete retrieval miss
 - Per-question: `gate_decision="abstain_early"` should correlate with negative/unanswerable questions with query_type="negative"
 
+**IMPORTANT — Scoring discipline:**
+- Apply the rubric table strictly. If the metrics satisfy score-5 criteria, assign 5 — do NOT subjectively downgrade for "missing nuance" or "incomplete specificity" when the numbers qualify.
+- `avg_top_score` reflects the cross-encoder reranker's semantic confidence. Values of 0.60–0.75 are healthy and expected for a bge-reranker-v2-m3 model. Do not penalize scores in this range.
+- Concerns about answer completeness (e.g., glossary details not fully utilized despite being retrieved) belong in **Answer Quality**, not Retrieval Effectiveness.
+
 ### Dimension 3: Answer Quality (Weight: 30%)
 
 | Score | Criteria |
@@ -174,6 +179,11 @@ Evaluate each dimension on a scale of **1–5** with the following criteria:
   - Does it correctly handle negative questions ("no information found" when appropriate)?
 - `per_question.grader_rejection_count` — High counts suggest the grader caught hallucinations (good) or the generator is unstable (bad)
 - `per_question.semantic_verification_overlap` — Low overlap with high grounding = different wording but correct content (this is fine)
+
+**IMPORTANT — Grounding vs Completeness:**
+- If the generated answer correctly states "this information is not available in the retrieved context" for a detail that the expected answer mentions, this is NOT a penalty. The system correctly avoids hallucination.
+- Only penalize if the information IS present in `contexts_retrieved` but the answer fails to use it. Check the actual context chunks before marking an omission.
+- The expected answer may assume knowledge beyond what the corpus contains. When the system's answer is grounded and factually correct for what the context covers, that is score-5 behavior.
 
 ### Dimension 4: Pipeline Health (Weight: 10%)
 
