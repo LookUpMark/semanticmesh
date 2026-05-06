@@ -142,7 +142,7 @@
     {
       "id": "ec_013",
       "question": "Are there any NOT NULL constraints defined in the schema?",
-      "answer": "No NOT NULL constraints are defined in the DDL. The data dictionary explicitly states 'NOT NULL constraints not defined' under 'Missing Documentation' and notes 'assumed, not verified'. All columns are nullable by default.",
+      "answer": "No explicit NOT NULL constraints are written in the DDL. The schema comment states 'NOT NULL constraints not defined' and the data dictionary notes them as 'assumed, not verified'. However, PRIMARY KEY columns (e.g., ORDER_ID, CUSTOMER_ID) are implicitly NOT NULL per SQL standard, even though the keyword is not written. All non-PK columns are effectively nullable by default.",
       "category": "missing_constraints",
       "robustness_test": "System should identify missing data integrity constraints"
     },
@@ -213,7 +213,7 @@
     {
       "id": "ec_020",
       "question": "Are foreign key constraints enforced in the schema?",
-      "answer": "No foreign key constraints are enforced in the DDL. While the data dictionary documents FK relationships (e.g., customer_id → CUSTOMERS, order_id → ORDERS), the actual CREATE TABLE statements omit the REFERENCES clauses. The schema explicitly notes 'FK constraints defined in data dictionary but not enforced in DDL' under known inconsistencies.",
+      "answer": "No foreign key constraints are enforced in the DDL. While the data dictionary documents FK relationships (e.g., customer_id \u2192 CUSTOMERS, order_id \u2192 ORDERS), the actual CREATE TABLE statements omit the REFERENCES clauses. The schema explicitly notes 'FK constraints defined in data dictionary but not enforced in DDL' under known inconsistencies.",
       "category": "missing_fk_enforcement",
       "robustness_test": "System should identify declared but unenforced relationships",
       "expected_sources": [
