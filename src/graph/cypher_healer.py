@@ -69,14 +69,41 @@ def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
         or any other driver exception. The ``error_message`` is injected into
         the Reflection Prompt verbatim.
     """
-    # Safety: reject Cypher containing destructive operations before sending to Neo4j.
-    _BLOCKED_KEYWORDS = ("DROP ", "DETACH DELETE", "DELETE ", "REMOVE ", "CALL dbms.", "CALL db.index.fulltext.drop")
+    # Safety: reject Cypher containing destructive or admin operations.
+    blocked_keywords = (
+        "DROP ",
+        "DETACH DELETE",
+        "DELETE ",
+        "REMOVE ",
+        "CALL dbms.",
+        "CALL db.index.fulltext.drop",
+        "CREATE USER",
+        "ALTER USER",
+        "DROP USER",
+        "CREATE ROLE",
+        "ALTER ROLE",
+        "DROP ROLE",
+        "GRANT ",
+        "REVOKE ",
+        "DENY ",
+        "CREATE DATABASE",
+        "DROP DATABASE",
+        "LOAD CSV",
+    )
     upper = cypher.upper()
-    for kw in _BLOCKED_KEYWORDS:
+    for kw in blocked_keywords:
         if kw in upper:
             msg = f"Cypher contains blocked keyword '{kw.strip()}' — rejecting."
             logger.warning(msg)
             return False, msg
+
+    # Positive allowlist: first keyword must be a safe read/write operation
+    allowed_first_keywords = ("MERGE", "MATCH", "WITH", "UNWIND", "RETURN", "OPTIONAL", "CALL {")
+    stripped = cypher.strip().upper()
+    if not any(stripped.startswith(kw) for kw in allowed_first_keywords):
+        msg = "Cypher does not start with an allowed keyword — rejecting."
+        logger.warning(msg)
+        return False, msg
 
     explain_stmt = f"EXPLAIN {cypher}"
     try:

@@ -77,10 +77,12 @@ def get_reranker():
         # Use the embedding model name from settings (already stripped by _LMStudioEmbedder logic)
         emb_model = settings.embedding_model
         if emb_model.startswith("lmstudio/"):
-            emb_model = emb_model[len("lmstudio/"):]
+            emb_model = emb_model[len("lmstudio/") :]
         base_url: str = settings.lmstudio_base_url
         logger.info("Using LM Studio reranker (cosine similarity via '%s').", emb_model)
-        return _LMStudioReranker(client=OpenAI(api_key=LMSTUDIO_PLACEHOLDER_KEY, base_url=base_url), model=emb_model)
+        return _LMStudioReranker(
+            client=OpenAI(api_key=LMSTUDIO_PLACEHOLDER_KEY, base_url=base_url), model=emb_model
+        )
 
     try:
         from FlagEmbedding import FlagReranker
@@ -105,8 +107,12 @@ def _enrich_text_for_reranking(chunk: RetrievedChunk) -> str:
     Short BC/graph chunks (e.g. "Customer Master: Primary record...")  get low
     reranker scores because there's not enough text. Prepend context info.
     """
+    settings = get_settings()
     text = chunk.text
-    if len(text) < 200 and chunk.node_type not in ("ParentChunk", "Chunk"):
+    if len(text) < settings.reranker_short_text_threshold and chunk.node_type not in (
+        "ParentChunk",
+        "Chunk",
+    ):
         prefix_parts: list[str] = []
         if chunk.node_type and chunk.node_type != "Unknown":
             prefix_parts.append(chunk.node_type)
@@ -165,7 +171,9 @@ def rerank(
     if reranker is None:
         reranker = get_reranker()
 
-    pairs: list[tuple[str, str]] = [(query, _enrich_text_for_reranking(chunk)) for chunk in valid_chunks]
+    pairs: list[tuple[str, str]] = [
+        (query, _enrich_text_for_reranking(chunk)) for chunk in valid_chunks
+    ]
 
     try:
         scores: list[float] = reranker.compute_score(pairs, normalize=True)
@@ -186,14 +194,23 @@ def rerank(
     # Linear interpolation: pool=3 → floor 0.40, pool≥10 → floor 0.55.
     if len(valid_chunks) >= 3:
         pool_size = len(valid_chunks)
-        pool_floor = min(0.55, 0.40 + (pool_size - 3) * (0.55 - 0.40) / (10 - 3))
+        settings = get_settings()
+        w_rerank = settings.reranker_weight_rerank
+        w_vector = settings.reranker_weight_vector
+        w_bm25 = settings.reranker_weight_bm25
+        w_graph = settings.reranker_weight_graph
+        pool_floor = min(w_vector, w_rerank + (pool_size - 3) * (w_vector - w_rerank) / (10 - 3))
         for i, chunk in enumerate(reranked[:5]):
-            floor = max(pool_floor - i * 0.05, 0.10)
+            floor = max(pool_floor - i * w_bm25, w_graph)
             if chunk.score < floor:
                 reranked[i] = chunk.model_copy(
                     update={
                         "score": floor,
-                        "metadata": {**chunk.metadata, "reranker_score": chunk.score, "score_floored_from": chunk.score},
+                        "metadata": {
+                            **chunk.metadata,
+                            "reranker_score": chunk.score,
+                            "score_floored_from": chunk.score,
+                        },
                     },
                 )
 

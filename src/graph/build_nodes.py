@@ -52,12 +52,8 @@ def _entity_from_table(concept_name: str, table: EnrichedTableSchema) -> Entity:
     The table's LLM-enriched description and DDL source are rich enough to
     populate definition, provenance_text, and source_doc meaningfully.
     """
-    definition = (
-        getattr(table, "table_description", None)
-        or table.comment
-        or ""
-    )
-    provenance_text = (table.ddl_source or "")[:400].strip()
+    definition = getattr(table, "table_description", None) or table.comment or ""
+    provenance_text = (table.ddl_source or "")[: get_settings().provenance_max_chars].strip()
     return Entity(
         name=concept_name,
         definition=definition,
@@ -90,7 +86,14 @@ def _node_generate_cypher(state: BuilderState) -> dict[str, Any]:
         entity = resolved or _entity_from_table(proposal.mapped_concept or "Unknown", table)
         few_shot = load_cypher_examples(settings.few_shot_cypher_examples)
         cypher = generate_cypher(proposal, table, entity, few_shot, llm)
-        log_node_event(logger, "generate_cypher", f"table={proposal.table_name}", "cypher generated", timer.elapsed_ms, model_used=settings.llm_model_reasoning)
+        log_node_event(
+            logger,
+            "generate_cypher",
+            f"table={proposal.table_name}",
+            "cypher generated",
+            timer.elapsed_ms,
+            model_used=settings.llm_model_reasoning,
+        )
         return {"current_cypher": cypher, "healing_attempts": 0}
 
 
@@ -130,10 +133,18 @@ def _node_heal_cypher(state: BuilderState) -> dict[str, Any]:
                 "Cypher healing failed for table '%s' — using deterministic builder.",
                 proposal.table_name,
             )
-            log_node_event(logger, "heal_cypher", f"table={proposal.table_name}", "healing failed", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "heal_cypher",
+                f"table={proposal.table_name}",
+                "healing failed",
+                timer.elapsed_ms,
+            )
             return {"cypher_failed": True, "current_cypher": None}
 
-        log_node_event(logger, "heal_cypher", f"table={proposal.table_name}", "healed", timer.elapsed_ms)
+        log_node_event(
+            logger, "heal_cypher", f"table={proposal.table_name}", "healed", timer.elapsed_ms
+        )
         return {"current_cypher": healed, "cypher_failed": False}
 
 
@@ -155,7 +166,10 @@ def _build_llm_cypher_params(
     enriched_cols_json = ""
     if hasattr(table, "enriched_columns") and table.enriched_columns:
         enriched_cols_json = _json.dumps(
-            [{"original": ec.original_name, "enriched": ec.enriched_name} for ec in table.enriched_columns]
+            [
+                {"original": ec.original_name, "enriched": ec.enriched_name}
+                for ec in table.enriched_columns
+            ]
         )
 
     return {
@@ -212,7 +226,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
         concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
 
         # Reject concept names that are still garbage after normalization
-        # Fallback to enriched_table_name (e.g. "Shipment" for SHIPMENT) instead of skipping entirely
+        # Fallback to enriched_table_name (e.g. "Shipment" for SHIPMENT)
+        # instead of skipping entirely
         if not is_valid_entity_name(concept_name):
             fallback_name = normalize_concept_name(
                 getattr(table, "enriched_table_name", None) or table.table_name
@@ -228,11 +243,18 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 concept_name = fallback_name
             else:
                 logger.warning(
-                    "Concept name '%s' (raw: '%s') rejected by quality gate — skipping graph write.",
+                    "Concept name '%s' (raw: '%s') rejected by quality "
+                    "gate — skipping graph write.",
                     concept_name,
                     proposal.mapped_concept,
                 )
-                log_node_event(logger, "build_graph", f"table={proposal.table_name}", "rejected concept name", timer.elapsed_ms)
+                log_node_event(
+                    logger,
+                    "build_graph",
+                    f"table={proposal.table_name}",
+                    "rejected concept name",
+                    timer.elapsed_ms,
+                )
                 completed = list(state.get("completed_tables") or [])
                 completed.append(proposal.table_name)
                 return {"completed_tables": completed}
@@ -242,9 +264,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
         # concept name differently from what entity resolution produced), fall back
         # to a best-effort Entity built from the table's enriched metadata so that
         # BusinessConcept nodes are never written with empty properties.
-        resolved = _find_entity_for_concept(
-            concept_name, state.get("current_entities") or []
-        )
+        resolved = _find_entity_for_concept(concept_name, state.get("current_entities") or [])
         entity_for_write = resolved or _entity_from_table(concept_name, table)
         if resolved is None:
             logger.warning(
@@ -259,7 +279,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             for kw in blocked_keywords:
                 if kw in upper_cypher:
                     logger.warning(
-                        "LLM Cypher contains blocked keyword '%s' — falling back to deterministic builder.",
+                        "LLM Cypher contains blocked keyword '%s' — "
+                    "falling back to deterministic builder.",
                         kw.strip(),
                     )
                     cypher_failed = True
@@ -286,6 +307,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 # violations when the same BusinessConcept already exists.
                 # Fallback to deterministic builder which always uses MERGE.
                 from neo4j.exceptions import ConstraintError
+
                 if isinstance(cypher_exec_err, ConstraintError):
                     logger.warning(
                         "LLM Cypher failed with constraint error for '%s' — "
@@ -316,7 +338,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     "MATCH (bc:BusinessConcept {name: $bc_name}) "
                     "MATCH (pt:PhysicalTable) WHERE toLower(pt.table_name) = toLower($tbl) "
                     "MERGE (bc)-[r:MAPPED_TO]->(pt) "
-                    "ON CREATE SET r.confidence = $conf, r.validated_by = 'llm_judge', r.created_at = datetime() "
+                    "ON CREATE SET r.confidence = $conf, "
+                    "r.validated_by = 'llm_judge', r.created_at = datetime() "
                     "ON MATCH SET r.confidence = $conf, r.updated_at = datetime()",
                     {"bc_name": concept_name, "tbl": table.table_name, "conf": proposal.confidence},
                 )
@@ -340,8 +363,10 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             if getattr(table, "enriched_columns", None):
                 set_clauses.append("pt.enriched_columns = $ec")
                 merged_params["ec"] = _json.dumps(
-                    [{"original": ec.original_name, "enriched": ec.enriched_name}
-                     for ec in table.enriched_columns]
+                    [
+                        {"original": ec.original_name, "enriched": ec.enriched_name}
+                        for ec in table.enriched_columns
+                    ]
                 )
             if table.comment:
                 set_clauses.append("pt.comment = $cmt")
@@ -358,7 +383,9 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             if fk_statements:
                 try:
                     client.execute_batch(fk_statements)
-                    logger.info("FK edges: %d batched for table '%s'.", len(fk_statements), table.table_name)
+                    logger.info(
+                        "FK edges: %d batched for table '%s'.", len(fk_statements), table.table_name
+                    )
                 except Exception as exc:
                     logger.warning("Could not write FK edges for '%s': %s", table.table_name, exc)
 
@@ -367,20 +394,26 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             if attr_statements:
                 try:
                     client.execute_batch(attr_statements)
-                    logger.info("Attribute nodes: %d upserted for table '%s'.", len(attr_statements), table.table_name)
+                    logger.info(
+                        "Attribute nodes: %d upserted for table '%s'.",
+                        len(attr_statements),
+                        table.table_name,
+                    )
                     # Set embeddings on Attribute nodes
                     model = get_embeddings()
                     attr_texts = [params["description"] for _, params in attr_statements]
                     attr_names = [params["attr_name"] for _, params in attr_statements]
                     vectors = model.encode(attr_texts, batch_size=len(attr_texts))
-                    for attr_name, vec in zip(attr_names, vectors):
+                    for attr_name, vec in zip(attr_names, vectors, strict=False):
                         client.execute_cypher(
                             "MATCH (a:Attribute {name: $name}) SET a.embedding = $emb",
                             {"name": attr_name, "emb": vec.tolist()},
                         )
                     logger.info("Embeddings set for %d Attribute nodes.", len(attr_names))
                 except Exception as exc:
-                    logger.warning("Could not write Attribute nodes for '%s': %s", table.table_name, exc)
+                    logger.warning(
+                        "Could not write Attribute nodes for '%s': %s", table.table_name, exc
+                    )
 
             if proposal.mapped_concept:
                 try:
@@ -399,6 +432,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                                 raise
                 except Exception as exc:
                     logger.warning("Could not set embedding for '%s': %s", concept_name, exc)
+                    state.setdefault("embedding_failures", []).append(concept_name)
 
             # ── MENTIONS edges: link Chunk nodes to this BusinessConcept ──
             if proposal.mapped_concept:
@@ -433,7 +467,13 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
 
         completed = list(state.get("completed_tables") or [])
         completed.append(proposal.table_name)
-        log_node_event(logger, "build_graph", f"table={proposal.table_name}", f"{len(completed)} completed", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "build_graph",
+            f"table={proposal.table_name}",
+            f"{len(completed)} completed",
+            timer.elapsed_ms,
+        )
         return {"completed_tables": completed}
 
 

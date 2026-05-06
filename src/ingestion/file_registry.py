@@ -179,14 +179,16 @@ def purge_file_data(client: Neo4jClient, source_doc: str) -> int:
 
     # 2. Delete parent ParentChunk nodes
     rows_p = client.execute_cypher(
-        "MATCH (pc:ParentChunk) WHERE pc.source_doc IN $srcs DETACH DELETE pc RETURN count(pc) AS n",
+        "MATCH (pc:ParentChunk) WHERE pc.source_doc IN $srcs "
+        "DETACH DELETE pc RETURN count(pc) AS n",
         {"srcs": src_variants},
     )
     n_parents = (rows_p[0].get("n") or 0) if rows_p else 0
 
     # 3. Delete PhysicalTable nodes whose source_file matches this DDL path
     rows_t = client.execute_cypher(
-        "MATCH (pt:PhysicalTable) WHERE pt.source_file IN $srcs DETACH DELETE pt RETURN count(pt) AS n",
+        "MATCH (pt:PhysicalTable) WHERE pt.source_file IN $srcs "
+        "DETACH DELETE pt RETURN count(pt) AS n",
         {"srcs": src_variants},
     )
     n_tables = (rows_t[0].get("n") or 0) if rows_t else 0

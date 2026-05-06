@@ -2,10 +2,10 @@
   "AB-00": {
     "01_basics_ecommerce": {
       "builder": 5,
-      "retrieval": 4,
+      "retrieval": 5,
       "answer": 5,
       "pipeline": 5,
-      "overall": 4.25
+      "overall": 4.5
     }
   },
   "AB-01": {

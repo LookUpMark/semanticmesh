@@ -638,7 +638,7 @@ class ComparisonReport:
         ground_truth: list[dict[str, Any]],
     ) -> None:
         """Generate per-question comparison."""
-        for i, (trace, gt) in enumerate(zip(query_traces, ground_truth)):
+        for i, (trace, gt) in enumerate(zip(query_traces, ground_truth, strict=False)):
             retrieved_nodes = [r.get("node", "") for r in trace.post_rerank or trace.rrf_fused]
             expected_sources = gt.get("expected_sources", [])
 
@@ -699,7 +699,10 @@ class ComparisonReport:
                     "severity": "high"
                     if self.aggregate_metrics["avg_coverage_rate"] < 0.6
                     else "medium",
-                    "description": f"Low source coverage rate: {self.aggregate_metrics['avg_coverage_rate']:.2%}",
+                    "description": (
+                        f"Low source coverage rate: "
+                        f"{self.aggregate_metrics['avg_coverage_rate']:.2%}"
+                    ),
                 }
             )
 
@@ -711,18 +714,26 @@ class ComparisonReport:
                     "severity": "high"
                     if self.aggregate_metrics["grounded_rate"] < 0.7
                     else "medium",
-                    "description": f"Low grounding rate: {self.aggregate_metrics['grounded_rate']:.2%}",
+                    "description": (
+                        f"Low grounding rate: "
+                        f"{self.aggregate_metrics['grounded_rate']:.2%}"
+                    ),
                 }
             )
 
         # Check per-question issues
-        low_coverage_questions = [q for q in self.per_question_analysis if q["coverage_rate"] < 0.5]
+        low_coverage_questions = [
+            q for q in self.per_question_analysis if q["coverage_rate"] < 0.5
+        ]
         if low_coverage_questions:
             bottlenecks.append(
                 {
                     "type": "specific_questions",
                     "severity": "medium",
-                    "description": f"{len(low_coverage_questions)} questions with < 50% source coverage",
+                    "description": (
+                        f"{len(low_coverage_questions)} questions "
+                        f"with < 50% source coverage"
+                    ),
                     "affected_questions": [q["query_index"] for q in low_coverage_questions],
                 }
             )

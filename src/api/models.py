@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal, TypeAlias
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, model_validator
+
+# Model name must be alphanumeric with /, _, ., -, : (prevents injection)
+_VALID_MODEL_NAME = re.compile(r"^[a-zA-Z0-9/_.\-:]+$")
 
 # ── Shared LLM override fields ────────────────────────────────────────────────
 
@@ -63,11 +68,27 @@ class PipelineConfig(BaseModel):
     """
 
     # ── LLM Provider Selection ──────────────────────────────────────────────
-    provider: Literal[
-        "auto", "openrouter", "openai", "anthropic", "lmstudio", "ollama",
-        "groq", "google", "bedrock", "azure", "mistral", "together",
-        "deepseek", "xai", "nvidia", "huggingface",
-    ] | None = Field(
+    provider: (
+        Literal[
+            "auto",
+            "openrouter",
+            "openai",
+            "anthropic",
+            "lmstudio",
+            "ollama",
+            "groq",
+            "google",
+            "bedrock",
+            "azure",
+            "mistral",
+            "together",
+            "deepseek",
+            "xai",
+            "nvidia",
+            "huggingface",
+        ]
+        | None
+    ) = Field(
         default="openrouter",
         description=_LLM_PROVIDER_DESC,
         examples=["openrouter", "openai", "lmstudio"],
@@ -95,50 +116,88 @@ class PipelineConfig(BaseModel):
         examples=["http://localhost:1234/v1", "http://192.168.1.50:1234/v1"],
     )
 
+    @model_validator(mode="after")
+    def _validate_security(self) -> PipelineConfig:
+        """Validate model names and base URL against injection attacks."""
+        # Validate model names (prevent injection via special chars)
+        for field_name in ("reasoning_model", "extraction_model", "midtier_model"):
+            model_name = getattr(self, field_name, None)
+            if model_name and not _VALID_MODEL_NAME.match(model_name):
+                raise ValueError(
+                    f"{field_name} must contain only alphanumerics, /, _, ., -, : "
+                    f"(got: {model_name!r})"
+                )
+        # Validate lmstudio_base_url (prevent SSRF)
+        if self.lmstudio_base_url:
+            parsed = urlparse(self.lmstudio_base_url)
+            if parsed.scheme not in ("http", "https"):
+                raise ValueError(
+                    f"lmstudio_base_url: only http/https schemes allowed (got: {parsed.scheme!r})"
+                )
+            host = parsed.hostname or ""
+            # Block metadata endpoints and non-private destinations
+            if host in ("169.254.169.254", "metadata.google.internal"):
+                raise ValueError("lmstudio_base_url: cloud metadata endpoints are blocked")
+        return self
+
     # ── LLM Parameters ──────────────────────────────────────────────────────
     temperature_extraction: float | None = Field(
-        default=0.0, ge=0.0, le=2.0,
+        default=0.0,
+        ge=0.0,
+        le=2.0,
         description="Temperature for extraction LLM (0.0 = deterministic JSON).",
     )
     temperature_reasoning: float | None = Field(
-        default=0.0, ge=0.0, le=2.0,
+        default=0.0,
+        ge=0.0,
+        le=2.0,
         description="Temperature for reasoning/mapping LLM (0.0 = deterministic).",
     )
     temperature_generation: float | None = Field(
-        default=0.3, ge=0.0, le=2.0,
+        default=0.3,
+        ge=0.0,
+        le=2.0,
         description="Temperature for answer generation LLM (0.3 for fluency).",
     )
     max_tokens_extraction: int | None = Field(
-        default=8192, ge=256, le=32768,
+        default=8192,
+        ge=256,
+        le=32768,
         description="Max output tokens for extraction LLM.",
     )
     max_tokens_reasoning: int | None = Field(
-        default=4096, ge=256, le=32768,
+        default=4096,
+        ge=256,
+        le=32768,
         description="Max output tokens for reasoning LLM.",
     )
 
     # ── Chunking ────────────────────────────────────────────────────────────
     chunk_size: int | None = Field(
-        default=256, ge=64, le=2048,
-        description=(
-            "Child chunk token size. Must be greater than chunk_overlap."
-        ),
+        default=256,
+        ge=64,
+        le=2048,
+        description=("Child chunk token size. Must be greater than chunk_overlap."),
     )
     chunk_overlap: int | None = Field(
-        default=32, ge=0, le=1024,
-        description=(
-            "Child chunk overlap in tokens. Must be strictly less than chunk_size."
-        ),
+        default=32,
+        ge=0,
+        le=1024,
+        description=("Child chunk overlap in tokens. Must be strictly less than chunk_size."),
     )
     parent_chunk_size: int | None = Field(
-        default=800, ge=128, le=4096,
+        default=800,
+        ge=128,
+        le=4096,
         description=(
             "Parent chunk token size. "
             "Must be greater than parent_chunk_overlap and greater than chunk_size."
         ),
     )
     parent_chunk_overlap: int | None = Field(
-        default=96, ge=0, le=2048,
+        default=96,
+        ge=0,
+        le=2048,
         description=(
             "Parent chunk overlap in tokens. Must be strictly less than parent_chunk_size."
         ),
@@ -182,11 +241,15 @@ class PipelineConfig(BaseModel):
         description="Retrieval channel combination.",
     )
     retrieval_vector_top_k: int | None = Field(
-        default=20, ge=1, le=100,
+        default=20,
+        ge=1,
+        le=100,
         description="Vector search candidates.",
     )
     retrieval_bm25_top_k: int | None = Field(
-        default=10, ge=1, le=100,
+        default=10,
+        ge=1,
+        le=100,
         description="BM25 keyword candidates.",
     )
     enable_reranker: bool | None = Field(
@@ -194,35 +257,49 @@ class PipelineConfig(BaseModel):
         description="Enable cross-encoder reranking (bge-reranker-v2-m3).",
     )
     reranker_top_k: int | None = Field(
-        default=12, ge=1, le=50,
+        default=12,
+        ge=1,
+        le=50,
         description="Candidates kept after reranking.",
     )
 
     # ── Entity Resolution ───────────────────────────────────────────────────
     er_similarity_threshold: float | None = Field(
-        default=0.75, ge=0.0, le=1.0,
+        default=0.75,
+        ge=0.0,
+        le=1.0,
         description="Cosine similarity threshold for entity blocking.",
     )
     er_blocking_top_k: int | None = Field(
-        default=10, ge=1, le=50,
+        default=10,
+        ge=1,
+        le=50,
         description="K-NN candidates per entity in blocking.",
     )
 
     # ── Mapping & Validation ────────────────────────────────────────────────
     confidence_threshold: float | None = Field(
-        default=0.90, ge=0.0, le=1.0,
+        default=0.90,
+        ge=0.0,
+        le=1.0,
         description="Mapping confidence threshold for HITL interrupt.",
     )
     max_reflection_attempts: int | None = Field(
-        default=3, ge=1, le=10,
+        default=3,
+        ge=1,
+        le=10,
         description="Max Actor-Critic reflection retries.",
     )
     max_cypher_healing_attempts: int | None = Field(
-        default=3, ge=0, le=10,
+        default=3,
+        ge=0,
+        le=10,
         description="Max Cypher healing retries before deterministic fallback.",
     )
     max_hallucination_retries: int | None = Field(
-        default=3, ge=0, le=10,
+        default=3,
+        ge=0,
+        le=10,
         description="Max hallucination regeneration retries.",
     )
 
@@ -560,6 +637,7 @@ class BuildRequest(BaseModel):
     """Trigger the Builder pipeline to ingest docs and populate the Knowledge Graph."""
 
     doc_paths: list[str] = Field(
+        max_length=100,
         description="Paths to business documentation files (PDF, MD, TXT).",
         examples=[
             [
@@ -569,6 +647,7 @@ class BuildRequest(BaseModel):
         ],
     )
     ddl_paths: list[str] = Field(
+        max_length=50,
         description="Paths to DDL SQL files to map onto the ontology.",
         examples=[["tests/fixtures/01_basics_ecommerce/schema.sql"]],
     )
@@ -593,7 +672,10 @@ class BuildRequest(BaseModel):
     )
     config: PipelineConfig | None = Field(
         default=None,
-        description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
+        description=(
+            "Optional per-run configuration overrides "
+            "(models, temperatures, feature flags, etc.)."
+        ),
     )
 
 
@@ -618,6 +700,7 @@ class BuildResultResponse(BaseModel):
 
 
 # ── KG Snapshot models ────────────────────────────────────────────────────────
+
 
 class KGSnapshotMeta(BaseModel):
     """Metadata for a saved Knowledge Graph snapshot."""
@@ -655,6 +738,7 @@ class RenameSnapshotRequest(BaseModel):
 
 
 # ── Conversation models ────────────────────────────────────────────────────────
+
 
 class ConversationMessage(BaseModel):
     """A single chat message stored in a conversation."""
@@ -697,7 +781,9 @@ class SaveConversationRequest(BaseModel):
         description="Human-readable title (defaults to first user message if empty).",
         default="",
     )
-    messages: list[ConversationMessage] = Field(description="Full message list to persist.")
+    messages: list[ConversationMessage] = Field(
+        max_length=500, description="Full message list to persist."
+    )
     active_snapshot_id: str | None = Field(
         default=None,
         description="ID of the KG snapshot that was active during this conversation.",
@@ -722,13 +808,16 @@ class QueryRequest(BaseModel):
     )
     config: PipelineConfig | None = Field(
         default=None,
-        description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
+        description=(
+            "Optional per-run configuration overrides "
+            "(models, temperatures, feature flags, etc.)."
+        ),
     )
     session_id: str | None = Field(
         default=None,
         description="Client-generated session UUID. The server uses it as LangGraph thread_id "
-                    "so the MemorySaver checkpoint carries the full conversation history "
-                    "server-side — no need to replay history in the request body.",
+        "so the MemorySaver checkpoint carries the full conversation history "
+        "server-side — no need to replay history in the request body.",
     )
 
 
@@ -752,6 +841,7 @@ class PipelineRequest(BaseModel):
     """Run a complete E2E pipeline: build KG then answer questions."""
 
     doc_paths: list[str] = Field(
+        max_length=100,
         description="Paths to business documentation files.",
         examples=[
             [
@@ -761,11 +851,13 @@ class PipelineRequest(BaseModel):
         ],
     )
     ddl_paths: list[str] = Field(
+        max_length=50,
         description="Paths to DDL SQL files.",
         examples=[["tests/fixtures/01_basics_ecommerce/schema.sql"]],
     )
     questions: list[str] = Field(
         min_length=1,
+        max_length=500,
         description="One or more natural-language questions to answer after build.",
         examples=[
             [
@@ -784,7 +876,10 @@ class PipelineRequest(BaseModel):
     )
     run_ragas: bool = Field(
         default=False,
-        description="Compute RAGAS faithfulness/AR/CP/CR after answering (requires expected answers in the fixture).",
+        description=(
+            "Compute RAGAS faithfulness/AR/CP/CR after answering "
+            "(requires expected answers in the fixture)."
+        ),
     )
     study_id: str = Field(
         default="demo",
@@ -792,7 +887,10 @@ class PipelineRequest(BaseModel):
     )
     config: PipelineConfig | None = Field(
         default=None,
-        description="Optional per-run configuration overrides (models, temperatures, feature flags, etc.).",
+        description=(
+            "Optional per-run configuration overrides "
+            "(models, temperatures, feature flags, etc.)."
+        ),
     )
 
 
@@ -824,5 +922,3 @@ class GraphStatsResponse(BaseModel):
     references_edges: int
     total_nodes: int
     total_relationships: int
-
-

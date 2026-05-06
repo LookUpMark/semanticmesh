@@ -97,7 +97,7 @@ def get_embeddings():
         return _OpenAIEmbedder(model_name, dimensions=dims)
 
     if model_name.startswith("lmstudio/"):
-        bare = model_name[len("lmstudio/"):]
+        bare = model_name[len("lmstudio/") :]
         logger.info("Using LM Studio embedding model '%s'.", bare)
         return _LMStudioEmbedder(bare)
 
@@ -140,7 +140,7 @@ def embed_texts(
         return []
     if model is None:
         model = get_embeddings()
-    embeddings = model.encode(texts, batch_size=32)
+    embeddings = model.encode(texts, batch_size=get_settings().embedding_batch_size)
     return embeddings.tolist()
 
 

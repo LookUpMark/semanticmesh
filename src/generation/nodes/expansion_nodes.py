@@ -90,5 +90,11 @@ def _node_context_distillation(state: QueryState) -> dict[str, Any]:
                 len(distilled),
             )
         result_chunks = distilled or composed
-        log_node_event(logger, "context_distillation", f"{len(composed)} composed", f"{len(result_chunks)} distilled", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "context_distillation",
+            f"{len(composed)} composed",
+            f"{len(result_chunks)} distilled",
+            timer.elapsed_ms,
+        )
         return {"generation_chunks": result_chunks}

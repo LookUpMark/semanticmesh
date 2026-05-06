@@ -75,9 +75,9 @@ def clean_json(raw: str) -> str:
         >>> clean_json('  {"key": "value"}  ')
         '{"key": "value"}'
     """
-    _MAX_JSON_SIZE = 5 * 1024 * 1024  # 5 MB safety limit
-    if len(raw) > _MAX_JSON_SIZE:
-        raise ValueError(f"JSON input too large ({len(raw)} bytes > {_MAX_JSON_SIZE} limit).")
+    max_json_size = 5 * 1024 * 1024  # 5 MB safety limit
+    if len(raw) > max_json_size:
+        raise ValueError(f"JSON input too large ({len(raw)} bytes > {max_json_size} limit).")
     cleaned = _FENCE_RE.sub("", raw).strip()
     # Extract JSON object or array from within larger text
     obj_start = cleaned.find("{")
@@ -89,6 +89,43 @@ def clean_json(raw: str) -> str:
     if arr_start != -1 and arr_end != -1 and arr_end > arr_start:
         return cleaned[arr_start : arr_end + 1]
     return cleaned
+
+
+_MAX_JSON_DEPTH = 50
+
+
+def safe_json_loads(text: str, *, max_depth: int = _MAX_JSON_DEPTH) -> object:
+    """Parse JSON with a nesting depth guard to prevent stack exhaustion.
+
+    Raises:
+        ValueError: If nesting exceeds *max_depth*.
+        json.JSONDecodeError: On invalid JSON.
+    """
+    import json
+
+    depth = 0
+    in_string = False
+    escape = False
+    for ch in text:
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            if in_string:
+                escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch in "{[":
+            depth += 1
+            if depth > max_depth:
+                raise ValueError(f"JSON nesting depth ({depth}) exceeds maximum ({max_depth}).")
+        elif ch in "}]":
+            depth -= 1
+    return json.loads(text)
 
 
 class ReflectionResult(TypedDict):

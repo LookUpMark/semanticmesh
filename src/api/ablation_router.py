@@ -87,9 +87,9 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
         dataset_path = Path(req.dataset).resolve()
         if not str(dataset_path).startswith(str(_ROOT.resolve())):
             raise ValueError(f"Dataset path '{req.dataset}' is outside the allowed directory.")
-        _ALLOWED_DATASET_DIRS = {"tests/fixtures", "data"}
+        allowed_dataset_dirs = {"tests/fixtures", "data"}
         rel = dataset_path.relative_to(_ROOT.resolve())
-        if not any(str(rel).startswith(d) for d in _ALLOWED_DATASET_DIRS):
+        if not any(str(rel).startswith(d) for d in allowed_dataset_dirs):
             raise ValueError(f"Dataset must reside under tests/fixtures/ or data/. Got: {rel}")
         if not dataset_path.exists():
             raise FileNotFoundError(f"Dataset not found: {dataset_path}")
@@ -267,9 +267,7 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
             # ── Stage 4: Evaluation Bundle ────────────────────────────────
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
-            bundle_dir = (
-                _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
-            )
+            bundle_dir = _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
                 output_dir=bundle_dir,
@@ -474,9 +472,7 @@ def _run_ablation_task_with_preset(
 
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
-            bundle_dir = (
-                _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
-            )
+            bundle_dir = _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
                 output_dir=bundle_dir,
@@ -544,8 +540,8 @@ def get_ablation_datasets() -> list[str]:
     description=(
         "Starts an ablation run using the configuration defined in the ablation matrix "
         "for the given `study_id`. All feature flags and hyperparameters are set automatically. "
-        "Optionally override the LLM via `reasoning_model`, `extraction_model`, `provider_base_url` — "
-        "these win over the matrix defaults. "
+        "Optionally override the LLM via `reasoning_model`, `extraction_model`, "
+        "`provider_base_url` — these win over the matrix defaults. "
         "Returns a `job_id` — poll **GET /ablation/status/{job_id}** for results."
     ),
 )
@@ -737,7 +733,8 @@ def _bundle_path(study_id: str, dataset_id: str) -> Path:
         _ROOT
         / "notebooks"
         / "ablation"
-        / "outputs" / "ablation"
+        / "outputs"
+        / "ablation"
         / study_id
         / dataset_id
         / "evaluation_bundle.json"
@@ -768,8 +765,9 @@ def get_evaluation_bundle(study_id: str, dataset_id: str) -> JSONResponse:
     summary="AI-as-Judge evaluation payload",
     description=(
         "Returns the AI Judge system prompt combined with the evaluation bundle — "
-        "ready to feed to any AI (Claude, GPT, etc.) for a structured qualitative evaluation. "
-        "Use the returned `system_prompt` as the system message and `evaluation_bundle` as the user message."
+        "ready to feed to any AI (Claude, GPT, etc.) for a structured qualitative "
+        "evaluation. Use the returned `system_prompt` as the system message and "
+        "`evaluation_bundle` as the user message."
     ),
 )
 def get_ai_judge_payload(study_id: str, dataset_id: str) -> JSONResponse:
@@ -787,7 +785,6 @@ def get_ai_judge_payload(study_id: str, dataset_id: str) -> JSONResponse:
             detail="AI_JUDGE_PROMPT.md not found in docs/.",
         )
 
-
     prompt_text = prompt_file.read_text(encoding="utf-8")
     bundle_data = json.loads(bundle_file.read_text(encoding="utf-8"))
 
@@ -796,8 +793,10 @@ def get_ai_judge_payload(study_id: str, dataset_id: str) -> JSONResponse:
             "system_prompt": prompt_text,
             "evaluation_bundle": bundle_data,
             "instructions": (
-                "Feed system_prompt as the system message and evaluation_bundle as the user message "
-                "to any AI (Claude, GPT, etc.) to obtain a structured qualitative evaluation."
+                "Feed system_prompt as the system message and "
+                "evaluation_bundle as the user message "
+                "to any AI (Claude, GPT, etc.) to obtain a "
+                "structured qualitative evaluation."
             ),
         }
     )

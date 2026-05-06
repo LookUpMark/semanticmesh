@@ -23,7 +23,7 @@ import os
 import re as _re
 import sys
 import time as _time
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -176,7 +176,11 @@ def _generate_analysis_md(summary: dict, dataset_id: str) -> str:
         "|--------|-------|",
         f"| Questions | {total} |",
         f"| Grounded | **{grounded}/{total} ({rate:.0%})** |",
-        ("| Avg GT Coverage | " + (f"{qry['avg_gt_coverage']:.0%}" if qry.get('avg_gt_coverage') is not None else "N/A") + " |"),
+        (
+            "| Avg GT Coverage | "
+            + (f"{qry['avg_gt_coverage']:.0%}" if qry.get("avg_gt_coverage") is not None else "N/A")
+            + " |"
+        ),
         f"| Avg Top Score | {qry.get('avg_top_score', 0):.4f} |",
         f"| Avg Chunk Count | {qry.get('avg_chunk_count', 0):.1f} |",
         f"| Abstained | {qry.get('abstained_count', 0)} |",
@@ -230,10 +234,10 @@ def _generate_analysis_md(summary: dict, dataset_id: str) -> str:
             f"**GT Coverage:** {'N/A' if gt_cov is None else f'{gt_cov:.0%}'} | **Top Score:** {top_score:.4f} | **Gate:** `{gate}`",
             "",
             "**Expected answer:**",
-            f"> {expected[:300]}{'\u2026' if len(expected) > 300 else ''}",
+            f"> {expected[:300]}{'…' if len(expected) > 300 else ''}",
             "",
             "**System answer:**",
-            f"> {answer[:400]}{'\u2026' if len(answer) > 400 else ''}",
+            f"> {answer[:400]}{'…' if len(answer) > 400 else ''}",
             "",
         ]
 
@@ -250,7 +254,8 @@ def _generate_analysis_md(summary: dict, dataset_id: str) -> str:
 
         if sources:
             lines += [
-                f"**Sources retrieved ({len(sources)}):** " + ", ".join(f"`{s}`" for s in sources[:8]),
+                f"**Sources retrieved ({len(sources)}):** "
+                + ", ".join(f"`{s}`" for s in sources[:8]),
                 "",
             ]
 
@@ -258,7 +263,7 @@ def _generate_analysis_md(summary: dict, dataset_id: str) -> str:
             lines += ["**Context previews (first 3):**", ""]
             for j, ctx in enumerate(contexts[:3]):
                 preview = ctx[:200].replace("\n", " ")
-                lines += [f"{j+1}. _{preview}\u2026_", ""]
+                lines += [f"{j + 1}. _{preview}\u2026_", ""]
 
         if not grounded_flag:
             anomalies.append(f"- **{qid}**: UNGROUNDED")
@@ -267,7 +272,9 @@ def _generate_analysis_md(summary: dict, dataset_id: str) -> str:
         if rscores.get("faithfulness", 1.0) < 0.8:
             anomalies.append(f"- **{qid}**: Low faithfulness ({rscores['faithfulness']:.2f})")
         if rscores.get("context_precision", 1.0) < 0.2:
-            anomalies.append(f"- **{qid}**: Very low context precision ({rscores.get('context_precision', 0):.2f})")
+            anomalies.append(
+                f"- **{qid}**: Very low context precision ({rscores.get('context_precision', 0):.2f})"
+            )
         lines += ["---", ""]
 
     lines += ["## Anomalies & Observations", ""]
@@ -295,14 +302,12 @@ def _run_single(
     output_dir: Path,
 ) -> dict[str, Any]:
     """Execute the full pipeline for one study on one dataset."""
-    from src.config.llm_factory import reconfigure_from_env  # noqa: PLC0415
     from src.config.settings import get_settings  # noqa: PLC0415
+    from src.evaluation.ablation_runner import ABLATION_MATRIX, _settings_override  # noqa: PLC0415
     from src.evaluation.bundle_writer import write_evaluation_bundle  # noqa: PLC0415
     from src.evaluation.gold_standard_loader import load_gold_standard  # noqa: PLC0415
     from src.generation.query_graph import run_query  # noqa: PLC0415
     from src.utils.text_utils import normalize_source_name as _ns  # noqa: PLC0415
-
-    from src.evaluation.ablation_runner import ABLATION_MATRIX, _settings_override  # noqa: PLC0415
 
     config = ABLATION_MATRIX.get(study_id, {})
     env_overrides = config.get("env_overrides", {})
@@ -344,7 +349,11 @@ def _run_single(
             logger.info("Extraction: %s", extraction_mode)
             logger.info("Embedding:  %s", settings.embedding_model)
             logger.info("Reasoning:  %s", settings.llm_model_reasoning)
-            logger.info("Reranker:   %s (top_k=%d)", settings.reranker_model if settings.enable_reranker else "OFF", settings.reranker_top_k)
+            logger.info(
+                "Reranker:   %s (top_k=%d)",
+                settings.reranker_model if settings.enable_reranker else "OFF",
+                settings.reranker_top_k,
+            )
             logger.info("Samples:    %d", len(pairs))
 
             # ── Stage 1: Builder ──
@@ -449,55 +458,65 @@ def _run_single(
                             covered_sources.append(str(es))
                 # None when no expected_sources — metric is not applicable (not inflated to 1.0)
                 gt_coverage: float | None = (
-                    len(covered_sources) / len(expected_sources)
-                    if expected_sources else None
+                    len(covered_sources) / len(expected_sources) if expected_sources else None
                 )
 
                 gt_coverages.append(gt_coverage)
                 top_scores.append(r.get("retrieval_quality_score", 0.0))
                 chunk_counts.append(r.get("retrieval_chunk_count", 0))
 
-                status = "\u2705" if grounded else ("\u26d4" if gate == "abstain_early" else "\u274c")
+                status = (
+                    "\u2705" if grounded else ("\u26d4" if gate == "abstain_early" else "\u274c")
+                )
                 logger.info(
                     "  [%d/%d] %s Q: %s | gt=%s score=%.4f",
-                    i + 1, len(pairs), status, question[:80],
+                    i + 1,
+                    len(pairs),
+                    status,
+                    question[:80],
                     f"{gt_coverage:.0%}" if gt_coverage is not None else "N/A",
                     r.get("retrieval_quality_score", 0),
                 )
 
-                per_question.append({
-                    "query_id": pair.get("query_id", f"Q{i+1:03d}"),
-                    "question": question,
-                    "expected_answer": pair.get("expected_answer", ""),
-                    "generated_answer": answer,
-                    "expected_sources": expected_sources,
-                    "covered_sources": covered_sources,
-                    "gt_coverage": round(gt_coverage, 4) if gt_coverage is not None else None,
-                    "sources": sources,
-                    "entity_names": entity_names,
-                    "retrieved_contexts": list(r.get("retrieved_contexts", [])),
-                    "grounded": grounded,
-                    "query_type": pair.get("query_type", "unknown"),
-                    "difficulty": pair.get("difficulty", "unknown"),
-                    "retrieval_quality_score": r.get("retrieval_quality_score", 0.0),
-                    "retrieval_chunk_count": r.get("retrieval_chunk_count", 0),
-                    "retrieval_gate_decision": gate,
-                    "context_sufficiency": r.get("context_sufficiency", "insufficient"),
-                    "grader_consistency_valid": r.get("grader_consistency_valid", True),
-                    "grader_rejection_count": r.get("grader_rejection_count", 0),
-                })
+                per_question.append(
+                    {
+                        "query_id": pair.get("query_id", f"Q{i + 1:03d}"),
+                        "question": question,
+                        "expected_answer": pair.get("expected_answer", ""),
+                        "generated_answer": answer,
+                        "expected_sources": expected_sources,
+                        "covered_sources": covered_sources,
+                        "gt_coverage": round(gt_coverage, 4) if gt_coverage is not None else None,
+                        "sources": sources,
+                        "entity_names": entity_names,
+                        "retrieved_contexts": list(r.get("retrieved_contexts", [])),
+                        "grounded": grounded,
+                        "query_type": pair.get("query_type", "unknown"),
+                        "difficulty": pair.get("difficulty", "unknown"),
+                        "retrieval_quality_score": r.get("retrieval_quality_score", 0.0),
+                        "retrieval_chunk_count": r.get("retrieval_chunk_count", 0),
+                        "retrieval_gate_decision": gate,
+                        "context_sufficiency": r.get("context_sufficiency", "insufficient"),
+                        "grader_consistency_valid": r.get("grader_consistency_valid", True),
+                        "grader_rejection_count": r.get("grader_rejection_count", 0),
+                    }
+                )
 
             query_elapsed = _time.perf_counter() - t1
             _valid_gt = [x for x in gt_coverages if x is not None]
             avg_gt: float | None = sum(_valid_gt) / len(_valid_gt) if _valid_gt else None
             avg_score = sum(top_scores) / len(top_scores) if top_scores else 0.0
             avg_chunks = sum(chunk_counts) / len(chunk_counts) if chunk_counts else 0.0
-            abstained = sum(1 for pq in per_question if pq.get("retrieval_gate_decision") == "abstain_early")
+            abstained = sum(
+                1 for pq in per_question if pq.get("retrieval_gate_decision") == "abstain_early"
+            )
 
             _avg_gt_display = f"{avg_gt * 100:.0f}%" if avg_gt is not None else "N/A"
             logger.info(
                 "  Query done: %.1fs | Grounded: %d/%d | GT cov: %s",
-                query_elapsed, grounded_count, len(pairs),
+                query_elapsed,
+                grounded_count,
+                len(pairs),
                 f"{avg_gt:.0%}" if avg_gt is not None else "N/A",
             )
 
@@ -555,13 +574,15 @@ def _run_single(
                 "study_id": study_id,
                 "dataset_id": dataset_id,
                 "run_tag": run_tag,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "config": config_snapshot,
                 "builder": {
                     "triplets": len(builder_state.get("triplets", [])) if builder_state else 0,
                     "entities": len(builder_state.get("entities", [])) if builder_state else 0,
                     "tables_parsed": len(builder_state.get("tables", [])) if builder_state else 0,
-                    "tables_completed": len(builder_state.get("completed_tables", [])) if builder_state else 0,
+                    "tables_completed": len(builder_state.get("completed_tables", []))
+                    if builder_state
+                    else 0,
                     "elapsed_s": round(builder_elapsed, 1) if builder_state else None,
                 },
                 "query": {
@@ -594,9 +615,15 @@ def _run_single(
                 "entities_resolved": summary["builder"]["entities"],
                 "tables_parsed": summary["builder"]["tables_parsed"],
                 "tables_completed": summary["builder"]["tables_completed"],
-                "cypher_failed": bool(builder_state.get("cypher_failed", False)) if builder_state else False,
-                "failed_mappings": list(builder_state.get("failed_mappings", [])) if builder_state else [],
-                "ingestion_errors": list(builder_state.get("ingestion_errors", [])) if builder_state else [],
+                "cypher_failed": bool(builder_state.get("cypher_failed", False))
+                if builder_state
+                else False,
+                "failed_mappings": list(builder_state.get("failed_mappings", []))
+                if builder_state
+                else [],
+                "ingestion_errors": list(builder_state.get("ingestion_errors", []))
+                if builder_state
+                else [],
             }
 
             pq_bundle = [
@@ -652,7 +679,8 @@ def _run_single(
                 plot_paths = export_run_plots(summary, thesis_dir / "plots")
                 logger.info(
                     "  Thesis artifacts: 2 CSVs + %d plots in %s",
-                    len(plot_paths), thesis_dir,
+                    len(plot_paths),
+                    thesis_dir,
                 )
             except Exception as tex:
                 logger.warning("Thesis export failed (non-fatal): %s", tex)
@@ -672,7 +700,12 @@ def _run_single(
 
     except Exception as exc:
         logger.error("Pipeline failed for %s/%s: %s", study_id, dataset_id, exc, exc_info=True)
-        result = {"study_id": study_id, "dataset_id": dataset_id, "success": False, "error": str(exc)}
+        result = {
+            "study_id": study_id,
+            "dataset_id": dataset_id,
+            "success": False,
+            "error": str(exc),
+        }
     finally:
         root_logger.removeHandler(console)
         root_logger.removeHandler(file_handler)
@@ -721,7 +754,9 @@ def _run_study(
         )
         results.append(r)
         status = "\u2705" if r.get("success") else "\u274c"
-        print(f"  {status} {study_id}/{r.get('dataset_id', '?')}: grounded={r.get('grounded_rate', 0):.0%}")
+        print(
+            f"  {status} {study_id}/{r.get('dataset_id', '?')}: grounded={r.get('grounded_rate', 0):.0%}"
+        )
 
     return results
 
@@ -742,18 +777,26 @@ def main() -> None:
 
     ds = parser.add_mutually_exclusive_group()
     ds.add_argument("--dataset", type=Path, default=None, help="Single gold_standard.json")
-    ds.add_argument("--datasets", nargs="+", type=Path, metavar="PATH", help="Multiple dataset paths")
-    ds.add_argument("--all-datasets", action="store_true", help="Discover all datasets under tests/fixtures/")
+    ds.add_argument(
+        "--datasets", nargs="+", type=Path, metavar="PATH", help="Multiple dataset paths"
+    )
+    ds.add_argument(
+        "--all-datasets", action="store_true", help="Discover all datasets under tests/fixtures/"
+    )
 
     parser.add_argument("--no-builder", action="store_true", help="Skip builder, query only")
     parser.add_argument("--ragas", action="store_true", help="Enable RAGAS evaluation")
-    parser.add_argument("--ragas-model", type=str, default="gpt-4.1-mini", help="RAGAS evaluator model")
+    parser.add_argument(
+        "--ragas-model", type=str, default="gpt-4.1-mini", help="RAGAS evaluator model"
+    )
     parser.add_argument("--lazy", action="store_true", help="Use heuristic extraction")
     parser.add_argument("--max-samples", type=int, default=None, help="Limit QA pairs per dataset")
     parser.add_argument("--run-tag", type=str, default=None, help="Custom run tag")
     parser.add_argument("--smoke", action="store_true", help="Use smoke fixtures")
     parser.add_argument("--auto-neo4j", action="store_true", help="Auto-start Neo4j if not running")
-    parser.add_argument("--output-dir", type=Path, default=Path("outputs/ablation"), help="Base output directory")
+    parser.add_argument(
+        "--output-dir", type=Path, default=Path("outputs/ablation"), help="Base output directory"
+    )
     args = parser.parse_args()
 
     # Apply lazy extraction before any imports
@@ -771,7 +814,9 @@ def main() -> None:
         studies = ["AB-BEST"]
     elif args.study:
         if args.study not in ABLATION_MATRIX:
-            print(f"Error: Unknown study '{args.study}'. Available: {', '.join(sorted(ABLATION_MATRIX))}")
+            print(
+                f"Error: Unknown study '{args.study}'. Available: {', '.join(sorted(ABLATION_MATRIX))}"
+            )
             sys.exit(1)
         studies = [args.study]
     elif args.studies:
@@ -811,8 +856,8 @@ def main() -> None:
     run_tag = args.run_tag or f"run-{timestamp_str}"
 
     # Run
-    from src.config.logging import setup_notebook_logging  # noqa: PLC0415
     from src.config.llm_factory import reconfigure_from_env  # noqa: PLC0415
+    from src.config.logging import setup_notebook_logging  # noqa: PLC0415
 
     reconfigure_from_env()
     setup_notebook_logging()

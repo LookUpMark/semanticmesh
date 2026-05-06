@@ -59,13 +59,21 @@ class AppConfig:
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = "BAAI/bge-m3"
     embedding_dimensions: int = 1024
+    embedding_batch_size: int = 32
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
     reranker_top_k: int = 20
+    reranker_weight_rerank: float = 0.40
+    reranker_weight_vector: float = 0.55
+    reranker_weight_bm25: float = 0.05
+    reranker_weight_graph: float = 0.10
+    reranker_short_text_threshold: int = 200
 
     # ── Entity Resolution ──────────────────────────────────────────────────────
     er_blocking_top_k: int = 10
     er_similarity_threshold: float = 0.75
     er_max_cluster_size: int = 10
+    er_threshold_step: float = 0.10
+    er_recluster_max_iterations: int = 5
 
     # ── Confidence & Loop Guards ───────────────────────────────────────────────
     confidence_threshold: float = 0.90
@@ -86,10 +94,15 @@ class AppConfig:
     # ── Retrieval ──────────────────────────────────────────────────────────────
     retrieval_vector_top_k: int = 20
     retrieval_bm25_top_k: int = 10
+    retrieval_attribute_top_k: int = 5
     retrieval_graph_depth: int = 2
+    retrieval_graph_traversal_limit: int = 30
     retrieval_min_score: float = 0.05
     retrieval_min_score_ratio: float = 0.35
     retrieval_salvage_min_score: float = 0.07
+    retrieval_rrf_constant: int = 60
+    retrieval_context_score_gate: float = 0.10
+    bm25_cache_ttl_seconds: int = 3600
 
     # ── Few-Shot ───────────────────────────────────────────────────────────────
     few_shot_cypher_examples: int = 5
@@ -102,6 +115,7 @@ class AppConfig:
     api_job_ttl_seconds: int = 3600
     api_rate_limit_max_attempts: int = 5
     api_rate_limit_window_seconds: int = 60
+    api_polling_interval: float = 0.5
 
     # ── Ablation Flags ─────────────────────────────────────────────────────────
     enable_schema_enrichment: bool = True
@@ -118,9 +132,40 @@ class AppConfig:
     spacy_model_name: str = "en_core_web_sm"
     er_judge_threshold: float = 0.80
     heuristic_mapping_confidence_threshold: float = 0.60
+    heuristic_extraction_confidence: float = 0.55
+    heuristic_spacy_confidence: float = 0.60
     enable_lazy_expansion: bool = True
     lazy_expansion_confidence_threshold: float = 0.40
     enable_post_rerank_expansion: bool = True
+    # ── Retrieval Quality Gate Thresholds ──────────────────────────────────────
+    retrieval_gate_proceed_threshold: float = 0.20
+    retrieval_gate_abstain_threshold: float = 0.02
+    retrieval_gate_structural_threshold: float = 0.05
+    # ── Reranking / Diversity ──────────────────────────────────────────────────
+    diversity_inject_score: float = 0.15
+    diversity_boost_min_score: float = 0.10
+    pool_confidence_min_size: int = 8
+    pool_confidence_floor: float = 0.70
+    pool_confidence_ceiling: float = 0.75
+    sparse_sufficiency_threshold: float = 0.15
+    post_rerank_expansion_score: float = 0.05
+    # ── Generation Context ─────────────────────────────────────────────────────
+    generation_max_context_chunks: int = 12
+    generation_token_budget: int = 8192
+    generation_max_core_chunks: int = 7
+    generation_max_support_chunks: int = 5
+    partial_abstention_score_threshold: float = 0.15
+    # ── Mapping Scoring ────────────────────────────────────────────────────────
+    mapping_column_name_penalty: float = 0.25
+    mapping_code_pattern_penalty: float = 0.20
+    mapping_noise_token_penalty: float = 0.20
+    mapping_token_count_penalty: float = 0.10
+    mapping_overlap_bonus_max: float = 0.12
+    mapping_overlap_bonus_per_token: float = 0.04
+    # ── Extraction ─────────────────────────────────────────────────────────────
+    heuristic_fallback_confidence: float = 0.35
+    # ── Graph ──────────────────────────────────────────────────────────────────
+    provenance_max_chars: int = 400
 
     # ── Performance / Cost Optimisation ───────────────────────────────────────
     # When True, singleton entity definitions are derived directly from their

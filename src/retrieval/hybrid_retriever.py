@@ -40,7 +40,6 @@ logger: logging.Logger = get_logger(__name__)
 _NODE_INDEX_CACHE: list[dict[str, Any]] | None = None
 _NODE_INDEX_EXPIRY: float = 0.0
 _NODE_INDEX_LOCK: threading.Lock = threading.Lock()
-_NODE_INDEX_TTL: int = 3600  # seconds
 
 
 def invalidate_bm25_cache() -> None:
@@ -76,27 +75,27 @@ def build_node_index(client: Neo4jClient) -> list[dict[str, Any]]:
             logger.debug("build_node_index: cache hit (%d nodes).", len(_NODE_INDEX_CACHE))
             return _NODE_INDEX_CACHE
 
-    concept_records = client.execute_cypher(
+    all_nodes = client.execute_cypher(
         "MATCH (n:BusinessConcept) RETURN n.name AS name, "
         "n.definition AS definition, 'BusinessConcept' AS node_type, "
-        "n.synonyms AS synonyms, n.source_doc AS source_doc"
-    )
-    table_records = client.execute_cypher(
+        "n.synonyms AS synonyms, n.source_doc AS source_doc, "
+        "null AS column_names, null AS text, null AS chunk_index "
+        "UNION ALL "
         "MATCH (n:PhysicalTable) RETURN n.table_name AS name, "
         "'' AS definition, 'PhysicalTable' AS node_type, "
         "[] AS synonyms, n.source_doc AS source_doc, "
-        "n.column_names AS column_names"
+        "n.column_names AS column_names, null AS text, null AS chunk_index "
+        "UNION ALL "
+        "MATCH (pc:ParentChunk) RETURN null AS name, "
+        "null AS definition, 'ParentChunk' AS node_type, "
+        "null AS synonyms, pc.source_doc AS source_doc, "
+        "null AS column_names, pc.text AS text, pc.parent_chunk_index AS chunk_index"
     )
-    chunk_records = client.execute_cypher(
-        "MATCH (pc:ParentChunk) RETURN pc.text AS text, "
-        "pc.parent_chunk_index AS chunk_index, pc.source_doc AS source_doc, 'ParentChunk' AS node_type"
-    )
-    all_nodes = concept_records + table_records + chunk_records
     logger.debug("build_node_index: %d nodes fetched from Neo4j.", len(all_nodes))
 
     with _NODE_INDEX_LOCK:
         _NODE_INDEX_CACHE = all_nodes
-        _NODE_INDEX_EXPIRY = time.monotonic() + _NODE_INDEX_TTL
+        _NODE_INDEX_EXPIRY = time.monotonic() + get_settings().bm25_cache_ttl_seconds
 
     return all_nodes
 
@@ -167,7 +166,7 @@ def vector_search(
 def attribute_vector_search(
     query: str,
     client: Neo4jClient,
-    top_k: int = 5,
+    top_k: int | None = None,
     model=None,
     query_vector: list[float] | None = None,
 ) -> list[RetrievedChunk]:
@@ -176,6 +175,8 @@ def attribute_vector_search(
     Returns Attribute nodes as RetrievedChunks with ``source_type="vector"``
     and ``node_type="Attribute"``.
     """
+    settings = get_settings()
+    k: int = top_k if top_k is not None else settings.retrieval_attribute_top_k
     qv: list[float] = query_vector if query_vector is not None else embed_text(query, model=model)
 
     cypher = (
@@ -187,7 +188,7 @@ def attribute_vector_search(
         "node.is_fk AS is_fk, node.fk_target AS fk_target, "
         "score, 'Attribute' AS node_type"
     )
-    records = client.execute_cypher(cypher, {"k": top_k, "embedding": qv})
+    records = client.execute_cypher(cypher, {"k": k, "embedding": qv})
 
     chunks: list[RetrievedChunk] = []
     for rec in records:
@@ -205,8 +206,7 @@ def attribute_vector_search(
                 metadata={
                     key: val
                     for key, val in rec.items()
-                    if key not in ("name", "description", "score", "node_type")
-                    and val is not None
+                    if key not in ("name", "description", "score", "node_type") and val is not None
                 },
             )
         )
@@ -306,13 +306,14 @@ def graph_traversal(
     if not seed_names:
         return []
 
+    limit = settings.retrieval_graph_traversal_limit
     cypher = (
         f"MATCH (start)-[r*1..{d}]-(neighbor) "
         "WHERE start.name IN $seed_names OR start.table_name IN $seed_names "
         "RETURN COALESCE(neighbor.name, neighbor.table_name) AS name, "
         "COALESCE(neighbor.definition, neighbor.table_name, '') AS definition, "
         "labels(neighbor)[0] AS node_type, type(r[0]) AS rel_type "
-        "LIMIT 30"
+        f"LIMIT {limit}"
     )
     records = client.execute_cypher(cypher, {"seed_names": seed_names})
 
@@ -478,8 +479,12 @@ def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
         if enriched_cols_raw:
             try:
                 import json as _json_mod  # noqa: PLC0415
-                ec_list = (_json_mod.loads(enriched_cols_raw)
-                           if isinstance(enriched_cols_raw, str) else enriched_cols_raw)
+
+                ec_list = (
+                    _json_mod.loads(enriched_cols_raw)
+                    if isinstance(enriched_cols_raw, str)
+                    else enriched_cols_raw
+                )
                 enriched_names = [e.get("enriched", e.get("original", "")) for e in ec_list if e]
             except (TypeError, ValueError):
                 pass

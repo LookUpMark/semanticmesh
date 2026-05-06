@@ -7,11 +7,13 @@ EP-14 / US-14-01 and US-14-03:
 
 from __future__ import annotations
 
+from html import escape as _xml_escape
 from typing import TYPE_CHECKING
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from src.config.logging import get_logger
+from src.config.settings import get_settings
 from src.prompts.templates import (
     ANSWER_SYSTEM_ADEQUATE,
     ANSWER_SYSTEM_INSUFFICIENT,
@@ -109,17 +111,18 @@ def generate_answer(
         The generated answer string.
     """
     context_block = format_context(chunks)
+    safe_query = _xml_escape(query)
 
     if critique:
         user_prompt = ANSWER_WITH_CRITIQUE_USER.format(
             context_chunks=context_block,
             hallucination_critique=critique,
-            user_query=query,
+            user_query=safe_query,
         )
     else:
         user_prompt = ANSWER_USER.format(
             context_chunks=context_block,
-            user_query=query,
+            user_query=safe_query,
         )
 
     if context_sufficiency == "adequate":
@@ -152,43 +155,48 @@ def generate_answer(
 
     if _is_abstention(answer) and chunks:
         top_score = max(float(c.score) for c in chunks)
-        if top_score >= 0.10:
+        if top_score >= get_settings().retrieval_context_score_gate:
             logger.warning(
-                "Abstention with non-empty context (chunks=%d, top_score=%.3f) — forcing best-effort rewrite.",
+                "Abstention with non-empty context "
+                "(chunks=%d, top_score=%.3f) — forcing best-effort rewrite.",
                 len(chunks),
                 top_score,
             )
             corrective_critique = (
                 "The previous answer abstained despite available retrieved context. "
                 "Provide the best grounded answer from context and explicitly state uncertainty "
-                "for missing details. Do not use the generic abstention sentence unless context is empty."
+                "for missing details. Do not use the generic abstention sentence "
+                "unless context is empty."
             )
             corrective_prompt = ANSWER_WITH_CRITIQUE_USER.format(
                 context_chunks=context_block,
                 hallucination_critique=corrective_critique,
-                user_query=query,
+                user_query=safe_query,
             )
             second_response = llm.invoke(_build_messages(corrective_prompt))
             answer = extract_text_content(second_response.content).strip()
 
     elif _is_partial_abstention(answer) and chunks:
         top_score = max(float(c.score) for c in chunks)
-        if top_score >= 0.15:
+        if top_score >= get_settings().partial_abstention_score_threshold:
             logger.info(
-                "Partial abstention detected (chunks=%d, top_score=%.3f) — requesting synthesis from available evidence.",
+                "Partial abstention detected (chunks=%d, top_score=%.3f) "
+                "— requesting synthesis from available evidence.",
                 len(chunks),
                 top_score,
             )
             partial_critique = (
                 "Your answer said you cannot find certain information, but the context includes "
                 "relevant schema and concept evidence. Extract and synthesize ALL facts that ARE "
-                "present in the context. State explicitly which specific details remain unavailable, "
-                "but provide a complete answer for every part that CAN be answered from the context."
+                "present in the context. State explicitly which specific details "
+                "remain unavailable, "
+                "but provide a complete answer for every part that CAN be "
+                "answered from the context."
             )
             partial_prompt = ANSWER_WITH_CRITIQUE_USER.format(
                 context_chunks=context_block,
                 hallucination_critique=partial_critique,
-                user_query=query,
+                user_query=safe_query,
             )
             second_response = llm.invoke(_build_messages(partial_prompt))
             answer = extract_text_content(second_response.content).strip()

@@ -41,6 +41,7 @@ def invalidate_bm25_cache() -> None:
     from src.retrieval.hybrid_retriever import (  # local import breaks cycle
         invalidate_bm25_cache as _invalidate,
     )
+
     _invalidate()
 
 
@@ -101,7 +102,7 @@ def bm25_search(
     global _BM25_CACHE, _BM25_CORPUS_ID  # noqa: PLW0603
     corpus_id = id(all_nodes)
     with _BM25_LOCK:
-        if _BM25_CACHE is not None and _BM25_CORPUS_ID == corpus_id:
+        if _BM25_CACHE is not None and corpus_id == _BM25_CORPUS_ID:
             bm25 = _BM25_CACHE
         else:
             corpus_texts: list[str] = [_node_to_text(node) for node in all_nodes]

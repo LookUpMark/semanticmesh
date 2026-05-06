@@ -73,6 +73,7 @@ def _has_structural_relationship_evidence(chunks: list[RetrievedChunk]) -> bool:
 
 def _query_terms(query: str) -> set[str]:
     from src.utils.query_utils import query_terms as _qt
+
     return _qt(query)
 
 
@@ -80,9 +81,7 @@ def _is_noise_chunk(chunk: RetrievedChunk) -> bool:
     text = chunk.text.lower()
     if any(marker in text for marker in _NOISE_MARKERS):
         return True
-    if len(chunk.text.strip()) < 18 and "→" not in chunk.node_id:
-        return True
-    return False
+    return len(chunk.text.strip()) < 18 and "→" not in chunk.node_id
 
 
 def _pre_filter_rerank_pool(
@@ -168,17 +167,27 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
             else:
                 # Compute embedding once; reuse for both vector indices.
                 from src.retrieval.embeddings import embed_text as _embed
+
                 shared_qv = _embed(query, model=model)
                 vec_results = vector_search(
-                    query, client, top_k=settings.retrieval_vector_top_k, model=model,
+                    query,
+                    client,
+                    top_k=settings.retrieval_vector_top_k,
+                    model=model,
                     query_vector=shared_qv,
                 )
                 chunk_vec_results = chunk_vector_search(
-                    query, client, top_k=settings.retrieval_vector_top_k, model=model,
+                    query,
+                    client,
+                    top_k=settings.retrieval_vector_top_k,
+                    model=model,
                     query_vector=shared_qv,
                 )
                 attr_results = attribute_vector_search(
-                    query, client, top_k=5, model=model,
+                    query,
+                    client,
+                    top_k=5,
+                    model=model,
                     query_vector=shared_qv,
                 )
                 trav_results = graph_traversal(
@@ -194,6 +203,7 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                     vec_results + chunk_vec_results + attr_results,
                     bm25_results,
                     trav_results + all_concepts + fk_chunks + mapping_chunks,
+                    rrf_k=settings.retrieval_rrf_constant,
                 )
 
                 if getattr(settings, "enable_lazy_expansion", False):
@@ -218,6 +228,7 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                             vec_results + chunk_vec_results + attr_results,
                             bm25_results,
                             trav_results + extra + all_concepts + fk_chunks,
+                            rrf_k=settings.retrieval_rrf_constant,
                         )
         logger.info(
             "Retrieval complete: %d merged chunks (mode=%s).",
@@ -227,7 +238,13 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
         if not merged:
             logger.warning("Retrieval returned 0 chunks for query: %.80s", query)
 
-        log_node_event(logger, "retrieve", f"query mode={retrieval_mode}", f"{len(merged)} chunks", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "retrieve",
+            f"query mode={retrieval_mode}",
+            f"{len(merged)} chunks",
+            timer.elapsed_ms,
+        )
         return {"retrieved_chunks": merged}
 
 
@@ -262,13 +279,28 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         if top_pool_parent:
             reranked_ids = {c.node_id for c in candidates}
             if top_pool_parent.node_id not in reranked_ids:
-                candidates.append(top_pool_parent.model_copy(update={"score": 0.15}))
-                logger.info("Diversity inject: '%s' (top pool parent, reranker dropped)", top_pool_parent.node_id)
+                candidates.append(
+                    top_pool_parent.model_copy(update={"score": settings.diversity_inject_score})
+                )
+                logger.info(
+                    "Diversity inject: '%s' (top pool parent, reranker dropped)",
+                    top_pool_parent.node_id,
+                )
             else:
                 for i, cand in enumerate(candidates):
-                    if cand.node_id == top_pool_parent.node_id and cand.score < 0.10:
-                        candidates[i] = cand.model_copy(update={"score": 0.15})
-                        logger.info("Diversity boost: '%s' %.4f->0.15", top_pool_parent.node_id, cand.score)
+                    if (
+                        cand.node_id == top_pool_parent.node_id
+                        and cand.score < settings.diversity_boost_min_score
+                    ):
+                        candidates[i] = cand.model_copy(
+                            update={"score": settings.diversity_inject_score}
+                        )
+                        logger.info(
+                            "Diversity boost: '%s' %.4f->%.2f",
+                            top_pool_parent.node_id,
+                            cand.score,
+                            settings.diversity_inject_score,
+                        )
                         break
 
         valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
@@ -279,7 +311,9 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
                 len(candidates),
                 query,
             )
-            log_node_event(logger, "rerank", f"pool={len(pool)}", "0 valid chunks", timer.elapsed_ms)
+            log_node_event(
+                logger, "rerank", f"pool={len(pool)}", "0 valid chunks", timer.elapsed_ms
+            )
             return {
                 "reranked_chunks": [],
                 "retrieval_quality_score": 0.0,
@@ -289,7 +323,7 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
             }
 
         top_score = float(valid[0].score)
-        if len(valid) == 1 and top_score < 0.15:
+        if len(valid) == 1 and top_score < settings.sparse_sufficiency_threshold:
             sufficiency = "sparse"
         else:
             sufficiency = "adequate"
@@ -297,33 +331,50 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         # Post-rerank graph expansion: add direct neighbors of reranked chunks
         if getattr(settings, "enable_post_rerank_expansion", True):
             try:
-                seed_ids = list({c.node_id for c in valid if c.source_type in ("vector", "graph", "parent_chunk")})[:8]
+                seed_ids = list(
+                    {
+                        c.node_id
+                        for c in valid
+                        if c.source_type in ("vector", "graph", "parent_chunk")
+                    }
+                )[:8]
                 if seed_ids:
                     with Neo4jClient() as client:
                         neighbor_chunks = graph_traversal(
-                            seed_names=seed_ids, client=client, depth=2,
+                            seed_names=seed_ids,
+                            client=client,
+                            depth=2,
                         )
                     existing_ids = {c.node_id for c in valid}
-                    new_neighbors = [
-                        c for c in neighbor_chunks if c.node_id not in existing_ids
-                    ]
+                    new_neighbors = [c for c in neighbor_chunks if c.node_id not in existing_ids]
                     if new_neighbors:
                         for nc in new_neighbors:
-                            nc.score = 0.05
+                            nc.score = settings.post_rerank_expansion_score
                         valid = valid + new_neighbors
-                        logger.debug("Post-rerank expansion added %d neighbor chunks", len(new_neighbors))
+                        logger.debug(
+                            "Post-rerank expansion added %d neighbor chunks", len(new_neighbors)
+                        )
             except Exception:
                 logger.debug("Post-rerank expansion failed, continuing without it")
 
-        log_node_event(logger, "rerank", f"pool={len(pool)} candidates={len(candidates)}", f"{len(valid)} chunks score={top_score:.4f}", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "rerank",
+            f"pool={len(pool)} candidates={len(candidates)}",
+            f"{len(valid)} chunks score={top_score:.4f}",
+            timer.elapsed_ms,
+        )
 
         # Pool-aware retrieval confidence: being rank #1 in a large competitive
         # pool is stronger evidence of relevance than the raw cross-encoder
         # absolute score suggests (CE scores are known to be low on technical
         # multi-section content like data dictionaries).
         quality_score = top_score
-        if len(pool) >= 8 and top_score < 0.75:
-            quality_score = max(top_score, 0.70)
+        if (
+            len(pool) >= settings.pool_confidence_min_size
+            and top_score < settings.pool_confidence_ceiling
+        ):
+            quality_score = max(top_score, settings.pool_confidence_floor)
 
         return {
             "reranked_chunks": valid,

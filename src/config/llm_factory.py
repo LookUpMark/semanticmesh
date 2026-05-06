@@ -136,7 +136,9 @@ def make_llm(
     >>> make_llm("local-model")                       # → InstrumentedLLM (LM Studio)
     """
     # Resolve provider: explicit override > auto-detection from model name
-    resolved_provider = (provider if (provider and provider != "auto") else None) or detect_provider(model)
+    resolved_provider = (
+        provider if (provider and provider != "auto") else None
+    ) or detect_provider(model)
     is_free = _is_free_model(model)
     paid_model = _strip_free_suffix(model) if is_free else model
 
@@ -247,7 +249,7 @@ def make_llm(
     # Strip explicit "lmstudio/" prefix so the model name matches what LM Studio serves
     effective_model = model
     if model.lower().startswith("lmstudio/"):
-        effective_model = model[len("lmstudio/"):]
+        effective_model = model[len("lmstudio/") :]
     effective_base_url = provider_base_url or lmstudio_base_url
     chat = _build_lmstudio_chat(
         effective_model,
@@ -307,7 +309,9 @@ def get_reasoning_llm() -> LLMProtocol:
 
 @lru_cache(maxsize=1)
 def get_extraction_llm() -> LLMProtocol:
-    """Extraction SLM — provider auto-detected from model name (or from settings.llm_provider), T=0.0.
+    """Extraction SLM — provider auto-detected from model name, T=0.0.
+
+    (or from settings.llm_provider)
 
     Used for: triplet extraction from PDF chunks.
 

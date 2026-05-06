@@ -13,33 +13,36 @@ from __future__ import annotations
 import csv
 import json
 import statistics
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import matplotlib
+
 matplotlib.use("Agg")  # non-interactive backend for headless generation
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 import numpy as np
 import seaborn as sns
 
 # ── Styling ──────────────────────────────────────────────────────────────────────
 
 # Academic-friendly defaults
-sns.set_theme(style="whitegrid", font_scale=1.1, rc={
-    "figure.dpi": 150,
-    "savefig.dpi": 300,
-    "savefig.bbox": "tight",
-    "axes.titlesize": 13,
-    "axes.labelsize": 11,
-    "xtick.labelsize": 9,
-    "ytick.labelsize": 9,
-    "legend.fontsize": 9,
-    "figure.figsize": (10, 6),
-    "font.family": "serif",
-})
+sns.set_theme(
+    style="whitegrid",
+    font_scale=1.1,
+    rc={
+        "figure.dpi": 150,
+        "savefig.dpi": 300,
+        "savefig.bbox": "tight",
+        "axes.titlesize": 13,
+        "axes.labelsize": 11,
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
+        "legend.fontsize": 9,
+        "figure.figsize": (10, 6),
+        "font.family": "serif",
+    },
+)
 
 PALETTE = sns.color_palette("Set2", 21)
 
@@ -82,12 +85,23 @@ def export_run_csv(summary: dict[str, Any], output_dir: Path) -> Path:
         return csv_path
 
     fieldnames = [
-        "study_id", "dataset_id", "run_tag", "query_id", "question",
-        "query_type", "difficulty", "grounded", "gt_coverage",
-        "retrieval_quality_score", "retrieval_chunk_count",
-        "retrieval_gate_decision", "context_sufficiency",
-        "grader_rejection_count", "grader_consistency_valid",
-        "expected_answer", "generated_answer",
+        "study_id",
+        "dataset_id",
+        "run_tag",
+        "query_id",
+        "question",
+        "query_type",
+        "difficulty",
+        "grounded",
+        "gt_coverage",
+        "retrieval_quality_score",
+        "retrieval_chunk_count",
+        "retrieval_gate_decision",
+        "context_sufficiency",
+        "grader_rejection_count",
+        "grader_consistency_valid",
+        "expected_answer",
+        "generated_answer",
     ]
 
     # Add RAGAS fields if present
@@ -210,8 +224,11 @@ def export_run_plots(summary: dict[str, Any], output_dir: Path) -> list[Path]:
     ax.axhline(y=1.0, color="gray", linestyle="--", alpha=0.5)
     ax.tick_params(axis="x", rotation=45)
     from matplotlib.patches import Patch
-    legend_elements = [Patch(facecolor="#2ecc71", label="Grounded"),
-                       Patch(facecolor="#e74c3c", label="Ungrounded")]
+
+    legend_elements = [
+        Patch(facecolor="#2ecc71", label="Grounded"),
+        Patch(facecolor="#e74c3c", label="Ungrounded"),
+    ]
     if has_null_coverage:
         legend_elements.append(Patch(facecolor="none", edgecolor="gray", label="GT N/A (0 shown)"))
     ax.legend(handles=legend_elements, loc="lower right")
@@ -226,7 +243,9 @@ def export_run_plots(summary: dict[str, Any], output_dir: Path) -> list[Path]:
     sns.histplot(scores, bins=15, kde=True, ax=ax, color=PALETTE[0])
     ax.set_xlabel("Retrieval Quality Score")
     ax.set_ylabel("Count")
-    ax.set_title(f"{study_id} / {DS_SHORT.get(dataset_id, dataset_id)} — Retrieval Score Distribution")
+    ax.set_title(
+        f"{study_id} / {DS_SHORT.get(dataset_id, dataset_id)} — Retrieval Score Distribution"
+    )
     p = output_dir / f"{prefix}_retrieval_score_dist.png"
     fig.savefig(p)
     plt.close(fig)
@@ -239,16 +258,27 @@ def export_run_plots(summary: dict[str, Any], output_dir: Path) -> list[Path]:
     measured_coverages = [c for c in coverages if c is not None]
     if len(unique_diffs) > 1 and measured_coverages:
         import pandas as pd
+
         df_rows = [
             {"difficulty": d, "gt_coverage": c}
-            for d, c in zip(difficulties, coverages)
+            for d, c in zip(difficulties, coverages, strict=False)
             if c is not None
         ]
         df = pd.DataFrame(df_rows)
         fig, ax = plt.subplots(figsize=(8, 5))
-        sns.boxplot(data=df, x="difficulty", y="gt_coverage", ax=ax, palette="Set2",
-                    order=["easy", "medium", "hard"] if set(unique_diffs) <= {"easy", "medium", "hard", "unknown"} else unique_diffs)
-        ax.set_title(f"{study_id} / {DS_SHORT.get(dataset_id, dataset_id)} — GT Coverage by Difficulty")
+        sns.boxplot(
+            data=df,
+            x="difficulty",
+            y="gt_coverage",
+            ax=ax,
+            palette="Set2",
+            order=["easy", "medium", "hard"]
+            if set(unique_diffs) <= {"easy", "medium", "hard", "unknown"}
+            else unique_diffs,
+        )
+        ax.set_title(
+            f"{study_id} / {DS_SHORT.get(dataset_id, dataset_id)} — GT Coverage by Difficulty"
+        )
         ax.set_ylim(0, 1.05)
         p = output_dir / f"{prefix}_coverage_by_difficulty.png"
         fig.savefig(p)
@@ -269,7 +299,9 @@ def export_run_plots(summary: dict[str, Any], output_dir: Path) -> list[Path]:
             ax.fill(angles_closed, ragas_vals_closed, alpha=0.25, color=PALETTE[1])
             ax.set_thetagrids(np.degrees(angles), ragas_keys)
             ax.set_ylim(0, 1)
-            ax.set_title(f"{study_id} / {DS_SHORT.get(dataset_id, dataset_id)} — RAGAS Radar", pad=20)
+            ax.set_title(
+                f"{study_id} / {DS_SHORT.get(dataset_id, dataset_id)} — RAGAS Radar", pad=20
+            )
             p = output_dir / f"{prefix}_ragas_radar.png"
             fig.savefig(p)
             plt.close(fig)
@@ -295,10 +327,21 @@ def export_ablation_master_csv(
     # ── 1. Flat per-study-dataset CSV ──
     flat_path = output_dir / "ablation_all_scores.csv"
     flat_fields = [
-        "study_id", "dataset_id",
-        "overall", "builder", "retrieval", "answer", "pipeline", "ablation",
-        "grounded_rate", "avg_gt_coverage", "avg_top_score",
-        "triplets", "entities", "tables_done", "tables_parsed",
+        "study_id",
+        "dataset_id",
+        "overall",
+        "builder",
+        "retrieval",
+        "answer",
+        "pipeline",
+        "ablation",
+        "grounded_rate",
+        "avg_gt_coverage",
+        "avg_top_score",
+        "triplets",
+        "entities",
+        "tables_done",
+        "tables_parsed",
     ]
     with open(flat_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=flat_fields, extrasaction="ignore")
@@ -316,11 +359,19 @@ def export_ablation_master_csv(
     # ── 2. Per-study aggregated CSV ──
     agg_path = output_dir / "ablation_study_averages.csv"
     agg_fields = [
-        "study_id", "n_datasets",
-        "overall_mean", "overall_std",
-        "builder_mean", "retrieval_mean", "answer_mean", "pipeline_mean",
-        "grounded_rate_mean", "avg_gt_coverage_mean", "avg_top_score_mean",
-        "triplets_mean", "entities_mean",
+        "study_id",
+        "n_datasets",
+        "overall_mean",
+        "overall_std",
+        "builder_mean",
+        "retrieval_mean",
+        "answer_mean",
+        "pipeline_mean",
+        "grounded_rate_mean",
+        "avg_gt_coverage_mean",
+        "avg_top_score_mean",
+        "triplets_mean",
+        "entities_mean",
     ]
     with open(agg_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=agg_fields)
@@ -331,35 +382,43 @@ def export_ablation_master_csv(
                 continue
             n = len(vals)
 
-            def _mean(k: str) -> float:
-                s = [v.get(k, 0) or 0 for v in vals]
-                return sum(s) / n if n else 0
+            def _mean(k: str, _vals: list = vals, _n: int = n) -> float:
+                s = [v.get(k, 0) or 0 for v in _vals]
+                return sum(s) / _n if _n else 0
 
             overalls = [v.get("overall", 0) or 0 for v in vals]
-            writer.writerow({
-                "study_id": study_id,
-                "n_datasets": n,
-                "overall_mean": round(_mean("overall"), 4),
-                "overall_std": round(statistics.stdev(overalls), 4) if n > 1 else 0,
-                "builder_mean": round(_mean("builder"), 4),
-                "retrieval_mean": round(_mean("retrieval"), 4),
-                "answer_mean": round(_mean("answer"), 4),
-                "pipeline_mean": round(_mean("pipeline"), 4),
-                "grounded_rate_mean": round(_mean("grounded_rate"), 4),
-                "avg_gt_coverage_mean": round(_mean("avg_gt_coverage"), 4),
-                "avg_top_score_mean": round(_mean("avg_top_score"), 4),
-                "triplets_mean": round(_mean("triplets"), 1),
-                "entities_mean": round(_mean("entities"), 1),
-            })
+            writer.writerow(
+                {
+                    "study_id": study_id,
+                    "n_datasets": n,
+                    "overall_mean": round(_mean("overall"), 4),
+                    "overall_std": round(statistics.stdev(overalls), 4) if n > 1 else 0,
+                    "builder_mean": round(_mean("builder"), 4),
+                    "retrieval_mean": round(_mean("retrieval"), 4),
+                    "answer_mean": round(_mean("answer"), 4),
+                    "pipeline_mean": round(_mean("pipeline"), 4),
+                    "grounded_rate_mean": round(_mean("grounded_rate"), 4),
+                    "avg_gt_coverage_mean": round(_mean("avg_gt_coverage"), 4),
+                    "avg_top_score_mean": round(_mean("avg_top_score"), 4),
+                    "triplets_mean": round(_mean("triplets"), 1),
+                    "entities_mean": round(_mean("entities"), 1),
+                }
+            )
     paths.append(agg_path)
 
     # ── 3. Per-dataset aggregated CSV ──
     ds_path = output_dir / "ablation_dataset_averages.csv"
     ds_fields = [
-        "dataset_id", "n_studies",
-        "overall_mean", "overall_std",
-        "builder_mean", "retrieval_mean", "answer_mean", "pipeline_mean",
-        "grounded_rate_mean", "avg_gt_coverage_mean",
+        "dataset_id",
+        "n_studies",
+        "overall_mean",
+        "overall_std",
+        "builder_mean",
+        "retrieval_mean",
+        "answer_mean",
+        "pipeline_mean",
+        "grounded_rate_mean",
+        "avg_gt_coverage_mean",
     ]
     with open(ds_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=ds_fields)
@@ -374,23 +433,25 @@ def export_ablation_master_csv(
                 continue
             n = len(vals)
 
-            def _mean(k: str) -> float:
-                s = [v.get(k, 0) or 0 for v in vals]
-                return sum(s) / n if n else 0
+            def _mean(k: str, _vals: list = vals, _n: int = n) -> float:
+                s = [v.get(k, 0) or 0 for v in _vals]
+                return sum(s) / _n if _n else 0
 
             overalls = [v.get("overall", 0) or 0 for v in vals]
-            writer.writerow({
-                "dataset_id": ds_id,
-                "n_studies": n,
-                "overall_mean": round(_mean("overall"), 4),
-                "overall_std": round(statistics.stdev(overalls), 4) if n > 1 else 0,
-                "builder_mean": round(_mean("builder"), 4),
-                "retrieval_mean": round(_mean("retrieval"), 4),
-                "answer_mean": round(_mean("answer"), 4),
-                "pipeline_mean": round(_mean("pipeline"), 4),
-                "grounded_rate_mean": round(_mean("grounded_rate"), 4),
-                "avg_gt_coverage_mean": round(_mean("avg_gt_coverage"), 4),
-            })
+            writer.writerow(
+                {
+                    "dataset_id": ds_id,
+                    "n_studies": n,
+                    "overall_mean": round(_mean("overall"), 4),
+                    "overall_std": round(statistics.stdev(overalls), 4) if n > 1 else 0,
+                    "builder_mean": round(_mean("builder"), 4),
+                    "retrieval_mean": round(_mean("retrieval"), 4),
+                    "answer_mean": round(_mean("answer"), 4),
+                    "pipeline_mean": round(_mean("pipeline"), 4),
+                    "grounded_rate_mean": round(_mean("grounded_rate"), 4),
+                    "avg_gt_coverage_mean": round(_mean("avg_gt_coverage"), 4),
+                }
+            )
     paths.append(ds_path)
 
     return paths
@@ -417,7 +478,11 @@ def export_ablation_plots(
             v = all_scores.get(study_id, {}).get(ds_id)
             if not v:
                 continue
-            row = {"study_id": study_id, "dataset_id": ds_id, "ds_short": DS_SHORT.get(ds_id, ds_id)}
+            row = {
+                "study_id": study_id,
+                "dataset_id": ds_id,
+                "ds_short": DS_SHORT.get(ds_id, ds_id),
+            }
             row.update(v)
             rows.append(row)
 
@@ -437,8 +502,15 @@ def export_ablation_plots(
 
     fig, ax = plt.subplots(figsize=(10, 9))
     sns.heatmap(
-        pivot, annot=True, fmt=".2f", cmap="RdYlGn", center=3.5,
-        vmin=1.5, vmax=5.0, linewidths=0.5, ax=ax,
+        pivot,
+        annot=True,
+        fmt=".2f",
+        cmap="RdYlGn",
+        center=3.5,
+        vmin=1.5,
+        vmax=5.0,
+        linewidths=0.5,
+        ax=ax,
         cbar_kws={"label": "AI-Judge Overall Score"},
     )
     ax.set_title("AI-Judge Overall Scores — Study × Dataset Heatmap")
@@ -457,8 +529,15 @@ def export_ablation_plots(
         pivot_dim = pivot_dim[[c for c in ds_col_order if c in pivot_dim.columns]]
         fig, ax = plt.subplots(figsize=(10, 9))
         sns.heatmap(
-            pivot_dim, annot=True, fmt=".1f", cmap="RdYlGn", center=3.0,
-            vmin=1.0, vmax=5.0, linewidths=0.5, ax=ax,
+            pivot_dim,
+            annot=True,
+            fmt=".1f",
+            cmap="RdYlGn",
+            center=3.0,
+            vmin=1.0,
+            vmax=5.0,
+            linewidths=0.5,
+            ax=ax,
             cbar_kws={"label": f"{dim.title()} Score"},
         )
         ax.set_title(f"AI-Judge {dim.title()} Scores — Study × Dataset")
@@ -477,14 +556,26 @@ def export_ablation_plots(
     baseline_val = baseline_mean[0] if len(baseline_mean) > 0 else 0
 
     fig, ax = plt.subplots(figsize=(14, 6))
-    colors_bar = ["#3498db" if s == "AB-00" else ("#2ecc71" if m >= baseline_val else "#e74c3c")
-                  for s, m in zip(study_agg["study_id"], study_agg["mean"])]
+    colors_bar = [
+        "#3498db" if s == "AB-00" else ("#2ecc71" if m >= baseline_val else "#e74c3c")
+        for s, m in zip(study_agg["study_id"], study_agg["mean"], strict=False)
+    ]
     ax.bar(
-        study_agg["study_id"].astype(str), study_agg["mean"],
-        yerr=study_agg["std"].fillna(0), capsize=3,
-        color=colors_bar, edgecolor="white", linewidth=0.5,
+        study_agg["study_id"].astype(str),
+        study_agg["mean"],
+        yerr=study_agg["std"].fillna(0),
+        capsize=3,
+        color=colors_bar,
+        edgecolor="white",
+        linewidth=0.5,
     )
-    ax.axhline(y=baseline_val, color="#3498db", linestyle="--", alpha=0.7, label=f"Baseline ({baseline_val:.2f})")
+    ax.axhline(
+        y=baseline_val,
+        color="#3498db",
+        linestyle="--",
+        alpha=0.7,
+        label=f"Baseline ({baseline_val:.2f})",
+    )
     ax.set_ylabel("Overall Score (AI-Judge)")
     ax.set_title("Ablation Studies — Average Overall Score (±1 SD)")
     ax.set_ylim(0, 5.2)
@@ -500,8 +591,11 @@ def export_ablation_plots(
     fig, ax = plt.subplots(figsize=(14, 5))
     colors_delta = ["#2ecc71" if d >= 0 else "#e74c3c" for d in study_agg["delta"]]
     ax.bar(
-        study_agg["study_id"].astype(str), study_agg["delta"],
-        color=colors_delta, edgecolor="white", linewidth=0.5,
+        study_agg["study_id"].astype(str),
+        study_agg["delta"],
+        color=colors_delta,
+        edgecolor="white",
+        linewidth=0.5,
     )
     ax.axhline(y=0, color="black", linewidth=0.8)
     ax.set_ylabel("Δ Overall Score vs. Baseline (AB-00)")
@@ -542,13 +636,18 @@ def export_ablation_plots(
     ]:
         if metric not in df.columns:
             continue
-        metric_agg = df.groupby("study_id", observed=True)[metric].agg(["mean", "std"]).reset_index()
+        metric_agg = (
+            df.groupby("study_id", observed=True)[metric].agg(["mean", "std"]).reset_index()
+        )
         metric_agg = metric_agg.sort_values("study_id")
         fig, ax = plt.subplots(figsize=(14, 5))
         ax.bar(
-            metric_agg["study_id"].astype(str), metric_agg["mean"],
-            yerr=metric_agg["std"].fillna(0), capsize=3,
-            color=PALETTE[3], edgecolor="white",
+            metric_agg["study_id"].astype(str),
+            metric_agg["mean"],
+            yerr=metric_agg["std"].fillna(0),
+            capsize=3,
+            color=PALETTE[3],
+            edgecolor="white",
         )
         ax.set_ylabel(label)
         ax.set_title(f"{label} per Ablation Study (±1 SD)")
@@ -563,8 +662,12 @@ def export_ablation_plots(
     # ── 7. Box plots: overall score distribution per study ──
     fig, ax = plt.subplots(figsize=(14, 6))
     sns.boxplot(
-        data=df, x="study_id", y="overall", ax=ax,
-        palette="Set2", order=study_order,
+        data=df,
+        x="study_id",
+        y="overall",
+        ax=ax,
+        palette="Set2",
+        order=study_order,
     )
     ax.axhline(y=baseline_val, color="#3498db", linestyle="--", alpha=0.7, label="Baseline mean")
     ax.set_ylabel("Overall Score")
@@ -614,7 +717,9 @@ def export_ablation_plots(
                 sub = df[df["study_id"] == sid]
                 vals = [sub[d].mean() for d in radar_dims]
                 vals_closed = vals + [vals[0]]
-                ax.plot(angles_closed, vals_closed, "o-", linewidth=2, label=sid, color=PALETTE[idx])
+                ax.plot(
+                    angles_closed, vals_closed, "o-", linewidth=2, label=sid, color=PALETTE[idx]
+                )
                 ax.fill(angles_closed, vals_closed, alpha=0.1, color=PALETTE[idx])
 
             ax.set_thetagrids(np.degrees(angles), [d.title() for d in radar_dims])
@@ -632,8 +737,14 @@ def export_ablation_plots(
         scatter_df = df[df["triplets"] > 0].copy()
         if not scatter_df.empty:
             sns.scatterplot(
-                data=scatter_df, x="triplets", y="entities",
-                hue="study_id", style="ds_short", s=100, ax=ax, palette="tab20",
+                data=scatter_df,
+                x="triplets",
+                y="entities",
+                hue="study_id",
+                style="ds_short",
+                s=100,
+                ax=ax,
+                palette="tab20",
             )
             ax.set_xlabel("Triplets Extracted")
             ax.set_ylabel("Entities Resolved")
@@ -645,16 +756,33 @@ def export_ablation_plots(
             paths.append(p)
 
     # ── 11. Correlation heatmap of all numeric metrics ──
-    numeric_cols = ["overall", "builder", "retrieval", "answer", "pipeline",
-                    "grounded_rate", "avg_gt_coverage", "avg_top_score", "triplets", "entities"]
+    numeric_cols = [
+        "overall",
+        "builder",
+        "retrieval",
+        "answer",
+        "pipeline",
+        "grounded_rate",
+        "avg_gt_coverage",
+        "avg_top_score",
+        "triplets",
+        "entities",
+    ]
     numeric_cols = [c for c in numeric_cols if c in df.columns]
     if len(numeric_cols) >= 4:
         corr = df[numeric_cols].corr()
         fig, ax = plt.subplots(figsize=(10, 8))
         mask = np.triu(np.ones_like(corr, dtype=bool))
         sns.heatmap(
-            corr, mask=mask, annot=True, fmt=".2f", cmap="coolwarm",
-            center=0, square=True, linewidths=0.5, ax=ax,
+            corr,
+            mask=mask,
+            annot=True,
+            fmt=".2f",
+            cmap="coolwarm",
+            center=0,
+            square=True,
+            linewidths=0.5,
+            ax=ax,
         )
         ax.set_title("Metric Correlation Matrix")
         p = output_dir / "heatmap_correlation.png"
@@ -665,7 +793,9 @@ def export_ablation_plots(
     # ── 12. Component importance ranking (horizontal bar) ──
     if baseline_val > 0:
         study_means = df.groupby("study_id", observed=True)["overall"].mean()
-        deltas = {sid: study_means.get(sid, 0) - baseline_val for sid in study_order if sid != "AB-00"}
+        deltas = {
+            sid: study_means.get(sid, 0) - baseline_val for sid in study_order if sid != "AB-00"
+        }
         if deltas:
             sorted_deltas = sorted(deltas.items(), key=lambda x: x[1])
             fig, ax = plt.subplots(figsize=(10, 8))
@@ -675,7 +805,9 @@ def export_ablation_plots(
 
             labels = studies_sorted
             if ablation_desc:
-                labels = [f"{s}: {ablation_desc.get(s, {}).get('title', s)[:35]}" for s in studies_sorted]
+                labels = [
+                    f"{s}: {ablation_desc.get(s, {}).get('title', s)[:35]}" for s in studies_sorted
+                ]
 
             ax.barh(labels, delta_vals, color=colors_h, edgecolor="white")
             ax.axvline(x=0, color="black", linewidth=0.8)
@@ -713,15 +845,15 @@ def generate_all_thesis_artifacts(
     csv_paths = export_ablation_master_csv(all_scores, csv_dir)
     plot_paths = export_ablation_plots(all_scores, plot_dir, ablation_desc=ablation_desc)
 
-    print(f"\n{'='*60}")
-    print(f"  THESIS ARTIFACTS GENERATED")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("  THESIS ARTIFACTS GENERATED")
+    print(f"{'=' * 60}")
     print(f"  CSVs:  {len(csv_paths)} files in {csv_dir}")
     for p in csv_paths:
         print(f"    - {p.name}")
     print(f"  Plots: {len(plot_paths)} files in {plot_dir}")
     for p in plot_paths:
         print(f"    - {p.name}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     return {"csv": csv_paths, "plots": plot_paths}

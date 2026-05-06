@@ -1,14 +1,14 @@
 # AB-04 — 01_basics_ecommerce — Run Analysis
 
-**Timestamp:** 2026-04-21 10:50:00  
-**Run tag:** `run-20260421_110728`
+**Timestamp:** 2026-05-06 15:06:03  
+**Run tag:** `run-20260506_162926`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
-| Extraction model | `LLM (openai/gpt-4.1-nano)` |
-| Reasoning model | `openai/gpt-oss-120b` |
+| Extraction model | `LLM (gpt-5-nano-2025-08-07)` |
+| Reasoning model | `gpt-5.4-nano-2026-03-17` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 87 |
-| Entities resolved | 54 |
+| Triplets extracted | 115 |
+| Entities resolved | 67 |
 | Tables parsed | 7 |
 | Tables completed | 7 |
 
@@ -31,9 +31,9 @@
 |--------|-------|
 | Questions | 15 |
 | Grounded | **15/15 (100%)** |
-| Avg GT Coverage | 80% |
-| Avg Top Score | 0.4552 |
-| Avg Chunk Count | 5.0 |
+| Avg GT Coverage | 98% |
+| Avg Top Score | 0.7975 |
+| Avg Chunk Count | 16.4 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `Line Item→ORDER_LINE_ITEM`, `Customer Items Payment→PAYMENT`, `parent_chunk_data_dictionary.txt_4`, `Line Item`, `Customer Items Payment`
+**Sources retrieved (11):** `parent_chunk_business_glossary.txt_1`, `CUSTOMER_MASTER.FULL_NAME`, `CUSTOMER_MASTER.IS_ACTIVE`, `CUSTOMER_MASTER.CUST_ID`, `CUSTOMER_MASTER.EMAIL`, `SALES_ORDER_HDR.CUST_ID`, `CUSTOMER_MASTER`, `Customer Master`
 
 ---
 
@@ -68,14 +68,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `Hierarchical Product Category Tree→TB_PRODUCT`, `Hierarchical Product Category Tree→TB_CATEGORY`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `TB_PRODUCT.CATEGORY_ID`, `TB_PRODUCT→TB_CATEGORY`, `TB_PRODUCT`, `Product`, `TB_CATEGORY`
 
 ---
 
 ### ✅ Q003 — What is the relationship between customers and sales orders?
 
 **Status:** GROUNDED  
-**GT Coverage:** 0% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Each sales order is placed by exactly one customer, referenced through the CUST_ID foreign key. A customer can place zero or more orders over time.
@@ -83,7 +83,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `Customer Items Payment`, `parent_chunk_data_dictionary.txt_6`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `Sales Order`, `SALES_ORDER_HDR`, `SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT`, `SALES_ORDER_HDR.STATUS_CODE`
 
 ---
 
@@ -98,7 +98,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `Line Item→ORDER_LINE_ITEM`, `parent_chunk_business_glossary.txt_1`, `ORDER_LINE_ITEM→TB_PRODUCT`, `ORDER_LINE_ITEM→SALES_ORDER_HDR`, `Line Item`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_2`, `Sales Order Line Item`, `ORDER_LINE_ITEM.ORDER_ID`, `ORDER_LINE_ITEM.LINE_AMT`, `ORDER_LINE_ITEM.LINE_ID`, `ORDER_LINE_ITEM.PRODUCT_ID`, `ORDER_LINE_ITEM`, `ORDER_LINE_ITEM.UNIT_PRICE`
 
 ---
 
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `PAYMENT→SALES_ORDER_HDR`, `Customer Items Payment→PAYMENT`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `Customer Items Payment`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `PAYMENT.PAYMENT_METHOD`, `PAYMENT→SALES_ORDER_HDR`, `parent_chunk_business_glossary.txt_2`, `Shipment`, `Payment`, `PAYMENT`, `SALES_ORDER_HDR`
 
 ---
 
@@ -128,7 +128,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `Sales Order→SALES_ORDER_HDR`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `Customer Items Payment→PAYMENT`, `Customer Items Payment`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `Sales Order`, `SALES_ORDER_HDR.STATUS_CODE`, `SHIPMENT.STATUS_CODE`, `SALES_ORDER_HDR`, `SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT`, `SALES_ORDER_HDR.ORDER_DATE`
 
 ---
 
@@ -143,14 +143,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `Hierarchical Product Category Tree→TB_PRODUCT`, `Line Item→ORDER_LINE_ITEM`, `Sales Order→SALES_ORDER_HDR`, `parent_chunk_data_dictionary.txt_4`, `Line Item`
+**Sources retrieved (12):** `TB_PRODUCT.SKU`, `parent_chunk_business_glossary.txt_0`, `TB_PRODUCT.PRODUCT_NAME`, `TB_PRODUCT.PRODUCT_ID`, `TB_PRODUCT.CATEGORY_ID`, `Product`, `SALES_ORDER_HDR.STATUS_CODE`, `TB_PRODUCT`
 
 ---
 
 ### ✅ Q008 — How can I find all orders placed by a specific customer?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the SALES_ORDER_HDR table filtering by CUST_ID. Each order has a foreign key reference to CUSTOMER_MASTER.CUST_ID, so joining these tables on CUST_ID will show all orders for a customer along with their details.
@@ -158,7 +158,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_5`, `Line Item→ORDER_LINE_ITEM`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_2`, `Sales Order`, `SALES_ORDER_HDR.CUST_ID`, `SALES_ORDER_HDR.ORDER_ID`, `Shipment`, `CUSTOMER_MASTER`, `Sales Order Line Item`
 
 ---
 
@@ -173,14 +173,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `ORDER_LINE_ITEM→TB_PRODUCT`, `parent_chunk_business_glossary.txt_1`, `ORDER_LINE_ITEM→SALES_ORDER_HDR`, `parent_chunk_data_dictionary.txt_5`, `Line Item→ORDER_LINE_ITEM`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `ORDER_LINE_ITEM.PRODUCT_ID`, `ORDER_LINE_ITEM.LINE_AMT`, `ORDER_LINE_ITEM.ORDER_ID`, `ORDER_LINE_ITEM.LINE_ID`, `ORDER_LINE_ITEM→TB_PRODUCT`, `Sales Order Line Item`, `ORDER_LINE_ITEM`
 
 ---
 
 ### ✅ Q010 — Show me the order hierarchy from customer to line items.
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 75% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The hierarchy is: Customer (CUSTOMER_MASTER) → SalesOrder (SALES_ORDER_HDR) → OrderLineItem (ORDER_LINE_ITEM) → Product (TB_PRODUCT). Each customer has orders, each order has line items, and each line item references a product.
@@ -188,7 +188,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `parent_chunk_business_glossary.txt_2`, `parent_chunk_data_dictionary.txt_5`, `Line Item→ORDER_LINE_ITEM`, `parent_chunk_business_glossary.txt_1`, `Line Item`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_5`, `ORDER_LINE_ITEM.ORDER_ID`, `ORDER_LINE_ITEM.LINE_AMT`, `ORDER_LINE_ITEM`, `Sales Order Line Item`, `ORDER_LINE_ITEM.PRODUCT_ID`
 
 ---
 
@@ -203,14 +203,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `parent_chunk_business_glossary.txt_1`, `Customer Items Payment→PAYMENT`, `Sales Order→SALES_ORDER_HDR`, `parent_chunk_data_dictionary.txt_5`, `Customer Items Payment`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `PAYMENT.CONFIRMED_AT`, `SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT`, `Payment`, `Sales Order`, `SALES_ORDER_HDR`, `SALES_ORDER_HDR.STATUS_CODE`, `SALES_ORDER_HDR.ORDER_DATE`
 
 ---
 
 ### ✅ Q012 — How are shipments related to orders and warehouses?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Each shipment is for exactly one sales order (ORDER_ID in SHIPMENT references SALES_ORDER_HDR). The shipment also specifies the source warehouse code and includes tracking information and delivery status.
@@ -218,7 +218,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `Shipment #S 001→SHIPMENT`, `parent_chunk_data_dictionary.txt_6`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `SHIPMENT.WAREHOUSE_CODE`, `SHIPMENT.ORDER_ID`, `parent_chunk_business_glossary.txt_2`, `Shipment`, `SHIPMENT`, `SALES_ORDER_HDR`
 
 ---
 
@@ -233,14 +233,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `parent_chunk_business_glossary.txt_0`, `TB_PRODUCT→TB_CATEGORY`, `Hierarchical Product Category Tree→TB_PRODUCT`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_6`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `Product`, `Product Category`, `TB_CATEGORY.CATEGORY_ID`, `TB_CATEGORY.CATEGORY_NAME`, `Sales Order`, `TB_PRODUCT`, `TB_PRODUCT.CATEGORY_ID`
 
 ---
 
 ### ✅ Q014 — Is it possible for a customer to place an order without payment?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Yes, an order can exist without payment. SALES_ORDER_HDR has STATUS_CODE defaulting to PENDING and PAYMENT_CONFIRMED_AT is nullable (NULL when no payment yet). The PAYMENT table links via ORDER_ID foreign key but nothing prevents an order from existing without a payment row. However, the business gl…
@@ -248,7 +248,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `Customer Items Payment→PAYMENT`, `parent_chunk_business_glossary.txt_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `Sales Order`, `Payment`, `SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT`, `Shipment`, `SALES_ORDER_HDR`
 
 ---
 
@@ -263,7 +263,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (5):** `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_5`, `Line Item→ORDER_LINE_ITEM`, `ORDER_LINE_ITEM→TB_PRODUCT`, `Line Item`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_5`, `ORDER_LINE_ITEM.LINE_AMT`, `ORDER_LINE_ITEM.UNIT_PRICE`, `parent_chunk_data_dictionary.txt_6`, `ORDER_LINE_ITEM`, `Sales Order Line Item`
 
 ---
 

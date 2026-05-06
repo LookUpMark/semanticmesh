@@ -13,12 +13,13 @@ from typing import Any
 
 from neo4j import GraphDatabase, ManagedTransaction, Result
 
+from src.config.config import DEFAULT_CONFIG
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 
 logger: logging.Logger = get_logger(__name__)
 
-_EMBEDDING_DIMENSION: int = 1024
+_EMBEDDING_DIMENSION: int = DEFAULT_CONFIG.embedding_dimensions
 
 # Singleton driver — reused across all Neo4jClient instances.
 _driver_lock = Lock()
@@ -38,7 +39,7 @@ def _get_shared_driver(uri: str, auth: tuple[str, str]):
             try:
                 _singleton_driver.close()
             except Exception:
-                logger.debug("Old driver close failed", exc_info=True)
+                logger.warning("Old driver close failed", exc_info=True)
         _singleton_driver = GraphDatabase.driver(uri, auth=auth)
         _singleton_driver.verify_connectivity()
         _singleton_uri = uri
@@ -58,6 +59,7 @@ def close_shared_driver() -> None:
         _singleton_uri = None
         _singleton_auth = None
 
+
 _SCHEMA_STATEMENTS: list[str] = [
     "CREATE CONSTRAINT businessconcept_name_unique IF NOT EXISTS "
     "FOR (n:BusinessConcept) REQUIRE n.name IS UNIQUE",
@@ -72,23 +74,23 @@ _SCHEMA_STATEMENTS: list[str] = [
     (
         "CREATE VECTOR INDEX businessconcept_embedding IF NOT EXISTS "
         "FOR (n:BusinessConcept) ON n.embedding "
-        "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
-    )
-    % _EMBEDDING_DIMENSION,
+        f"OPTIONS {{indexConfig: {{`vector.dimensions`: {_EMBEDDING_DIMENSION}, "
+        "`vector.similarity_function`: 'cosine'}}}"
+    ),
     (
         "CREATE VECTOR INDEX chunk_embedding IF NOT EXISTS "
         "FOR (c:Chunk) ON c.embedding "
-        "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
-    )
-    % _EMBEDDING_DIMENSION,
+        f"OPTIONS {{indexConfig: {{`vector.dimensions`: {_EMBEDDING_DIMENSION}, "
+        "`vector.similarity_function`: 'cosine'}}}"
+    ),
     "CREATE CONSTRAINT attribute_name_unique IF NOT EXISTS "
     "FOR (a:Attribute) REQUIRE a.name IS UNIQUE",
     (
         "CREATE VECTOR INDEX attribute_embedding IF NOT EXISTS "
         "FOR (a:Attribute) ON a.embedding "
-        "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
-    )
-    % _EMBEDDING_DIMENSION,
+        f"OPTIONS {{indexConfig: {{`vector.dimensions`: {_EMBEDDING_DIMENSION}, "
+        "`vector.similarity_function`: 'cosine'}}}"
+    ),
 ]
 
 

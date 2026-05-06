@@ -42,15 +42,24 @@ _DATA_DIR = Path(__file__).parent.parent.parent / "data" / "memory"
 _REGISTRY_DB = _DATA_DIR / "kg_registry.db"
 _SNAPSHOTS_DIR = _DATA_DIR / "kg_snapshots"
 
-_ALLOWED_REL_TYPES = frozenset({
-    "MAPPED_TO", "HAS_ATTRIBUTE", "REFERENCES", "MENTIONS",
-    "DESCRIBED_BY", "PART_OF", "INSTANCE_OF", "CONTAINS_CHUNK",
-})
+_ALLOWED_REL_TYPES = frozenset(
+    {
+        "MAPPED_TO",
+        "HAS_ATTRIBUTE",
+        "REFERENCES",
+        "MENTIONS",
+        "DESCRIBED_BY",
+        "PART_OF",
+        "INSTANCE_OF",
+        "CONTAINS_CHUNK",
+    }
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DB bootstrap
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _ensure_dirs() -> None:
     _DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -95,6 +104,7 @@ def _bootstrap(conn: sqlite3.Connection) -> None:
 # Neo4j export helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _export_graph() -> tuple[list[dict], list[dict]]:
     """Dump all nodes and edges from Neo4j as plain dicts (no embeddings)."""
     from src.graph.neo4j_client import Neo4jClient
@@ -125,11 +135,13 @@ def _export_graph() -> tuple[list[dict], list[dict]]:
     for row in raw_nodes:
         props = dict(row["props"] or {})
         props.pop("embedding", None)  # omit large vectors — they'll be regenerated on load
-        nodes.append({
-            "eid": row["eid"],
-            "labels": list(row["labels"]),
-            "props": props,
-        })
+        nodes.append(
+            {
+                "eid": row["eid"],
+                "labels": list(row["labels"]),
+                "props": props,
+            }
+        )
 
     edges = [
         {
@@ -148,6 +160,7 @@ def _export_graph() -> tuple[list[dict], list[dict]]:
 # ─────────────────────────────────────────────────────────────────────────────
 # Neo4j import helpers
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
     """Restore a snapshot into Neo4j (clear first, then MERGE all nodes+edges).
@@ -212,9 +225,14 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
             src = props.get("source_doc", "")
             if idx is None:
                 return None
-            rest = {k: v for k, v in props.items() if k not in ("parent_chunk_index", "source_doc")}
+            rest = {
+                k: v for k, v in props.items()
+                if k not in ("parent_chunk_index", "source_doc")
+            }
             return (
-                "MERGE (n:ParentChunk {parent_chunk_index: $idx, source_doc: $src}) SET n += $props",
+                "MERGE (n:ParentChunk "
+                "{parent_chunk_index: $idx, source_doc: $src}) "
+                "SET n += $props",
                 {"idx": idx, "src": src, "props": rest},
             )
         if "Chunk" in labels:
@@ -284,7 +302,7 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
                 node_stmts.append(mc)
 
         for i in range(0, len(node_stmts), 200):
-            client.execute_batch(node_stmts[i:i + 200])
+            client.execute_batch(node_stmts[i : i + 200])
 
         # 5. MERGE relationships — build per-relationship MATCH+MERGE statements
         rel_stmts: list[tuple[str, dict]] = []
@@ -311,12 +329,16 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
                     )
                 if label == "ParentChunk":
                     return (
-                        f"MATCH ({alias}:ParentChunk {{parent_chunk_index: ${alias}_idx, source_doc: ${alias}_src}})",
+                        f"MATCH ({alias}:ParentChunk "
+                        f"{{parent_chunk_index: ${alias}_idx, "
+                        f"source_doc: ${alias}_src}})",
                         {f"{alias}_idx": int(parts[1]), f"{alias}_src": parts[2]},
                     )
                 if label == "Chunk":
                     return (
-                        f"MATCH ({alias}:Chunk {{chunk_index: ${alias}_idx, source_doc: ${alias}_src}})",
+                        f"MATCH ({alias}:Chunk "
+                        f"{{chunk_index: ${alias}_idx, "
+                        f"source_doc: ${alias}_src}})",
                         {f"{alias}_idx": int(parts[1]), f"{alias}_src": parts[2]},
                     )
                 return "", {}
@@ -335,7 +357,7 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
             rel_stmts.append((cypher, params))
 
         for i in range(0, len(rel_stmts), 200):
-            client.execute_batch(rel_stmts[i:i + 200])
+            client.execute_batch(rel_stmts[i : i + 200])
 
     logger.info(
         "KG import complete: %d nodes, %d edges merged.",
@@ -347,6 +369,7 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def list_snapshots() -> list[dict[str, Any]]:
     """Return all saved KG snapshots (metadata only, no graph data)."""
@@ -405,14 +428,19 @@ def save_snapshot(name: str, description: str = "") -> dict[str, Any]:
     created_at = datetime.now(UTC).isoformat()
     with _db() as conn:
         conn.execute(
-            "INSERT INTO kg_snapshots (id, name, description, created_at, node_count, edge_count, snapshot_path) "
+            "INSERT INTO kg_snapshots "
+            "(id, name, description, created_at, "
+            "node_count, edge_count, snapshot_path) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
             (snap_id, name, description, created_at, len(nodes), len(edges), str(snapshot_path)),
         )
 
     logger.info(
         "Snapshot '%s' saved: %d nodes, %d edges → %s",
-        name, len(nodes), len(edges), snapshot_path,
+        name,
+        len(nodes),
+        len(edges),
+        snapshot_path,
     )
     return {
         "id": snap_id,
@@ -447,7 +475,9 @@ def load_snapshot(snapshot_id: str) -> dict[str, Any]:
     nodes = payload["nodes"]
     edges = payload["edges"]
 
-    logger.info("Loading KG snapshot '%s' (%d nodes, %d edges) …", row["name"], len(nodes), len(edges))
+    logger.info(
+        "Loading KG snapshot '%s' (%d nodes, %d edges) …", row["name"], len(nodes), len(edges)
+    )
     _import_graph(nodes, edges)
 
     with _db() as conn:

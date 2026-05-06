@@ -11,7 +11,6 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 
 from src.config.logging import get_logger
 from src.config.settings import get_settings
@@ -53,9 +52,7 @@ def extract_unique_entities(triplets: list[Triplet]) -> list[str]:
                 rejected += 1
     unique = sorted(entities)
     if rejected:
-        logger.info(
-            "Filtered %d low-quality entity names before blocking.", rejected
-        )
+        logger.info("Filtered %d low-quality entity names before blocking.", rejected)
     logger.info("Extracted %d unique entities from %d triplets.", len(unique), len(triplets))
     return unique
 
@@ -63,7 +60,7 @@ def extract_unique_entities(triplets: list[Triplet]) -> list[str]:
 def _split_oversized_cluster(
     member_indices: list[int],
     entities: list[str],
-    sim_matrix: np.ndarray,
+    local_sim: np.ndarray,
     max_size: int,
     base_threshold: float,
 ) -> list[EntityCluster]:
@@ -83,28 +80,27 @@ def _split_oversized_cluster(
     Returns:
         List of ``EntityCluster`` objects, each within ``max_size``.
     """
-    idx_arr = np.array(member_indices)
-    sub_sim = sim_matrix[np.ix_(idx_arr, idx_arr)]
+    sub_sim = local_sim
     n_sub = len(member_indices)
 
     # Re-cluster with a tighter threshold (step up by 0.05 each iteration)
-    threshold = base_threshold + 0.10
-    max_iterations = 5
+    threshold = base_threshold + get_settings().er_threshold_step
+    max_iterations = get_settings().er_recluster_max_iterations
 
     for _ in range(max_iterations):
         # Fresh Union-Find on sub-matrix
         parent = list(range(n_sub))
 
-        def find(i: int) -> int:
-            while parent[i] != i:
-                parent[i] = parent[parent[i]]
-                i = parent[i]
+        def find(i: int, _parent: list[int] = parent) -> int:
+            while _parent[i] != i:
+                _parent[i] = _parent[_parent[i]]
+                i = _parent[i]
             return i
 
-        def union(i: int, j: int) -> None:
-            ri, rj = find(i), find(j)
+        def union(i: int, j: int, _parent: list[int] = parent) -> None:
+            ri, rj = find(i, _parent), find(j, _parent)
             if ri != rj:
-                parent[ri] = rj
+                _parent[ri] = rj
 
         for i in range(n_sub):
             for j in range(i + 1, n_sub):
@@ -119,7 +115,7 @@ def _split_oversized_cluster(
         all_ok = all(len(g) <= max_size for g in sub_groups.values())
         if all_ok:
             break
-        threshold += 0.05
+        threshold += get_settings().er_threshold_step
 
     # Build EntityCluster objects from the sub-groups
     result: list[EntityCluster] = []
@@ -130,8 +126,8 @@ def _split_oversized_cluster(
         if len(local_indices) > max_size:
             # Pick the `max_size` members with highest average pairwise sim
             local_arr = np.array(local_indices)
-            local_sim = sub_sim[np.ix_(local_arr, local_arr)]
-            avg_sims = local_sim.mean(axis=1)
+            cap_sim = sub_sim[np.ix_(local_arr, local_arr)]
+            avg_sims = cap_sim.mean(axis=1)
             top_local = np.argsort(avg_sims)[::-1][:max_size]
             local_indices = [local_indices[i] for i in top_local]
 
@@ -139,9 +135,9 @@ def _split_oversized_cluster(
         variants = [entities[gi] for gi in global_indices]
         canonical = max(variants, key=len)
 
-        g_arr = np.array(global_indices)
-        g_sub = sim_matrix[np.ix_(g_arr, g_arr)]
-        n_m = len(global_indices)
+        l_arr = np.array(local_indices)
+        g_sub = sub_sim[np.ix_(l_arr, l_arr)]
+        n_m = len(local_indices)
         if n_m > 1:
             mask = ~np.eye(n_m, dtype=bool)
             avg_sim = float(g_sub[mask].mean())
@@ -196,7 +192,10 @@ def block_entities(
     logger.info("Embedding %d entities for blocking...", len(entities))
     vectors = np.array(embed_texts(entities, model=embeddings), dtype=np.float32)
 
-    sim_matrix = cosine_similarity(vectors)
+    # Normalize for efficient cosine via dot product
+    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+    norms[norms == 0] = 1.0
+    vectors_normed = vectors / norms
 
     parent = list(range(len(entities)))
 
@@ -211,13 +210,22 @@ def block_entities(
         if ri != rj:
             parent[ri] = rj
 
+    # Batched top-k: process in chunks to limit peak memory
     n = len(entities)
-    for i in range(n):
-        sims = sim_matrix[i]
-        candidate_indices = np.argsort(sims)[::-1][:k]
-        for j in candidate_indices:
-            if i != j and sims[j] >= sim_threshold:
-                union(i, j)
+    effective_k = min(k, n - 1)  # can't select more neighbors than exist
+    batch_size = min(256, n)
+    for start in range(0, n, batch_size):
+        end = min(start + batch_size, n)
+        # (batch, dim) @ (dim, n) → (batch, n) similarities
+        sims_batch = vectors_normed[start:end] @ vectors_normed.T
+        for local_i in range(end - start):
+            i = start + local_i
+            row = sims_batch[local_i]
+            row[i] = -1.0  # exclude self
+            candidate_indices = np.argpartition(row, -effective_k)[-effective_k:]
+            for j in candidate_indices:
+                if row[j] >= sim_threshold:
+                    union(i, j)
 
     groups: dict[int, list[int]] = defaultdict(list)
     for i in range(n):
@@ -235,8 +243,12 @@ def block_entities(
         # (e.g., "Customer" absorbing 100+ loosely-related terms).
         # Split oversized clusters into tighter sub-groups using a higher threshold.
         if len(member_indices) > max_cluster_size:
+            # Compute sub-matrix on demand (only for oversized clusters)
+            idx_arr = np.array(member_indices)
+            sub_vecs = vectors_normed[idx_arr]
+            local_sim = sub_vecs @ sub_vecs.T
             sub_clusters = _split_oversized_cluster(
-                member_indices, entities, sim_matrix, max_cluster_size, sim_threshold
+                member_indices, entities, local_sim, max_cluster_size, sim_threshold
             )
             clusters.extend(sub_clusters)
             continue
@@ -246,7 +258,8 @@ def block_entities(
         canonical = max(variants, key=len)
 
         idx_arr = np.array(member_indices)
-        sub_matrix = sim_matrix[np.ix_(idx_arr, idx_arr)]
+        sub_vecs = vectors_normed[idx_arr]
+        sub_matrix = sub_vecs @ sub_vecs.T
         n_members = len(member_indices)
         if n_members > 1:
             mask = ~np.eye(n_members, dtype=bool)

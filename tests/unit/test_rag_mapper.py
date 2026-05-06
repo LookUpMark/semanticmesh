@@ -227,7 +227,16 @@ class TestProposeMappingHeuristic:
     ) -> None:
         table = _make_enriched("TB_CST")
         entities = [_make_entity("Customer", "A person who buys things")]
-        mock_get_settings.return_value = MagicMock(heuristic_mapping_confidence_threshold=0.60)
+        mock_get_settings.return_value = MagicMock(
+            heuristic_mapping_confidence_threshold=0.60,
+            mapping_column_name_penalty=0.25,
+            mapping_code_pattern_penalty=0.20,
+            mapping_noise_token_penalty=0.20,
+            mapping_token_count_penalty=0.10,
+            mapping_overlap_bonus_max=0.12,
+            mapping_overlap_bonus_per_token=0.04,
+            er_threshold_step=0.10,
+        )
         mock_retrieve_top.return_value = entities
         mock_embed_text.return_value = [1.0, 0.0]
         mock_embed_texts_batch.return_value = [[1.0, 0.0]]
@@ -257,7 +266,16 @@ class TestProposeMappingHeuristic:
             _make_entity("WEIGHT_KG", "A numeric value"),
             _make_entity("Product", "A tangible or digital item offered for sale"),
         ]
-        mock_get_settings.return_value = MagicMock(heuristic_mapping_confidence_threshold=0.55)
+        mock_get_settings.return_value = MagicMock(
+            heuristic_mapping_confidence_threshold=0.55,
+            mapping_column_name_penalty=0.25,
+            mapping_code_pattern_penalty=0.20,
+            mapping_noise_token_penalty=0.20,
+            mapping_token_count_penalty=0.10,
+            mapping_overlap_bonus_max=0.12,
+            mapping_overlap_bonus_per_token=0.04,
+            er_threshold_step=0.10,
+        )
         mock_retrieve_top.return_value = entities
 
         mock_embed_text.return_value = [1.0, 0.0]
@@ -285,7 +303,16 @@ class TestProposeMappingHeuristic:
         table.enriched_table_name = "Product"
 
         entities = [_make_entity("WEIGHT_KG", "Numeric weight")]
-        mock_get_settings.return_value = MagicMock(heuristic_mapping_confidence_threshold=0.60)
+        mock_get_settings.return_value = MagicMock(
+            heuristic_mapping_confidence_threshold=0.60,
+            mapping_column_name_penalty=0.25,
+            mapping_code_pattern_penalty=0.20,
+            mapping_noise_token_penalty=0.20,
+            mapping_token_count_penalty=0.10,
+            mapping_overlap_bonus_max=0.12,
+            mapping_overlap_bonus_per_token=0.04,
+            er_threshold_step=0.10,
+        )
         mock_retrieve_top.return_value = entities
         mock_embed_text.return_value = [1.0, 0.0]
         mock_embed_texts_batch.return_value = [[1.0, 0.0]]

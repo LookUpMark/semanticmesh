@@ -16,6 +16,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
 from src.config.logging import get_logger
+from src.config.settings import get_settings
 from src.models.schemas import CriticDecision, Entity, MappingProposal, TableSchema
 from src.prompts.templates import CRITIC_SYSTEM, CRITIC_USER, REFLECTION_TEMPLATE
 from src.utils.json_utils import extract_text_content
@@ -26,7 +27,6 @@ if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)  # type: ignore[valid-type]
-_CRITIC_TIMEOUT_SECONDS = 120
 
 
 def validate_schema(
@@ -103,7 +103,7 @@ def critic_review(
         ]
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(llm.invoke, messages)
-            response = future.result(timeout=_CRITIC_TIMEOUT_SECONDS)
+            response = future.result(timeout=get_settings().llm_request_timeout)
         raw_json: str = extract_text_content(response.content).strip()
     except FutureTimeoutError:
         elapsed = time.perf_counter() - start

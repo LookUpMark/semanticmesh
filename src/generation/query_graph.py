@@ -77,14 +77,14 @@ def _make_checkpointer():
     try:
         from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer  # type: ignore[import]
 
-        _ALLOWED_MODULES = [
+        allowed_modules = [
             ("src.models.schemas", "RetrievedChunk"),
             ("src.models.schemas", "GraderDecision"),
             ("src.config.tracing", "QueryTrace"),
         ]
         serde = JsonPlusSerializer()
         existing: list = getattr(serde, "allowed_msgpack_modules", []) or []
-        for entry in _ALLOWED_MODULES:
+        for entry in allowed_modules:
             if entry not in existing:
                 existing.append(entry)
         serde.allowed_msgpack_modules = existing  # type: ignore[attr-defined]
@@ -95,13 +95,17 @@ def _make_checkpointer():
         import sqlite3
 
         from langgraph.checkpoint.sqlite import SqliteSaver
+
         _CONVERSATIONS_DB.parent.mkdir(parents=True, exist_ok=True)
         if _QUERY_GRAPH_CHECKPOINT_CONN is None:
-            _QUERY_GRAPH_CHECKPOINT_CONN = sqlite3.connect(str(_CONVERSATIONS_DB), check_same_thread=False)
+            _QUERY_GRAPH_CHECKPOINT_CONN = sqlite3.connect(
+                str(_CONVERSATIONS_DB), check_same_thread=False
+            )
         kwargs = {"serde": serde} if serde is not None else {}
         return SqliteSaver(_QUERY_GRAPH_CHECKPOINT_CONN, **kwargs)
     except (ImportError, TypeError):
         from langgraph.checkpoint.memory import MemorySaver
+
         logger.warning(
             "langgraph-checkpoint-sqlite not installed — using in-memory checkpointer. "
             "Run: pip install langgraph-checkpoint-sqlite"
@@ -175,7 +179,9 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
     with NodeTimer() as timer:
         settings = get_settings()
         if not getattr(settings, "enable_retrieval_quality_gate", True):
-            log_node_event(logger, "retrieval_quality_gate", "disabled", "proceed", timer.elapsed_ms)
+            log_node_event(
+                logger, "retrieval_quality_gate", "disabled", "proceed", timer.elapsed_ms
+            )
             return {"retrieval_gate_decision": "proceed"}
 
         top_score = float(state.get("retrieval_quality_score", 0.0))
@@ -184,10 +190,18 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
         query = str(state.get("user_query", ""))
         reranked: list[RetrievedChunk] = state.get("reranked_chunks") or []
         has_structural_evidence = _has_structural_relationship_evidence(reranked)
-        relation_query = any(k in query.lower() for k in ("related", "relationship", "linked", "link"))
+        relation_query = any(
+            k in query.lower() for k in ("related", "relationship", "linked", "link")
+        )
 
         if chunk_count == 0:
-            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks=0", "abstain_early", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "retrieval_quality_gate",
+                f"score={top_score:.4f} chunks=0",
+                "abstain_early",
+                timer.elapsed_ms,
+            )
             return {"retrieval_gate_decision": "abstain_early"}
 
         if chunk_count == 1 and (has_structural_evidence or relation_query):
@@ -195,31 +209,67 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
                 "Retrieval gate: preserving sparse but structured evidence (score %.4f).",
                 top_score,
             )
-            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks=1 structured", "proceed_with_warning", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "retrieval_quality_gate",
+                f"score={top_score:.4f} chunks=1 structured",
+                "proceed_with_warning",
+                timer.elapsed_ms,
+            )
             return {"retrieval_gate_decision": "proceed_with_warning"}
 
-        if sufficiency == "adequate" and top_score >= 0.2:
-            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count}", "proceed", timer.elapsed_ms)
+        if sufficiency == "adequate" and top_score >= settings.retrieval_gate_proceed_threshold:
+            log_node_event(
+                logger,
+                "retrieval_quality_gate",
+                f"score={top_score:.4f} chunks={chunk_count}",
+                "proceed",
+                timer.elapsed_ms,
+            )
             return {"retrieval_gate_decision": "proceed"}
 
-        if top_score < 0.02 and not has_structural_evidence and chunk_count <= 2:
+        if (
+            top_score < settings.retrieval_gate_abstain_threshold
+            and not has_structural_evidence
+            and chunk_count <= 2
+        ):
             logger.info(
-                "Retrieval gate: near-zero score (%.4f) without structural evidence (chunks=%d); abstaining early.",
+                "Retrieval gate: near-zero score (%.4f) without structural "
+                "evidence (chunks=%d); abstaining early.",
                 top_score,
                 chunk_count,
             )
-            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count}", "abstain_early", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "retrieval_quality_gate",
+                f"score={top_score:.4f} chunks={chunk_count}",
+                "abstain_early",
+                timer.elapsed_ms,
+            )
             return {"retrieval_gate_decision": "abstain_early"}
 
-        if top_score < 0.05 and has_structural_evidence:
+        if top_score < settings.retrieval_gate_structural_threshold and has_structural_evidence:
             logger.info(
-                "Retrieval gate: low-score but structural evidence present (chunks=%d); proceeding with warning.",
+                "Retrieval gate: low-score but structural evidence present "
+                "(chunks=%d); proceeding with warning.",
                 chunk_count,
             )
-            log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count} structured", "proceed_with_warning", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "retrieval_quality_gate",
+                f"score={top_score:.4f} chunks={chunk_count} structured",
+                "proceed_with_warning",
+                timer.elapsed_ms,
+            )
             return {"retrieval_gate_decision": "proceed_with_warning"}
 
-        log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count}", "proceed_with_warning", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "retrieval_quality_gate",
+            f"score={top_score:.4f} chunks={chunk_count}",
+            "proceed_with_warning",
+            timer.elapsed_ms,
+        )
         return {"retrieval_gate_decision": "proceed_with_warning"}
 
 
@@ -232,14 +282,18 @@ def _node_grader_consistency_validator(state: QueryState) -> dict[str, Any]:
     with NodeTimer() as timer:
         settings = get_settings()
         if not getattr(settings, "enable_grader_consistency_validator", True):
-            log_node_event(logger, "grader_consistency_validator", "disabled", "valid", timer.elapsed_ms)
+            log_node_event(
+                logger, "grader_consistency_validator", "disabled", "valid", timer.elapsed_ms
+            )
             return {"grader_consistency_valid": True}
 
         from src.models.schemas import GraderDecision
 
         decision: GraderDecision | None = state.get("grader_decision")
         if decision is None:
-            log_node_event(logger, "grader_consistency_validator", "no decision", "valid", timer.elapsed_ms)
+            log_node_event(
+                logger, "grader_consistency_validator", "no decision", "valid", timer.elapsed_ms
+            )
             return {"grader_consistency_valid": True}
 
         valid = not (decision.grounded and decision.action != "pass")
@@ -249,7 +303,13 @@ def _node_grader_consistency_validator(state: QueryState) -> dict[str, Any]:
                 decision.grounded,
                 decision.action,
             )
-        log_node_event(logger, "grader_consistency_validator", f"grounded={decision.grounded} action={decision.action}", f"valid={valid}", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "grader_consistency_validator",
+            f"grounded={decision.grounded} action={decision.action}",
+            f"valid={valid}",
+            timer.elapsed_ms,
+        )
         return {"grader_consistency_valid": valid}
 
 
@@ -269,31 +329,38 @@ def _node_finalise(state: QueryState) -> dict[str, Any]:
         generated_with: list[RetrievedChunk] = state.get("generation_chunks") or reranked
         sources: list[str] = [c.node_id for c in generated_with]
         # Entity names from vector/graph retrieval — used for GT coverage comparison
-        entity_names: list[str] = list({
-            c.node_id for c in reranked if c.source_type in ("vector", "graph")
-        })
+        entity_names: list[str] = list(
+            {c.node_id for c in reranked if c.source_type in ("vector", "graph")}
+        )
         # retrieved_contexts: full texts used by RAGAS evaluation
         retrieved_contexts: list[str] = [c.text for c in generated_with if c.text]
-        log_node_event(logger, "finalise", f"gate={gate_decision} sources={len(sources)}", "finalised", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "finalise",
+            f"gate={gate_decision} sources={len(sources)}",
+            "finalised",
+            timer.elapsed_ms,
+        )
         return {
-        # Persist accepted answer as AIMessage via add_messages reducer.
-        # Next invocation will see [..., HumanMessage(prev_q), AIMessage(prev_a), HumanMessage(curr_q)].
-        "messages": [AIMessage(content=answer)],
-        "final_answer": answer,
-        "sources": sources,
-        "entity_names": entity_names,
-        "retrieved_contexts": retrieved_contexts,
-        "retrieval_quality_score": float(state.get("retrieval_quality_score", 0.0)),
-        "retrieval_chunk_count": int(state.get("retrieval_chunk_count", len(reranked))),
-        "retrieval_filtered_by_threshold": bool(
-            state.get("retrieval_filtered_by_threshold", False)
-        ),
-        "context_sufficiency": state.get("context_sufficiency", "insufficient"),
-        "retrieval_gate_decision": gate_decision,
-        "grader_grounded": bool(getattr(state.get("grader_decision"), "grounded", True)),
-        "grader_consistency_valid": bool(state.get("grader_consistency_valid", True)),
-        "grader_rejection_count": int(state.get("grader_rejection_count", 0)),
-    }
+            # Persist accepted answer as AIMessage via add_messages reducer.
+            # Next invocation will see:
+            # [..., HumanMessage(prev_q), AIMessage(prev_a), HumanMessage(curr_q)].
+            "messages": [AIMessage(content=answer)],
+            "final_answer": answer,
+            "sources": sources,
+            "entity_names": entity_names,
+            "retrieved_contexts": retrieved_contexts,
+            "retrieval_quality_score": float(state.get("retrieval_quality_score", 0.0)),
+            "retrieval_chunk_count": int(state.get("retrieval_chunk_count", len(reranked))),
+            "retrieval_filtered_by_threshold": bool(
+                state.get("retrieval_filtered_by_threshold", False)
+            ),
+            "context_sufficiency": state.get("context_sufficiency", "insufficient"),
+            "retrieval_gate_decision": gate_decision,
+            "grader_grounded": bool(getattr(state.get("grader_decision"), "grounded", True)),
+            "grader_consistency_valid": bool(state.get("grader_consistency_valid", True)),
+            "grader_rejection_count": int(state.get("grader_rejection_count", 0)),
+        }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -538,9 +605,7 @@ def run_query(
         "semantic_verification_overlap": result.get("semantic_verification_overlap", 1.0),
         "semantic_verification_passed": result.get("semantic_verification_passed", True),
         "semantic_verification_warning": result.get("semantic_verification_warning"),
-        "grader_grounded": bool(
-            getattr(result.get("grader_decision"), "grounded", True)
-        ),
+        "grader_grounded": bool(getattr(result.get("grader_decision"), "grounded", True)),
         "grader_consistency_valid": result.get("grader_consistency_valid", True),
         "grader_rejection_count": result.get("grader_rejection_count", 0),
     }

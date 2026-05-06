@@ -41,6 +41,7 @@ _MAX_PREVIEW_CHARS = 80
 # DB bootstrap
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _ensure_dirs() -> None:
     _DATA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -77,6 +78,7 @@ def _bootstrap(conn: sqlite3.Connection) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 # Public API
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def list_conversations() -> list[dict[str, Any]]:
     """Return all saved conversations — metadata only, no messages."""

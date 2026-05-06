@@ -54,7 +54,7 @@ def _infer_singleton_definition(
         as a fallback when the LLM call fails.
     """
     if not provenance_texts:
-        return ""
+        return entity_name
     provenance_joined = " | ".join(provenance_texts[:3])
     user_msg = ENTITY_DEFINITION_USER.format(
         entity_name=entity_name,
@@ -170,6 +170,7 @@ def resolve_entities(
         concurrency = settings_er.extraction_concurrency
         # Use midtier LLM for the judge (binary merge task, no full reasoning tier needed)
         from src.config.llm_factory import get_midtier_llm as _get_midtier_llm
+
         judge_llm = _get_midtier_llm()
         cluster_results: dict[int, Entity] = {}
         with ThreadPoolExecutor(max_workers=min(concurrency, len(clusters))) as pool:
@@ -183,8 +184,11 @@ def resolve_entities(
                 try:
                     decision = future.result()
                 except Exception as exc:
-                    logger.warning("LLM judge failed for cluster '%s': %s", cluster.canonical_candidate, exc)
+                    logger.warning(
+                        "LLM judge failed for cluster '%s': %s", cluster.canonical_candidate, exc
+                    )
                     from src.models.schemas import CanonicalEntityDecision
+
                     decision = CanonicalEntityDecision(
                         merge=False,
                         canonical_name=cluster.canonical_candidate,
