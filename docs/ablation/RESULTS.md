@@ -196,20 +196,16 @@ The AB-BEST configuration was re-derived on 2026-05-06 using v1.1.1 AI-Judge sco
 | Dataset | Tables | Questions | GT Cov | Grounded | AI Judge |
 |---------|:------:|:---------:|:------:|:--------:|:--------:|
 | 01 E-Commerce | 7 | 15 | 98% | 15/15 | **4.99/5** |
-| 02 Finance | 9 | 20 | 100% | 20/20 | **4.50/5** |
-| 03 Healthcare | 10 | 30 | 100% | 30/30 | **4.50/5** |
-| 04 Manufacturing | 13 | 40 | 98% | 40/40 | **4.50/5** |
-| 05 Edge-incomplete | 5 | 20 | 100% | 20/20 | **4.50/5** |
-| 06 Edge-legacy | 8 | 25 | 99% | 25/25 | **4.50/5** |
+| 02 Finance | 8 | 25 | 99% | 25/25 | **5.00/5** |
+| 03 Healthcare | 10 | 30 | 97% | 30/30 | **4.70/5** |
+| 04 Manufacturing | 13 | 40 | 86% | 40/40 | **4.75/5** |
+| 05 Edge-incomplete | 5 | 20 | 82% | 20/20 | **4.30/5** |
+| 06 Edge-legacy | 10 | 25 | 76% | 25/25 | **4.99/5** |
 | 07 Stress (58 tables) | 58 | 55 | 100% | 55/55 | **4.50/5** |
+| **Average** | — | **210** | **91%** | **210/210** | **4.75/5** |
 
-> **205/205 answers grounded (100%), zero hallucinations.** All dimensions 5/5 (Builder, Retrieval, Answer, Pipeline, Ablation Impact).
->
-> DS01 score improvement from 4.50→4.99 after adding `ablation_context` to bundle (provides judge with baseline comparison data for Ablation Impact dimension). Other datasets retain 4.50 pending re-judge with updated bundle.
-| 07 Stress (58 tbl) | 58/58 | 21 | 80% | 55/55 | 0.2688 | 4.25/5 |
-| **Average** | **100%** | — | ~88% | **100%** | **0.439** | **4.25/5** |
-
-AB-BEST achieves **100% builder completion and 100% grounded answers** across all seven datasets, including the stress dataset with 58 tables.
+> **210/210 answers grounded (100%), zero hallucinations.** DS02-DS06 re-judged on 2026-05-06 with `ablation_context` injection (provides judge with baseline comparison data for Ablation Impact dimension). DS07 retains provisional 4.50 pending re-judge.
+AB-BEST achieves **100% builder completion and 100% grounded answers** across all seven datasets, including the stress dataset with 58 tables. Average AI Judge score: **4.75/5**.
 
 ---
 
@@ -220,7 +216,7 @@ AB-BEST achieves **100% builder completion and 100% grounded answers** across al
 3. **Schema enrichment and Actor-Critic are critical safety nets.** Disabling either drops GT coverage by ≥33 pp in v1.0.x (still penalised at 4.05-4.50 in v1.1.1).
 4. **Most parameters are neutral on simple datasets.** Chunking, extraction tokens, ER thresholds all score 4.50 regardless of value — discrimination requires complex/multi-hop datasets.
 5. **top_k=5 is the efficient optimum.** Same quality as top_k=20 (both 4.90) with 4× fewer cross-encoder inference calls per query.
-6. **AB-BEST achieves 4.99/5** — perfect scores on all 5 dimensions including Ablation Impact (confirmed efficiency gain with no quality loss).
+6. **AB-BEST averages 4.75/5 across 7 datasets** — with DS02 achieving a perfect 5.00/5 and DS01/DS06 at 4.99/5. Lower scores on edge-case datasets (DS05=4.30) reflect genuine retrieval challenges on incomplete/ambiguous schemas.
 
 ---
 

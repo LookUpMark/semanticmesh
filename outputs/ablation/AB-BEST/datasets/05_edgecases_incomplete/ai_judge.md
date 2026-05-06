@@ -7,7 +7,7 @@
 # Ablation Study Evaluation: AB-BEST — 05_edgecases_incomplete
 
 ## Executive Summary
-AB-BEST shows **excellent end-to-end performance** on this 20-case edgecases set: **all 20 answers are grounded**, none are abstained, and retrieval quality is consistently high (avg `avg_top_score≈0.793`). Builder execution is also stable: all tables completed, **no Cypher failures**, and **no ingestion/mapping errors**. The only notable quality risk is that several answers appear to “fill in” semantics using inferred SQL rules (e.g., primary keys implying NOT NULL; payment “actually paid” equated to `PAYMENTS.PAYMENT_AMOUNT`) even when the dataset documentation is explicitly incomplete—however the grader still marked everything as grounded and accepted.
+AB-BEST shows strong end-to-end performance on this 20-item edge-case dataset: the builder completed all tables with no Cypher failures, and every question produced an answer with high grounding and very high retrieval confidence (avg_top_score ≈ 0.798). The main concern is **one semantic miss**: `ec_019` (“Shipment, Delivery, Fulfillment”) is answered as if the information is missing, despite the retrieved context clearly containing relevant glossary definitions—this suggests an internal retrieval/semantic verification failure rather than a lack of KG coverage.
 
 ## Scores
 
@@ -15,224 +15,250 @@ AB-BEST shows **excellent end-to-end performance** on this 20-case edgecases set
 |---|---:|---:|---:|
 | Builder Quality | 5 | 25% | 1.25 |
 | Retrieval Effectiveness | 5 | 25% | 1.25 |
-| Answer Quality | 5 | 30% | 1.50 |
-| Pipeline Health | 5 | 10% | 0.50 |
-| Ablation Impact | N/A | 10% | 0.00 |
-| **Overall** |  |  | **4.50** |
+| Answer Quality | 3 | 30% | 0.90 |
+| Pipeline Health | 4 | 10% | 0.40 |
+| Ablation Impact | 5 | 10% | 0.50 |
+| **Overall** |  |  | **4.30** |
+
+---
 
 ## Dimension Analysis
 
 ### 1. Builder Quality (5/5)
 - `tables_parsed=5`, `tables_completed=5`, `all_tables_completed=true`
-- `cypher_failed=false`
-- `failed_mappings=[]`
-- `ingestion_errors=[]`
-- `builder_report.triplets_extracted=64`, `entities_resolved=53` (reasonable extraction/ER density; no indication of extraction collapse)
-**Verdict:** Meets and exceeds rubric “5” criteria (complete build, no failures).
+- `cypher_failed=false`, `failed_mappings=[]`, `ingestion_errors=[]`
+- Extraction/ER throughput appears reasonable: `triplets_extracted=75`, `entities_resolved=70` (no indication of pathological ER collapse/over-splitting).
+**Meets score-5 criteria**: complete builder execution with no critical mapping/Cypher issues.
 
 ### 2. Retrieval Effectiveness (5/5)
-- `grounded_rate=1.0` (all questions grounded)
-- `abstained_count=0` (no false abstentions)
-- `avg_gt_coverage=1.0`
-- `avg_top_score=0.793` (healthy for cross-encoder reranker)
+- `grounded_rate=1.0` (system produced grounded answers for all 20)
+- `avg_gt_coverage=0.8246` (good recall of ground-truth sources)
+- `avg_top_score=0.7978` (strong reranker confidence)
+- `abstained_count=0`, `gate_abstentions=0`
 - `pipeline_health.questions_with_low_retrieval_score=0`
-**Verdict:** Satisfies score-5 thresholds decisively.
+**Meets score-5 criteria**: high coverage and confidence with no apparent retrieval failures.
 
-### 3. Answer Quality (5/5)
-System-level signals:
-- `query_report.grounded_count=20` out of `20` → **100% grounded**
-- `grader_rejection_count=0` and `grader_consistency_valid=true` for all shown questions
-- For edgecases like missing constraints/enums and circular definitions, answers appropriately:
-  - report “definition missing” when expected,
-  - describe ambiguity rather than fabricate authoritative values,
-  - handle synonym/overlap questions consistently with the glossary.
+### 3. Answer Quality (3/5)
+Overall, answers are generally correct and grounded, but there is a clear failure mode:
+- **Worst-case evidence:** `ec_019` is marked grounded and produced “I cannot find this information in the knowledge graph.” Yet the `contexts_retrieved` include glossary-like text that should enable answering the definitions/boundaries.
+- `pipeline_health.total_grader_rejections=1` (low, but not zero).
 
-Note: A few responses use plausible database conventions (e.g., PK → NOT NULL; “customer actually pays” → payment amount). However, since answers are grounded and match expected intent in this bundle, rubric weighting supports a 5 rather than penalizing for interpretive overreach.
+**Best 3 signals (good correctness):**
+- `ec_001`, `ec_002`, `ec_003`, `ec_011`, `ec_012` match expected “missing definition / duplicate columns / conflicting PK/FK / etc.” behavior with the right level of “unknown” when the KG says definition missing.
+- Multiple “negative/uncertain” style questions were answered with “not documented / not confirmed” rather than fabricating.
 
-### 4. Pipeline Health (5/5)
-- `total_grader_rejections=0`
+**Why not 4 or 5?**
+- One prominent semantic contradiction indicates that **grounding did not guarantee semantic usefulness** for all questions (consistent with edge-case brittleness in semantic verification or answer gating).
+- If only 1 out of 20 is truly wrong, 4/5 might be argued; however, the rubric asks to treat correctness primarily, and here the failure is not a subtle omission—it is an “incorrect abstention style answer” despite apparently relevant context.
+
+### 4. Pipeline Health (4/5)
+- `cypher_failed=false`, `ingestion_errors_count=0`, `failed_mappings_count=0`
 - `grader_inconsistencies=0`
-- `gate_abstentions=0`
-- `cypher_failed=false`, `failed_mappings_count=0`, `ingestion_errors_count=0`
-**Verdict:** Clean run with no stability issues and no self-healing required.
+- `total_grader_rejections=1`
+This is stable overall with only minor downstream issues.
 
-### 5. Ablation Impact (N/A)
-- `study_id=AB-BEST` is not labeled against a baseline (`AB-00`) in the provided bundle.
-- The rubric instructs using this dimension only for non-baseline ablations with baseline comparison; here there’s no baseline artifact to compare to.
-**Verdict:** N/A.
+### 5. Ablation Impact (5/5)
+Study is `AB-BEST` with `changes_vs_baseline`:
+- `reranker_top_k: 20 → 5` (efficiency-only expected)
+- other critical safety/quality flags retained (`enable_hallucination_grader=true`, thresholds unchanged)
+Observed behavior is consistent with the hypothesis:
+- No quality regressions: `grounded_rate=1.0`, `avg_top_score≈0.798` remains very high.
+- The ablation context claims AB-04/AB-05 scored 4.90; in this bundle, retrieval/grounding are strong and pipeline is stable.
 
-## Per-Question Deep Dive
+---
+
+## Dimension Analysis (Per-question highlights)
+
+### Best 3 (clearly correct and well-justified)
+- **`ec_001`**: Correctly defines Customer and includes related glossary terms (Client/Account Holder/End User). `gt_coverage=1.0`, `top_score=0.9801`, grounded.
+- **`ec_002`**: Correctly explains firstName vs first_name as naming-convention duplicates; stays within documented differences. `gt_coverage=1.0`, `top_score=0.9110`.
+- **`ec_003`**: Resolves FK target as `CUSTOMERS.customer_id` vs legacy `CustomerID` field, matching the documented ambiguity. `gt_coverage=1.0`, `top_score=0.9258`.
+
+### Worst 3 (most concerning)
+- **`ec_019`** (worst): Answer says “cannot find this information,” but glossary definitions for Shipment/Delivery/Fulfillment are present in the retrieved context. Marked `grounded=true` and `gt_coverage=1.0`, so this points to answer-selection/semantic verification or context interpretation failure.
+- **`ec_017`**: Reasoning leans on schema nullability and glossary sentence, but `gt_coverage=0.5` and `retrieval_quality_score=0.7` indicates partial grounding/retrieval dilution.
+- **`ec_010`**: Properly reports unresolved naming ambiguity, but the expected answer suggests the DDL is clearer about ORDER_ITEMS; model’s uncertainty may be slightly over-generalized. Still grounded, and retrieval is high (`top_score≈0.9627`, `gt_coverage=1.0`).
+
+---
+
+## Per-Question Deep Dive (all 20)
 
 ### ec_001: What is a customer?
 - **Type:** missing_definition | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Customer defined as purchaser; related terms include Client, Account Holder, End User; definition incomplete.  
-- **Generated:** States Customer is purchaser; mentions Client interchangeability and Account Holder as similar; aligns with glossary section.  
-- **Analysis:** Correctly reflects glossary definition and relationship terms; no hallucinated claims.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.9974090206355707, gate=proceed  
+- **Expected:** Glossary definition for Customer (incomplete); related terms Client, Account Holder, End User.  
+- **Generated:** Defines Customer as “an individual or organization…”; notes Client may be used interchangeably; includes Client definition and mentions other related terms.  
+- **Analysis:** Matches the glossary content and correctly preserves the “[definition incomplete]” status.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.9801, gate=proceed
 
 ### ec_002: What's the difference between firstName and first_name in the CUSTOMERS table?
 - **Type:** duplicate_columns | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Both exist, identical types, appear duplicates from naming inconsistency.  
-- **Generated:** Confirms both store first name; notes duplicates/legacy naming; no functional distinction stated.  
-- **Analysis:** Matches expected: duplicates + naming inconsistency.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.9162595947543866, gate=proceed  
+- **Expected:** Both exist with same VARCHAR(50); treated as duplicates due to naming inconsistency; app usage unknown.  
+- **Generated:** Explains naming inconsistency and likely duplicate/legacy; uses the data dictionary notes.  
+- **Analysis:** Correctly limits “difference” to documentation-driven duplication.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.9110, gate=proceed
 
 ### ec_003: Which customer column should be used as a foreign key reference: customer_id or CustomerID?
 - **Type:** conflicting_references | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Ambiguous; pending verification with DBA; documentation shows inconsistency across both customer_id/CustomerID.  
-- **Generated:** Selects `CUSTOMERS.customer_id`/`CUSTOMERS.CUSTOMER_ID`, while acknowledging ambiguity/duplicates and DBA verification need.  
-- **Analysis:** Semantically consistent with “documented but unresolved” framing; no unsupported decisive claims beyond what context supports.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.9257686295391643, gate=proceed  
+- **Expected:** Prefer customer_id (PK + correct naming); CustomerID is ambiguous/legacy; ORDERS has ambiguous FK reference.  
+- **Generated:** Chooses `CUSTOMERS.customer_id` / `CUSTOMERS.CUSTOMER_ID`, not CustomerID; aligns with “check with DBA” note.  
+- **Analysis:** Correct resolution consistent with available evidence.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.9258, gate=proceed
 
 ### ec_004: What are the valid values for order_status?
 - **Type:** missing_constraint | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Glossary lists statuses (Pending, Processing, Completed, Cancelled, On Hold, Failed with missing definition); no CHECK constraint enforced.  
-- **Generated:** Lists the same values and repeats “Failed definition missing.”  
-- **Analysis:** Correct values and “missing definition” caveat.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Expected:** Glossary lists statuses but Failed is definition-missing; not enforced by CHECK; valid values not documented.  
+- **Generated:** Says it cannot find valid values/enumeration in KG; notes schema lacks list/enum.  
+- **Analysis:** Correct abstain/unknown behavior for missing enum values.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7228, gate=proceed
 
 ### ec_005: Is there a difference between Product, Item, and SKU?
 - **Type:** ambiguous_synonyms | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Product vs Item (inventory synonym), SKU is unique identifier for variant; distinctions unclear beyond that.  
-- **Generated:** Explains Item as inventory-facing synonym; SKU as unique variant identifier; aligns with glossary+schema.  
-- **Analysis:** Correctly separates SKU from Product/Item and reflects partial/unclear definitions.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Expected:** Product base concept; Item synonym; SKU unique identifier for product variant; Inventory Item distinct; boundaries unclear.  
+- **Generated:** Treats Item as synonym of Product; SKU as identifier; relates to schema SKU columns.  
+- **Analysis:** Semantically aligned; uses glossary definitions.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7000, gate=proceed
 
 ### ec_006: Which table should ORDER_ITEMS.product_id reference: PRODUCTS or INVENTORY?
 - **Type:** ambiguous_reference | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Reference is documented as “PRODUCTS (or INVENTORY?)” and “not verified”; cannot be determined from available documentation.  
-- **Generated:** Chooses PRODUCTS based on supported key columns; acknowledges INVENTORY linkage unclear/“not verified.”  
-- **Analysis:** Matches expected cautiousness about INVENTORY while selecting the better-supported target from context.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.9608048667967017, gate=proceed  
+- **Expected:** FK says “PRODUCTS (or INVENTORY?) not verified”; actual cannot be fully determined.  
+- **Generated:** Chooses PRODUCTS over INVENTORY due to direct schema evidence; acknowledges “or INVENTORY?” note.  
+- **Analysis:** Reasonable and grounded decision given available schema details.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.9641, gate=proceed
 
 ### ec_007: What's the difference between Revenue and Sales?
 - **Type:** circular_definition | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Glossary definitions are circular; no clear distinction.  
-- **Generated:** Explicitly states circular/interdependent definitions and no distinct difference.  
-- **Analysis:** Correctly captures circularity and lack of boundary.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Expected:** Both are circularly defined: Revenue ↔ Sales.  
+- **Generated:** Explains the circular definitions and lack of unambiguous distinction.  
+- **Analysis:** Correctly identifies circularity and missing clarity.  
+- **Retrieval:** gt_coverage=1.0, top_score not shown per-question, gate=proceed (retrieval_quality_score=0.7)
 
 ### ec_008: Can one order have multiple payments?
 - **Type:** conflicting_cardinality | **Difficulty:** unknown  
-- **Verdict:** CORRECT  
-- **Expected:** PAYMENTS.order_id suggests many payments per order; glossary asks whether multiple vs one-to-one is unclear, but FK implies many.  
-- **Generated:** States yes; uses PAYMENTS.order_id FK and lack of uniqueness constraint; cites glossary “multiple payment attempts.”  
-- **Analysis:** Consistent with expected reasoning.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** Many-to-one suggested by PAYMENTS.order_id, but glossary raises uncertainty (one-to-one vs many).  
+- **Generated:** Says no evidence of UNIQUE on PAYMENTS.order_id; therefore multiple payments per order is not restricted.  
+- **Analysis:** Generally correct direction, but it doesn’t explicitly mention the “one-to-one? unclear” ambiguity as strongly as expected.  
+- **Retrieval:** gt_coverage=0.5, top_score not shown, gate=proceed (retrieval_quality_score=0.7)
 
 ### ec_009: What payment methods are accepted?
 - **Type:** missing_enum_values | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** No authoritative list; data dictionary says “missing valid values”; examples are not verified.  
-- **Generated:** Says list not fully documented; mentions credit_card/debit/paypal? only as unverified candidates.  
-- **Analysis:** Correctly avoids fabricating definitive enum values.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Expected:** payment_method exists but allowed values not documented; no CHECK/enum.  
+- **Generated:** States accepted values are not documented and explicitly references the “credit_card, debit, paypal?” uncertainty.  
+- **Analysis:** Correctly avoids fabricating an enumeration.  
+- **Retrieval:** gt_coverage=1.0, top_score not shown, gate=proceed (retrieval_quality_score=0.7)
 
 ### ec_010: What's the correct table name: ORDER_ITEMS or ORDER_DETAILS?
 - **Type:** naming_ambiguity | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** DDL has ORDER_ITEMS, but documentation flags “ORDER_ITEMS (or ORDER_DETAILS?)” ambiguity.  
-- **Generated:** States cannot determine definitively from provided info; notes evidence that line-item table is referred to as ORDER_ITEMS, but not confirmed.  
-- **Analysis:** Correctly handles ambiguity without overclaiming.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.9626731126558706, gate=proceed  
+- **Expected:** DDL has ORDER_ITEMS; docs show ambiguity “ORDER_ITEMS (or ORDER_DETAILS?)”; app may reference differently.  
+- **Generated:** Says context doesn’t definitively resolve; emphasizes ambiguity representation.  
+- **Analysis:** Matches “not resolvable from provided context” framing.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.9627, gate=proceed
 
 ### ec_011: Which date column should be used to track when an order was created: order_date, OrderDate, or created_at?
 - **Type:** duplicate_columns | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Ambiguity: multiple date columns for “order created”; no guidance on canonical one.  
-- **Generated:** Recommends `order_date/OrderDate` for business “order date” and `created_at` for system timestamp; suggests confirm due to duplication.  
-- **Analysis:** Matches expected ambiguity and intent.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.9177460552422909, gate=proceed  
+- **Expected:** order_date (DATE) vs OrderDate (DATETIME) for datetime precision; created_at is audit timestamp.  
+- **Generated:** Chooses order_date for created date; uses created_at as audit-style.  
+- **Analysis:** Correct and consistent with data dictionary fields.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.9344, gate=proceed
 
 ### ec_012: What does the Failed order status mean?
 - **Type:** missing_definition | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Failed exists but definition missing.  
-- **Generated:** Says definition missing; cannot determine meaning.  
-- **Analysis:** Proper “definition missing” handling.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Expected:** Failed is present but definition missing; other statuses defined.  
+- **Generated:** Explicitly states no definition for Failed.  
+- **Analysis:** Correct abstention/unknown handling.  
+- **Retrieval:** gt_coverage=1.0, top_score not shown, gate=proceed (retrieval_quality_score=0.7)
 
 ### ec_013: Are there any NOT NULL constraints defined in the schema?
 - **Type:** missing_constraints | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** No explicit NOT NULL in DDL; however PKs are implicitly NOT NULL per SQL standard, though keyword may not be written.  
-- **Generated:** Says yes, because ORDER_ID is described as `(INT, NOT NULL)`.  
-- **Analysis:** Grounded and consistent with expected “implicitly/explicitly” framing per provided context.  
-- **Retrieval:** gt_coverage=null, top_score=0.7627776615116516, gate=proceed  
+- **Expected:** No explicit NOT NULL in DDL; PRIMARY KEY implies not-null logically, but keyword not written.  
+- **Generated:** Says no explicit NOT NULL constraints found; references “assumed, not verified.”  
+- **Analysis:** Correct for “explicitly defined” aspect.  
+- **Retrieval:** gt_coverage not given (null), top_score not shown, gate=proceed (retrieval_quality_score=0.7628)
 
 ### ec_014: What's the difference between unit_price and current_price in PRODUCTS?
 - **Type:** duplicate_columns | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Both exist; distinction not explained beyond “different from unit_price?”  
-- **Generated:** Explains unit_price=standard selling price, current_price=current price, and may differ from unit_price.  
-- **Analysis:** Matches expected uncertainty and documented semantics.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.8399966464760357, gate=proceed  
+- **Expected:** unit_price = standard selling price; current_price may differ; no clear distinction beyond that.  
+- **Generated:** Matches descriptions including “[different from unit_price?]”.  
+- **Analysis:** Correctly uses documentation-level uncertainty.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.8897, gate=proceed
 
 ### ec_015: When is an invoice generated vs payment processed?
 - **Type:** missing_workflow | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** Workflow/timing not defined; invoice vs payment sequence unclear.  
-- **Generated:** Notes receipt is after payment processed, but invoice generation “when” cannot be determined; cites “Invoice to Order… but when?”  
-- **Analysis:** Correctly answers with “not determinable from context.”  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Expected:** Timing for invoice vs payment is unclear; glossary asks “But when?”; payment ordering not defined; receipt after payment.  
+- **Generated:** States invoice timing is unknown; receipt is generated after payment.  
+- **Analysis:** Correctly captures what is known vs unknown.  
+- **Retrieval:** gt_coverage=0.5, top_score not shown, gate=proceed (retrieval_quality_score=0.7)
 
 ### ec_016: Is the sku column in PRODUCTS unique?
 - **Type:** missing_uniqueness | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** `sku` (and/or `product_sku`) is marked “UNIQUE?” but DDL doesn’t enforce; no index documented.  
-- **Generated:** Says uniqueness not definitively confirmed; “UNIQUE?” is uncertain.  
-- **Analysis:** Correctly avoids assuming uniqueness.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.8768454440200762, gate=proceed  
+- **Expected:** sku annotated “UNIQUE?” but no explicit UNIQUE constraint documented; no index documented.  
+- **Generated:** States uniqueness not definitively confirmed.  
+- **Analysis:** Correctly preserves uncertainty.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.9033, gate=proceed
 
 ### ec_017: What is the relationship between customers and orders?
 - **Type:** ambiguous_relationship | **Difficulty:** unknown  
-- **Verdict:** CORRECT  
-- **Expected:** Customer-to-orders many relationship is uncertain but glossary indicates a customer can place multiple orders; FK placement ambiguous due to customer_id/CustomerID.  
-- **Generated:** Explains FK in ORDERS and many-orders alignment; also notes nullable FK and ambiguity.  
-- **Analysis:** Matches expected relationship plus uncertainty.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** Glossary says relationship is uncertain (“Or is it accounts that place orders?”); FK references ambiguous (customer_id vs CustomerID).  
+- **Generated:** Says relationship on ORDERS via CUSTOMER_ID/CUSTOMERID fields; mentions nullability.  
+- **Analysis:** Partially aligns, but `gt_coverage=0.5` suggests the key ambiguity about “accounts vs customers” may not be fully reflected.  
+- **Retrieval:** gt_coverage=0.5, top_score not shown, gate=proceed (retrieval_quality_score=0.7)
 
 ### ec_018: Which price column represents what the customer actually pays?
 - **Type:** semantic_ambiguity | **Difficulty:** unknown  
-- **Verdict:** CORRECT  
-- **Expected:** Multiple price columns exist; no guidance on final customer paid price.  
-- **Generated:** Chooses `PAYMENTS.PAYMENT_AMOUNT` as actual paid amount.  
-- **Analysis:** While the expected answer talks about ambiguity, the generated answer interprets “actually pays” via payment amount; grounded in PAYMENTS definition and accepted.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** Multiple price columns exist; dictionary does not specify which is final paid price or discount application.  
+- **Generated:** Claims `PAYMENTS.PAYMENT_AMOUNT` represents what customer pays; says retrieved context doesn’t clearly state PRODUCTS unit/current price represent paid price.  
+- **Analysis:** Likely directionally correct (payment amount), but expected answer emphasizes lack of clarity; model asserts a definitive mapping for “actual pays” from payment amount.  
+- **Retrieval:** gt_coverage=0.6667, top_score not shown, gate=proceed (retrieval_quality_score=0.7)
 
 ### ec_019: What's the difference between Shipment, Delivery, and Fulfillment?
 - **Type:** overlapping_concepts | **Difficulty:** unknown  
-- **Verdict:** CORRECT  
-- **Expected:** Definitions provided but boundaries/sequence unclear; fulfillment is superset.  
-- **Generated:** States shipment delivery completion and fulfillment encompasses both; matches glossary.  
-- **Analysis:** Correct articulation of overlapping definitions.  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Verdict:** INCORRECT  
+- **Expected:** Shipment = delivering goods; Delivery = completion when goods reach customer; Fulfillment = preparing & delivering orders (superset); boundaries unclear.  
+- **Generated:** “I cannot find this information in the knowledge graph.”  
+- **Analysis:** Contradiction: retrieved context includes definitions for Shipment/Delivery/Fulfillment in the glossary. This indicates an internal failure to use retrieved context (semantic verification/answer selection/gating).  
+- **Retrieval:** gt_coverage=1.0, top_score not shown, gate=proceed (retrieval_quality_score=0.7)  
+  *(Also note: `grader_rejection_count=1` in this question.)*
 
 ### ec_020: Are foreign key constraints enforced in the schema?
 - **Type:** missing_fk_enforcement | **Difficulty:** unknown  
 - **Verdict:** CORRECT  
-- **Expected:** DDL omits REFERENCES/constraints; data dictionary documents relationships but enforcement not present/enforced.  
-- **Generated:** Says FK relationships are documented but enforcement cannot be confirmed from retrieved context.  
-- **Analysis:** Grounded and aligned with “cannot confirm enforcement.”  
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed  
+- **Expected:** No enforced FK references in actual DDL; only conceptual expectations in data dictionary.  
+- **Generated:** Cannot confirm enforcement; describes that context shows documented FK relationships but not explicit enforcement evidence.  
+- **Analysis:** Safely abstains when enforcement isn’t explicitly evidenced.  
+- **Retrieval:** gt_coverage=0.5, top_score not shown, gate=proceed (retrieval_quality_score=0.7)
+
+---
 
 ## Anomalies & Recommendations
 
 ### Red Flags
-- **Some `gt_coverage` values are inconsistent**: notably `ec_013` has `gt_coverage=null` while still grounded/accepted. This is a metrics plumbing concern, not necessarily a model issue.
-- **Several “unknown”/edgecase questions are answered without abstaining** even when the glossary says “clarification pending.” That’s fine here due to acceptance, but future datasets might include true “cannot be determined” cases requiring abstention rather than best-effort inference.
+- **Semantic-use failure despite relevant context:** `ec_019` should have produced definitions/boundary explanation but instead returned an “information not found” response.
+- **Grounded ≠ correctly answered:** several partially correct cases have decent grounding but incomplete adherence to the expected “uncertainty framing” (notably `ec_017`, `ec_018`).
 
 ### Recommendations
-1. **Tighten abstention policy for truly unresolvable timing/cardinality** (e.g., invoice timing, FK enforcement) by correlating gate decision with `query_type` (negative/unanswerable) more aggressively.
-2. **Audit for metric completeness**: fix `gt_coverage=null` handling to ensure consistent logging and fair comparisons.
-3. **Add a “constraint semantics” guardrail**: when the glossary says “NOT NULL assumed, not verified,” avoid asserting PK-implied constraints unless explicitly stated in the retrieved context (unless you have a formal SQL rule in your policy layer).
+1. **Harden semantic verification for definition questions (overlapping concepts).** If the retrieved contexts contain explicit glossary definition sentences, block the model from answering “cannot find” unless the evidence is truly absent.
+2. **Add an “evidence-grounded contradiction” check**: detect when the answer claims absence of info while the retrieved context includes definitional text; trigger automatic regeneration.
+3. **Improve coverage-to-answer alignment scoring**: since `ec_019` shows gt_coverage=1.0 but incorrect output, refine grading to penalize “false negatives” (claiming missing info when context exists).
+
+---
 
 ## Comparison Notes (if applicable)
-- Not provided against AB-00/baseline. Therefore no causal comparison is possible for this bundle.
+- `AB-BEST` keeps safety-critical settings (hallucination grader ON; thresholds unchanged) and optimizes efficiency via `reranker_top_k=5`.
+- Observed metrics in this bundle support the intended effect: **high grounding, high reranker confidence, no abstentions**, and no builder failures—consistent with “same quality, higher efficiency.”

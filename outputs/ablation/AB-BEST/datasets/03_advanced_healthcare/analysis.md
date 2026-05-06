@@ -1,7 +1,7 @@
 # AB-BEST — 03_advanced_healthcare — Run Analysis
 
-**Timestamp:** 2026-05-06 09:57:03  
-**Run tag:** `run-20260506_114549`
+**Timestamp:** 2026-05-06 19:33:52  
+**Run tag:** `run-20260506_210258`
 
 ## Configuration
 
@@ -12,16 +12,16 @@
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
-| Reranker top_k | `20` |
-| Chunk size / overlap | `128 / 16` |
-| ER similarity threshold | `0.65` |
+| Reranker top_k | `5` |
+| Chunk size / overlap | `256 / 32` |
+| ER similarity threshold | `0.75` |
 
 ## Builder Results
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 277 |
-| Entities resolved | 295 |
+| Triplets extracted | 243 |
+| Entities resolved | 213 |
 | Tables parsed | 10 |
 | Tables completed | 10 |
 
@@ -31,9 +31,9 @@
 |--------|-------|
 | Questions | 30 |
 | Grounded | **30/30 (100%)** |
-| Avg GT Coverage | 100% |
-| Avg Top Score | 0.7155 |
-| Avg Chunk Count | 35.3 |
+| Avg GT Coverage | 97% |
+| Avg Top Score | 0.7273 |
+| Avg Chunk Count | 18.4 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `TREATMENTS.PATIENT_ID`, `parent_chunk_data_dictionary.md_10`, `Patients Table`, `PATIENTS.PHONE`, `PATIENTS.PATIENT_ID`, `PATIENTS.GENDER`, `MEDICATIONS.PATIENT_ID`, `parent_chunk_data_dictionary.md_3`
+**Sources retrieved (12):** `Patients Table`, `PATIENTS.PHONE`, `PATIENTS.PATIENT_ID`, `PATIENTS.GENDER`, `CLAIMS.PATIENT_ID`, `parent_chunk_business_glossary.md_1`, `PATIENTS`, `PATIENTS.CREATED_AT`
 
 ---
 
@@ -68,7 +68,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_10`, `DIAGNOSES.ICD_10_CODE`, `DIAGNOSES.DIAGNOSIS_NAME`, `DIAGNOSES.DIAGNOSIS_ID`, `DIAGNOSES.DIAGNOSIS_TYPE`, `DIAGNOSES.PATIENT_ID`, `parent_chunk_data_dictionary.md_5`
+**Sources retrieved (12):** `Patient Diagnosis Records`, `parent_chunk_business_glossary.md_0`, `DIAGNOSES.ICD_10_CODE`, `DIAGNOSES.DIAGNOSIS_NAME`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_4`, `DIAGNOSES`, `DIAGNOSES.DIAGNOSIS_TYPE`
 
 ---
 
@@ -83,7 +83,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_10`, `MEDICATIONS.PRESCRIBING_PROVIDER_ID`, `MEDICATIONS.ROUTE`, `MEDICATIONS.MEDICATION_NAME`, `MEDICATIONS.PATIENT_ID`, `MEDICATIONS.MEDICATION_ID`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `MEDICATIONS.PRESCRIBING_PROVIDER_ID`, `MEDICATIONS.START_DATE`, `MEDICATIONS.PATIENT_ID`, `MEDICATIONS.MEDICATION_ID`, `MEDICATIONS.ROUTE`, `parent_chunk_data_dictionary.md_10`, `MEDICATIONS`, `Patient Medication Prescriptions`
 
 ---
 
@@ -98,7 +98,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Healthcare Provider Information`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_10`, `PROVIDERS.FIRST_NAME`, `PROVIDERS.NPI`, `PROVIDERS.LAST_NAME`, `PROVIDERS.PROVIDER_TYPE`
+**Sources retrieved (12):** `PROVIDERS.NPI`, `PROVIDERS.FIRST_NAME`, `PROVIDERS.UPDATED_AT`, `PROVIDERS.PROVIDER_TYPE`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_10`, `PROVIDERS`, `Healthcare Provider`
 
 ---
 
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `DEPARTMENTS.DEPARTMENT_NAME`, `DEPARTMENTS.IS_DELETED`, `DEPARTMENTS.IS_ACTIVE`, `DEPARTMENTS.LOCATION`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `DEPARTMENTS.DEPARTMENT_NAME`, `DEPARTMENTS.IS_DELETED`, `DEPARTMENTS.VALID_TO`, `DEPARTMENTS.SERVICE_LINE`, `DEPARTMENTS.UPDATED_AT`, `DEPARTMENTS`, `Department`
 
 ---
 
@@ -128,7 +128,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_10`, `INSURANCE_PLANS.PAYER_NAME`, `INSURANCE_PLANS.PLAN_NAME`, `INSURANCE_PLANS.PLAN_ID`, `INSURANCE_PLANS.PLAN_TYPE`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `INSURANCE_PLANS.PAYER_NAME`, `INSURANCE_PLANS.PLAN_NAME`, `INSURANCE_PLANS.IS_ACTIVE`, `INSURANCE_PLANS.PLAN_ID`, `INSURANCE_PLANS`, `INSURANCE_PLANS.IS_DELETED`
 
 ---
 
@@ -143,7 +143,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `Claim`, `CLAIMS.CLAIM_STATUS`, `CLAIMS.CLAIM_NUMBER`, `CLAIMS.VALID_FROM`, `CLAIMS.CLAIM_ID`, `CLAIMS.INSURANCE_PLAN_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `Claim`, `CLAIMS.VALID_FROM`, `CLAIMS.CLAIM_NUMBER`, `CLAIMS.INSURANCE_PLAN_ID`, `CLAIMS`, `CLAIMS.IS_DELETED`
 
 ---
 
@@ -158,7 +158,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Appointment`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `APPOINTMENTS.PATIENT_ID`, `APPOINTMENTS.APPOINTMENT_TIME`, `APPOINTMENTS.APPOINTMENT_STATUS`, `APPOINTMENTS.APPOINTMENT_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_9`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `Appointment`, `APPOINTMENTS.APPOINTMENT_TIME`, `APPOINTMENTS.APPOINTMENT_STATUS`, `APPOINTMENTS.PATIENT_ID`, `APPOINTMENTS`
 
 ---
 
@@ -173,7 +173,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `LAB_RESULTS.IS_DELETED`, `LAB_RESULTS.LAB_RESULT_ID`, `LAB_RESULTS.TEST_NAME`, `LAB_RESULTS.NOTES`, `LAB_RESULTS.RESULT_DATE`, `Lab Result`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_7`
+**Sources retrieved (12):** `LAB_RESULTS.IS_DELETED`, `Lab Result`, `LAB_RESULTS.UPDATED_AT`, `LAB_RESULTS.NOTES`, `LAB_RESULTS.RESULT_DATE`, `LAB_RESULTS.TEST_VALUE`, `LAB_RESULTS.TEST_NAME`, `parent_chunk_data_dictionary.md_10`
 
 ---
 
@@ -188,7 +188,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Treatment`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_1`, `TREATMENTS.NOTES`, `TREATMENTS.TREATMENT_NAME`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (6):** `parent_chunk_data_dictionary.md_5`, `TREATMENTS.NOTES`, `TREATMENTS.IS_DELETED`, `TREATMENTS.UPDATED_AT`, `TREATMENTS.TREATMENT_NAME`, `parent_chunk_data_dictionary.md_8`
 
 ---
 
@@ -203,14 +203,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_10`, `DIAGNOSES.PATIENT_ID`, `DIAGNOSES.DIAGNOSIS_NAME`, `DIAGNOSES.PROVIDER_ID`, `DIAGNOSES.DIAGNOSIS_ID`, `parent_chunk_business_glossary.md_2`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `Patient Diagnosis Records`, `DIAGNOSES.PATIENT_ID`, `DIAGNOSES.PROVIDER_ID`, `DIAGNOSES.DIAGNOSIS_NAME`, `DIAGNOSES.DIAGNOSIS_ID`, `parent_chunk_data_dictionary.md_11`, `DIAGNOSES`
 
 ---
 
 ### ✅ Q012 — Which patients have received treatments from cardiology department providers?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Join patients to treatments on patient_id, treatments to providers on provider_id, and providers to departments on department_id. Filter where department_name = 'Cardiology' (or department_code). Return patient MRN, name, treatment_name, treatment_date, and provider name. Exclude soft-deleted record…
@@ -218,7 +218,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_1`, `TREATMENTS.TREATMENT_STATUS`, `TREATMENTS.TREATMENT_NAME`, `TREATMENTS.PROVIDER_ID`
+**Sources retrieved (6):** `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_9`, `TREATMENTS.TREATMENT_STATUS`, `TREATMENTS.TREATMENT_NAME`, `parent_chunk_data_dictionary.md_11`
 
 ---
 
@@ -233,7 +233,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_10`, `Treatment`, `TREATMENTS.DIAGNOSIS_ID`, `TREATMENTS.TREATMENT_NAME`, `TREATMENTS.TREATMENT_STATUS`
+**Sources retrieved (6):** `parent_chunk_business_glossary.md_0`, `TREATMENTS.DIAGNOSIS_ID`, `TREATMENTS.TREATMENT_STATUS`, `TREATMENTS.TREATMENT_NAME`, `TREATMENTS.UPDATED_AT`, `parent_chunk_data_dictionary.md_11`
 
 ---
 
@@ -248,7 +248,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_5`, `MEDICATIONS.PRESCRIBING_PROVIDER_ID`, `DIAGNOSES.PROVIDER_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_6`, `MEDICATIONS.PRESCRIBING_PROVIDER_ID`, `TREATMENTS.PROVIDER_ID`, `parent_chunk_data_dictionary.md_11`, `MEDICATIONS`, `Patient Medication Prescriptions`
 
 ---
 
@@ -263,7 +263,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `MEDICATIONS.PRESCRIBING_PROVIDER_ID`, `parent_chunk_data_dictionary.md_6`, `MEDICATIONS.PATIENT_ID`, `MEDICATIONS.MEDICATION_NAME`, `MEDICATIONS.MEDICATION_ID`, `MEDICATIONS.START_DATE`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `MEDICATIONS.PRESCRIBING_PROVIDER_ID`, `parent_chunk_data_dictionary.md_6`, `MEDICATIONS.PATIENT_ID`, `MEDICATIONS.MEDICATION_NAME`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `Patient Medication Prescriptions`, `MEDICATIONS`
 
 ---
 
@@ -278,7 +278,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_11`, `APPOINTMENTS.DEPARTMENT_ID`, `Appointment`, `APPOINTMENTS.PATIENT_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_11`, `APPOINTMENTS.DEPARTMENT_ID`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_2`, `APPOINTMENTS.PATIENT_ID`, `APPOINTMENTS`
 
 ---
 
@@ -293,7 +293,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_11`, `Claim`, `CLAIMS.PATIENT_ID`, `TREATMENTS.IS_DELETED`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_10`, `Claim`, `parent_chunk_data_dictionary.md_11`, `CLAIMS.PATIENT_ID`, `CLAIMS`, `CLAIMS.IS_DELETED`
 
 ---
 
@@ -308,7 +308,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_1`, `LAB_RESULTS.ORDERING_PROVIDER_ID`, `LAB_RESULTS.IS_ABNORMAL`, `LAB_RESULTS.UNIT`, `LAB_RESULTS.IS_DELETED`, `LAB_RESULTS.VALID_FROM`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `LAB_RESULTS.IS_ABNORMAL`, `Lab Result`, `parent_chunk_business_glossary.md_1`, `LAB_RESULTS.ORDERING_PROVIDER_ID`, `parent_chunk_data_dictionary.md_8`, `LAB_RESULTS`, `LAB_RESULTS.NOTES`
 
 ---
 
@@ -323,7 +323,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_5`, `TREATMENTS.PATIENT_ID`, `TREATMENTS.TREATMENT_NAME`, `TREATMENTS.TREATMENT_ID`, `TREATMENTS.TREATMENT_STATUS`, `TREATMENTS.TREATMENT_DATE`
+**Sources retrieved (6):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `TREATMENTS.TREATMENT_NAME`, `TREATMENTS.PATIENT_ID`, `TREATMENTS.TREATMENT_STATUS`
 
 ---
 
@@ -338,7 +338,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_11`, `CLAIMS.DENIAL_REASON`, `CLAIMS.INSURANCE_PLAN_ID`, `CLAIMS.AMOUNT_CHARGED`, `CLAIMS.CLAIM_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_11`, `CLAIMS.DENIAL_REASON`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `Claim`, `CLAIMS.INSURANCE_PLAN_ID`
 
 ---
 
@@ -353,7 +353,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `DIAGNOSES.PATIENT_ID`, `DIAGNOSES.IS_DELETED`, `DIAGNOSES.RESOLUTION_DATE`, `DIAGNOSES.UPDATED_AT`, `DIAGNOSES.DIAGNOSIS_DATE`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `DIAGNOSES.RESOLUTION_DATE`, `DIAGNOSES.DIAGNOSIS_DATE`, `parent_chunk_data_dictionary.md_4`, `Patient Diagnosis Records`, `DIAGNOSES.PATIENT_ID`, `DIAGNOSES`
 
 ---
 
@@ -368,14 +368,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_11`, `MEDICATIONS.UPDATED_AT`, `MEDICATIONS.PATIENT_ID`, `MEDICATIONS.END_DATE`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_4`, `MEDICATIONS.PATIENT_ID`, `Patient Medication Prescriptions`, `MEDICATIONS`
 
 ---
 
 ### ✅ Q023 — What was a provider's department affiliation at a specific past date?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query providers table joined to departments on department_id. Filter by provider_id and check temporal validity: valid_from <= historical_date AND (valid_to IS NULL OR valid_to > historical_date). Return provider name, department_name, department_code, and service_line. This reconstructs organizatio…
@@ -383,7 +383,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `PROVIDERS.UPDATED_AT`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `PROVIDERS.DEPARTMENT_ID`, `PROVIDERS.IS_DELETED`, `PROVIDERS.LAST_NAME`
+**Sources retrieved (12):** `PROVIDERS.UPDATED_AT`, `parent_chunk_data_dictionary.md_8`, `PROVIDERS.DEPARTMENT_ID`, `PROVIDERS.IS_DELETED`, `PROVIDERS.CREATED_AT`, `parent_chunk_business_glossary.md_2`, `PROVIDERS`, `Healthcare Provider`
 
 ---
 
@@ -398,7 +398,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_11`, `PATIENTS.PRIMARY_INSURANCE_ID`, `parent_chunk_data_dictionary.md_4`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_11`, `PATIENTS.PRIMARY_INSURANCE_ID`, `CLAIMS.UPDATED_AT`, `PATIENTS.UPDATED_AT`, `PATIENTS`, `Patients Table`, `PATIENTS.CREATED_AT`
 
 ---
 
@@ -413,7 +413,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_10`, `DIAGNOSES.RESOLUTION_DATE`, `DIAGNOSES.VALID_TO`, `DIAGNOSES.DIAGNOSIS_DATE`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_10`, `DIAGNOSES.RESOLUTION_DATE`, `parent_chunk_data_dictionary.md_5`, `Patient Diagnosis Records`, `DIAGNOSES`, `DIAGNOSES.DIAGNOSIS_TYPE`
 
 ---
 
@@ -428,7 +428,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `MEDICATIONS.END_DATE`, `MEDICATIONS.PATIENT_ID`, `MEDICATIONS.START_DATE`, `MEDICATIONS.IS_DELETED`, `MEDICATIONS.UPDATED_AT`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_6`, `MEDICATIONS.END_DATE`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `Patient Medication Prescriptions`, `MEDICATIONS.START_DATE`
 
 ---
 
@@ -443,7 +443,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_data_dictionary.md_4`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_3`, `parent_chunk_data_dictionary.md_4`, `PATIENTS.PATIENT_ID`, `PATIENTS`, `Patients Table`, `PATIENTS.CREATED_AT`
 
 ---
 
@@ -458,7 +458,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `DIAGNOSES.IS_DELETED`, `DIAGNOSES.DIAGNOSIS_TYPE`, `DIAGNOSES.DIAGNOSIS_NAME`, `DIAGNOSES.DIAGNOSIS_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_4`, `Patient Diagnosis Records`, `parent_chunk_business_glossary.md_2`, `Lab Result`, `DIAGNOSES`, `DIAGNOSES.DIAGNOSIS_TYPE`, `DIAGNOSES.CREATED_AT`
 
 ---
 
@@ -473,7 +473,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_0`
+**Sources retrieved (6):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_1`
 
 ---
 
@@ -488,7 +488,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `CLAIMS.AMOUNT_PAID`, `CLAIMS.INSURANCE_PLAN_ID`, `CLAIMS.AMOUNT_CHARGED`, `CLAIMS.AMOUNT_ALLOWED`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_9`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `CLAIMS.AMOUNT_PAID`, `CLAIMS.AMOUNT_CHARGED`, `Claim`, `CLAIMS.INSURANCE_PLAN_ID`, `CLAIMS.AMOUNT_ALLOWED`, `CLAIMS`
 
 ---
 

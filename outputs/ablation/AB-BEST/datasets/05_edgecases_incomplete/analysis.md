@@ -1,7 +1,7 @@
 # AB-BEST — 05_edgecases_incomplete — Run Analysis
 
-**Timestamp:** 2026-05-06 10:49:09  
-**Run tag:** `run-20260506_123833`
+**Timestamp:** 2026-05-06 20:09:06  
+**Run tag:** `run-20260506_210258`
 
 ## Configuration
 
@@ -12,16 +12,16 @@
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
-| Reranker top_k | `20` |
-| Chunk size / overlap | `128 / 16` |
-| ER similarity threshold | `0.65` |
+| Reranker top_k | `5` |
+| Chunk size / overlap | `256 / 32` |
+| ER similarity threshold | `0.75` |
 
 ## Builder Results
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 64 |
-| Entities resolved | 53 |
+| Triplets extracted | 75 |
+| Entities resolved | 70 |
 | Tables parsed | 5 |
 | Tables completed | 5 |
 
@@ -31,9 +31,9 @@
 |--------|-------|
 | Questions | 20 |
 | Grounded | **20/20 (100%)** |
-| Avg GT Coverage | 100% |
-| Avg Top Score | 0.7930 |
-| Avg Chunk Count | 32.3 |
+| Avg GT Coverage | 82% |
+| Avg Top Score | 0.7978 |
+| Avg Chunk Count | 22.6 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `Customer`, `CUSTOMERS.FIRST_NAME`, `CUSTOMERS.FIRSTNAME`, `CUSTOMERS.LASTNAME`, `CUSTOMERS.CUSTOMER_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `Customer`, `CUSTOMERS.FIRST_NAME`, `CUSTOMERS.FIRSTNAME`, `CUSTOMERS.LASTNAME`, `parent_chunk_business_glossary.txt_0`, `CUSTOMERS`, `CUSTOMERS.CREATEDDATE`
 
 ---
 
@@ -68,7 +68,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `CUSTOMERS.FIRST_NAME`, `CUSTOMERS.FIRSTNAME`, `parent_chunk_data_dictionary.txt_2`, `CUSTOMERS.LAST_NAME`, `CUSTOMERS.LASTNAME`, `CUSTOMERS.CUSTOMER_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `CUSTOMERS.FIRST_NAME`, `CUSTOMERS.FIRSTNAME`, `CUSTOMERS.LAST_NAME`, `CUSTOMERS.LASTNAME`, `CUSTOMERS`, `CUSTOMERS.CREATEDDATE`, `CUSTOMERS.STATUS`
 
 ---
 
@@ -83,7 +83,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `Customer`, `ORDERS.CUSTOMER_ID`, `PAYMENTS.CUSTOMER_ID`, `CUSTOMERS.CUSTOMER_ID`, `CUSTOMERS.CUSTOMERID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `ORDERS.CUSTOMER_ID`, `CUSTOMERS.CUSTOMER_ID`, `PAYMENTS.CUSTOMER_ID`, `CUSTOMERS.CUSTOMERID`, `ORDERS.CUSTOMERID`, `CUSTOMERS`
 
 ---
 
@@ -98,7 +98,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `PAYMENTS.ORDER_ID`, `PRODUCTS.REORDER_LEVEL`, `PAYMENTS.PAYMENT_STATUS`, `PAYMENTS.TRANSACTION_ID`, `Order Item`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `ORDERS.ORDER_STATUS`, `ORDERS.PAYMENT_STATUS`, `ORDERS.ORDER_ID`, `ORDERS.ORDERID`, `ORDERS`, `Sales Order`, `ORDERS.PAYMENT_METHOD`
 
 ---
 
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_business_glossary.txt_0`, `PRODUCTS.SKU`, `PRODUCTS.PRODUCT_SKU`, `PRODUCTS.QUANTITY_IN_STOCK`, `PRODUCTS.STOCK_QUANTITY`, `PRODUCTS.PRODUCT_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `PRODUCTS.SKU`, `PRODUCTS.PRODUCT_SKU`, `PRODUCTS.PRODUCTID`, `PRODUCTS.STOCK_QUANTITY`, `PRODUCTS`, `Inventory Item`
 
 ---
 
@@ -128,14 +128,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `ORDER_ITEMS.PRODUCT_ID`, `parent_chunk_business_glossary.txt_0`, `ORDER_ITEMS.PRODUCTID`, `ORDER_ITEMS.ORDER_ITEM_ID`, `ORDER_ITEMS.ORDER_ID`, `PRODUCTS.PRODUCT_ID`, `PRODUCTS.PRODUCTID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `ORDER_ITEMS.PRODUCT_ID`, `ORDER_ITEMS.PRODUCTID`, `ORDER_ITEMS.ORDER_ITEM_ID`, `PRODUCTS.PRODUCTID`, `ORDER_ITEMS`, `Order Items`, `ORDER_ITEMS.ORDER_ID`
 
 ---
 
 ### ✅ ec_007 — What's the difference between Revenue and Sales?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 0% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Both terms show circular definitions: Revenue is defined as 'Income from sales. The same as... [definition circular, see Sales]', while Sales is defined as 'Revenue from selling products. See Revenue.' The glossary provides no clear distinction between these concepts.
@@ -143,14 +143,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `ORDERS.TAXAMOUNT`, `Customer`, `PAYMENTS.CUSTOMER_ID`, `PRODUCTS.QUANTITY_IN_STOCK`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `Sales Order`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `ORDERS.TAXAMOUNT`, `ORDERS`, `ORDERS.PAYMENT_METHOD`
 
 ---
 
 ### ✅ ec_008 — Can one order have multiple payments?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The PAYMENTS table has an order_id column, suggesting a many-to-one relationship (multiple payments can reference a single order). However, the relationship section in the glossary asks 'Or is it one-to-one?' indicating uncertainty. The ORDERS table has both payment_status and payment_method columns…
@@ -158,7 +158,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `PAYMENTS.ORDER_ID`, `PAYMENTS.PAYMENT_AMOUNT`, `PAYMENTS.PAYMENT_METHOD`, `PAYMENTS.PAYMENT_STATUS`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `PAYMENTS.ORDER_ID`, `PAYMENTS.PAYMENT_AMOUNT`, `PAYMENTS.PAYMENT_METHOD`, `Payment`, `PAYMENTS`, `PAYMENTS.PAYMENT_STATUS`
 
 ---
 
@@ -173,7 +173,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `PAYMENTS.PAYMENT_METHOD`, `PAYMENTS.PAYMENTID`, `PAYMENTS.PAYMENT_STATUS`, `PAYMENTS.PAYMENT_AMOUNT`, `PAYMENTS.RESPONSE_MESSAGE`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`
+**Sources retrieved (12):** `PAYMENTS.PAYMENT_METHOD`, `PAYMENTS.PAYMENT_STATUS`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_3`, `ORDERS.PAYMENT_METHOD`, `ORDERS.PAYMENT_STATUS`, `PAYMENTS`, `Payment`
 
 ---
 
@@ -188,7 +188,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `ORDER_ITEMS.PRODUCT_ID`, `ORDER_ITEMS.PRODUCTID`, `ORDER_ITEMS.ORDER_ID`, `ORDER_ITEMS.LINETOTAL`, `ORDER_ITEMS.ORDER_ITEM_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `Order Items`, `ORDER_ITEMS.PRODUCT_ID`, `ORDER_ITEMS.QUANTITY`, `ORDER_ITEMS.PRODUCTID`, `ORDER_ITEMS`, `ORDER_ITEMS.ORDER_ID`, `ORDER_ITEMS.UNITPRICE`
 
 ---
 
@@ -203,7 +203,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `ORDERS.CREATED_AT`, `ORDERS.ORDER_DATE`, `ORDERS.ORDERDATE`, `parent_chunk_business_glossary.txt_0`, `PRODUCTS.CREATED_AT`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_1`, `ORDERS.CREATED_AT`, `ORDERS.ORDER_DATE`, `ORDERS.ORDERDATE`, `PAYMENTS.CREATED_AT`, `ORDERS.UPDATED_AT`, `ORDERS`, `Sales Order`
 
 ---
 
@@ -218,7 +218,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `ORDERS.ORDER_STATUS`, `ORDERS.PAYMENT_STATUS`, `ORDERS.ORDERID`, `ORDERS.ORDER_DATE`, `ORDERS.ORDER_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `ORDERS.ORDER_STATUS`, `ORDERS.PAYMENT_STATUS`, `ORDERS`, `Sales Order`, `ORDERS.PAYMENT_METHOD`
 
 ---
 
@@ -228,12 +228,12 @@ RAGAS evaluation not enabled for this run.
 **GT Coverage:** N/A | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
-> No NOT NULL constraints are defined in the DDL. The data dictionary explicitly states 'NOT NULL constraints not defined' under 'Missing Documentation' and notes 'assumed, not verified'. All columns are nullable by default.
+> No explicit NOT NULL constraints are written in the DDL. The schema comment states 'NOT NULL constraints not defined' and the data dictionary notes them as 'assumed, not verified'. However, PRIMARY KEY columns (e.g., ORDER_ID, CUSTOMER_ID) are implicitly NOT NULL per SQL standard, even though the ke…
 
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `ORDERS.ORDER_ID`, `parent_chunk_business_glossary.txt_0`, `ORDER_ITEMS.DISCOUNT_AMOUNT`, `ORDER_ITEMS.DISCOUNT_PERCENT`, `PRODUCTS.REORDER_LEVEL`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `ORDERS.TAXAMOUNT`, `parent_chunk_business_glossary.txt_0`, `ORDERS.NOTES`, `ORDERS`, `Sales Order`
 
 ---
 
@@ -248,14 +248,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `PRODUCTS.CURRENT_PRICE`, `PRODUCTS.UNIT_PRICE`, `PRODUCTS.COST_PRICE`, `PRODUCTS.UPDATED_AT`, `PRODUCTS.REORDER_LEVEL`, `parent_chunk_business_glossary.txt_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `PRODUCTS.CURRENT_PRICE`, `PRODUCTS.UNIT_PRICE`, `PRODUCTS.COST_PRICE`, `PRODUCTS.UPDATED_AT`, `PRODUCTS`, `PRODUCTS.PRODUCTID`
 
 ---
 
 ### ✅ ec_015 — When is an invoice generated vs payment processed?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The relationship section in the glossary asks 'An invoice is generated for an order. But when? And can one order have multiple invoices?' indicating the timing and cardinality are not defined. The glossary defines Invoice as 'A document requesting payment. Related to Bill' and Payment as 'The transf…
@@ -263,7 +263,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_2`, `PAYMENTS.PAYMENT_DATE`, `PAYMENTS.ORDER_ID`, `PAYMENTS.RESPONSE_MESSAGE`, `PAYMENTS.PAYMENT_STATUS`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `PAYMENTS.PAYMENT_DATE`, `PAYMENTS.PAYMENT_METHOD`, `PAYMENTS.CREATED_AT`, `PAYMENTS.PAYMENT_STATUS`, `PAYMENTS`, `Payment`
 
 ---
 
@@ -278,14 +278,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `PRODUCTS.SKU`, `PRODUCTS.PRODUCT_SKU`, `PRODUCTS.PRODUCT_CATEGORY`, `PRODUCTS.PRODUCTID`, `PRODUCTS.PRODUCT_ID`, `parent_chunk_business_glossary.txt_0`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `PRODUCTS.SKU`, `PRODUCTS.PRODUCT_SKU`, `PRODUCTS.PRODUCT_CATEGORY`, `PRODUCTS.PRODUCTID`, `PRODUCTS.PRODUCT_ID`, `PRODUCTS`, `PRODUCTS.PRODUCT_NAME`
 
 ---
 
 ### ✅ ec_017 — What is the relationship between customers and orders?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The glossary states 'A customer can place multiple orders. Or is it accounts that place orders?' indicating uncertainty about the relationship. The ORDERS table has both customer_id and CustomerID columns with ambiguous FK references, and the data dictionary notes they reference 'customer (which tab…
@@ -293,14 +293,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `ORDERS.CUSTOMERID`, `ORDERS.CUSTOMER_ID`, `ORDERS.NOTES`, `ORDERS.ORDER_ID`, `ORDERS.ORDERID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `parent_chunk_business_glossary.txt_0`, `ORDERS.CUSTOMER_ID`, `ORDERS.CUSTOMERID`, `ORDERS.NOTES`, `ORDERS`, `ORDERS.PAYMENT_METHOD`, `ORDERS.CREATED_AT`
 
 ---
 
 ### ✅ ec_018 — Which price column represents what the customer actually pays?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Multiple price columns exist across tables: ORDERS has orderAmount and total_amount; ORDER_ITEMS has unit_price and UnitPrice; PRODUCTS has unit_price, current_price, and cost_price. The data dictionary does not explain which represents the final customer price, whether discounts are applied, or how…
@@ -308,7 +308,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_1`, `PAYMENTS.CUSTOMER_ID`, `PAYMENTS.PAYMENT_AMOUNT`, `PAYMENTS.PAYMENT_ID`, `PRODUCTS.COST_PRICE`, `PRODUCTS.CURRENT_PRICE`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `PAYMENTS.CUSTOMER_ID`, `PAYMENTS.PAYMENT_AMOUNT`, `PRODUCTS.COST_PRICE`, `parent_chunk_business_glossary.txt_0`, `PRODUCTS.UNIT_PRICE`, `PRODUCTS.CURRENT_PRICE`, `PRODUCTS`
 
 ---
 
@@ -323,14 +323,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_3`, `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `Order`, `PAYMENTS.RESPONSE_MESSAGE`, `ORDERS.SHIPPINGAMOUNT`, `PAYMENTS.ORDER_ID`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_3`, `ORDERS.UPDATED_AT`, `ORDERS.NOTES`, `ORDERS.PAYMENT_METHOD`, `ORDERS.PAYMENT_STATUS`, `ORDERS.SHIPPINGAMOUNT`, `ORDERS`, `Sales Order`
 
 ---
 
 ### ✅ ec_020 — Are foreign key constraints enforced in the schema?
 
 **Status:** GROUNDED  
-**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > No foreign key constraints are enforced in the DDL. While the data dictionary documents FK relationships (e.g., customer_id → CUSTOMERS, order_id → ORDERS), the actual CREATE TABLE statements omit the REFERENCES clauses. The schema explicitly notes 'FK constraints defined in data dictionary but not …
@@ -338,7 +338,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `Customer`, `Order Item`, `PAYMENTS.ORDER_ID`, `ORDERS.ORDERID`, `Order`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_2`, `parent_chunk_data_dictionary.txt_1`, `parent_chunk_data_dictionary.txt_3`, `ORDERS.NOTES`, `parent_chunk_business_glossary.txt_0`, `ORDERS`, `Sales Order`, `ORDERS.PAYMENT_METHOD`
 
 ---
 
