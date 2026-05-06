@@ -1,4 +1,490 @@
 study_id,dataset_id,run_tag,query_id,question,query_type,difficulty,grounded,gt_coverage,retrieval_quality_score,retrieval_chunk_count,retrieval_gate_decision,context_sufficiency,grader_rejection_count,grader_consistency_valid,expected_answer,generated_answer
-AB-BEST,03_advanced_healthcare,run-20260505_150918,Q001,What tables store information about patients?,concept_lookup,simple,True,1.0,0.9945940999219731,23,proceed,adequate,0,True,"The patients table stores demographic and administrative information including MRN, name, date of birth, gender, contact details, and emergency contacts. Additionally, patient-related data is stored in diagnoses, treatments, medications, lab_results, appointments, and claims tables through foreign key relationships.","Patient information is stored in these tables:
+AB-BEST,03_advanced_healthcare,,Q001,What tables store information about patients?,concept_lookup,simple,True,1.0,0.994698105130598,0,,adequate,0,True,"The patients table stores demographic and administrative information including MRN, name, date of birth, gender, contact details, and emergency contacts. Additionally, patient-related data is stored in diagnoses, treatments, medications, lab_results, appointments, and claims tables through foreign key relationships.","Patient information is stored in the **`PATIENTS`** table (patient demographic and administrative data), and patient-linked information is stored in these additional tables via `patient_id` foreign keys: **`APPOINTMENTS`**, **`DIAGNOSES`**, **`MEDICATIONS`**, **`TREATMENTS`**, and **`CLAIMS`**."
+AB-BEST,03_advanced_healthcare,,Q002,How are medical diagnoses coded and classified?,concept_lookup,simple,True,1.0,0.7,0,,adequate,0,True,"Diagnoses are stored in the diagnoses table with ICD-10-CM codes (icd_10_code field). They are classified into four types: 'principal' (primary condition), 'comorbidity' (additional conditions), 'admitting' (condition causing admission), and 'secondary'. Each diagnosis includes the diagnosis name, type, the provider who made it, diagnosis date, and optional resolution date.","Medical diagnoses are coded using ICD-10-CM and stored along with classification attributes.
 
-The **PATIENTS** table stores the patient’s demographic and administrative record. Related patient data are stored in **CLAIMS** (via `patient_id` to link claims to patients), **APPOINTMENTS** (via `patient_id` for scheduled encounters), **MEDICATIONS** (via `patient_id` for medication prescriptions/administrations), **TREATMENTS** (via `patient_id` for treatments/procedures), **DIAGNOSES** (via `patient_id` for diagnosis records), and **LAB_RESULTS** (via `patient_id` for diagnostic lab test results)."
+In the clinical glossary, a **Diagnosis** is “coded using ICD-10-CM (International Classification of Diseases, 10th Revision, Clinical Modification) for billing and epidemiological purposes.” In the schema, the **`DIAGNOSES`** table stores the ICD-10 code in **`icd_10_code`** (a **VARCHAR(10) NOT NULL**) and the diagnosis description in **`diagnosis_name`** (a **VARCHAR(255) NOT NULL**). Each diagnosis record is also classified using **`diagnosis_type`** with a check constraint restricting values to **'principal'**, **'comorbidity'**, **'admitting'**, or **'secondary'**.
+
+Classification links to billing logic: the business glossary defines **Principal Diagnosis** as the primary condition responsible for admission, and notes that it “determines the primary diagnosis-related group (DRG) for billing purposes.” The retrieved schema/business rules state that only one diagnosis can be marked as **'principal'** per encounter, and that historical diagnoses are preserved for longitudinal tracking."
+AB-BEST,03_advanced_healthcare,,Q003,What information is tracked for medications prescribed to patients?,concept_lookup,simple,True,1.0,0.7,0,,adequate,0,True,"The medications table tracks medication name, National Drug Code (NDC), dosage, route of administration (oral, IV, IM, topical, inhaled, subcutaneous), frequency, prescribing provider, start date, and end date. Active medications have a NULL end_date. The table uses temporal historization with valid_from and valid_to timestamps.","The schema tracks medication prescription and administration information in the **MEDICATIONS** table for each patient.
+
+For each medication record, it stores a unique **medication_id** and links it to the patient via **patient_id** (required), plus the medication details: **medication_name** (required) and **ndc_code** (NDC identifier). It also tracks **dosage** (required), **route** (restricted to one of `oral`, `IV`, `IM`, `topical`, `inhaled`, `subcutaneous`), and **frequency** (required).
+
+It records who prescribed the medication through **prescribing_provider_id** (required, foreign key to providers). It tracks the therapy’s effective period with **start_date** (required) and **end_date** (nullable—described as “NULL if ongoing”).
+
+For data lifecycle/auditing, it supports soft deletion with **is_deleted** (default `FALSE`) and historization with **valid_from** and **valid_to** (record validity time bounds), plus audit timestamps **created_at** and **updated_at**.
+
+The business rules also indicate that medication reconciliation is required on admission and discharge, and that “active medications have NULL end_date and is_deleted = FALSE,” while prescription changes create new records (historization)."
+AB-BEST,03_advanced_healthcare,,Q004,How are healthcare providers organized and tracked?,concept_lookup,simple,True,1.0,0.7,0,,adequate,0,True,"Providers are stored in the providers table with a unique National Provider Identifier (NPI), name, provider type (MD, DO, NP, PA, RN, PT, Other), specialty, and department affiliation. Providers have is_active and is_deleted flags for status tracking. The table uses temporal historization to track credential and affiliation changes over time.","Healthcare providers are organized and tracked through their relationship to organizational departments and through provider identity and lifecycle fields.
+
+Provider records are stored in the `PROVIDERS` table, which captures each provider’s credentials and identifiers, including a unique `npi` (NOT NULL and UNIQUE), first and last name, `provider_type` (constrained to values like `MD`, `DO`, `NP`, `PA`, `RN`, `PT`, `Other`), and optional `specialty`. Providers are associated to their primary department via `PROVIDERS.department_id`, which is a foreign key to `departments.department_id`. The model also tracks provider activity and record lifecycle using `is_active` (default TRUE), `is_deleted` (soft delete flag, default FALSE), and validity timestamps (`valid_from`, `valid_to`) plus auditing timestamps (`created_at`, `updated_at`). Indexes support lookups by NPI, name, department, active status, and validity period while excluding soft-deleted records.
+
+Departments are stored in the `DEPARTMENTS` table and represent the organizational unit structure, including `department_name`, a unique `department_code` (noted as used for scheduling and billing), optional `service_line` (strategic service line affiliation), and `location` (physical location within the facility). Departments can be organized hierarchically using `parent_department_id`, which is a self-referential foreign key back to `departments.department_id`. Like providers, departments are also tracked with `is_active` (default TRUE), `is_deleted` (soft delete flag, default FALSE), and validity/audit timestamps (`valid_from`, `valid_to`, `created_at`, `updated_at`). 
+
+Putting it together, the organization structure is tracked by following the `PROVIDERS.department_id → DEPARTMENTS.department_id` link to place a provider within a department, and then using `DEPARTMENTS.parent_department_id → DEPARTMENTS.department_id` to navigate the department hierarchy."
+AB-BEST,03_advanced_healthcare,,Q005,What is the structure of departments and how do they relate to each other?,concept_lookup,simple,True,1.0,0.7,0,,adequate,0,True,"Departments are stored in the departments table with department_name, department_code, parent_department_id (self-referential foreign key for hierarchy), service_line (strategic grouping), and location. Departments can have parent departments creating a hierarchical structure (e.g., Cardiology as a child of Internal Medicine). Each department has is_active and is_deleted flags.","The schema’s organizational structure is implemented by the **`departments`** table.
+
+In **`departments`**, the core identity and naming are:
+- **`department_id`**: primary key (INTEGER / surrogate key)
+- **`department_name`**: required department name (VARCHAR(100), NOT NULL)
+- **`department_code`**: required and unique abbreviation (VARCHAR(20), UNIQUE NOT NULL)
+
+Departments can be organized hierarchically using:
+- **`parent_department_id`**: an optional self-referencing foreign key (**FK → `departments.department_id`**). The table’s purpose/business rules state that this supports a hierarchical structure, meaning departments can be subdivided under parent departments (for organizational reporting).
+
+Departments can also carry additional classification and physical/operational context:
+- **`service_line`**: strategic grouping of related departments for reporting
+- **`location`**: physical location within the facility (nullable)
+
+Lifecycle and data-governance fields include:
+- **`is_active`**: boolean status (DEFAULT TRUE)
+- **`is_deleted`**: soft delete flag (DEFAULT FALSE)
+- **`valid_from`** / **`valid_to`**: effective-dating timestamps to historize record versions
+- audit timestamps: **`created_at`** and **`updated_at`** (both default to CURRENT_TIMESTAMP)
+
+The schema also defines indexes that support typical access patterns:
+- on **`department_code`** (excluding soft-deleted rows),
+- on **`parent_department_id`** (excluding soft-deleted rows),
+- on **`service_line`** (excluding soft-deleted rows),
+- on **`is_active`** (only when active and not deleted),
+- and on **`valid_from, valid_to`** for historized queries.
+
+Relationships to other entities (showing how the department hierarchy is used operationally) include:
+- **`providers.department_id → departments.department_id`** (providers have a primary department affiliation)
+- **`appointments.department_id → departments.department_id`**
+- **`treatments.department_id → departments.department_id`**"
+AB-BEST,03_advanced_healthcare,,Q006,How are insurance plans and payers represented in the system?,concept_lookup,simple,True,1.0,0.7,0,,adequate,0,True,"The insurance_plans table stores plan_name, payer_name (insurance company), plan_type (commercial, medicare, medicaid, tricare, self_pay), and prior_auth_required flag. Plans have is_active status and use temporal historization. The patients table references insurance_plans via primary_insurance_id foreign key for primary coverage.","In the system, **insurance plans and payers are represented by the `INSURANCE_PLANS` table**.
+
+An insurance plan record includes identifiers and descriptive attributes: **`plan_id`** (primary key), **`plan_name`**, and **`payer_name`**. It also characterizes the payer/coverage category via **`plan_type`**, which is constrained to `('commercial', 'medicare', 'medicaid', 'tricare', 'self_pay')`. The table also records workflow and lifecycle information such as **`prior_auth_required`** (whether the plan requires prior authorization), **`is_active`**, **`is_deleted`** (soft delete), and historization fields **`valid_from`** / **`valid_to`** (record validity periods).
+
+The relationships to other operational data in the schema are implemented with foreign keys to `INSURANCE_PLANS.plan_id`:
+`patients.primary_insurance_id` → `insurance_plans.plan_id` (patient’s primary coverage), and `claims.insurance_plan_id` → `insurance_plans.plan_id` (which plan is billed for a claim).
+
+A schema-level business rule provided for this representation is that **plan names are not globally unique, and the combination of (`payer_name`, `plan_name`) is unique**."
+AB-BEST,03_advanced_healthcare,,Q007,What constitutes an insurance claim and what is its lifecycle?,concept_lookup,simple,True,1.0,0.7,0,,adequate,0,True,"Claims are stored in the claims table with claim_number (unique identifier), patient_id, insurance_plan_id, service_date, submission_date, CPT code (procedure), ICD-10 code (diagnosis), amounts (charged, allowed, paid), and claim_status. Status workflow includes: submitted → pending → approved/denied/partially_paid → appealed. Denied claims include denial_reason.","An **insurance claim** is “a formal request for payment submitted to an insurance payer for services rendered to an insured patient.” In this system, the claim is what ties together the patient’s services and the payer-facing billing details, including **procedure codes** (CPT/HCPCS) and **diagnosis codes** (ICD-10), along with related charges. In the schema, this is represented in the **`CLAIMS`** table, which stores the claim identifiers and billing specifics (for example: `claim_number`, `service_date`, `submission_date`, `cpt_code`, `icd_10_code`, and the amounts `amount_charged`, `amount_allowed`, `amount_paid`).
+
+Its lifecycle is represented primarily through the **`CLAIM_STATUS`** values in `CLAIMS` and by lifecycle/audit controls on the record. The claim can move through these statuses: **`submitted`**, **`pending`**, **`approved`**, **`denied`**, **`partially_paid`**, and **`appealed`** (enforced via a CHECK constraint on `claim_status`). If a claim is denied, the claim record includes a **`denial_reason`**, and the business rules state that **denial reasons trigger appeal workflows when clinically appropriate**. The claim record also supports lifecycle tracking over time through **historization** fields (`valid_from`, `valid_to`), where current records are expected to have `valid_to = NULL`, and past states can be reconstructed by querying historical rows. Finally, claims can be logically removed via **soft delete** (`is_deleted` defaulting to `FALSE`), preserving audit history rather than physically removing the row."
+AB-BEST,03_advanced_healthcare,,Q008,How are patient appointments scheduled and tracked?,concept_lookup,simple,True,1.0,0.7,0,,adequate,0,True,"The appointments table stores patient_id, provider_id, department_id, appointment_date, appointment_time, appointment_type (new_patient, established, consultation, follow_up, procedure, telehealth), duration_minutes, and appointment_status. Status workflow: scheduled → confirmed → checked_in → in_progress → completed/canceled/no_show. Canceled appointments require cancellation_reason.","Patient appointments are scheduled and tracked using the **`APPOINTMENTS`** table, which stores the encounter’s scheduling details, participants, clinical categorization, and operational status.
+
+An appointment is defined with a unique **`appointment_id`** (primary key) and is linked to a specific **patient** and **provider** via **`patient_id`** (FK → `patients.patient_id`, NOT NULL) and **`provider_id`** (FK → `providers.provider_id`, NOT NULL). The appointment is also associated to a **department** through **`department_id`** (FK → `departments.department_id`).
+
+Scheduling is captured with **`appointment_date`** (DATE, NOT NULL) and **`appointment_time`** (TIME, NOT NULL). The appointment’s purpose and resource requirements are categorized in **`appointment_type`**, constrained to one of: `'new_patient'`, `'established'`, `'consultation'`, `'follow_up'`, `'procedure'`, `'telehealth'`. Expected duration is stored as **`duration_minutes`** with a default of **30**.
+
+Tracking through the appointment lifecycle is managed by **`appointment_status`**, constrained to: `'scheduled'`, `'confirmed'`, `'checked_in'`, `'in_progress'`, `'completed'`, `'canceled'`, `'no_show'`. The schema includes business rules stating that the “appointment status workflow must follow state transitions,” and that “cancellations require documented reasons” via **`cancellation_reason`** when an appointment is canceled. It also supports “no-show tracking for patient attendance metrics” by retaining appointments with status `'no_show'`.
+
+For data governance and historical/audit needs, the table supports both **soft deletion** and **historization**. A record can be marked inactive using **`is_deleted`** (BOOLEAN, default FALSE), and the table includes effective dating columns **`valid_from`** (default CURRENT_TIMESTAMP) and **`valid_to`** to capture time-bounded versions of appointment records. Audit timestamps (**`created_at`**, **`updated_at`**) are also stored.
+
+Operationally, common lookups are supported by indexes that filter out soft-deleted rows (where `is_deleted = FALSE`), including searches by **`patient_id`**, **`provider_id`**, **`appointment_date`/`appointment_time`**, **`appointment_status`**, and validity ranges (**`valid_from`, `valid_to`**)."
+AB-BEST,03_advanced_healthcare,,Q009,What information is captured in laboratory test results?,concept_lookup,simple,True,1.0,0.8694931085969142,0,,adequate,0,True,"Lab results are stored in the lab_results table with test_name, LOINC code (Logical Observation Identifiers Names and Codes), test_value, unit of measurement, reference_range, is_abnormal flag, ordering_provider_id, result_date, and notes. The is_abnormal flag is automatically set when results fall outside the reference range. Abnormal results are indexed for quick clinical follow-up.","The schema’s laboratory test results capture both clinical content and audit/validity metadata in the **LAB_RESULTS** table.
+
+From the LAB_RESULTS column descriptions, each lab result stores the **test details** including **test name** (**TEST_NAME**), optional **LOINC code** (**loinc_code**) to standardize the test name across systems, the **result value** (**test_value**), the **unit** (**unit**), and the **reference/expected range** (**reference_range**). It also stores whether the result is **abnormal** via **IS_ABNORMAL** (a BOOLEAN flag), and free-text **notes** (**NOTES**).
+
+Additional context captured includes the **result date** (**RESULT_DATE**) and **provider information** for the ordering clinician via **ordering_provider_id** (FK to **providers.provider_id**).
+
+The table also includes data lifecycle and governance fields: a **soft delete flag** (**IS_DELETED**, default FALSE), and temporal validity/audit timestamps—**valid_from** (default CURRENT_TIMESTAMP) and **valid_to** (nullable for current records), plus **created_at** and **updated_at** (both with defaults/current timestamps)."
+AB-BEST,03_advanced_healthcare,,Q010,How are medical treatments and procedures documented?,concept_lookup,simple,True,1.0,0.7,0,,adequate,0,True,"The treatments table stores patient_id, diagnosis_id (for clinical justification), treatment_name, CPT code (for billing), provider_id, department_id, treatment_date, treatment_status (scheduled, completed, canceled, in_progress), and clinical notes. Treatments link to both providers and departments, and must reference a diagnosis for medical necessity documentation.","Medical treatments and procedures are documented in the **`TREATMENTS`** table, which is defined to “store medical treatments and procedures performed on patients.”
+
+Each treatment record captures what was done and when through **`treatment_name`** (required), **`treatment_date`** (required), and optional **`notes`** (TEXT for clinical notes/observations). It also records the procedure billing identifier via **`cpt_code`** (CPT/HCPCS procedure code).
+
+The documentation is linked to the clinical and operational context using foreign keys:
+- **`patient_id` → patients.patient_id** (NOT NULL): the patient receiving the treatment
+- **`diagnosis_id` → diagnoses.diagnosis_id**: the primary diagnosis indication for clinical justification
+- **`provider_id` → providers.provider_id`** (NOT NULL): the provider performing the treatment
+- **`department_id` → departments.department_id**: the department where the treatment occurred
+
+The treatment’s lifecycle/status is tracked with **`treatment_status`**, constrained to one of **`scheduled`**, **`completed`**, **`canceled`**, or **`in_progress`**. The table also supports audit/historization and soft-deletion through **`is_deleted`** (DEFAULT FALSE) plus effective dating fields (**`valid_from`**, **`valid_to`**) and audit timestamps (**`created_at`**, **`updated_at`**)."
+AB-BEST,03_advanced_healthcare,,Q011,"What are all the diagnoses for a specific patient, including the providers who diagnosed them?",multi_hop,intermediate,True,1.0,0.7,0,,adequate,0,True,"To get all diagnoses for a patient with provider information, join the patients table to diagnoses on patient_id, then left join to providers on provider_id. The query returns icd_10_code, diagnosis_name, diagnosis_type, diagnosis_date, resolution_date, and the provider's name (first_name, last_name, NPI). Filter by patient MRN or patient_id and exclude soft-deleted records (is_deleted = FALSE, valid_to IS NULL).","To retrieve “all diagnoses for a specific patient, including the providers who diagnosed them,” the schema uses the **DIAGNOSES** table as the source of diagnosis records and its **provider_id** foreign key to link each diagnosis to the diagnosing provider.
+
+In **DIAGNOSES**, each diagnosis row belongs to a patient via **DIAGNOSES.patient_id (FK → patients.patient_id, NOT NULL)**. The diagnosis rows also store the diagnosing clinician via **DIAGNOSES.provider_id (FK → providers.provider_id)**. The relevant diagnosis attributes available in **DIAGNOSES** include **diagnosis_id**, **icd_10_code**, **diagnosis_name**, **diagnosis_type** (CHECK IN ('principal', 'comorbidity', 'admitting', 'secondary')), **diagnosis_date**, and **resolution_date**.
+
+To get the providers for those diagnoses, you join **DIAGNOSES.provider_id = providers.provider_id** and filter the diagnoses to the target patient with **DIAGNOSES.patient_id = <patient_id>**. Since diagnoses are soft-deletable (**DIAGNOSES.is_deleted** with default FALSE), the “active” diagnoses are typically selected with **DIAGNOSES.is_deleted = FALSE** (consistent with the table’s indexes that apply the same filter)."
+AB-BEST,03_advanced_healthcare,,Q012,Which patients have received treatments from cardiology department providers?,multi_hop,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join patients to treatments on patient_id, treatments to providers on provider_id, and providers to departments on department_id. Filter where department_name = 'Cardiology' (or department_code). Return patient MRN, name, treatment_name, treatment_date, and provider name. Exclude soft-deleted records from all tables. This query supports departmental workload analysis.","The knowledge graph contains schema metadata only, not actual patient/treatment records, so I can’t list specific patient identifiers. However, the schema shows exactly how to identify the patients you mean.
+
+A patient is included if they have at least one row in `TREATMENTS` where the treating `provider` belongs to the **Cardiology** department. In the schema, that is determined through this join path: `TREATMENTS.patient_id` (patient receiving the treatment) → `PROVIDERS.provider_id` (provider performing the treatment) → `DEPARTMENTS.department_id` (provider’s primary department). The department is identified by `DEPARTMENTS.department_name` (the examples in the context include `Cardiology`).
+
+So the filter logic is: select patients `pt` that have a `TREATMENTS` row `t` such that `t.provider_id` points to a provider `p` whose `p.department_id` points to a department `d` with `d.department_name = 'Cardiology'` (optionally also filtering on soft deletes: `t.is_deleted = FALSE`, `p.is_deleted = FALSE`, and `d.is_deleted = FALSE`)."
+AB-BEST,03_advanced_healthcare,,Q013,What treatments have been performed for a patient's specific diagnosis?,multi_hop,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join diagnoses to treatments on diagnosis_id, then treatments to patients on patient_id and providers on provider_id. Filter by patient_id and specific icd_10_code. Return treatment_name, CPT code, treatment_date, treatment_status, department_name, and provider name. This links clinical conditions to interventions for outcomes analysis.","To find “what treatments have been performed for a patient’s specific diagnosis” in this schema, you start from **TREATMENTS** and join to **DIAGNOSES** using the stored diagnosis linkage.
+
+Use this join path: **TREATMENTS.diagnosis_id → DIAGNOSES.diagnosis_id**.
+
+In addition, since both tables are tied to the patient via **TREATMENTS.patient_id → patients.patient_id** and **DIAGNOSES.patient_id → patients.patient_id**, you typically also constrain to the same patient by filtering on **DIAGNOSES.patient_id** (or **TREATMENTS.patient_id**) depending on how you identify the patient in your request.
+
+To get the current “performed” records (based on the schema’s temporal + soft-delete conventions), apply:
+- **TREATMENTS.is_deleted = FALSE** and **DIAGNOSES.is_deleted = FALSE**
+- **TREATMENTS.valid_to IS NULL** and **DIAGNOSES.valid_to IS NULL** (the context states queries should include `WHERE valid_to IS NULL` to retrieve current data)
+
+To interpret “performed” using the available field, filter by **TREATMENTS.treatment_status**. The **TREATMENTS.treatment_status** is constrained to one of `'scheduled', 'completed', 'canceled', 'in_progress'`, so “performed” most directly corresponds to **`treatment_status = 'completed'`**.
+
+The result set will then give you treatments (e.g., **TREATMENTS.treatment_name**, **TREATMENTS.cpt_code**, and **TREATMENTS.treatment_date**) where the treatment is associated to the specific diagnosis via **TREATMENTS.diagnosis_id** and that diagnosis belongs to the patient via **DIAGNOSES.patient_id**."
+AB-BEST,03_advanced_healthcare,,Q014,Which providers have prescribed medications to patients with a specific diagnosis?,multi_hop,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join diagnoses to patients on patient_id, patients to medications on patient_id, and medications to providers on prescribing_provider_id. Filter by specific icd_10_code. Return provider name, NPI, specialty, patient name, medication_name, dosage, and prescription dates. This supports medication pattern analysis for specific conditions.","Using the schema in the retrieved context, you can identify providers who have prescribed medications to patients who have a given diagnosis by joining medications to patients and diagnoses at the patient level.
+
+The relevant columns are:
+
+MEDICATIONS has patient linkage and prescriber linkage: `MEDICATIONS.patient_id` (FK to `patients.patient_id`, NOT NULL) and `MEDICATIONS.prescribing_provider_id` (FK to `providers.provider_id`, NOT NULL).
+
+DIAGNOSES links the diagnosis to the patient: `DIAGNOSES.patient_id` (FK to `patients.patient_id`, NOT NULL) and the diagnosis code in `DIAGNOSES.icd_10_code` (NOT NULL).
+
+PROVIDERS provides provider identity: `PROVIDERS.provider_id` (PK) plus provider name fields.
+
+So the join path is:
+`MEDICATIONS.prescribing_provider_id` → `PROVIDERS.provider_id`, and both `MEDICATIONS.patient_id` and `DIAGNOSES.patient_id` point to the same patient to filter by a “specific diagnosis” using `DIAGNOSES.icd_10_code` (or alternatively `DIAGNOSES.diagnosis_id`).
+
+Important limitation from the context: medications are not linked to a specific diagnosis record—medications link to the patient only—so this identifies providers who prescribed medications to patients that have the diagnosis, not necessarily medications prescribed specifically for that particular diagnosis (and it does not encode the timing relationship between when the diagnosis was recorded vs. when the medication was started)."
+AB-BEST,03_advanced_healthcare,,Q015,What is the complete medication history for a patient including prescribing providers?,multi_hop,intermediate,True,1.0,0.7001777707679018,0,,adequate,0,True,"Join patients to medications on patient_id, then medications to providers on prescribing_provider_id. Filter by patient_id. Return medication_name, NDC code, dosage, route, frequency, start_date, end_date, and provider name. Include historical records (valid_to IS NOT NULL) to show medication changes over time. Active medications have NULL end_date.","The schema supports building a patient’s complete medication history (including the prescribing providers) using the **MEDICATIONS** table, which stores medication prescription records and includes both patient linkage and the prescribing provider reference.
+
+To assemble the medication history for a given patient, use:
+
+- **Patient linkage**: **MEDICATIONS.patient_id (FK → patients.patient_id, NOT NULL)**
+- **Time/history tracking**:
+  - **start_date (DATE, NOT NULL)** and **end_date (DATE, nullable)** to capture the medication therapy interval (the context states: “Active medications have NULL end_date and is_deleted = FALSE”).
+  - **Historization** is supported because “Prescription changes create new records (historization)”, meaning multiple MEDICATIONS rows can exist for the same patient medication over time.
+  - Audit/effective dating fields also exist: **valid_from (TIMESTAMP DEFAULT CURRENT_TIMESTAMP)** and **valid_to (TIMESTAMP)**, plus **created_at** and **updated_at** timestamps. The context defines historization generally as using effective dating (**valid_from, valid_to**) to reconstruct historical states.
+
+To include the prescribing provider for each medication record, join:
+
+- **MEDICATIONS.prescribing_provider_id (FK → providers.provider_id, NOT NULL)** to **providers.provider_id**.
+
+What I cannot fully answer from the context is the exact set of columns from the **providers** table (e.g., provider name), because only the foreign key relationship is shown here, not the provider table’s attribute list. Also, this knowledge graph contains schema-level metadata only; it does not provide actual medication-history records for a specific patient."
+AB-BEST,03_advanced_healthcare,,Q016,Which departments have the highest volume of patient appointments?,multi_hop,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join appointments to departments on department_id and patients on patient_id. Group by department_id, department_name, and service_line. Count appointments and optionally filter by appointment_date range. Order by count DESC to identify high-volume departments. Exclude canceled and no-show appointments for utilization metrics.","I can’t determine which departments have the highest volume of patient appointments from the retrieved context because it contains schema/business-concept metadata only, not actual appointment records or any precomputed appointment counts by department.
+
+What the context does show is how to calculate appointment volume by department:
+
+Appointments are stored in the **APPOINTMENTS** table, which includes **department_id** (FK → **DEPARTMENTS.department_id**). **department_id** is nullable in the attribute description, so some appointment rows may not be assigned to any department. The appointment record also has **appointment_status** with allowed values including **scheduled**, **confirmed**, **checked_in**, **in_progress**, **completed**, **canceled**, and **no_show**.
+
+To compute “highest volume,” you would group appointments by **APPOINTMENTS.department_id** after filtering to “current, non-deleted” rows per the general conventions: use **is_deleted = FALSE** (APPOINTMENTS has **is_deleted** and the general convention says queries must exclude deleted records) and include the historization filter **valid_to IS NULL** (APPOINTMENTS includes **valid_from**/**valid_to** and the convention says queries must include **valid_to IS NULL** to retrieve current data). Then you can optionally join to **DEPARTMENTS** on **APPOINTMENTS.department_id = DEPARTMENTS.department_id** to return department names/codes; the **DEPARTMENTS** table includes **department_name** and **department_code**.
+
+Finally, the “highest volume” depends on what you count (e.g., all statuses vs. excluding **canceled**/**no_show**), but the context lists the statuses and does not define the specific rule for which statuses should be included in the volume metric."
+AB-BEST,03_advanced_healthcare,,Q017,What claims have been submitted for a specific patient's treatments?,multi_hop,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join patients to treatments on patient_id, treatments to claims on patient_id and service_date ≈ treatment_date, and claims to insurance_plans on insurance_plan_id. Filter by patient_id. Return claim_number, service_date, CPT code, ICD-10 code, amount_charged, amount_paid, claim_status, payer_name, and plan_type. Link treatments to claims for revenue cycle analysis.","To find “what claims have been submitted” for a specific patient’s treatments, use the **CLAIMS** table (claims submitted to an insurance payer) and correlate it to the patient’s **TREATMENTS** (procedures performed that can be billed).
+
+Because there is no direct FK from **CLAIMS** to **TREATMENTS**, you link them via shared patient and billing procedure information:
+
+First, filter to the specific patient using **CLAIMS.patient_id** (FK to `patients.patient_id`) and **TREATMENTS.patient_id** (also FK to `patients.patient_id`). Then correlate treatments to claims by matching procedure code, using **CLAIMS.cpt_code** to **TREATMENTS.cpt_code** (both store CPT/HCPCS billing codes).
+
+In practice, your query logic is:
+select claim fields from **CLAIMS** (such as `claim_id`, `claim_number`, `service_date`, `submission_date`, `cpt_code`, `icd_10_code`, `amount_charged`, `amount_allowed`, `amount_paid`, `claim_status`, `denial_reason`)
+join **TREATMENTS** on `CLAIMS.patient_id = TREATMENTS.patient_id` and `CLAIMS.cpt_code = TREATMENTS.cpt_code` (optionally also align `CLAIMS.service_date` with `TREATMENTS.treatment_date` since both dates exist in the schema).
+restrict to the patient of interest via `CLAIMS.patient_id = <patient_id>`.
+
+To ensure you only consider currently active records, follow the schema’s conventions for soft delete and historization:
+include `CLAIMS.is_deleted = FALSE` and `TREATMENTS.is_deleted = FALSE`, and if you are using the “current state” view, include `CLAIMS.valid_to IS NULL` and `TREATMENTS.valid_to IS NULL` (the general temporal validity pattern in the schema says to use `valid_to IS NULL` for current records).
+
+Note: the retrieved context provides table/column definitions and relationships, not actual claim/treatment rows, so I can’t list the specific claim numbers for your patient without operational data."
+AB-BEST,03_advanced_healthcare,,Q018,Which providers in a specific department have ordered abnormal lab results?,multi_hop,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join lab_results to providers on ordering_provider_id, providers to departments on department_id. Filter by department_id and is_abnormal = TRUE. Return provider name, NPI, specialty, patient name, test_name, test_value, reference_range, and result_date. Order by result_date DESC. This identifies providers who may need follow-up support with critical results.","To identify “providers in a specific department who have ordered abnormal lab results,” use the **LAB_RESULTS** table’s ordering provider and abnormality flag, joined to **PROVIDERS** and filtered by **DEPARTMENTS**.
+
+In **LAB_RESULTS**, abnormality is indicated by **`is_abnormal`** (BOOLEAN). The provider who ordered the test is **`ordering_provider_id`** (FK → `providers.provider_id`). In **PROVIDERS**, each provider belongs to a department via **`department_id`** (FK → `departments.department_id`). Soft deletes are supported via **`LAB_RESULTS.is_deleted`** and **`PROVIDERS.is_deleted`**.
+
+Join path:
+**LAB_RESULTS → PROVIDERS** using `LAB_RESULTS.ordering_provider_id = PROVIDERS.provider_id`, then **PROVIDERS → DEPARTMENTS** using `PROVIDERS.department_id = DEPARTMENTS.department_id`.
+
+Filtering logic (based on the schema rules and available columns):
+Filter to abnormal results: `LAB_RESULTS.is_abnormal = TRUE`.
+Exclude soft-deleted records: `LAB_RESULTS.is_deleted = FALSE` (and optionally `PROVIDERS.is_deleted = FALSE`).
+Restrict to the target department: `DEPARTMENTS.department_id = <target_department_id>` (or filter on `DEPARTMENTS.department_name` / `department_code`, since those columns exist).
+
+Example query pattern (fill in the department filter you have):
+```sql
+SELECT DISTINCT p.provider_id,
+                p.first_name,
+                p.last_name,
+                p.provider_type,
+                p.specialty
+FROM LAB_RESULTS lr
+JOIN PROVIDERS p
+  ON lr.ordering_provider_id = p.provider_id
+JOIN DEPARTMENTS d
+  ON p.department_id = d.department_id
+WHERE lr.is_abnormal = TRUE
+  AND lr.is_deleted = FALSE
+  AND p.is_deleted = FALSE
+  AND d.department_id = <target_department_id>;
+```
+
+Note: `LAB_RESULTS.ordering_provider_id` is defined as nullable in the attribute description, so only lab result rows with a populated ordering provider will be able to match to a provider in this join (which aligns with the question’s requirement: providers who ordered abnormal results)."
+AB-BEST,03_advanced_healthcare,,Q019,"What is a patient's complete care journey including diagnoses, treatments, and medications?",multi_hop,advanced,True,1.0,0.7,0,,adequate,0,True,"Perform multiple joins from patients: to diagnoses (patient_id), to treatments (patient_id), to medications (patient_id), to lab_results (patient_id), and to appointments (patient_id). Include provider joins for clinical context. Group by clinical event date (diagnosis_date, treatment_date, start_date, result_date, appointment_date) and order chronologically. This creates a longitudinal care timeline.","A patient’s complete care journey (from clinical identification through interventions) can be reconstructed using the schema’s diagnosis and treatment tables keyed by `patient_id`, with historization and soft-delete filtering for an audit-safe view.
+
+For diagnoses, use the **DIAGNOSES** table, which stores patient diagnosis records coded with ICD-10-CM. It includes `patient_id` (FK to `patients.patient_id`, `NOT NULL`), `icd_10_code`, `diagnosis_name`, `diagnosis_type` (checked to `principal`, `comorbidity`, `admitting`, `secondary`), `provider_id` (provider who made the diagnosis), `diagnosis_date`, and optional `resolution_date` (NULL if ongoing). It also supports longitudinal reconstruction via `valid_from`/`valid_to` and preserves history via `is_deleted`.
+
+For treatments, use the **TREATMENTS** table, which stores medical interventions performed on patients. It includes `patient_id` (`NOT NULL`) and also `diagnosis_id` (FK → `diagnoses.diagnosis_id`), plus `treatment_name`, `cpt_code`, `provider_id`, `department_id`, `treatment_date`, `treatment_status` (checked to `scheduled`, `completed`, `canceled`, `in_progress`), `notes`, and the same `valid_from`/`valid_to` and `is_deleted` mechanisms. The schema’s business rule states treatments “must link to a diagnosis for clinical justification,” so you should generally anchor treatments to `diagnosis_id`.
+
+To build the journey for one patient, trace like this:
+From **PATIENTS** to **DIAGNOSES** on `patients.patient_id = diagnoses.patient_id`, then from **DIAGNOSES** to **TREATMENTS** on `diagnoses.diagnosis_id = treatments.diagnosis_id` (while also having `treatments.patient_id` available). Use `diagnosis_date` / `treatment_date` ordering, and filter out logically deleted records using `is_deleted = FALSE` while respecting `valid_from`/`valid_to` for the time-bounded “state of care.”
+
+Medications: the provided context defines the **Medication** business concept (“Any pharmaceutical substance administered to a patient for therapeutic purposes”) and states that each medication record includes dosage, route of administration, frequency, and prescribing provider, and that medication reconciliation compares medication orders to medications the patient has been taking. However, the retrieved context does not include the actual medication table schema (e.g., a `MEDICATIONS` table or its columns/foreign keys), so I can’t specify the database join path needed to include medications in the same patient journey."
+AB-BEST,03_advanced_healthcare,,Q020,Which insurance plans have the highest claim denial rates?,multi_hop,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join claims to insurance_plans on insurance_plan_id. Group by plan_id, payer_name, and plan_type. Count total claims and count claims where claim_status = 'denied'. Calculate denial rate as (denied_claims / total_claims) * 100. Order by denial rate DESC. Filter by service_date range for current period analysis. Identifies payers requiring prior authorization improvements.","I cannot find this information in the knowledge graph: the context provides the schema for **`CLAIMS`** and **`INSURANCE_PLANS`**, but it does not include any claim records or precomputed denial-rate results, so it cannot directly list “which plans” are highest.
+
+What the context does let you do is compute denial rates per insurance plan from the available fields:
+
+Claims to use for the metric come from **`CLAIMS`**, which includes:
+- **`insurance_plan_id`** (FK → `insurance_plans.plan_id`, NOT NULL)
+- **`claim_status`** with allowed values including **`'denied'`** (CHECK constraint: `'submitted', 'pending', 'approved', 'denied', 'partially_paid', 'appealed'`)
+- **`is_deleted`** (soft delete)
+- **`valid_to`** / **`valid_from`** for historization
+
+Insurance plan attributes (for reporting/ranking) come from **`INSURANCE_PLANS`**, including:
+- **`plan_id`**, **`plan_name`**
+- **`payer_name`**
+- **`is_deleted`** and **`valid_to`** for historization
+
+Denial-rate ranking can be calculated by joining **`CLAIMS.insurance_plan_id` → INSURANCE_PLANS.plan_id`**, then aggregating over current, non-deleted claim rows and treating **`claim_status = 'denied'`** as a denied claim.
+
+A SQL pattern based strictly on the schema described in the context is:
+
+```sql
+SELECT
+  ip.plan_id,
+  ip.plan_name,
+  ip.payer_name,
+  COUNT(*) AS total_claims,
+  SUM(CASE WHEN c.claim_status = 'denied' THEN 1 ELSE 0 END) AS denied_claims,
+  100.0 * SUM(CASE WHEN c.claim_status = 'denied' THEN 1 ELSE 0 END) / COUNT(*) AS denial_rate_percent
+FROM CLAIMS c
+JOIN INSURANCE_PLANS ip
+  ON c.insurance_plan_id = ip.plan_id
+WHERE c.is_deleted = FALSE
+  AND c.valid_to IS NULL
+  AND ip.is_deleted = FALSE
+  AND ip.valid_to IS NULL
+GROUP BY ip.plan_id, ip.plan_name, ip.payer_name
+ORDER BY denial_rate_percent DESC;
+```
+
+If you want a different definition of “denial” (for example, whether to include `'partially_paid'` or `'appealed'`), the schema supports that via **`CLAIMS.claim_status`**, but the context does not specify which statuses should count toward the denial-rate numerator."
+AB-BEST,03_advanced_healthcare,,Q021,What were a patient's diagnoses in a specific past time period?,temporal,intermediate,True,1.0,0.7,0,,adequate,0,True,"Query the diagnoses table filtered by patient_id and date range (diagnosis_date >= start_date AND diagnosis_date <= end_date). Additionally check temporal validity: valid_from <= query_date AND (valid_to IS NULL OR valid_to > query_date). Return icd_10_code, diagnosis_name, diagnosis_type, provider name. This reconstructs historical clinical state for audit or longitudinal analysis.","A patient’s diagnoses are stored in the **`DIAGNOSES`** table, which is linked to the patient via **`DIAGNOSES.patient_id` → `patients.patient_id`**. Diagnoses are timestamped and support both clinical dating and historization, so you can reconstruct diagnoses for a past time period.
+
+To get “a patient’s diagnoses in a specific past time period,” filter `DIAGNOSES` records in one of these supported ways:
+
+1. Use the clinical date of the diagnosis:
+   - **`DIAGNOSES.diagnosis_date`** (DATE, NOT NULL) is the date the diagnosis was clinically confirmed.
+   - Filter with a date range on `diagnosis_date`.
+
+2. Use historized (effective-dated) versions of the diagnosis record:
+   - The table includes **`valid_from`** (TIMESTAMP) and **`valid_to`** (TIMESTAMP) to represent time-bounded versions of the record.
+   - Filter using `valid_from`/`valid_to` so you include the diagnosis record version(s) that were valid during your requested period.
+
+3. Exclude logically deleted diagnoses:
+   - Use **`DIAGNOSES.is_deleted`** (BOOLEAN, default FALSE) to filter out soft-deleted records (e.g., keep only rows where `is_deleted = FALSE` / not true). The indexes and table purpose indicate soft delete is used to preserve audit trails.
+
+If you also need patient identifiers (like MRN), join `DIAGNOSES` to **`PATIENTS`** on `DIAGNOSES.patient_id = PATIENTS.patient_id`. Patient identity can be handled using **`PATIENTS.mrn`** (UNIQUE NOT NULL).
+
+Notes from the business rules that affect interpretation:
+- A patient can have **multiple diagnoses on the same date**.
+- Diagnosis classification is stored in **`DIAGNOSES.diagnosis_type`** with allowed values: **`principal`, `comorbidity`, `admitting`, `secondary`**.
+- The schema preserves historical diagnoses for longitudinal tracking.
+
+This knowledge graph provides the schema and how to query it, but it does not include actual diagnosis rows; so I can’t list the patient’s real diagnoses for your specific time window—only how to retrieve them from `DIAGNOSES` using the columns above."
+AB-BEST,03_advanced_healthcare,,Q022,How have a patient's medications changed over time?,temporal,intermediate,True,1.0,0.7,0,,adequate,0,True,"Query medications table for patient_id including historical records (ignore is_deleted and valid_to filters). Return medication_name, dosage, start_date, end_date, valid_from, valid_to. Order by start_date DESC, valid_from DESC. Changes appear as new records with end_date on the old record and start_date on the new record. Supports medication reconciliation.","A patient’s medication history is tracked in the **MEDICATIONS** table using both clinical date ranges and system historization/versioning.
+
+Each time there is a change to a patient’s prescription (for example, a new prescription, dosage/route/frequency change, or discontinuation), the business rules state that “**Prescription changes create new records (historization)**.” This works alongside the general “**Temporal Validity Pattern**,” where major tables keep time-bounded versions using `valid_from` and `valid_to`: current records have `valid_to = NULL`, while historical versions have a non-NULL `valid_to`. To preserve audit trails, records are also soft deleted using `is_deleted`.
+
+Clinically, each medication record has a `start_date` (NOT NULL) and an optional `end_date` (NULL if ongoing). The medication-specific business rule says that “**Active medications have NULL end_date and is_deleted = FALSE**.” Therefore, you can distinguish current versus ended medications by checking `end_date` and `is_deleted`.
+
+Putting this together, to see how medications change over time for a patient, you would query **MEDICATIONS** filtered by `patient_id`, exclude logically deleted rows with `is_deleted = FALSE` (per the Soft Delete Pattern), then reconstruct the timeline using either:
+1) the clinical period (`start_date`/`end_date`), and/or
+2) the historization period (`valid_from`/`valid_to`) to understand how the system’s version of the medication record changed.
+
+Ordering by `valid_from` (or by `start_date`) will show the sequence of medication changes, while keeping `is_deleted` and `valid_to` logic ensures you see the correct “current” record and the archived versions that represent prior states. The schema also supports reconciliation workflows, noting that “**Medication reconciliation [is] required on admission and discharge**,” which is consistent with generating updated medication records as the patient’s care transitions."
+AB-BEST,03_advanced_healthcare,,Q023,What was a provider's department affiliation at a specific past date?,temporal,intermediate,True,1.0,0.7,0,,adequate,0,True,"Query providers table joined to departments on department_id. Filter by provider_id and check temporal validity: valid_from <= historical_date AND (valid_to IS NULL OR valid_to > historical_date). Return provider name, department_name, department_code, and service_line. This reconstructs organizational structure changes for credentialing audits.","A provider’s department affiliation “at a specific past date” is determined from the time-bounded provider record in **`PROVIDERS`**, using its department foreign key and validity period.
+
+In the schema, **`PROVIDERS.department_id`** (FK → **`departments.department_id`**) stores the provider’s “Primary department affiliation,” and **`PROVIDERS`** includes historization columns **`valid_from`** and **`valid_to`**. Departments themselves are also time-bounded via **`departments.valid_from`** and **`departments.valid_to`**.
+
+To find the department affiliation at date `:target_date`, you would:
+1. Filter **`PROVIDERS`** to the provider row whose validity window contains `:target_date`, typically `:target_date` between **`PROVIDERS.valid_from`** and **`PROVIDERS.valid_to`**.
+2. Optionally exclude logically deleted/inactive rows using **`PROVIDERS.is_deleted`** and **`PROVIDERS.is_active`** (the table defines these fields and related “active/non-deleted” indexes).
+3. Join **`PROVIDERS.department_id`** to **`departments.department_id`** to get department details like **`department_name`** / **`department_code`**.
+4. Apply the same date validity filters to **`departments`** (using **`departments.valid_from`** and **`departments.valid_to`**), and optionally **`departments.is_deleted`** / **`departments.is_active`**.
+
+Important: **`PROVIDERS.department_id`** is nullable, so some provider records may have no department affiliation; those would not match a department join unless `department_id` is populated.
+
+Using this approach, the department you return is the one whose **`department_id`** was linked from the provider record that was valid on `:target_date`."
+AB-BEST,03_advanced_healthcare,,Q024,Show all changes to a patient's primary insurance coverage over time.,temporal,intermediate,True,1.0,0.7,0,,adequate,0,True,"Query patients table joined to insurance_plans on primary_insurance_id. Include historical records by not filtering on valid_to. Return mrn, patient name, plan_name, payer_name, plan_type, valid_from, valid_to. Order by valid_from DESC. Insurance changes appear as new patient records with updated primary_insurance_id and historized timestamps.","The schema tracks changes to a patient’s primary insurance through historized versions of the **PATIENTS** record.
+
+In **PATIENTS**, the current/historical primary coverage is stored in **primary_insurance_id** (an FK to **insurance_plans.plan_id**). **PATIENTS** also uses the Temporal Validity Pattern with **valid_from** and **valid_to** plus **is_deleted** (soft delete). This means that when a patient’s primary insurance changes, the patient will have multiple **PATIENTS** rows over time, each with a different **primary_insurance_id** and its own **valid_from/valid_to** time window.
+
+To show all changes over time, retrieve all **PATIENTS** historized rows for the target patient (typically filtered by **patient_id**; you can also identify the patient by **mrn**, since **mrn** is unique), then order by **valid_from**. For each version, return **primary_insurance_id**, **valid_from**, **valid_to**, and (optionally) **is_deleted**. To display readable insurance details for each change, join to **INSURANCE_PLANS** on **PATIENTS.primary_insurance_id = INSURANCE_PLANS.plan_id** and include fields like **plan_name** and **payer_name**.
+
+Conceptually, the data lineage is:
+PATIENTS (primary_insurance_id, valid_from, valid_to) → INSURANCE_PLANS (plan_id → plan_name, payer_name, plan_type, etc.) using the FK **PATIENTS.primary_insurance_id → insurance_plans.plan_id**.
+
+The schema-level convention for historization queries is that “current” records use **valid_to IS NULL** and deleted records use **is_deleted = FALSE**; for “over time” you would instead inspect the full set of **PATIENTS** versions across **valid_from/valid_to** (the context does not prescribe a specific filter choice for including soft-deleted historical versions, so you’d typically follow the standard **is_deleted = FALSE** unless you explicitly need deleted history)."
+AB-BEST,03_advanced_healthcare,,Q025,What diagnoses were resolved within a specific time period?,temporal,intermediate,True,1.0,0.7,0,,adequate,0,True,"Query diagnoses table where resolution_date IS NOT NULL and resolution_date falls within the date range. Include patient_id, icd_10_code, diagnosis_name, diagnosis_date, resolution_date, and provider. Join to patients for names. Filter for current records (is_deleted = FALSE, valid_to IS NULL). This supports outcomes analysis and closed episode reporting.","The **DIAGNOSES** table records when a diagnosis is considered resolved using the **`resolution_date`** column (a **DATE** that is **nullable**; it is **NULL if ongoing**).
+
+To determine which diagnoses were resolved within a specific time period, you filter DIAGNOSES rows where `resolution_date` falls inside your time window, and (optionally) exclude soft-deleted records using `is_deleted`.
+
+At minimum, the selection criteria are:
+`DIAGNOSES.resolution_date BETWEEN :start_date AND :end_date` and `DIAGNOSES.resolution_date IS NOT NULL`, with `DIAGNOSES.is_deleted = FALSE` if you only want non-deleted rows (the table uses a soft-delete flag with indexes that filter on `is_deleted = FALSE`).
+
+If you also want patient and provider context, you can join using the foreign keys defined in the context:
+join **patients** on `DIAGNOSES.patient_id = patients.patient_id`, and join **providers** on `DIAGNOSES.provider_id = providers.provider_id`.
+
+Because the retrieved context contains the schema/column definitions but not the underlying data rows, I can’t list the actual diagnosis instances resolved in your chosen time period—but the query logic above is the mechanism to retrieve them."
+AB-BEST,03_advanced_healthcare,,Q026,Reconstruct a patient's active medications as of a specific historical date.,temporal,advanced,True,1.0,0.7,0,,adequate,0,True,"Query medications for patient_id where: (1) start_date <= historical_date AND (end_date IS NULL OR end_date > historical_date) for medication active period, AND (2) valid_from <= historical_date AND (valid_to IS NULL OR valid_to > historical_date) for record validity. Return medication_name, dosage, route, frequency, and prescribing provider. This shows what medications were active at that point in time.","To reconstruct a patient’s **active medications as of a specific historical date** (a parameter `:as_of_date`), use the **MEDICATIONS** table’s two time concepts plus soft-delete:
+
+1) **Record historization window** using `valid_from` / `valid_to` (temporal validity pattern).
+2) **Medication clinical activity window** using `start_date` / `end_date` (medication prescriptions’ active date range).
+3) **Soft-delete filter** using `is_deleted = FALSE` (soft delete pattern).
+
+The MEDICATIONS table supports this directly with `patient_id`, `start_date`, `end_date`, `is_deleted`, and `valid_from`/`valid_to`. Business rules also state: “Active medications have NULL end_date and is_deleted = FALSE,” which aligns with current active therapy; for an “as-of” date you additionally need the `start_date`/`end_date` range.
+
+Example query (start from `patient_id`):
+
+```sql
+SELECT
+  m.medication_id,
+  m.medication_name,
+  m.ndc_code,
+  m.dosage,
+  m.route,
+  m.frequency,
+  m.prescribing_provider_id,
+  m.start_date,
+  m.end_date
+FROM MEDICATIONS m
+WHERE m.patient_id = :patient_id
+  AND m.is_deleted = FALSE
+  -- medication record version active on the historical date
+  AND m.valid_from <= :as_of_date
+  AND (m.valid_to IS NULL OR m.valid_to > :as_of_date)
+  -- medication therapy active on the historical date
+  AND m.start_date <= :as_of_date
+  AND (m.end_date IS NULL OR m.end_date >= :as_of_date);
+```
+
+If you instead start from MRN, use **PATIENTS** to get the `patient_id`:
+
+```sql
+SELECT p.patient_id
+FROM PATIENTS p
+WHERE p.mrn = :mrn
+  AND p.is_deleted = FALSE
+  AND p.valid_to IS NULL;  -- current patient record
+```
+
+Then plug that `patient_id` into the MEDICATIONS query above.
+
+This returns all medication rows for that patient whose **data version** was valid on `:as_of_date` (`valid_from`/`valid_to`) and whose **therapy period** covered `:as_of_date` (`start_date`/`end_date`), excluding logically deleted records (`is_deleted = FALSE`)."
+AB-BEST,03_advanced_healthcare,,Q027,Count the number of patients per department without exposing individual patient identities.,privacy_focused,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join appointments to departments on department_id. Group by department_id, department_name, service_line. Count DISTINCT patient_id for privacy (prevents counting multiple appointments per patient). Filter by appointment_date range and exclude canceled/no-show status. Return aggregated counts only—no patient identifiers. Follows HIPAA minimum necessary standard.","You can count patients per department using only the aggregate count of distinct `patient_id` values, without selecting any patient-identifying columns (like `mrn`, `first_name`, `last_name`, `phone`, etc.).
+
+Using appointments as the patient-to-department link (from `APPOINTMENTS.department_id` and `APPOINTMENTS.patient_id`):
+
+Join path: `APPOINTMENTS a` → `PATIENTS p` on `p.patient_id = a.patient_id`.
+
+SQL (returns only `department_id` and the count of distinct patients):
+
+```sql
+SELECT
+  a.department_id,
+  COUNT(DISTINCT a.patient_id) AS patient_count
+FROM APPOINTMENTS a
+JOIN PATIENTS p
+  ON p.patient_id = a.patient_id
+WHERE a.is_deleted = FALSE
+  AND p.is_deleted = FALSE
+GROUP BY a.department_id;
+```
+
+This avoids exposing individual patient identities because the query does not output any patient-level fields—only the department-level aggregated count.
+
+If you want the department-based count based on where treatments occurred instead, the same pattern applies with `TREATMENTS.department_id` and `TREATMENTS.patient_id` (both tables include `is_deleted` flags in the context)."
+AB-BEST,03_advanced_healthcare,,Q028,What are the most common diagnoses (by count) without linking to specific patients?,privacy_focused,simple,True,1.0,0.7,0,,adequate,0,True,"Query diagnoses table grouped by icd_10_code and diagnosis_name. COUNT(*) each diagnosis. Order by count DESC. Return only icd_10_code, diagnosis_name, and count—no patient identifiers, MRNs, or names. Optionally filter by diagnosis_date range. This epidemiological analysis follows HIPAA de-identification standards by aggregating without direct identifiers.","To find the most common diagnoses **by count without linking to specific patients**, use the **DIAGNOSES** table and aggregate over diagnosis identifiers while ignoring `patient_id`.
+
+In the **DIAGNOSES** schema, each diagnosis record is a row identified by `diagnosis_id` and characterized by `icd_10_code`, `diagnosis_name`, and `diagnosis_type`. The table also has a soft-delete flag `is_deleted` (default `FALSE`), and indexes support filtering by `is_deleted = FALSE`.
+
+Example query pattern:
+
+```sql
+SELECT
+    d.icd_10_code,
+    d.diagnosis_name,
+    d.diagnosis_type,
+    COUNT(*) AS diagnosis_count
+FROM DIAGNOSES d
+WHERE d.is_deleted = FALSE
+GROUP BY
+    d.icd_10_code,
+    d.diagnosis_name,
+    d.diagnosis_type
+ORDER BY diagnosis_count DESC;
+```
+
+This counts the number of diagnosis **rows** for each distinct diagnosis (as defined by the grouped columns) across all patients, because it does not select or group by `patient_id`."
+AB-BEST,03_advanced_healthcare,,Q029,Which providers have the highest patient volume without exposing patient information?,privacy_focused,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join appointments to providers on provider_id. Group by provider_id, provider name, NPI, specialty, department. COUNT DISTINCT patient_id for unique patient count (not appointment count). Filter by appointment_date range and completed status. Return only provider information and aggregated counts—no patient names or MRNs. Supports capacity planning while protecting privacy.","I can’t tell you which specific providers rank highest because the retrieved context contains only schema/metadata (table structures and column rules), not the underlying appointment/treatment/diagnosis records needed to calculate patient-volume counts.
+
+However, the schema supports computing “patient volume” per provider without exposing patient information by aggregating only patient_id counts (returning only provider fields and the aggregate).
+
+If you define patient volume as “number of unique patients the provider had appointments with,” use **APPOINTMENTS** (it has both `provider_id` and `patient_id`) joined to **PROVIDERS**:
+
+```sql
+SELECT
+  p.provider_id,
+  p.first_name,
+  p.last_name,
+  COUNT(DISTINCT a.patient_id) AS patient_volume
+FROM providers p
+JOIN appointments a
+  ON a.provider_id = p.provider_id
+WHERE
+  p.is_deleted = FALSE
+  AND p.is_active = TRUE
+  AND a.is_deleted = FALSE
+  AND a.valid_to IS NULL
+  AND p.valid_to IS NULL
+GROUP BY p.provider_id, p.first_name, p.last_name
+ORDER BY patient_volume DESC;
+```
+
+If instead you define patient volume as “number of unique patients the provider treated,” use **TREATMENTS** (it also has `provider_id` and `patient_id`):
+
+```sql
+SELECT
+  p.provider_id,
+  p.first_name,
+  p.last_name,
+  COUNT(DISTINCT t.patient_id) AS patient_volume
+FROM providers p
+JOIN treatments t
+  ON t.provider_id = p.provider_id
+WHERE
+  p.is_deleted = FALSE
+  AND p.is_active = TRUE
+  AND t.is_deleted = FALSE
+  AND t.valid_to IS NULL
+  AND p.valid_to IS NULL
+GROUP BY p.provider_id, p.first_name, p.last_name
+ORDER BY patient_volume DESC;
+```
+
+Both approaches avoid exposing patient information because the query does not select any patient fields—only counts of distinct `patient_id` are used for aggregation."
+AB-BEST,03_advanced_healthcare,,Q030,What is the average claim payment amount by insurance plan type?,privacy_focused,intermediate,True,1.0,0.7,0,,adequate,0,True,"Join claims to insurance_plans on insurance_plan_id. Group by plan_type (commercial, medicare, medicaid, tricare, self_pay). Calculate AVG(amount_paid) and AVG(amount_charged). Filter by service_date range and claim_status = 'approved' or 'partially_paid'. Return only plan_type and aggregated averages—no patient identifiers, specific plan names, or claim details. Supports financial benchmarking.","You can calculate the average claim payment amount by insurance plan type using the **CLAIMS** table and **INSURANCE_PLANS** table.
+
+The needed fields are:
+- **CLAIMS.amount_paid** (the “Amount actually paid by payer” for each claim; stored as DECIMAL with a default of `0.00`)
+- **CLAIMS.insurance_plan_id** (NOT NULL; FK to **INSURANCE_PLANS.plan_id**)
+- **INSURANCE_PLANS.plan_type** (VARCHAR(20); values include `commercial`, `medicare`, `medicaid`, `tricare`, `self_pay`)
+
+Because both tables support soft delete and effective dating, include filters to work with the current, active records:
+- **CLAIMS.is_deleted = FALSE** and **CLAIMS.valid_to IS NULL**
+- **INSURANCE_PLANS.is_deleted = FALSE** and **INSURANCE_PLANS.valid_to IS NULL**
+
+Join path:
+- `CLAIMS.insurance_plan_id = INSURANCE_PLANS.plan_id`
+
+Then aggregate:
+- group by `INSURANCE_PLANS.plan_type` and compute `AVG(CLAIMS.amount_paid)`.
+
+Example SQL (based strictly on the schema described in the context):
+
+```sql
+SELECT
+  ip.plan_type,
+  AVG(c.amount_paid) AS avg_claim_payment_amount
+FROM claims c
+JOIN insurance_plans ip
+  ON c.insurance_plan_id = ip.plan_id
+WHERE c.is_deleted = FALSE
+  AND c.valid_to IS NULL
+  AND ip.is_deleted = FALSE
+  AND ip.valid_to IS NULL
+GROUP BY ip.plan_type
+ORDER BY ip.plan_type;
+```
+
+Note: the knowledge graph context provides the schema/columns needed, but it does not include any actual claim/payment values, so it cannot directly output numeric averages—only the calculation logic."
