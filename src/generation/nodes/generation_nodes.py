@@ -44,8 +44,8 @@ def _has_priority_structure_tokens(text: str) -> bool:
 def _compose_generation_chunks(
     query: str,
     chunks: list[RetrievedChunk],
-    max_core: int = 7,
-    max_support: int = 5,
+    max_core: int | None = None,
+    max_support: int | None = None,
 ) -> list[RetrievedChunk]:
     """Build a balanced context window for answer generation.
 
@@ -59,6 +59,10 @@ def _compose_generation_chunks(
     if not chunks:
         return []
 
+    settings = get_settings()
+    _max_core = max_core if max_core is not None else settings.generation_max_core_chunks
+    _max_support = max_support if max_support is not None else settings.generation_max_support_chunks
+
     terms = _query_terms(query)
 
     def _priority(chunk: RetrievedChunk) -> tuple[int, int, int, float]:
@@ -70,7 +74,7 @@ def _compose_generation_chunks(
         return (keyword_hits, has_structure, source_rank, float(chunk.score))
 
     ranked = sorted(chunks, key=_priority, reverse=True)
-    target = max_core + max_support
+    target = _max_core + _max_support
 
     source_caps: dict[str, int] = {
         "vector": min(6, target),
@@ -103,8 +107,8 @@ def _compose_generation_chunks(
             selected.append(chunk)
             selected_ids.add(chunk.node_id)
 
-    core = selected[:max_core]
-    support = selected[max_core:target]
+    core = selected[:_max_core]
+    support = selected[_max_core:target]
     return core + support
 
 

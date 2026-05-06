@@ -88,7 +88,7 @@ def _split_oversized_cluster(
 
     # Re-cluster with a tighter threshold (step up by 0.05 each iteration)
     threshold = base_threshold + get_settings().er_threshold_step
-    max_iterations = 5
+    max_iterations = get_settings().er_recluster_max_iterations
 
     for _ in range(max_iterations):
         # Fresh Union-Find on sub-matrix
@@ -118,7 +118,7 @@ def _split_oversized_cluster(
         all_ok = all(len(g) <= max_size for g in sub_groups.values())
         if all_ok:
             break
-        threshold += 0.05
+        threshold += get_settings().er_threshold_step
 
     # Build EntityCluster objects from the sub-groups
     result: list[EntityCluster] = []

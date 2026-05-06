@@ -57,7 +57,7 @@ def _entity_from_table(concept_name: str, table: EnrichedTableSchema) -> Entity:
         or table.comment
         or ""
     )
-    provenance_text = (table.ddl_source or "")[:400].strip()
+    provenance_text = (table.ddl_source or "")[:get_settings().provenance_max_chars].strip()
     return Entity(
         name=concept_name,
         definition=definition,

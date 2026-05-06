@@ -110,7 +110,7 @@ def _extract_from_sentence(sentence: str, chunk_index: int) -> list[Triplet]:
                     predicate="related_to",
                     object=tokens[1],
                     provenance_text=sentence,
-                    confidence=0.35,
+                    confidence=get_settings().heuristic_fallback_confidence,
                     source_chunk_index=chunk_index,
                 )
             )
@@ -144,7 +144,7 @@ def _extract_from_spacy_sentence(sent, chunk_index: int) -> list[Triplet]:
                 predicate=predicate,
                 object=obj,
                 provenance_text=sentence,
-                confidence=0.60,
+                confidence=get_settings().heuristic_spacy_confidence,
                 source_chunk_index=chunk_index,
             )
         ]

@@ -40,7 +40,6 @@ logger: logging.Logger = get_logger(__name__)
 _NODE_INDEX_CACHE: list[dict[str, Any]] | None = None
 _NODE_INDEX_EXPIRY: float = 0.0
 _NODE_INDEX_LOCK: threading.Lock = threading.Lock()
-_NODE_INDEX_TTL: int = 3600  # seconds
 
 
 def invalidate_bm25_cache() -> None:
@@ -96,7 +95,7 @@ def build_node_index(client: Neo4jClient) -> list[dict[str, Any]]:
 
     with _NODE_INDEX_LOCK:
         _NODE_INDEX_CACHE = all_nodes
-        _NODE_INDEX_EXPIRY = time.monotonic() + _NODE_INDEX_TTL
+        _NODE_INDEX_EXPIRY = time.monotonic() + get_settings().bm25_cache_ttl_seconds
 
     return all_nodes
 
@@ -167,7 +166,7 @@ def vector_search(
 def attribute_vector_search(
     query: str,
     client: Neo4jClient,
-    top_k: int = 5,
+    top_k: int | None = None,
     model=None,
     query_vector: list[float] | None = None,
 ) -> list[RetrievedChunk]:
@@ -176,6 +175,8 @@ def attribute_vector_search(
     Returns Attribute nodes as RetrievedChunks with ``source_type="vector"``
     and ``node_type="Attribute"``.
     """
+    settings = get_settings()
+    k: int = top_k if top_k is not None else settings.retrieval_attribute_top_k
     qv: list[float] = query_vector if query_vector is not None else embed_text(query, model=model)
 
     cypher = (
@@ -187,7 +188,7 @@ def attribute_vector_search(
         "node.is_fk AS is_fk, node.fk_target AS fk_target, "
         "score, 'Attribute' AS node_type"
     )
-    records = client.execute_cypher(cypher, {"k": top_k, "embedding": qv})
+    records = client.execute_cypher(cypher, {"k": k, "embedding": qv})
 
     chunks: list[RetrievedChunk] = []
     for rec in records:
@@ -306,13 +307,14 @@ def graph_traversal(
     if not seed_names:
         return []
 
+    limit = settings.retrieval_graph_traversal_limit
     cypher = (
         f"MATCH (start)-[r*1..{d}]-(neighbor) "
         "WHERE start.name IN $seed_names OR start.table_name IN $seed_names "
         "RETURN COALESCE(neighbor.name, neighbor.table_name) AS name, "
         "COALESCE(neighbor.definition, neighbor.table_name, '') AS definition, "
         "labels(neighbor)[0] AS node_type, type(r[0]) AS rel_type "
-        "LIMIT 30"
+        f"LIMIT {limit}"
     )
     records = client.execute_cypher(cypher, {"seed_names": seed_names})
 

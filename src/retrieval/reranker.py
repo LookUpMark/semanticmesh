@@ -105,8 +105,9 @@ def _enrich_text_for_reranking(chunk: RetrievedChunk) -> str:
     Short BC/graph chunks (e.g. "Customer Master: Primary record...")  get low
     reranker scores because there's not enough text. Prepend context info.
     """
+    settings = get_settings()
     text = chunk.text
-    if len(text) < 200 and chunk.node_type not in ("ParentChunk", "Chunk"):
+    if len(text) < settings.reranker_short_text_threshold and chunk.node_type not in ("ParentChunk", "Chunk"):
         prefix_parts: list[str] = []
         if chunk.node_type and chunk.node_type != "Unknown":
             prefix_parts.append(chunk.node_type)

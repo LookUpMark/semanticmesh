@@ -198,11 +198,11 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
             log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks=1 structured", "proceed_with_warning", timer.elapsed_ms)
             return {"retrieval_gate_decision": "proceed_with_warning"}
 
-        if sufficiency == "adequate" and top_score >= 0.2:
+        if sufficiency == "adequate" and top_score >= settings.retrieval_gate_proceed_threshold:
             log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count}", "proceed", timer.elapsed_ms)
             return {"retrieval_gate_decision": "proceed"}
 
-        if top_score < 0.02 and not has_structural_evidence and chunk_count <= 2:
+        if top_score < settings.retrieval_gate_abstain_threshold and not has_structural_evidence and chunk_count <= 2:
             logger.info(
                 "Retrieval gate: near-zero score (%.4f) without structural evidence (chunks=%d); abstaining early.",
                 top_score,
@@ -211,7 +211,7 @@ def _node_retrieval_quality_gate(state: QueryState) -> dict[str, Any]:
             log_node_event(logger, "retrieval_quality_gate", f"score={top_score:.4f} chunks={chunk_count}", "abstain_early", timer.elapsed_ms)
             return {"retrieval_gate_decision": "abstain_early"}
 
-        if top_score < 0.05 and has_structural_evidence:
+        if top_score < settings.retrieval_gate_structural_threshold and has_structural_evidence:
             logger.info(
                 "Retrieval gate: low-score but structural evidence present (chunks=%d); proceeding with warning.",
                 chunk_count,

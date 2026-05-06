@@ -75,6 +75,22 @@ class TestBuildQueryGraph:
 
 
 class TestNodeReranking:
+    def _mock_settings(self, **overrides) -> MagicMock:
+        defaults = {
+            "enable_reranker": True,
+            "reranker_top_k": 5,
+            "diversity_inject_score": 0.15,
+            "diversity_boost_min_score": 0.10,
+            "sparse_sufficiency_threshold": 0.15,
+            "pool_confidence_min_size": 8,
+            "pool_confidence_floor": 0.70,
+            "pool_confidence_ceiling": 0.75,
+            "post_rerank_expansion_score": 0.05,
+            "enable_post_rerank_expansion": False,
+        }
+        defaults.update(overrides)
+        return MagicMock(**defaults)
+
     def _chunk(self, name: str, score: float) -> RetrievedChunk:
         return RetrievedChunk(
             node_id=name,
@@ -86,9 +102,7 @@ class TestNodeReranking:
         )
 
     def test_keeps_all_valid_ranked_chunks(self) -> None:
-        settings = MagicMock()
-        settings.enable_reranker = True
-        settings.reranker_top_k = 5
+        settings = self._mock_settings()
 
         with (
             patch("src.generation.nodes.retrieval_nodes.get_settings", return_value=settings),
@@ -107,9 +121,7 @@ class TestNodeReranking:
 
     def test_quality_score_boosted_for_large_pool(self) -> None:
         """When pool >= 8 and top_score < 0.75, quality_score boosted to 0.70."""
-        settings = MagicMock()
-        settings.enable_reranker = True
-        settings.reranker_top_k = 5
+        settings = self._mock_settings()
 
         # Rerank returns chunks with low scores
         reranked = [self._chunk(f"C{i}", 0.55 - i * 0.05) for i in range(5)]
@@ -127,9 +139,7 @@ class TestNodeReranking:
 
     def test_quality_score_not_boosted_when_high(self) -> None:
         """When top_score >= 0.75, no boost is applied."""
-        settings = MagicMock()
-        settings.enable_reranker = True
-        settings.reranker_top_k = 5
+        settings = self._mock_settings()
 
         reranked = [self._chunk("A", 0.85), self._chunk("B", 0.4)]
         input_chunks = [self._chunk(f"I{i}", 0.1) for i in range(12)]
@@ -145,9 +155,7 @@ class TestNodeReranking:
 
     def test_quality_score_not_boosted_for_small_pool(self) -> None:
         """When pool < 8, no boost is applied (even if score < 0.75)."""
-        settings = MagicMock()
-        settings.enable_reranker = True
-        settings.reranker_top_k = 5
+        settings = self._mock_settings()
 
         reranked = [self._chunk("A", 0.45)]
         input_chunks = [self._chunk(f"I{i}", 0.1) for i in range(5)]
@@ -162,9 +170,7 @@ class TestNodeReranking:
             assert out["retrieval_quality_score"] == pytest.approx(0.45)
 
     def test_returns_empty_when_no_valid_chunks(self) -> None:
-        settings = MagicMock()
-        settings.enable_reranker = True
-        settings.reranker_top_k = 5
+        settings = self._mock_settings()
 
         bad_chunk = RetrievedChunk(
             node_id="",
@@ -186,9 +192,7 @@ class TestNodeReranking:
             assert out["context_sufficiency"] == "insufficient"
 
     def test_prefilters_noisy_heuristic_chunks(self) -> None:
-        settings = MagicMock()
-        settings.enable_reranker = False
-        settings.reranker_top_k = 5
+        settings = self._mock_settings(enable_reranker=False)
 
         noisy = RetrievedChunk(
             node_id="Customers",

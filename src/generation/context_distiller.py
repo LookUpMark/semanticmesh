@@ -11,6 +11,7 @@ import re
 
 import tiktoken
 
+from src.config.settings import get_settings
 from src.models.schemas import RetrievedChunk
 
 _TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
@@ -69,8 +70,8 @@ def _distill_text(chunk: RetrievedChunk) -> str:
 def distill_context_chunks(
     query: str,
     chunks: list[RetrievedChunk],
-    max_chunks: int = 12,
-    token_budget: int = 8192,
+    max_chunks: int | None = None,
+    token_budget: int | None = None,
 ) -> list[RetrievedChunk]:
     """Return cleaned and de-duplicated chunk list for answer generation.
 
@@ -81,27 +82,33 @@ def distill_context_chunks(
     Args:
         query:        Natural-language query string.
         chunks:       Retrieved and optionally reranked chunks (order preserved).
-        max_chunks:   Hard upper bound on number of chunks returned (default 12).
+        max_chunks:   Hard upper bound on number of chunks returned.
+                      Defaults to ``settings.generation_max_context_chunks``.
                       Pass ``0`` or a very large number to rely solely on the
                       token budget.
-        token_budget: Soft upper bound on total context tokens (default 8 192).
+        token_budget: Soft upper bound on total context tokens.
+                      Defaults to ``settings.generation_token_budget``.
                       A chunk that would push the total over budget is skipped
                       rather than truncated so every included chunk is verbatim.
     """
     if not chunks:
         return []
 
+    settings = get_settings()
+    effective_max_chunks = max_chunks if max_chunks is not None else settings.generation_max_context_chunks
+    effective_token_budget = token_budget if token_budget is not None else settings.generation_token_budget
+
     out: list[RetrievedChunk] = []
     seen_text: set[str] = set()
     used_tokens: int = 0
-    effective_max = max_chunks if max_chunks > 0 else len(chunks)
+    effective_max = effective_max_chunks if effective_max_chunks > 0 else len(chunks)
     for chunk in chunks:
         distilled_text = _distill_text(chunk)
         key = distilled_text.lower()
         if key in seen_text:
             continue
         chunk_tokens = len(_TOKENIZER.encode(distilled_text))
-        if used_tokens + chunk_tokens > token_budget:
+        if used_tokens + chunk_tokens > effective_token_budget:
             continue  # skip oversized chunks rather than truncating
         seen_text.add(key)
         out.append(

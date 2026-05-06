@@ -299,17 +299,17 @@ def propose_mapping_heuristic(
         bonus = 0.0
 
         if name.upper() in table_column_names:
-            penalty += 0.25
+            penalty += settings.mapping_column_name_penalty
         if re.fullmatch(r"[A-Z0-9_]{4,}", name) and "_" in name:
-            penalty += 0.20
+            penalty += settings.mapping_code_pattern_penalty
         if lower_name in generic_noise_tokens:
-            penalty += 0.20
+            penalty += settings.mapping_noise_token_penalty
         if len(name_tokens) > 8 or len(name_tokens) == 0:
-            penalty += 0.10
+            penalty += settings.mapping_token_count_penalty
 
         overlap = len(set(name_tokens) & table_tokens)
         if overlap:
-            bonus += min(0.12, overlap * 0.04)
+            bonus += min(settings.mapping_overlap_bonus_max, overlap * settings.mapping_overlap_bonus_per_token)
 
         adjusted = max(0.0, min(1.0, base_confidence - penalty + bonus))
 
@@ -328,7 +328,7 @@ def propose_mapping_heuristic(
         fallback_name = _normalize_candidate_name(table.enriched_table_name or table.table_name)
         if fallback_name and not _is_attribute_like(fallback_name):
             mapped_concept = fallback_name
-            best_confidence = max(best_confidence, max(0.0, threshold - 0.05))
+            best_confidence = max(best_confidence, max(0.0, threshold - settings.er_threshold_step))
 
     if mapped_concept is not None:
         mapped_concept = normalize_concept_name(mapped_concept)

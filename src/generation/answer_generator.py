@@ -176,7 +176,7 @@ def generate_answer(
 
     elif _is_partial_abstention(answer) and chunks:
         top_score = max(float(c.score) for c in chunks)
-        if top_score >= 0.15:
+        if top_score >= get_settings().partial_abstention_score_threshold:
             logger.info(
                 "Partial abstention detected (chunks=%d, top_score=%.3f) — requesting synthesis from available evidence.",
                 len(chunks),

@@ -264,13 +264,13 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         if top_pool_parent:
             reranked_ids = {c.node_id for c in candidates}
             if top_pool_parent.node_id not in reranked_ids:
-                candidates.append(top_pool_parent.model_copy(update={"score": 0.15}))
+                candidates.append(top_pool_parent.model_copy(update={"score": settings.diversity_inject_score}))
                 logger.info("Diversity inject: '%s' (top pool parent, reranker dropped)", top_pool_parent.node_id)
             else:
                 for i, cand in enumerate(candidates):
-                    if cand.node_id == top_pool_parent.node_id and cand.score < 0.10:
-                        candidates[i] = cand.model_copy(update={"score": 0.15})
-                        logger.info("Diversity boost: '%s' %.4f->0.15", top_pool_parent.node_id, cand.score)
+                    if cand.node_id == top_pool_parent.node_id and cand.score < settings.diversity_boost_min_score:
+                        candidates[i] = cand.model_copy(update={"score": settings.diversity_inject_score})
+                        logger.info("Diversity boost: '%s' %.4f->%.2f", top_pool_parent.node_id, cand.score, settings.diversity_inject_score)
                         break
 
         valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
@@ -291,7 +291,7 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
             }
 
         top_score = float(valid[0].score)
-        if len(valid) == 1 and top_score < 0.15:
+        if len(valid) == 1 and top_score < settings.sparse_sufficiency_threshold:
             sufficiency = "sparse"
         else:
             sufficiency = "adequate"
@@ -311,7 +311,7 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
                     ]
                     if new_neighbors:
                         for nc in new_neighbors:
-                            nc.score = 0.05
+                            nc.score = settings.post_rerank_expansion_score
                         valid = valid + new_neighbors
                         logger.debug("Post-rerank expansion added %d neighbor chunks", len(new_neighbors))
             except Exception:
@@ -324,8 +324,8 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         # absolute score suggests (CE scores are known to be low on technical
         # multi-section content like data dictionaries).
         quality_score = top_score
-        if len(pool) >= 8 and top_score < 0.75:
-            quality_score = max(top_score, 0.70)
+        if len(pool) >= settings.pool_confidence_min_size and top_score < settings.pool_confidence_ceiling:
+            quality_score = max(top_score, settings.pool_confidence_floor)
 
         return {
             "reranked_chunks": valid,

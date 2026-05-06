@@ -13,12 +13,13 @@ from typing import Any
 
 from neo4j import GraphDatabase, ManagedTransaction, Result
 
+from src.config.config import DEFAULT_CONFIG
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 
 logger: logging.Logger = get_logger(__name__)
 
-_EMBEDDING_DIMENSION: int = 1024
+_EMBEDDING_DIMENSION: int = DEFAULT_CONFIG.embedding_dimensions
 
 # Singleton driver — reused across all Neo4jClient instances.
 _driver_lock = Lock()
