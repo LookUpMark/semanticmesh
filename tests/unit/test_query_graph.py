@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from src.generation.nodes.expansion_nodes import _node_context_distillation
 from src.generation.nodes.generation_nodes import (
     _compose_generation_chunks,
@@ -102,6 +104,62 @@ class TestNodeReranking:
             assert out["retrieval_chunk_count"] == 2
             assert out["context_sufficiency"] == "adequate"
             assert out["retrieval_filtered_by_threshold"] is False
+
+    def test_quality_score_boosted_for_large_pool(self) -> None:
+        """When pool >= 10 and top_score < 0.70, quality_score boosted to 0.65."""
+        settings = MagicMock()
+        settings.enable_reranker = True
+        settings.reranker_top_k = 5
+
+        # Rerank returns chunks with low scores
+        reranked = [self._chunk(f"C{i}", 0.55 - i * 0.05) for i in range(5)]
+        # 12 input chunks → pool >= 10
+        input_chunks = [self._chunk(f"I{i}", 0.1) for i in range(12)]
+
+        with (
+            patch("src.generation.nodes.retrieval_nodes.get_settings", return_value=settings),
+            patch("src.generation.nodes.retrieval_nodes.rerank", return_value=reranked),
+        ):
+            state = {"user_query": "q", "retrieved_chunks": input_chunks}
+            out = _node_rerank(state)
+            # top_score = 0.55 < 0.70, pool = 12 >= 10 → quality_score = 0.65
+            assert out["retrieval_quality_score"] == pytest.approx(0.65)
+
+    def test_quality_score_not_boosted_when_high(self) -> None:
+        """When top_score >= 0.70, no boost is applied."""
+        settings = MagicMock()
+        settings.enable_reranker = True
+        settings.reranker_top_k = 5
+
+        reranked = [self._chunk("A", 0.85), self._chunk("B", 0.4)]
+        input_chunks = [self._chunk(f"I{i}", 0.1) for i in range(12)]
+
+        with (
+            patch("src.generation.nodes.retrieval_nodes.get_settings", return_value=settings),
+            patch("src.generation.nodes.retrieval_nodes.rerank", return_value=reranked),
+        ):
+            state = {"user_query": "q", "retrieved_chunks": input_chunks}
+            out = _node_rerank(state)
+            # top_score = 0.85 >= 0.70 → no boost
+            assert out["retrieval_quality_score"] == pytest.approx(0.85)
+
+    def test_quality_score_not_boosted_for_small_pool(self) -> None:
+        """When pool < 10, no boost is applied (even if score < 0.70)."""
+        settings = MagicMock()
+        settings.enable_reranker = True
+        settings.reranker_top_k = 5
+
+        reranked = [self._chunk("A", 0.45)]
+        input_chunks = [self._chunk(f"I{i}", 0.1) for i in range(5)]
+
+        with (
+            patch("src.generation.nodes.retrieval_nodes.get_settings", return_value=settings),
+            patch("src.generation.nodes.retrieval_nodes.rerank", return_value=reranked),
+        ):
+            state = {"user_query": "q", "retrieved_chunks": input_chunks}
+            out = _node_rerank(state)
+            # pool = 5 < 10 → no boost, raw score
+            assert out["retrieval_quality_score"] == pytest.approx(0.45)
 
     def test_returns_empty_when_no_valid_chunks(self) -> None:
         settings = MagicMock()
