@@ -106,8 +106,8 @@ def _discover_unjudged(
 
     for study in studies:
         for ds in datasets:
-            bundle_path = BASE / study / ds / "evaluation_bundle.json"
-            judge_path = BASE / study / ds / "ai_judge.md"
+            bundle_path = BASE / study / "datasets" / ds / "evaluation_bundle.json"
+            judge_path = BASE / study / "datasets" / ds / "ai_judge.md"
             if not bundle_path.exists():
                 continue
             if not force and judge_path.exists():
