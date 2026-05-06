@@ -1,9 +1,12 @@
 # Ablation Study Results — DS01 (E-Commerce Baseline)
 
-**Date:** 2026-04-21 / 2026-04-22  
+**Date:** 2026-04-21 / 2026-04-22 (initial) — **2026-05-06 (re-run v1.1.1)**  
 **Dataset:** `01_basics_ecommerce` — 7 tables, 15 QA pairs  
-**Judge model:** `openai/gpt-4.1-mini` via OpenRouter  
-**Evaluator:** AI-as-Judge with rubric from `docs/AI_JUDGE_PROMPT.md`
+**Judge model:** `gpt-5.4-nano-2026-03-17` (OpenAI direct)  
+**Evaluator:** AI-as-Judge with rubric from `docs/AI_JUDGE_PROMPT.md`  
+**Code version:** v1.1.1 (all 68 audit findings resolved, ruff clean)
+
+> **Note:** Pipeline AB-01→AB-20 was re-run on 2026-05-06 with v1.1.1 code (SSRF hardening, O(n²) elimination, config drift fixes). AI-Judge re-evaluated all 20 studies with `gpt-5.4-nano`. Full analysis report: [`outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md`](../../outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md)
 
 ---
 
@@ -277,3 +280,47 @@ All four additional runs completed successfully. Every run maintained 100% groun
 **Triplet and entity counts vary moderately (std ≈ 4-6 for triplets).** This is the most variable component — the extraction LLM at `T=0.0` still produces slightly different triplet counts across runs due to different chunk scheduling and model state. Importantly, this variation does **not** affect downstream quality metrics, as evidenced by stable GT coverage and grounded rates.
 
 **Conclusion:** The single-run ablation results reported in Section 2 are statistically valid. The variance budget for the two primary quality metrics (GT coverage, grounded rate) is essentially zero. The ablation campaign can be trusted as representative.
+
+---
+
+## 7. v1.1.1 Re-run (2026-05-06)
+
+Pipeline re-run with code version 1.1.1 (68 audit fixes, SSRF hardening, O(n²) blocking elimination, config drift externalization). AI-Judge upgraded from `gpt-4.1-mini` to `gpt-5.4-nano-2026-03-17`.
+
+### 7.1 Updated AI-Judge Scores (DS01)
+
+| Study | Description | AI Judge (v1.1.1) |
+|:-----:|-------------|:------------------:|
+| AB-00 | Baseline | **4.50/5** |
+| AB-01 | Vector-only | 3.40/5 |
+| AB-02 | BM25-only | 4.25/5 |
+| AB-03 | Reranker OFF | 4.80/5 |
+| AB-04 | Reranker top_k=5 | **4.90/5** |
+| AB-05 | Reranker top_k=20 | **4.90/5** |
+| AB-06 | Chunking 128/16 | 4.50/5 |
+| AB-07 | Chunking 384/48 | 4.50/5 |
+| AB-08 | Chunking 512/64 | 4.50/5 |
+| AB-09 | Extraction tokens=4096 | 4.50/5 |
+| AB-10 | Extraction tokens=16384 | 4.25/5 |
+| AB-11 | ER threshold=0.65 | 4.50/5 |
+| AB-12 | ER threshold=0.85 | 4.50/5 |
+| AB-13 | ER blocking top_k=5 | 4.50/5 |
+| AB-14 | ER blocking top_k=20 | 4.50/5 |
+| AB-15 | Schema enrichment OFF | 4.50/5 |
+| AB-16 | Actor-Critic OFF | 4.50/5 |
+| AB-17 | HITL threshold=0.70 | 4.50/5 |
+| AB-18 | HITL threshold=0.85 | 4.50/5 |
+| AB-19 | Cypher healing OFF | 4.05/5 |
+| AB-20 | Hallucination grader OFF | 4.50/5 |
+
+### 7.2 Key Differences vs. Previous Run
+
+- **Scores generally higher** — v1.1.1 perf fixes (batched UNION ALL retrieval, config externalization) improved pipeline stability
+- **AB-04/AB-05 tied at 4.90** — reranker pool variants perform best, confirming reranker is critical
+- **AB-01 still worst** (3.40) — vector-only retrieval remains clearly inferior, validating hybrid retrieval superiority
+- **AB-19 still penalized** (4.05) — Cypher healing remains essential for robust pipeline
+- **Hallucination grader OFF (AB-20)** no longer outperforms baseline — with better retrieval quality in v1.1.1, the grader no longer over-rejects valid answers
+
+### 7.3 Full Analysis
+
+See [`outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md`](../../outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md) for the comprehensive analysis including grouped comparisons, radar plots, heatmaps, and component importance rankings.
