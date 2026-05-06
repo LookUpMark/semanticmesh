@@ -7,300 +7,252 @@
 # Ablation Study Evaluation: AB-BEST — 02_intermediate_finance
 
 ## Executive Summary
-This run shows **strong end-to-end correctness**: the builder completed all 8 tables with **no Cypher failures** and **0 failed mappings**, and the query graph produced **grounded answers for 100% of 25 questions** with high average GT source coverage (**0.969**) and strong top retrieval confidence (**avg_top_score=0.710**). The only notable weakness is **granularity/match depth** on a few conceptual questions (e.g., APR vs APY and interest-rate governance), where retrieval coverage can be partial (as low as **0.667** and **0.75**) even though responses remain largely accurate.
+This run demonstrates **excellent end-to-end correctness**: the builder completed all 8 tables with **no cypher failures or failed mappings**, and the query stage produced **25/25 grounded answers** with **gt_coverage=1.0 across the board**. The main concern is not faithfulness but **specific semantic completeness and granularity** on a couple of questions (e.g., “Frozen” meaning for cards; “standard customers” ATM limit), where the generated answers correctly use schema-supported facts but omit parts that the expected answer assumes are derivable from glossary/business rules.
 
 ## Scores
 
 | Dimension | Score (1-5) | Weight | Weighted |
 |---|---:|---:|---:|
 | Builder Quality | 5 | 25% | 1.25 |
-| Retrieval Effectiveness | 5 | 25% | 1.25 |
+| Retrieval Effectiveness | 4 | 25% | 1.00 |
 | Answer Quality | 4 | 30% | 1.20 |
 | Pipeline Health | 5 | 10% | 0.50 |
 | Ablation Impact | N/A | 10% | 0.00 |
-| **Overall** |  |  | **4.20** |
+| **Overall** |  |  | **3.95** |
 
 ## Dimension Analysis
 
-### 1. Builder Quality (5/5)
+### 1) Builder Quality (5/5)
 - `tables_parsed=8`, `tables_completed=8`, `all_tables_completed=true`
 - `cypher_failed=false`, `failed_mappings=[]`, `ingestion_errors=[]`
-- Triplet extraction density looks healthy: `triplets_extracted=251` and `entities_resolved=228` (no obvious ER collapse; ratio ~1.10 triplets/entity, which is acceptable for intermediate schema docs, especially since the dataset uses rich data dictionaries + glossary text).
-**Verdict:** Builder graph is functioning correctly, with no recovery paths needed.
+- Triplet density signal (qualitative): `triplets_extracted=192`, `entities_resolved=199` is not obviously problematic; there are no builder-side failures.
+**Verdict:** Builder graph construction is fully functional and stable.
 
-### 2. Retrieval Effectiveness (5/5)
-- Query-level metrics:  
-  - `grounded_rate=1.0` (25/25 grounded)  
-  - `avg_gt_coverage=0.9687` (very high)  
-  - `avg_top_score=0.7098` (healthy reranker confidence)
-  - `abstained_count=0`, consistent with non-negative questions dominating (only 2 negative in distribution)
-- No question had `questions_with_low_retrieval_score` (pipeline_health says 0).
-**Verdict:** Retrieval + reranking are reliably bringing the right sources.
+### 2) Retrieval Effectiveness (4/5)
+- Global retrieval stats:  
+  - `grounded_rate=1.0`, `avg_gt_coverage=1.0` (all questions retrieve the ground-truth concept/sources)
+  - `avg_top_score=0.7098` (strong)
+- However, retrieval quality varies per-question (bundle shows some `retrieval_quality_score` values as low as ~0.65). Even when grounded, weaker retrieval can still lead to **missing nuance** (e.g., definitions that require glossary interpretation, or “standard customers” implying a customer segmentation not explicitly present in retrieved contexts).
+**Verdict:** Retrieval is reliably correct for the required facts, but not always sufficient for “extra” semantic constraints the expected answers assume.
 
-### 3. Answer Quality (4/5)
-Overall groundedness is perfect, and most answers are **semantically aligned** to the expected schema/glossary definitions. However, a few answers show **depth or specificity gaps** relative to expected “explain the difference” prompts:
-- **Best examples (correct, well-specified):** Q1 (checking account definition), Q12 (current vs available balance), Q13/15/16 (multi-hop linkage/ownership), Q10 (balance_after), Q23/24 (negative questions—both correctly framed as schema-behavior, not hallucinated claims).
-- **Minor/medium gaps (still grounded but slightly under-specified):**
-  - **Q2 (Savings vs Money Market):** generated answer concludes the distinction is not specified beyond `account_type`; this conflicts with expected answer that cites glossary examples/rates for APY and compounding. The response is grounded but seems to miss the glossary rate examples (GT coverage is only **0.6667** for Q3, and while Q2’s gt_coverage isn’t shown as a low outlier here, its narrative omits expected APY/rate details).
-  - **Q4 (“KYC Level 2”):** correctly says Level2 meaning is not defined, aligning with expected “specific requirements not detailed”; this is a good “abstain-in-words” style.
-  - **Q17 (interest rates across deposit vs loan):** expected says Promotional/penalty examples should be included; generated captures the APR/APY storage split and amortization/monthly crediting, but only partially emphasizes promotional/penalty and deposit APY framing (its gt_coverage is **0.8**).
-**Verdict:** High quality overall, but some questions require more glossary-specific nuance.
+### 3) Answer Quality (4/5)
+- `grounded_count=25` with `grader_rejection_count=0` indicates the Self-RAG hallucination grader did not find hallucinations.
+- But expected-vs-generated alignment shows **a few omissions**:
+  - Q7 (“standard customers” ATM limit): system answers default `atm_daily_limit=500` and then abstains from interpreting “standard customers” meaning. Expected answer assumes a definition (standard debit card example).
+  - Q9 (“Frozen” meaning): generated answer only restates that “Frozen” is an allowed status; expected answer expects operational meaning (temporary suspension vs blocked, consistent with glossary wording).
+  - Q14/Q24 (transaction lifecycle / failed/cancelled): answers are grounded and mostly correct, but some lifecycle-process detail is not explicitly captured (Q14 explicitly notes lack of process rules).
+**Verdict:** Mostly correct and grounded; minor incompleteness on interpretation/operational semantics.
 
-### 4. Pipeline Health (5/5)
-- `total_grader_rejections=0`, `grader_inconsistencies=0`, `gate_abstentions=0`
-- `cypher_failed=false`, `failed_mappings_count=0`, `ingestion_errors_count=0`
-- Latency fields are `0` in both builder/query report; this looks like instrumentation not captured, but no stability failures are reported.
-**Verdict:** Pipeline is stable and did not require healing/regeneration loops.
+### 4) Pipeline Health (5/5)
+- `total_grader_rejections=0`, `grader_inconsistencies=0`
+- `gate_abstentions=0`, `cypher_failed=false`, `failed_mappings_count=0`, `ingestion_errors_count=0`
+**Verdict:** Healthy pipeline with no self-healing/repair needed.
 
-### 5. Ablation Impact (N/A)
-This bundle is `study_id=AB-BEST` but the provided JSON does **not include a baseline AB-00 or explicit ablation flag diffs** (e.g., enable_reranker=false, retrieval_mode switching). Therefore causal ablation impact cannot be evaluated per rubric.
-
----
-
-## Dimension Analysis: Answer Quality Deep Dive (worst 3 & best 3)
-
-### Best 3 questions
-- **Q12 (current_balance vs available_balance): CORRECTLY meets expected distinction**  
-  - Generated matches: pending-inclusive vs excludes holds.
-  - `gt_coverage=1.0`, `grounded=true`.
-- **Q10 (transactions impact via balance_after): CORRECT**  
-  - Generated uses `balance_after` correctly and mentions account linkage and balance effect logic.
-  - `gt_coverage=1.0`, `retrieval_quality_score=0.723`.
-- **Q13 (loans linked to customers & accounts): CORRECT multi-hop**  
-  - Correctly states `customer_id` required, `account_id` nullable, and join paths.
-  - `gt_coverage=1.0`.
-
-### Worst 3 questions (by expected-answer alignment)
-- **Q2 (Savings vs Money Market difference): PARTIALLY_CORRECT**  
-  - The answer argues no operational differences beyond `account_type`; expected explicitly cites **glossary interest examples and APY tiers**. This suggests **under-retrieval or under-utilization of glossary rate examples**.
-- **Q17 (interest rates across deposit and loan products): PARTIALLY_CORRECT**  
-  - Captures storage split + APR/APY concepts and amortization/monthly crediting, but doesn’t fully operationalize the expected promotional/penalty examples as a “how it’s governed” narrative.
-  - `gt_coverage=0.8`.
-- **Q23 (negative: can an account exist without customer): CORRECTLY_ABSTAINED**  
-  - This is actually correct, but it’s one of the “most complex reasoning-for-negative” cases; it correctly answers based on **schema constraints** lacking mandatory customer_account coverage.
-  - (Including it as “worst” would be unfair; instead, it’s a strength.)
-
-Given this, the overall “4/5” is driven primarily by **Q2 and Q17 nuance gaps**, not by grounding failures.
+### 5) Ablation Impact (N/A)
+- `study_id=AB-BEST` is provided, but the bundle does **not include baseline (AB-00) comparison metadata** or explicit ablation toggles vs baseline. Therefore causal ablation impact cannot be evaluated per rubric.
+- Also, the `config` field uses `chunk_size:128` and `enable_reranker:true`, but no “disabled/changed flags” are specified relative to a named baseline.
 
 ---
 
 ## Per-Question Deep Dive
 
 ### 1: What is a checking account?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECT
-- **Expected:** Checking is an account_type; glossary definition of Account; balances/fees/interest_rate nullable; subtype optional; debit card linkage rules mentioned.
-- **Generated:** Correctly defines checking as `accounts` where `account_type='Checking'` + Account attributes/status; mentions allowed account_type set.
-- **Analysis:** Matches expected definition and schema constraints; includes relevant schema fields.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** Checking account definition; account_type='Checking' (CHECK constraint); attributes; possible subtypes (Premium/Standard); debit card link rules.  
+- **Generated:** Correctly defines Checking as `accounts.account_type='Checking'` and lists balances, interest_rate nullability, monthly_fee, status; does not emphasize debit-card linkage but still aligns with schema definition.  
+- **Analysis:** Schema-grounded definition matches expected content.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.7098, gate=proceed
 
 ### 2: What is the difference between a savings account and a money market account?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** PARTIALLY_CORRECT
-- **Expected:** Both are defined in accounts; glossary Interest examples with APY tiers/compounding; shared fields exist.
-- **Generated:** Says distinction is not specified beyond `account_type`; notes interest_rate nullable but does not provide the expected APY/tier/compounding differences.
-- **Analysis:** Grounded but misses glossary-specific rate/compounding differentiation required by expected answer.
-- **Retrieval:** gt_coverage not provided in the snippet for Q2; grounded=true; gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** Both are account types; differing APY examples (Standard/Premium Savings vs Money Market 0.75% tiered).  
+- **Generated:** Correctly states account_type distinction and uses glossary interest examples; clarifies “no other differences beyond classification and interest examples.”  
+- **Analysis:** Matches expected interest-difference framing.  
+- **Retrieval:** gt_coverage=1.0, top_score ~ (not listed per-question in your bundle; overall avg_top_score applies), gate=proceed
 
 ### 3: What is APR versus APY?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECT
-- **Expected:** APR for loans incl. examples; APY for deposits including compounding and typically higher.
-- **Generated:** Correct APR/APY conceptual mapping and includes example values.
-- **Analysis:** Strong alignment with glossary and loan/account examples.
-- **Retrieval:** gt_coverage=0.6667, top_score=0.9609, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** APR for loans; APY for deposits incl compounding; APY higher when compounding; examples.  
+- **Generated:** Correct definitions and uses loan APR + deposit APY compounding examples.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 4: What is KYC Level 2?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** PARTIALLY_CORRECT
-- **Expected:** Level2 is an allowed value; Level1/Level3 meanings stated; Level2 requirements not detailed.
-- **Generated:** Correctly states Level2 is allowed but does not define specific meaning.
-- **Analysis:** Effectively answers “not detailed,” but expected implies some contextual placement between Level1 and Level3; overall still close.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** KYC levels are allowed values; Level1 min, Level3 required for high-value; Level2 not detailed.  
+- **Generated:** Correctly states it’s an allowed value and that specifics beyond Level1/Level3 aren’t provided.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 5: How does the schema support different account subtypes and their varying requirements?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECT
-- **Expected:** account_subtype provides finer differentiation; account_type CHECK defines broad categories; min_balance/monthly_fee governs requirements.
-- **Generated:** Explains subtype column (nullable), and nullable/conditional interest; mentions min_balance/monthly_fee and defaults.
-- **Analysis:** Matches expected intent; slightly over-expands conditionality but consistent with schema.
-- **Retrieval:** gt_coverage not shown; grounded=true; gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** account_subtype differentiates within account_type; minimum_balance/monthly_fee business rule; interest_rate nullability.  
+- **Generated:** Correctly explains account_type vs account_subtype and uses defaults/nullability; mentions status too.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 6: What types of loan products does the bank offer?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECT
-- **Expected:** Mortgage, Personal, Auto, HELOC, CreditCard; tied to CHECK constraint.
-- **Generated:** Lists all five loan_type values.
-- **Analysis:** Correct and concise.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** Mortgage, Personal, Auto, HELOC, CreditCard (CHECK); glossary examples + notes on rates/collateral/defaults.  
+- **Generated:** Lists the five types correctly; omits detailed glossary examples but still matches the key fact (“types offered”).  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 7: What is the daily ATM withdrawal limit for standard customers?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECTLY_ABSTAINED
-- **Expected:** atm_daily_limit default 500; glossary examples for card types; “standard customers” relationship not explicit.
-- **Generated:** States atm_daily_limit=500 but cannot confirm “standard customers” mapping; abstains in-sentence.
-- **Analysis:** Correct handling of the missing population definition.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** atm_daily_limit default $500; “standard customer” implied by glossary example (standard debit card $500).  
+- **Generated:** Correctly states `CARDS.atm_daily_limit` default = **500.00** but says it can’t confirm “standard customers” meaning beyond default.  
+- **Analysis:** This is semantically close, but expected answer assumes “standard” mapping exists; system did not assert it.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 8: What is the difference between a parent account and a child account?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECT
-- **Expected:** parent_account_id NULL vs references; CHECK prevents circular refs; glossary says portfolio aggregation (investment parent contains child).
-- **Generated:** Matches hierarchy and constraints.
-- **Analysis:** Strong.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** parent_account_id self-reference; top-level NULL; child references parent; CHECK prevents self-parenting.  
+- **Generated:** Correct and complete.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 9: What does the status 'Frozen' mean for a card?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** PARTIALLY_CORRECT
-- **Expected:** Frozen is distinct from Blocked and implies temporary suspension; glossary hints lost/stolen -> blocked, expired -> renewed.
-- **Generated:** Only enumerates status values and says it doesn’t define operational meaning in retrieved context.
-- **Analysis:** Likely under-specified relative to expected “meaning operationally.”
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** Frozen is an operationally meaningful suspension (glossary distinguishes Frozen vs Blocked; “temporary or reversible”).  
+- **Generated:** Only states “Frozen” is an allowed status in `cards.status`; explicitly says it doesn’t define meaning.  
+- **Analysis:** Grounded but misses the expected operational interpretation.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 10: How does the transactions table track the impact of each transaction on account balances?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECT
-- **Expected:** balance_after captures effect; debit/credit semantics and status lifecycle.
-- **Generated:** Uses balance_after + account_id link.
-- **Analysis:** Correct; doesn’t repeat debit/credit rule, but expected is satisfied by balance_after tracking.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7230, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** balance_after records balance after transaction; debit/credit impact + status rules (posted final; failed no balance effect).  
+- **Generated:** Correctly explains balance_after and account_id linkage; does not deeply restate debit/credit impact or failed/no-effect.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 11: How does the customer_account junction table support multiple ownership types?
-- **Type:** direct_mapping | **Difficulty:** Medium
-- **Verdict:** CORRECT
-- **Expected:** relationship_type CHECK supports 4 types; is_primary and ownership_percentage semantics.
-- **Generated:** Matches all key elements.
-- **Analysis:** Strong.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9865, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Medium  
+- **Verdict:** CORRECT  
+- **Expected:** relationship_type roles; composite PK; is_primary + ownership_percentage; linked/unlinked dates.  
+- **Generated:** Correctly explains all these.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 12: What is the difference between current_balance and available_balance in the accounts table?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECT
-- **Expected:** current includes pending; available excludes holds/pending; glossary confirms.
-- **Generated:** Matches definitions directly.
-- **Analysis:** Excellent.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9016, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** current includes pending; available excludes holds/pending; glossary confirms.  
+- **Generated:** Correct and aligned.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 13: How are loans linked to both customers and accounts in the schema?
-- **Type:** multi_hop | **Difficulty:** Medium
-- **Verdict:** CORRECT
-- **Expected:** loans.customer_id required -> customers; loans.account_id optional -> accounts.
-- **Generated:** Correct join logic and nullability.
-- **Analysis:** Correct multi-hop.
-- **Retrieval:** gt_coverage=1.0, top_score=0.8105, gate=proceed
+- **Type:** multi_hop | **Difficulty:** Medium  
+- **Verdict:** CORRECT  
+- **Expected:** loans.customer_id FK to customers; loans.account_id optional FK to accounts.  
+- **Generated:** Correctly states customer_id NOT NULL and account_id nullable; includes optional linking semantics.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 14: What types of transactions does the system support and how does their status lifecycle work?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** PARTIALLY_CORRECT
-- **Expected:** 7 transaction types; 5 statuses; glossary explains transition semantics at least for effect rules.
-- **Generated:** Correctly lists types/statuses/default pending but states it can’t define how transitions occur.
-- **Analysis:** Missing “lifecycle work” explanation beyond enumeration.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** transaction_type list + full status semantics (including posted final, failed audit-only/no balance impact) and business lifecycle behavior.  
+- **Generated:** Correctly lists types and allowed statuses + default Pending, but says process/rules for lifecycle transitions aren’t specified.  
+- **Analysis:** Likely under-communicated glossary semantics for “posted/failed effects.”  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 15: How does the schema support joint account ownership between multiple customers?
-- **Type:** multi_hop | **Difficulty:** Medium
-- **Verdict:** CORRECT
-- **Expected:** customer_account many-to-many; relationship_type includes JointOwner; ownership_percentage + is_primary.
-- **Generated:** Correctly explains composite PK and relationship_type semantics.
-- **Analysis:** Strong.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** multi_hop | **Difficulty:** Medium  
+- **Verdict:** CORRECT  
+- **Expected:** customer_account many-to-many; relationship_type roles; ownership_percentage; is_primary; linked/unlinked dates.  
+- **Generated:** Correct and detailed.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 16: What information does the cards table track and how are cards linked to customers and accounts?
-- **Type:** direct_mapping | **Difficulty:** Medium
-- **Verdict:** CORRECT
-- **Expected:** link FKs + tracked fields + defaults + security + lifecycle statuses.
-- **Generated:** Comprehensive and correct.
-- **Analysis:** Strong.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9528, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Medium  
+- **Verdict:** CORRECT  
+- **Expected:** fields + FKs; limits + security flags + status lifecycle.  
+- **Generated:** Correctly lists all major columns/flags and FKs.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 17: How does the schema handle interest rates across deposit and loan products?
-- **Type:** multi_hop | **Difficulty:** Hard
-- **Verdict:** PARTIALLY_CORRECT
-- **Expected:** accounts.interest_rate/APY compounding; loans.interest_rate APR; deposit credited monthly; loan interest amortized; promotional/penalty examples.
-- **Generated:** Correct storage split + monthly crediting/amortized interest; promotional/penalty only lightly covered.
-- **Analysis:** Mostly correct but misses some expected governance details/examples.
-- **Retrieval:** gt_coverage=0.8, top_score=0.65, gate=proceed
+- **Type:** multi_hop | **Difficulty:** Hard  
+- **Verdict:** CORRECT  
+- **Expected:** accounts.interest_rate (nullable), loans.interest_rate (APR), glossary rules for APR/APY + monthly crediting vs amortization.  
+- **Generated:** Correctly separates deposit vs loan rate storage and amortization/interest rules.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 18: What types of branches does the bank operate and how do they differ in capabilities?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECT
-- **Expected:** FullService vs Satellite vs ATMOnly capabilities (loan origination/no loan officers/no staff).
-- **Generated:** Correct capability distinctions at a high level.
-- **Analysis:** Matches glossary.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** FullService vs Satellite vs ATMOnly and capability differences.  
+- **Generated:** Correct at high level; includes “no loan officers” for Satellite and “no staff” for ATMOnly.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 19: How are ATMs related to branches in the schema and what types of ATMs exist?
-- **Type:** multi_hop | **Difficulty:** Medium
-- **Verdict:** CORRECT
-- **Expected:** nullable branch_id indicates standalone; atm_type constraint and meaning.
-- **Generated:** Matches nullable FK + atm_type mapping.
-- **Analysis:** Strong.
-- **Retrieval:** gt_coverage=1.0, top_score=0.6996, gate=proceed
+- **Type:** multi_hop | **Difficulty:** Medium  
+- **Verdict:** CORRECT  
+- **Expected:** ATMS.branch_id nullable; atm_type values mapping; glossary replenishment/out-of-cash behavior.  
+- **Generated:** Correctly explains nullable branch_id and atm_type constraints; does not overreach into replenishment/out-of-cash behavior (but still matches key schema facts).  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 20: What is the lifecycle of a loan from application to completion?
-- **Type:** direct_mapping | **Difficulty:** Medium
-- **Verdict:** CORRECT
-- **Expected:** status states + origination/maturity and terminal outcomes.
-- **Generated:** Explains status transitions via status field and default pending.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Medium  
+- **Verdict:** CORRECT  
+- **Expected:** status states + meanings; origination/maturity tracking.  
+- **Generated:** Correctly narrates Pending→Approved→Active→PaidOff/Defaulted with dates/fields.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 21: What does preferred customer status mean and how is it tracked in the schema?
-- **Type:** direct_mapping | **Difficulty:** Medium
-- **Verdict:** CORRECT
-- **Expected:** is_preferred boolean; waived fees/priority.
-- **Generated:** Matches and identifies column + default false.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Medium  
+- **Verdict:** CORRECT  
+- **Expected:** is_preferred flag default false; glossary VIP benefits; relationship to risk_profile/kyc_status.  
+- **Generated:** Correctly explains is_preferred as VIP flag and waived/priority service.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 22: How does the accounts table support interest tracking and what business rules govern interest?
-- **Type:** direct_mapping | **Difficulty:** Medium
-- **Verdict:** CORRECT
-- **Expected:** interest_rate nullable + interest_earned for YTD; monthly crediting; APY compounding; promotional/penalty rules.
-- **Generated:** Covers interest_rate/interest_earned and monthly crediting; promotional/penalty included generally.
-- **Analysis:** Good alignment; gt_coverage indicates partial source alignment (0.75) but answer is correct.
-- **Retrieval:** gt_coverage=0.75, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Medium  
+- **Verdict:** CORRECT  
+- **Expected:** interest_rate nullable + interest_earned YTD; business rules (monthly crediting, APY compounding, promo/penalty).  
+- **Generated:** Correctly covers interest tracking and glossary rules.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 23: Can an account exist without any customer linked to it?
-- **Type:** negative | **Difficulty:** Medium
-- **Verdict:** CORRECTLY_ABSTAINED
-- **Expected:** no schema FK forcing customer_account presence; business rule is application-level.
-- **Generated:** Correctly reasons about absence of constraint requiring customer_account rows; says “yes” from schema perspective.
-- **Analysis:** Correct negative handling.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** negative | **Difficulty:** Medium  
+- **Verdict:** CORRECTLY_ABSTAINED (No abstention output, but correct *reasoning* on negative)  
+- **Expected:** No schema-level constraint requiring customer_account presence; business rule at application level.  
+- **Generated:** Correctly says yes, due to absence of direct FK from accounts to customers and only junction-table enforcement.  
+- **Analysis:** Correctly handles negative question logic.  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 24: How does the schema handle failed or cancelled transactions?
-- **Type:** negative | **Difficulty:** Medium
-- **Verdict:** CORRECT
-- **Expected:** status includes Failed/Cancelled; failed logged for audit but does not affect balance; balance_after reflects no change; preserve audit fields.
-- **Generated:** Correctly states status values + audit trail and balance_after as nullable.
-- **Analysis:** Correct (minor uncertainty about exact “cancelled doesn’t affect balance” is okay given context).
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** negative | **Difficulty:** Medium  
+- **Verdict:** CORRECT  
+- **Expected:** status allows Failed/Cancelled; failed logged for audit but no balance impact; posted final; audit trail preserved.  
+- **Generated:** Correctly explains status values + balance_after nullable; states failed don’t affect balance (grounded).  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ### 25: What operational states can an ATM have and what do they mean for available services?
-- **Type:** direct_mapping | **Difficulty:** Easy
-- **Verdict:** CORRECT
-- **Expected:** Operational/OutOfService/OutOfCash; meanings (no withdrawals for OutOfCash; OutOfService prevents all transactions).
-- **Generated:** Correctly describes states and service implications.
-- **Analysis:** Strong.
-- **Retrieval:** gt_coverage=1.0, top_score=0.65, gate=proceed
+- **Type:** direct_mapping | **Difficulty:** Easy  
+- **Verdict:** CORRECT  
+- **Expected:** Operational vs OutOfService vs OutOfCash; out-of-cash still allows some inquiries; replenishment logic.  
+- **Generated:** Correctly describes operational meaning of states (and capability implications).  
+- **Retrieval:** gt_coverage=1.0, gate=proceed
 
 ---
 
 ## Anomalies & Recommendations
 
 ### Red Flags
-- **Conceptual nuance misses despite groundedness**:  
-  - Q2 and Q17 show that even with perfect grounding and high coverage, the answer can omit **specific glossary examples** expected by the evaluation (APY tiers for savings vs money market; promotional/penalty governance for interest rates).
-- **Low specificity for “operational meaning” questions**:  
-  - Q9 (Frozen meaning) and Q14 (status lifecycle transitions) often default to “not defined in retrieved context,” which may be correct if the glossary truly lacks it—but could also be retrieval granularity.
+- **Under-specification of glossary operational semantics** in a few places (not hallucinations, but missing “meaning”):
+  - Q9 Frozen meaning (expected: operational interpretation) → generated only enum membership.
+  - Q14 transaction lifecycle behavior (expected: semantics like posted final / failed no balance impact) → generated focuses on allowed statuses + default, less on lifecycle rules.
+- **Segmentation-based phrasing (“standard customers”)**: Q7 shows the system can’t map “standard” to a specific card/account archetype when the glossary doesn’t provide an explicit “standard customer” definition in retrieved contexts.
 
 ### Recommendations
-1. **Add a “glossary example retrieval” hinting mechanism** for questions explicitly about differences and definitions (APR/APY, savings vs money market, lifecycle semantics). For example: prioritize *Interest* and *Card* glossary sections even when table docs are retrieved.
-2. **Improve semantic distillation constraints**: current context caps are moderate; for “difference” questions, allocate more budget to glossary sources (vector/bm25/graph caps for glossary docs) to capture rate/tier/operational meaning details.
-3. **Negative question calibration** is good (Q23/Q24), but consider adding a similar “schema vs business rule” template for non-negative definitional questions to reduce under-explaining.
-4. For “operational meaning” fields (e.g., Frozen, Cancelled), consider retrieving any *explicit* business-rule statements; if none exist, enforce a consistent style: “Frozen is a distinct enumerated status, but the schema/glossary does not specify operational effect.”
+1. **Add glossary-to-enum semantic binding prompts**: when questions ask “what does status X mean?”, enforce that the answer must include glossary/behavior language if present; otherwise explicitly say “not defined” (but then expect mismatch reduction).
+2. **Introduce entity/segment mapping for “standard customers”**:
+   - If glossary implies standard vs premium via `account_subtype` or examples, add a deterministic mapping step (or retrieval expansion) that searches for “standard” alongside `cards`/`account_subtype`.
+3. **Improve lifecycle answers with business-rule extraction**:
+   - During answer generation, pull the specific “Business Rules Enforced” sentences that explain state semantics (posted/failed/cancelled impacts), not just enum lists.
 
 ## Comparison Notes (if applicable)
-- Not applicable: baseline ablation (AB-00) and flag differences were not provided in the bundle.
+- Not applicable: no baseline AB-00 bundle comparison data is provided in your `evaluation_bundle.json`, so ablation causality cannot be assessed.

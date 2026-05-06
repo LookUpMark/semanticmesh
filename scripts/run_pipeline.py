@@ -426,13 +426,13 @@ def _run_single(
                         if s:
                             for part in s.split("→"):
                                 norm_retrieved_tokens.update(_ns(part.strip()).split())
-                    # Fallback: if entity_names is empty, extract section headers from
-                    # retrieved contexts (e.g. "## Interest\n\n..." → "interest").
-                    if not norm_retrieved_tokens:
-                        _header_re = _re.compile(r"^##\s+(.+?)(?:\n|$)", _re.MULTILINE)
-                        for chunk in r.get("retrieved_contexts", []):
-                            for header in _header_re.findall(str(chunk)):
-                                norm_retrieved_tokens.update(_ns(header.strip()).split())
+                    # Always extract section headers from retrieved contexts
+                    # (e.g. "## Interest\n\n..." → "interest") to cover glossary
+                    # chunks that appear in context but aren't BC node names.
+                    _header_re = _re.compile(r"^##?\s+(.+?)(?:\n|$)", _re.MULTILINE)
+                    for chunk in r.get("retrieved_contexts", []):
+                        for header in _header_re.findall(str(chunk)):
+                            norm_retrieved_tokens.update(_ns(header.strip()).split())
                     # Partial token overlap: a source is covered if at least one of its
                     # tokens appears in (or is a stem-prefix of) the retrieved token index.
                     for es in expected_sources:

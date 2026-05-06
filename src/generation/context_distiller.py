@@ -75,7 +75,7 @@ def distill_context_chunks(
     query: str,
     chunks: list[RetrievedChunk],
     max_chunks: int = 10,
-    token_budget: int = 3000,
+    token_budget: int = 5000,
 ) -> list[RetrievedChunk]:
     """Return cleaned and de-duplicated chunk list for answer generation.
 
@@ -90,7 +90,7 @@ def distill_context_chunks(
         max_chunks:   Hard upper bound on number of chunks returned (default 10).
                       Pass ``0`` or a very large number to rely solely on the
                       token budget.
-        token_budget: Soft upper bound on total context tokens (default 3 000).
+        token_budget: Soft upper bound on total context tokens (default 5 000).
                       A chunk that would push the total over budget is skipped
                       rather than truncated so every included chunk is verbatim.
     """
