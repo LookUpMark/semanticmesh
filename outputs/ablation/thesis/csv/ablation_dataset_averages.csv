@@ -1,0 +1,7 @@
+dataset_id,n_studies,overall_mean,overall_std,builder_mean,retrieval_mean,answer_mean,pipeline_mean,grounded_rate_mean,avg_gt_coverage_mean
+01_basics_ecommerce,22,4.3682,0.2679,4.9545,3.9545,4.7273,4.8182,0.0,0.0
+02_intermediate_finance,1,4.5,0,5.0,5.0,5.0,5.0,0.0,0.0
+03_advanced_healthcare,1,4.5,0,5.0,5.0,5.0,5.0,0.0,0.0
+04_complex_manufacturing,1,4.5,0,5.0,5.0,5.0,5.0,0.0,0.0
+05_edgecases_incomplete,1,4.5,0,5.0,5.0,5.0,5.0,0.0,0.0
+06_edgecases_legacy,1,4.5,0,5.0,5.0,5.0,5.0,0.0,0.0
