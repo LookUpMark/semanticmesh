@@ -32,7 +32,11 @@ if TYPE_CHECKING:
 logger: logging.Logger = get_logger(__name__)
 
 _DEFAULT_DATASET: Path = (
-    Path(__file__).parent.parent.parent / "tests" / "fixtures" / "01_basics_ecommerce" / "gold_standard.json"
+    Path(__file__).parent.parent.parent
+    / "tests"
+    / "fixtures"
+    / "01_basics_ecommerce"
+    / "gold_standard.json"
 )
 
 _DEFAULT_EVALUATOR_MODEL: str = "gpt-4.1-mini"
@@ -712,7 +716,9 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description="Run RAGAS evaluation on gold-standard dataset")
     parser.add_argument("--dataset", type=Path, default=None, help="Path to gold_standard.json")
-    parser.add_argument("--model", type=str, default=_DEFAULT_EVALUATOR_MODEL, help="Evaluator model")
+    parser.add_argument(
+        "--model", type=str, default=_DEFAULT_EVALUATOR_MODEL, help="Evaluator model"
+    )
     parser.add_argument("--max-samples", type=int, default=None, help="Limit number of samples")
     parser.add_argument("--trace-output", type=Path, default=None, help="JSONL trace output path")
     parser.add_argument("--trace-summary", type=Path, default=None, help="JSON diagnostics path")

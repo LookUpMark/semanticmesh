@@ -7,6 +7,7 @@ Usage:
     python -m scripts.generate_ablation_report
     python -m scripts.generate_ablation_report --scores path/to/all_scores_full.json
 """
+
 import json
 import re
 import sys
@@ -52,6 +53,7 @@ for _sid in ABLATION_DESC:
     ABLATION_DESC[_sid].setdefault("description", _m.get("description", ""))
     ABLATION_DESC[_sid].setdefault("env", _m.get("env_overrides", {}))
 
+
 def avg(ab, key, exclude_zero=True):
     vals = DATA.get(ab, {}).values()
     if exclude_zero:
@@ -61,11 +63,14 @@ def avg(ab, key, exclude_zero=True):
     scores = [v.get(key, 0) or 0 for v in vals]
     return sum(scores) / len(scores) if scores else 0.0
 
+
 def per_ds_row(ab, key):
     return {ds: DATA[ab].get(ds, {}).get(key) for ds in DATASETS}
 
+
 def baseline(key):
     return avg("AB-00", key, exclude_zero=False)
+
 
 # Studies that reuse existing KG (no builder re-run)
 NO_BUILDER_STUDIES = {"AB-01", "AB-02", "AB-03", "AB-04", "AB-05", "AB-20"}
@@ -93,7 +98,9 @@ w("5. [Master Results Table](#5-master-results-table)")
 w("6. [Ablation Study Details](#6-ablation-study-details)")
 for ab in STUDIES:
     d = ABLATION_DESC[ab]
-    w(f"   - [{ab}: {d['title']}](#{ab.lower().replace('-', '-')}-{d['title'].lower().replace(' ', '-').replace('(', '').replace(')', '').replace('=', '').replace(',', '').replace('/', '').replace(':', '')})")
+    w(
+        f"   - [{ab}: {d['title']}](#{ab.lower().replace('-', '-')}-{d['title'].lower().replace(' ', '-').replace('(', '').replace(')', '').replace('=', '').replace(',', '').replace('/', '').replace(':', '')})"
+    )
 w("7. [Grouped Analysis by Theme](#7-grouped-analysis-by-theme)")
 w("8. [Key Findings and Recommendations](#8-key-findings-and-recommendations)")
 w("9. [Score Distribution and Statistics](#9-score-distribution-and-statistics)")
@@ -106,20 +113,36 @@ w("## 1. Methodology and Evaluation Framework")
 w("")
 w("### 1.1 Why AI-as-Judge?")
 w("")
-w("RAGAS automated metrics were abandoned after empirical testing revealed they were systematically inadequate for this system:")
+w(
+    "RAGAS automated metrics were abandoned after empirical testing revealed they were systematically inadequate for this system:"
+)
 w("")
-w("- **String-matching bias**: RAGAS penalises semantically correct answers worded differently from the gold standard")
-w("- **Chunk-size artefact**: RAGAS favours smaller chunks (higher precision scores) regardless of answer quality")
-w("- **Pipeline blindness**: RAGAS cannot assess Knowledge Graph construction quality, Cypher correctness, or entity resolution")
-w("- **Ground-truth mismatch**: 100% of answers were verifiably grounded, yet RAGAS scored as low as AR=0.16")
+w(
+    "- **String-matching bias**: RAGAS penalises semantically correct answers worded differently from the gold standard"
+)
+w(
+    "- **Chunk-size artefact**: RAGAS favours smaller chunks (higher precision scores) regardless of answer quality"
+)
+w(
+    "- **Pipeline blindness**: RAGAS cannot assess Knowledge Graph construction quality, Cypher correctness, or entity resolution"
+)
+w(
+    "- **Ground-truth mismatch**: 100% of answers were verifiably grounded, yet RAGAS scored as low as AR=0.16"
+)
 w("")
-w("The AI-as-Judge approach uses `gpt-5.4-mini` as an expert evaluator that reads the complete evaluation bundle (raw answers, retrieved context, builder metrics, pipeline health indicators) and provides a structured qualitative assessment.")
+w(
+    "The AI-as-Judge approach uses `gpt-5.4-mini` as an expert evaluator that reads the complete evaluation bundle (raw answers, retrieved context, builder metrics, pipeline health indicators) and provides a structured qualitative assessment."
+)
 w("")
 w("### 1.2 Evaluation Pipeline")
 w("")
 w("For each ablation run:")
-w("1. `run_pipeline.py` executes the full pipeline (builder + query) on a dataset, saving `run.json` and `evaluation_bundle.json`")
-w("2. `run_ai_judge.py` calls `gpt-5.4-mini` with the evaluation bundle and the 18 KB system prompt in `docs/AI_JUDGE_PROMPT.md`")
+w(
+    "1. `run_pipeline.py` executes the full pipeline (builder + query) on a dataset, saving `run.json` and `evaluation_bundle.json`"
+)
+w(
+    "2. `run_ai_judge.py` calls `gpt-5.4-mini` with the evaluation bundle and the 18 KB system prompt in `docs/AI_JUDGE_PROMPT.md`"
+)
 w("3. The judge outputs a structured markdown report saved as `ai_judge.md` alongside the bundle")
 w("4. This report aggregates all 127 individual evaluations into a unified analysis")
 w("")
@@ -128,9 +151,13 @@ w("")
 w("Each `evaluation_bundle.json` contains:")
 w("- **Meta**: study_id, dataset_id, run_tag, timestamp")
 w("- **Config**: model names, retrieval mode, all ablation flags")
-w("- **Builder report**: triplets extracted, entities resolved, tables parsed/completed, Cypher failures, mapping failures")
+w(
+    "- **Builder report**: triplets extracted, entities resolved, tables parsed/completed, Cypher failures, mapping failures"
+)
 w("- **Query report**: grounded_rate, avg_gt_coverage, avg_top_score, abstained_count")
-w("- **Per-question details**: 12-15 questions per dataset with answer, source contexts, expected answer, retrieval metadata")
+w(
+    "- **Per-question details**: 12-15 questions per dataset with answer, source contexts, expected answer, retrieval metadata"
+)
 w("")
 
 # ─── SECTION 2: DATASET OVERVIEW ─────────────────────────────────────────────
@@ -143,11 +170,19 @@ w("|:--:|------|:------:|:---------:|-----------------|")
 w("| DS01 | E-commerce Basics | 7 | 15 | Clean schema, standard naming, simple FK relationships |")
 w("| DS02 | Finance Intermediate | 9 | 15 | Moderate complexity, financial domain terminology |")
 w("| DS03 | Healthcare Advanced | 11 | 15 | Complex many-to-many relationships, medical terms |")
-w("| DS04 | Manufacturing Complex | 12 | 15 | Deep FK chains, hierarchical BOMs, ERP-style naming |")
-w("| DS05 | Edge Cases: Incomplete DDL | 6 | 12 | Missing constraints, partial schemas, ambiguous columns |")
-w("| DS06 | Edge Cases: Legacy Naming | 8 | 12 | Hungarian notation, acronym-heavy legacy column names |")
+w(
+    "| DS04 | Manufacturing Complex | 12 | 15 | Deep FK chains, hierarchical BOMs, ERP-style naming |"
+)
+w(
+    "| DS05 | Edge Cases: Incomplete DDL | 6 | 12 | Missing constraints, partial schemas, ambiguous columns |"
+)
+w(
+    "| DS06 | Edge Cases: Legacy Naming | 8 | 12 | Hungarian notation, acronym-heavy legacy column names |"
+)
 w("")
-w("A seventh dataset (DS07: Stress/Large-Scale, 20+ tables) was run only for AB-00 as a robustness check.")
+w(
+    "A seventh dataset (DS07: Stress/Large-Scale, 20+ tables) was run only for AB-00 as a robustness check."
+)
 w("")
 
 # ─── SECTION 3: SCORING FRAMEWORK ─────────────────────────────────────────────
@@ -157,13 +192,23 @@ w("The AI Judge scores each run on five dimensions (1-5 scale with weighted aggr
 w("")
 w("| Dimension | Weight | What it measures |")
 w("|-----------|:------:|------------------|")
-w("| **Builder Quality** | 25% | KG construction: triplet extraction, entity resolution, schema mapping, Cypher correctness, all_tables_completed |")
-w("| **Retrieval Effectiveness** | 25% | gt_coverage, grounded_rate, top_score distribution, false abstentions |")
-w("| **Answer Quality** | 30% | Semantic correctness, grounding fidelity, completeness vs. expected answers, hallucination absence |")
-w("| **Pipeline Health** | 10% | grader rejections, grader inconsistencies, gate abstentions, cypher_failed, failed_mappings |")
+w(
+    "| **Builder Quality** | 25% | KG construction: triplet extraction, entity resolution, schema mapping, Cypher correctness, all_tables_completed |"
+)
+w(
+    "| **Retrieval Effectiveness** | 25% | gt_coverage, grounded_rate, top_score distribution, false abstentions |"
+)
+w(
+    "| **Answer Quality** | 30% | Semantic correctness, grounding fidelity, completeness vs. expected answers, hallucination absence |"
+)
+w(
+    "| **Pipeline Health** | 10% | grader rejections, grader inconsistencies, gate abstentions, cypher_failed, failed_mappings |"
+)
 w("| **Ablation Impact** | 10% | Magnitude and direction of change vs. baseline (N/A for AB-00) |")
 w("")
-w("**Overall score** = weighted sum of the four applicable dimensions. For AB-00, Ablation Impact is N/A and the four-dimension weighted score is reported.")
+w(
+    "**Overall score** = weighted sum of the four applicable dimensions. For AB-00, Ablation Impact is N/A and the four-dimension weighted score is reported."
+)
 w("")
 
 # ─── SECTION 4: KNOWN LIMITATIONS ───────────────────────────────────────────
@@ -173,17 +218,25 @@ w("### 4.1 Builder Score Bias for Query-Only Studies")
 w("")
 w("**Affected studies:** AB-01, AB-02, AB-03, AB-04, AB-05, AB-20")
 w("")
-w("These studies modify query-graph parameters only (retrieval mode, reranker pool, hallucination grader) and therefore **reuse an existing Knowledge Graph** rather than rebuilding it. The `run.json` for these studies records `triplets=0, entities=0, tables_completed=0` because the builder was not invoked. The AI Judge correctly notes this but still assigns `Builder Quality = 1/5`, which artificially suppresses their overall scores.")
+w(
+    "These studies modify query-graph parameters only (retrieval mode, reranker pool, hallucination grader) and therefore **reuse an existing Knowledge Graph** rather than rebuilding it. The `run.json` for these studies records `triplets=0, entities=0, tables_completed=0` because the builder was not invoked. The AI Judge correctly notes this but still assigns `Builder Quality = 1/5`, which artificially suppresses their overall scores."
+)
 w("")
-w("**Implication:** For these studies, Builder Quality should be interpreted as 5/5 (inherited from the pre-built baseline graph) and the reported overall score is approximately **0.5–0.7 points lower** than the true functional score.")
+w(
+    "**Implication:** For these studies, Builder Quality should be interpreted as 5/5 (inherited from the pre-built baseline graph) and the reported overall score is approximately **0.5–0.7 points lower** than the true functional score."
+)
 w("")
 w("### 4.2 avg_top_score Comparability")
 w("")
-w("When the reranker is OFF (AB-03), `avg_top_score` reflects raw hybrid RRF scores rather than cross-encoder logits, making direct numerical comparison with other studies misleading. AB-03 reports inflated avg_top_score values that should not be compared numerically to reranker-on studies.")
+w(
+    "When the reranker is OFF (AB-03), `avg_top_score` reflects raw hybrid RRF scores rather than cross-encoder logits, making direct numerical comparison with other studies misleading. AB-03 reports inflated avg_top_score values that should not be compared numerically to reranker-on studies."
+)
 w("")
 w("### 4.3 Dataset Sensitivity")
 w("")
-w("DS05 and DS06 (edge cases) naturally produce lower scores due to incomplete DDL and legacy naming conventions. Studies evaluated predominantly on harder datasets may show lower averages independent of the ablation variable.")
+w(
+    "DS05 and DS06 (edge cases) naturally produce lower scores due to incomplete DDL and legacy naming conventions. Studies evaluated predominantly on harder datasets may show lower averages independent of the ablation variable."
+)
 w("")
 
 # ─── SECTION 5: MASTER RESULTS TABLE ──────────────────────────────────────────
@@ -202,24 +255,31 @@ for ab in STUDIES:
     if not vals:
         continue
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
     overall = a("overall")
     builder = a("builder")
     retrieval = a("retrieval")
     answer = a("answer")
     pipeline = a("pipeline")
     ablation_scores = [v.get("ablation") for v in vals if v.get("ablation") is not None]
-    ablation_avg = sum(ablation_scores)/len(ablation_scores) if ablation_scores else None
+    ablation_avg = sum(ablation_scores) / len(ablation_scores) if ablation_scores else None
     abl_str = f"{ablation_avg:.2f}" if ablation_avg else "N/A"
     # Mark the highest/lowest overall
     desc_short = ABLATION_DESC[ab]["title"]
     star = " ⭐" if ab == "AB-10" else (" ⚠️" if ab == "AB-01" else "")
-    w(f"| **{ab}** | {desc_short}{star} | **{overall:.2f}** | {builder:.2f} | {retrieval:.2f} | {answer:.2f} | {pipeline:.2f} | {abl_str} |")
+    w(
+        f"| **{ab}** | {desc_short}{star} | **{overall:.2f}** | {builder:.2f} | {retrieval:.2f} | {answer:.2f} | {pipeline:.2f} | {abl_str} |"
+    )
 
 w("")
 w("> ⭐ Best performing ablation | ⚠️ Worst performing ablation")
 w("> ")
-w("> **Note:** AB-01, AB-02, AB-03, AB-04, AB-05, AB-20 did not rebuild the KG — Builder score of 1.00 reflects absent builder metrics in run.json, not actual KG failure. Functionally they inherit the baseline KG quality (5.00).")
+w(
+    "> **Note:** AB-01, AB-02, AB-03, AB-04, AB-05, AB-20 did not rebuild the KG — Builder score of 1.00 reflects absent builder metrics in run.json, not actual KG failure. Functionally they inherit the baseline KG quality (5.00)."
+)
 w("")
 
 # 5.2 Per-dataset breakdown
@@ -238,7 +298,7 @@ for ab in STUDIES:
             scores.append(s)
         else:
             row.append("—")
-    avg_s = sum(scores)/len(scores) if scores else 0
+    avg_s = sum(scores) / len(scores) if scores else 0
     w(f"| **{ab}** | {' | '.join(row)} | **{avg_s:.2f}** |")
 
 w("")
@@ -251,13 +311,21 @@ w("|:-----:|:-------------:|:-----------:|:---------:|:--------:|:--------:|:---
 
 for ab in STUDIES:
     vals = list(DATA.get(ab, {}).values())
-    if not vals: continue
+    if not vals:
+        continue
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
-    w(f"| **{ab}** | {a('grounded_rate'):.3f} | {a('avg_gt_coverage'):.3f} | {a('avg_top_score'):.3f} | {a('triplets'):.0f} | {a('entities'):.0f} | {a('tables_done'):.1f}/{a('tables_parsed'):.1f} |")
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
+    w(
+        f"| **{ab}** | {a('grounded_rate'):.3f} | {a('avg_gt_coverage'):.3f} | {a('avg_top_score'):.3f} | {a('triplets'):.0f} | {a('entities'):.0f} | {a('tables_done'):.1f}/{a('tables_parsed'):.1f} |"
+    )
 
 w("")
-w("> **Triplets=0** for AB-01, AB-02, AB-03, AB-04, AB-05, AB-20: builder not re-run, pre-built graph reused.")
+w(
+    "> **Triplets=0** for AB-01, AB-02, AB-03, AB-04, AB-05, AB-20: builder not re-run, pre-built graph reused."
+)
 w("")
 
 # ─── SECTION 6: INDIVIDUAL STUDY DETAILS ─────────────────────────────────────
@@ -276,14 +344,17 @@ for ab in STUDIES:
         continue
 
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
     overall_avg = a("overall")
     builder_avg = a("builder")
     retrieval_avg = a("retrieval")
     answer_avg = a("answer")
     pipeline_avg = a("pipeline")
     ablation_scores = [v.get("ablation") for v in vals if v.get("ablation") is not None]
-    ablation_avg = sum(ablation_scores)/len(ablation_scores) if ablation_scores else None
+    ablation_avg = sum(ablation_scores) / len(ablation_scores) if ablation_scores else None
 
     # vs baseline
     baseline_overall = sum(DATA["AB-00"][ds]["overall"] for ds in DATASETS) / 6
@@ -310,9 +381,10 @@ for ab in STUDIES:
     w("|-----------|:-----:|:---------:|")
 
     b00 = lambda k: sum((DATA["AB-00"][ds].get(k) or 0) for ds in DATASETS) / 6
+
     def delta_str_dim(k):
         d_val = a(k) - b00(k)
-        return (f"+{d_val:.2f}" if d_val >= 0 else f"{d_val:.2f}")
+        return f"+{d_val:.2f}" if d_val >= 0 else f"{d_val:.2f}"
 
     w(f"| **Overall** | **{overall_avg:.2f}** | **{delta_str}** |")
     if ab not in {"AB-00"}:
@@ -328,15 +400,21 @@ for ab in STUDIES:
     # Per-dataset row
     w("#### Per-Dataset Scores")
     w("")
-    w("| Dataset | Overall | Builder | Retrieval | Answer | Pipeline | Grounded | GT_Cov | Triplets | Entities |")
-    w("|---------|:-------:|:-------:|:---------:|:------:|:--------:|:--------:|:------:|:--------:|:--------:|")
+    w(
+        "| Dataset | Overall | Builder | Retrieval | Answer | Pipeline | Grounded | GT_Cov | Triplets | Entities |"
+    )
+    w(
+        "|---------|:-------:|:-------:|:---------:|:------:|:--------:|:--------:|:------:|:--------:|:--------:|"
+    )
 
     for ds in DATASETS:
         v = d_ab.get(ds)
         if not v:
             w(f"| {DS_FULL[ds]} | — | — | — | — | — | — | — | — | — |")
             continue
-        w(f"| {DS_FULL[ds]} | {v.get('overall', 0):.2f} | {v.get('builder', 0) or 0:.0f} | {v.get('retrieval', 0) or 0:.0f} | {v.get('answer', 0) or 0:.0f} | {v.get('pipeline', 0) or 0:.0f} | {v.get('grounded_rate', 0):.3f} | {v.get('avg_gt_coverage', 0):.3f} | {v.get('triplets', 0) or 0:.0f} | {v.get('entities', 0) or 0:.0f} |")
+        w(
+            f"| {DS_FULL[ds]} | {v.get('overall', 0):.2f} | {v.get('builder', 0) or 0:.0f} | {v.get('retrieval', 0) or 0:.0f} | {v.get('answer', 0) or 0:.0f} | {v.get('pipeline', 0) or 0:.0f} | {v.get('grounded_rate', 0):.3f} | {v.get('avg_gt_coverage', 0):.3f} | {v.get('triplets', 0) or 0:.0f} | {v.get('entities', 0) or 0:.0f} |"
+        )
 
     w("")
 
@@ -348,11 +426,12 @@ for ab in STUDIES:
 
     for ds in DATASETS:
         v = d_ab.get(ds)
-        if not v: continue
+        if not v:
+            continue
         summary = v.get("exec_summary", "")
         if summary:
             # Truncate to ~3 sentences
-            sentences = re.split(r'(?<=[.!?])\s+', summary.strip())
+            sentences = re.split(r"(?<=[.!?])\s+", summary.strip())
             short = " ".join(sentences[:3])
             w(f"- **{DS_SHORT[ds]}** ({DS_FULL[ds].split('(')[0].strip()}): {short}")
 
@@ -367,10 +446,14 @@ for ab in STUDIES:
                 abl = v.get("ablation_analysis", "")
                 if abl and len(abl) > 50:
                     # Extract just the text content (no header)
-                    text = re.sub(r'^### 5\. Ablation Impact.*?\n', '', abl, flags=re.MULTILINE).strip()
+                    text = re.sub(
+                        r"^### 5\. Ablation Impact.*?\n", "", abl, flags=re.MULTILINE
+                    ).strip()
                     text = text[:400].strip()
                     if text:
-                        abl_texts.append(f"- **{DS_SHORT[ds]}**: {text.replace(chr(10), ' ')} [...]")
+                        abl_texts.append(
+                            f"- **{DS_SHORT[ds]}**: {text.replace(chr(10), ' ')} [...]"
+                        )
 
         if abl_texts:
             w("#### Ablation Impact Assessment (selected excerpts)")
@@ -387,7 +470,9 @@ for ab in STUDIES:
     elif delta >= -0.1:
         verdict = f"**NEAR BASELINE** ({delta_str}): This configuration performs comparably to the baseline."
     elif delta >= -0.5:
-        verdict = f"**BELOW BASELINE** ({delta_str}): This configuration shows moderate degradation."
+        verdict = (
+            f"**BELOW BASELINE** ({delta_str}): This configuration shows moderate degradation."
+        )
     else:
         verdict = f"**SIGNIFICANTLY BELOW BASELINE** ({delta_str}): This configuration causes substantial quality regression."
 
@@ -396,7 +481,9 @@ for ab in STUDIES:
     if ab in NO_BUILDER_STUDIES:
         corr_delta = (overall_avg + (5.0 - builder_avg) * 0.25) - baseline_overall
         w("")
-        w(f"*Corrected estimate (builder score = 5.00): ~{baseline_overall + corr_delta:.2f} overall (delta ~{corr_delta:+.2f} vs. baseline).*")
+        w(
+            f"*Corrected estimate (builder score = 5.00): ~{baseline_overall + corr_delta:.2f} overall (delta ~{corr_delta:+.2f} vs. baseline).*"
+        )
     w("")
     w("---")
     w("")
@@ -408,15 +495,22 @@ w("")
 
 w("### 7.1 Retrieval Mode (AB-01, AB-02, AB-03)")
 w("")
-w("**Goal:** Determine the contribution of each retrieval channel (dense vector, BM25, graph traversal) and the reranker.")
+w(
+    "**Goal:** Determine the contribution of each retrieval channel (dense vector, BM25, graph traversal) and the reranker."
+)
 w("")
 w("| Configuration | Overall | Retrieval | Answer | GT Cov | Grounded |")
 w("|---------------|:-------:|:---------:|:------:|:------:|:--------:|")
 for ab in ["AB-00", "AB-01", "AB-02", "AB-03"]:
     vals = list(DATA[ab].values())
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
-    w(f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('retrieval'):.2f} | {a('answer'):.2f} | {a('avg_gt_coverage'):.3f} | {a('grounded_rate'):.3f} |")
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
+    w(
+        f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('retrieval'):.2f} | {a('answer'):.2f} | {a('avg_gt_coverage'):.3f} | {a('grounded_rate'):.3f} |"
+    )
 
 w("")
 w("""**Findings:**
@@ -436,8 +530,13 @@ w("|---------------|:-------:|:---------:|:------:|:------:|")
 for ab in ["AB-00", "AB-04", "AB-05"]:
     vals = list(DATA[ab].values())
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
-    w(f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('retrieval'):.2f} | {a('answer'):.2f} | {a('avg_gt_coverage'):.3f} |")
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
+    w(
+        f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('retrieval'):.2f} | {a('answer'):.2f} | {a('avg_gt_coverage'):.3f} |"
+    )
 
 w("")
 w("""**Findings:**
@@ -456,8 +555,13 @@ w("|---------------|:-------:|:-------:|:---------:|:--------:|:--------:|")
 for ab in ["AB-00", "AB-06", "AB-07", "AB-08"]:
     vals = list(DATA[ab].values())
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
-    w(f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('builder'):.2f} | {a('retrieval'):.2f} | {a('triplets'):.0f} | {a('entities'):.0f} |")
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
+    w(
+        f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('builder'):.2f} | {a('retrieval'):.2f} | {a('triplets'):.0f} | {a('entities'):.0f} |"
+    )
 
 w("")
 w("""**Findings:**
@@ -477,8 +581,13 @@ w("|---------------|:-------:|:-------:|:--------------:|:--------:|")
 for ab in ["AB-00", "AB-09", "AB-10"]:
     vals = list(DATA[ab].values())
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
-    w(f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('builder'):.2f} | {a('triplets'):.1f} | {a('entities'):.1f} |")
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
+    w(
+        f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('builder'):.2f} | {a('triplets'):.1f} | {a('entities'):.1f} |"
+    )
 
 w("")
 w("""**Findings:**
@@ -497,8 +606,13 @@ w("|---------------|:-------:|:-------:|:--------------:|:------:|")
 for ab in ["AB-00", "AB-11", "AB-12", "AB-13", "AB-14"]:
     vals = list(DATA[ab].values())
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
-    w(f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('builder'):.2f} | {a('entities'):.1f} | {a('answer'):.2f} |")
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
+    w(
+        f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('builder'):.2f} | {a('entities'):.1f} | {a('answer'):.2f} |"
+    )
 
 w("")
 w("""**Findings:**
@@ -518,8 +632,13 @@ w("|---------------|:-------:|:-------:|:--------:|:--------:|")
 for ab in ["AB-00", "AB-15", "AB-16", "AB-19"]:
     vals = list(DATA[ab].values())
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
-    w(f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('builder'):.2f} | {a('pipeline'):.2f} | {a('triplets'):.0f} |")
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
+    w(
+        f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('builder'):.2f} | {a('pipeline'):.2f} | {a('triplets'):.0f} |"
+    )
 
 w("")
 w("""**Findings:**
@@ -539,7 +658,10 @@ for ab in ["AB-00", "AB-17", "AB-18"]:
     thresh = {"AB-00": "0.90 (default)", "AB-17": "0.70 (lower)", "AB-18": "0.85 (higher)"}[ab]
     vals = list(DATA[ab].values())
     n = len(vals)
-    def a(k): return sum((v.get(k) or 0) for v in vals) / n
+
+    def a(k):
+        return sum((v.get(k) or 0) for v in vals) / n
+
     w(f"| {ABLATION_DESC[ab]['title']} | {a('overall'):.2f} | {a('builder'):.2f} | {thresh} |")
 
 w("")
@@ -559,9 +681,16 @@ w("|---------------|:-------:|:------:|:-----------------:|")
 w("| Baseline (AB-00) | 4.15 | 4.50 | — |")
 vals20 = list(DATA["AB-20"].values())
 n20 = len(vals20)
-def a20(k): return sum((v.get(k) or 0) for v in vals20) / n20
+
+
+def a20(k):
+    return sum((v.get(k) or 0) for v in vals20) / n20
+
+
 corr20 = a20("overall") + (5.0 - a20("builder")) * 0.25
-w(f"| Hallucination grader OFF (AB-20) | {a20('overall'):.2f} | {a20('answer'):.2f} | ~{corr20:.2f} |")
+w(
+    f"| Hallucination grader OFF (AB-20) | {a20('overall'):.2f} | {a20('answer'):.2f} | ~{corr20:.2f} |"
+)
 
 w("")
 w("""**Findings:**
@@ -582,13 +711,25 @@ w("Based on quality delta vs. baseline when the component is ablated:")
 w("")
 w("| Rank | Component | Ablation | Delta | Impact |")
 w("|:----:|-----------|:--------:|:-----:|--------|")
-w("| 1 | **Hybrid retrieval (all channels)** | AB-01 (vector-only) | −1.66* | Critical — single channel fails catastrophically |")
-w("| 2 | **Cypher healing loop** | AB-19 | −0.52 | High — lost tables permanently degrade KG coverage |")
-w("| 3 | **Extraction token budget** | AB-10 (+16K) | +0.31 | High positive — more tokens → richer KG |")
-w("| 4 | **Reranker pool size** | AB-04 (top_k=5) | −0.94* | High — pool too small loses key candidates |")
-w("| 5 | **ER similarity threshold** | AB-11 (0.65) | −0.07 | Moderate — over-merging collapses entities |")
+w(
+    "| 1 | **Hybrid retrieval (all channels)** | AB-01 (vector-only) | −1.66* | Critical — single channel fails catastrophically |"
+)
+w(
+    "| 2 | **Cypher healing loop** | AB-19 | −0.52 | High — lost tables permanently degrade KG coverage |"
+)
+w(
+    "| 3 | **Extraction token budget** | AB-10 (+16K) | +0.31 | High positive — more tokens → richer KG |"
+)
+w(
+    "| 4 | **Reranker pool size** | AB-04 (top_k=5) | −0.94* | High — pool too small loses key candidates |"
+)
+w(
+    "| 5 | **ER similarity threshold** | AB-11 (0.65) | −0.07 | Moderate — over-merging collapses entities |"
+)
 w("| 6 | **Schema enrichment** | AB-15 | −0.04 | Low-moderate — matters for legacy schemas |")
-w("| 7 | **Actor-Critic validation** | AB-16 | +0.07 | Near-zero — Actor alone sufficient for clean schemas |")
+w(
+    "| 7 | **Actor-Critic validation** | AB-16 | +0.07 | Near-zero — Actor alone sufficient for clean schemas |"
+)
 w("| 8 | **Hallucination grader** | AB-20 | −0.80* | Moderate (artefact) — ~−0.30 corrected |")
 w("| 9 | **HITL threshold** | AB-17/18 | ~0 | Negligible in automated evaluation |")
 w("| 10 | **ER blocking top_k** | AB-13/14 | ~0 | Negligible |")
@@ -606,10 +747,14 @@ w("| `ENABLE_RERANKER` | true | **true** | Improves ranking ordering, minimal co
 w("| `RERANKER_TOP_K` | 12 | **12–16** | Baseline near-optimal; slight increase safe |")
 w("| `CHUNK_SIZE` | 256 | **256–512** | 512/64 marginally best but all are similar |")
 w("| `LLM_MAX_TOKENS_EXTRACTION` | 8192 | **16384** | +0.31 improvement, high ROI |")
-w("| `ER_SIMILARITY_THRESHOLD` | 0.75 | **0.75–0.80** | Well-calibrated; slight increase for precision |")
+w(
+    "| `ER_SIMILARITY_THRESHOLD` | 0.75 | **0.75–0.80** | Well-calibrated; slight increase for precision |"
+)
 w("| `ER_BLOCKING_TOP_K` | 10 | **10** | No benefit to increasing |")
 w("| `ENABLE_SCHEMA_ENRICHMENT` | true | **true** | Consistent marginal improvement |")
-w("| `ENABLE_CRITIC_VALIDATION` | true | **true** | Valuable for ambiguous mappings in production |")
+w(
+    "| `ENABLE_CRITIC_VALIDATION` | true | **true** | Valuable for ambiguous mappings in production |"
+)
 w("| `ENABLE_CYPHER_HEALING` | true | **true** | Critical — significant loss without it |")
 w("| `ENABLE_HALLUCINATION_GRADER` | true | **true** | Quality floor on answer generation |")
 w("| `CONFIDENCE_THRESHOLD` | 0.90 | **0.90** | Good balance for production HITL |")
@@ -651,7 +796,12 @@ w("""Not all ablations affect all datasets equally:
 # ─── SECTION 9: STATISTICS ───────────────────────────────────────────────────
 w("## 9. Score Distribution and Statistics")
 w("")
-all_overall = [DATA[ab][ds]["overall"] for ab in STUDIES for ds in DATASETS if DATA.get(ab, {}).get(ds, {}).get("overall")]
+all_overall = [
+    DATA[ab][ds]["overall"]
+    for ab in STUDIES
+    for ds in DATASETS
+    if DATA.get(ab, {}).get(ds, {}).get("overall")
+]
 all_overall.sort()
 import statistics
 
@@ -665,9 +815,13 @@ w(f"| Median overall score | {statistics.median(all_overall):.3f} |")
 w(f"| Std deviation | {statistics.stdev(all_overall):.3f} |")
 w(f"| Min score | {min(all_overall):.2f} |")
 w(f"| Max score | {max(all_overall):.2f} |")
-w(f"| % scores ≥ 4.00 | {100*len([s for s in all_overall if s >= 4.0])/len(all_overall):.1f}% |")
-w(f"| % scores ≥ 3.50 | {100*len([s for s in all_overall if s >= 3.5])/len(all_overall):.1f}% |")
-w(f"| % scores < 3.00 | {100*len([s for s in all_overall if s < 3.0])/len(all_overall):.1f}% |")
+w(
+    f"| % scores ≥ 4.00 | {100 * len([s for s in all_overall if s >= 4.0]) / len(all_overall):.1f}% |"
+)
+w(
+    f"| % scores ≥ 3.50 | {100 * len([s for s in all_overall if s >= 3.5]) / len(all_overall):.1f}% |"
+)
+w(f"| % scores < 3.00 | {100 * len([s for s in all_overall if s < 3.0]) / len(all_overall):.1f}% |")
 w("")
 
 # Per-study range
@@ -676,16 +830,25 @@ w("")
 w("| Study | Min | Max | Range | Most variable dataset |")
 w("|:-----:|:---:|:---:|:-----:|----------------------|")
 for ab in STUDIES:
-    scores = [(ds, DATA[ab][ds]["overall"]) for ds in DATASETS if DATA.get(ab, {}).get(ds, {}).get("overall")]
-    if not scores: continue
+    scores = [
+        (ds, DATA[ab][ds]["overall"])
+        for ds in DATASETS
+        if DATA.get(ab, {}).get(ds, {}).get("overall")
+    ]
+    if not scores:
+        continue
     min_ds, min_s = min(scores, key=lambda x: x[1])
     max_ds, max_s = max(scores, key=lambda x: x[1])
-    w(f"| **{ab}** | {min_s:.2f} | {max_s:.2f} | {max_s-min_s:.2f} | {DS_SHORT[min_ds]} ({min_s:.2f}) ← {DS_SHORT[max_ds]} ({max_s:.2f}) |")
+    w(
+        f"| **{ab}** | {min_s:.2f} | {max_s:.2f} | {max_s - min_s:.2f} | {DS_SHORT[min_ds]} ({min_s:.2f}) ← {DS_SHORT[max_ds]} ({max_s:.2f}) |"
+    )
 
 w("")
 w("---")
 w("")
-w(f"*End of report. Generated on {date.today()} from 127 AI-Judge evaluations (126 ablation runs + 1 baseline stress test).*")
+w(
+    f"*End of report. Generated on {date.today()} from 127 AI-Judge evaluations (126 ablation runs + 1 baseline stress test).*"
+)
 
 output = "\n".join(lines)
 out_path = Path("outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md")

@@ -84,7 +84,9 @@ Run, monitor, and compare ablation experiments:
     openapi_url="/openapi.json",
 )
 
-_cors_origins = os.environ.get("CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(",")
+_cors_origins = os.environ.get("CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(
+    ","
+)
 if _cors_origins == ["*"]:
     _logger.error(
         "CORS_ORIGINS='*' is insecure — rejecting wildcard. "
@@ -116,21 +118,41 @@ def health() -> dict[str, str]:
 # NOT written to .env.  Sensitive keys (API credentials) are accepted here but
 # never echoed back in GET responses.
 
-_SENSITIVE_KEYS = frozenset({
-    "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
-    "GROQ_API_KEY", "MISTRAL_API_KEY", "NEO4J_PASSWORD", "API_KEY",
-    "GOOGLE_API_KEY", "COHERE_API_KEY", "DEEPSEEK_API_KEY",
-    "XAI_API_KEY", "AZURE_OPENAI_API_KEY",
-})
+_SENSITIVE_KEYS = frozenset(
+    {
+        "OPENROUTER_API_KEY",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "GROQ_API_KEY",
+        "MISTRAL_API_KEY",
+        "NEO4J_PASSWORD",
+        "API_KEY",
+        "GOOGLE_API_KEY",
+        "COHERE_API_KEY",
+        "DEEPSEEK_API_KEY",
+        "XAI_API_KEY",
+        "AZURE_OPENAI_API_KEY",
+    }
+)
 
 # Keys that must NOT be overridden at runtime (security/infra controls)
-_BLOCKED_OVERRIDE_KEYS = frozenset({
-    "LMSTUDIO_BASE_URL", "OPENROUTER_BASE_URL", "OLLAMA_BASE_URL",
-    "GROQ_BASE_URL", "TOGETHER_BASE_URL", "NVIDIA_BASE_URL",
-    "DEEPSEEK_BASE_URL", "XAI_BASE_URL", "COHERE_BASE_URL",
-    "PROVIDER_BASE_URL", "AZURE_OPENAI_ENDPOINT",
-    "LOG_LEVEL", "ENABLE_DEBUG_TRACE",
-})
+_BLOCKED_OVERRIDE_KEYS = frozenset(
+    {
+        "LMSTUDIO_BASE_URL",
+        "OPENROUTER_BASE_URL",
+        "OLLAMA_BASE_URL",
+        "GROQ_BASE_URL",
+        "TOGETHER_BASE_URL",
+        "NVIDIA_BASE_URL",
+        "DEEPSEEK_BASE_URL",
+        "XAI_BASE_URL",
+        "COHERE_BASE_URL",
+        "PROVIDER_BASE_URL",
+        "AZURE_OPENAI_ENDPOINT",
+        "LOG_LEVEL",
+        "ENABLE_DEBUG_TRACE",
+    }
+)
 
 
 class ServerConfigRequest(BaseModel):
@@ -141,6 +163,7 @@ class ServerConfigRequest(BaseModel):
 def get_config() -> dict[str, str]:
     """Return current non-sensitive runtime configuration values."""
     from src.config.settings import get_settings
+
     s = get_settings()
     return {
         "LLM_PROVIDER": s.llm_provider,
@@ -218,6 +241,7 @@ def set_config(req: ServerConfigRequest) -> dict[str, object]:
     if applied:
         from src.config.llm_factory import reconfigure_from_env
         from src.config.settings import reload_settings
+
         try:
             reload_settings()
             reconfigure_from_env()

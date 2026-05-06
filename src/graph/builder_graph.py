@@ -73,7 +73,13 @@ def _node_extract_triplets(state: BuilderState) -> dict[str, Any]:
             llm = get_extraction_llm()
             triplets = extract_all_triplets(chunks, llm)
 
-        log_node_event(logger, "extract_triplets", f"{len(chunks)} chunks", f"{len(triplets)} triplets", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "extract_triplets",
+            f"{len(chunks)} chunks",
+            f"{len(triplets)} triplets",
+            timer.elapsed_ms,
+        )
         return {"triplets": triplets}
 
 
@@ -86,7 +92,13 @@ def _node_entity_resolution(state: BuilderState) -> dict[str, Any]:
         source_doc = state.get("source_doc", "unknown")
         # ER judge itself uses midtier internally (see entity_resolver.resolve_entities)
         entities = resolve_entities(triplets, embeddings, llm, source_doc)
-        log_node_event(logger, "entity_resolution", f"{len(triplets)} triplets", f"{len(entities)} entities", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "entity_resolution",
+            f"{len(triplets)} triplets",
+            f"{len(entities)} entities",
+            timer.elapsed_ms,
+        )
         return {"entities": entities}
 
 
@@ -97,7 +109,13 @@ def _node_parse_ddl(state: BuilderState) -> dict[str, Any]:
         tables = []
         for path in ddl_paths:
             tables.extend(parse_ddl_file(Path(path)))
-        log_node_event(logger, "parse_ddl", f"{len(ddl_paths)} DDL files", f"{len(tables)} tables", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "parse_ddl",
+            f"{len(ddl_paths)} DDL files",
+            f"{len(tables)} tables",
+            timer.elapsed_ms,
+        )
         return {"tables": tables}
 
 
@@ -109,12 +127,24 @@ def _node_enrich_schema(state: BuilderState) -> dict[str, Any]:
             tables = state.get("tables") or []
             logger.info("Schema enrichment disabled — promoting raw parsed tables.")
             promoted = [EnrichedTableSchema.from_table_schema(t) for t in tables]
-            log_node_event(logger, "enrich_schema", f"{len(tables)} tables (skipped)", f"{len(promoted)} promoted", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "enrich_schema",
+                f"{len(tables)} tables (skipped)",
+                f"{len(promoted)} promoted",
+                timer.elapsed_ms,
+            )
             return {"enriched_tables": promoted}
         llm = get_lightweight_llm()
         tables = state.get("tables") or []
         enriched = enrich_all(tables, llm)
-        log_node_event(logger, "enrich_schema", f"{len(tables)} tables", f"{len(enriched)} enriched", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "enrich_schema",
+            f"{len(tables)} tables",
+            f"{len(enriched)} enriched",
+            timer.elapsed_ms,
+        )
         return {"enriched_tables": enriched}
 
 
@@ -136,7 +166,9 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
         else:
             pending: list = list(state.get("pending_tables") or enriched_tables)
             if not pending:
-                log_node_event(logger, "rag_mapping", "no pending tables", "empty state", timer.elapsed_ms)
+                log_node_event(
+                    logger, "rag_mapping", "no pending tables", "empty state", timer.elapsed_ms
+                )
                 return {"pending_tables": [], "current_table": None}
             current_table = pending[0]
             remaining = pending[1:]
@@ -170,7 +202,13 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
                 reflection_prompt=reflection_prompt,
             )
 
-        log_node_event(logger, "rag_mapping", f"table={getattr(current_table, 'table_name', '?')}", f"concept={getattr(proposal, 'mapped_concept', '?')}", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "rag_mapping",
+            f"table={getattr(current_table, 'table_name', '?')}",
+            f"concept={getattr(proposal, 'mapped_concept', '?')}",
+            timer.elapsed_ms,
+        )
         return {
             "mapping_proposal": proposal,
             "current_table": current_table,
@@ -394,11 +432,9 @@ def run_builder(
                     filtered_ddl.append(ddl_path)
             ddl_to_ingest = filtered_ddl
 
-
     if not docs_to_ingest and not ddl_to_ingest:
         logger.info(
-            "All %d file(s) unchanged — nothing to re-ingest. "
-            "Skipped: %s",
+            "All %d file(s) unchanged — nothing to re-ingest. Skipped: %s",
             len(skipped_files),
             skipped_files,
         )
@@ -468,15 +504,17 @@ def run_builder(
                 "MERGE (pc:ParentChunk {parent_chunk_index: row.idx, source_doc: row.src}) "
                 "ON CREATE SET pc.text = row.text, pc.page = row.page, pc.created_at = datetime() "
                 "ON MATCH  SET pc.text = row.text, pc.updated_at = datetime()",
-                {"rows": [
-                    {
-                        "idx": p.chunk_index,
-                        "src": p.metadata.get("source", ""),
-                        "text": p.text,
-                        "page": p.metadata.get("page", ""),
-                    }
-                    for p in all_parents
-                ]},
+                {
+                    "rows": [
+                        {
+                            "idx": p.chunk_index,
+                            "src": p.metadata.get("source", ""),
+                            "text": p.text,
+                            "page": p.metadata.get("page", ""),
+                        }
+                        for p in all_parents
+                    ]
+                },
             )
             logger.info("Persisted %d ParentChunk nodes (batch).", len(all_parents))
 
@@ -491,16 +529,18 @@ def run_builder(
                 "ON CREATE SET c.text = row.text, c.page = row.page, "
                 "c.embedding = row.emb, c.created_at = datetime() "
                 "ON MATCH  SET c.text = row.text, c.embedding = row.emb, c.updated_at = datetime()",
-                {"rows": [
-                    {
-                        "idx": child.chunk_index,
-                        "src": child.metadata.get("source", ""),
-                        "text": child.text,
-                        "page": child.metadata.get("page", ""),
-                        "emb": vectors[i].tolist(),
-                    }
-                    for i, child in enumerate(all_children)
-                ]},
+                {
+                    "rows": [
+                        {
+                            "idx": child.chunk_index,
+                            "src": child.metadata.get("source", ""),
+                            "text": child.text,
+                            "page": child.metadata.get("page", ""),
+                            "emb": vectors[i].tolist(),
+                        }
+                        for i, child in enumerate(all_children)
+                    ]
+                },
             )
             logger.info("Persisted %d Chunk nodes with embeddings (batch).", len(all_children))
 
@@ -531,6 +571,7 @@ def run_builder(
         if not force_rebuild:
             # Group child chunks by source_doc to get per-file child count
             from collections import Counter as _Counter  # local import
+
             child_counts: dict[str, int] = _Counter(
                 c.metadata.get("source", "") for c in all_children
             )
@@ -578,6 +619,7 @@ def run_builder(
     # The loop collects the last emitted state as the final_state.
     if job_id is not None:
         from src.api.jobs import set_step as _set_step  # local import avoids circular dep
+
         final_state: BuilderState = {}  # type: ignore[assignment]
         for node_output in graph.stream(initial, config=config):
             # node_output is {node_name: state_delta}
@@ -616,16 +658,17 @@ def run_builder(
                 chunk_indexes: set[int] = set()
                 for t in triplets_for_repair:
                     if t.source_chunk_index is not None and (
-                        concept_lower in t.subject.lower()
-                        or concept_lower in t.object.lower()
+                        concept_lower in t.subject.lower() or concept_lower in t.object.lower()
                     ):
                         chunk_indexes.add(t.source_chunk_index)
                 for idx in chunk_indexes:
-                    mentions_pairs.append({
-                        "idx": idx,
-                        "concept": bc_name,
-                        "srcs": list(new_basenames),
-                    })
+                    mentions_pairs.append(
+                        {
+                            "idx": idx,
+                            "concept": bc_name,
+                            "srcs": list(new_basenames),
+                        }
+                    )
             if mentions_pairs:
                 try:
                     repair_client.execute_cypher(

@@ -68,6 +68,7 @@ _ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".sql", ".ddl"}
 
 def _get_max_upload_bytes() -> int:
     from src.config.settings import get_settings
+
     return get_settings().api_max_upload_bytes
 
 
@@ -98,7 +99,7 @@ async def _save_uploads(files: list[UploadFile]) -> list[str]:
         if len(content) > max_bytes:
             raise HTTPException(
                 status_code=413,
-                detail=f"File '{file.filename}' exceeds {max_bytes // (1024*1024)} MB limit.",
+                detail=f"File '{file.filename}' exceeds {max_bytes // (1024 * 1024)} MB limit.",
             )
 
         safe_name = _sanitize_filename(file.filename)
@@ -138,7 +139,9 @@ def _build_state_to_response(
     current_step: str | None = None,
 ) -> BuildResultResponse:
     if builder is None:
-        return BuildResultResponse(job_id=job_id, status=status, error=error, current_step=current_step)  # type: ignore[arg-type]
+        return BuildResultResponse(
+            job_id=job_id, status=status, error=error, current_step=current_step
+        )  # type: ignore[arg-type]
     return BuildResultResponse(
         job_id=job_id,
         status=status,  # type: ignore[arg-type]
@@ -249,7 +252,9 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
         set_done(job_id, result)
     except Exception as exc:  # noqa: BLE001
         logger.error("Pipeline task failed for job %s: %s", job_id, exc, exc_info=True)
-        set_failed(job_id, f"Pipeline failed ({type(exc).__name__}). Check server logs for details.")
+        set_failed(
+            job_id, f"Pipeline failed ({type(exc).__name__}). Check server logs for details."
+        )
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -283,7 +288,9 @@ def post_build(req: BuildRequest) -> BuildResultResponse:
     ),
 )
 async def post_build_upload(
-    doc_files: list[UploadFile] = File(..., description="Business documentation files (PDF, MD, TXT)."),
+    doc_files: list[UploadFile] = File(
+        ..., description="Business documentation files (PDF, MD, TXT)."
+    ),
     ddl_files: list[UploadFile] = File(..., description="DDL SQL files to map onto the ontology."),
     clear_graph: bool = True,
     study_id: str = "demo",
@@ -411,7 +418,9 @@ def post_query(req: QueryRequest) -> QueryResponse:
             session_id=req.session_id,
         )
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Check server logs."
+        ) from exc
 
 
 @router.post(
@@ -443,9 +452,14 @@ def post_pipeline(req: PipelineRequest) -> PipelineJobResponse:
     ),
 )
 async def post_pipeline_upload(
-    doc_files: list[UploadFile] = File(..., description="Business documentation files (PDF, MD, TXT)."),
+    doc_files: list[UploadFile] = File(
+        ..., description="Business documentation files (PDF, MD, TXT)."
+    ),
     ddl_files: list[UploadFile] = File(..., description="DDL SQL files to map onto the ontology."),
-    questions: list[str] = Form(..., description="One or more natural-language questions (send multiple 'questions' fields for a list)."),
+    questions: list[str] = Form(
+        ...,
+        description="One or more natural-language questions (send multiple 'questions' fields for a list).",
+    ),
     clear_graph: bool = True,
     lazy_extraction: bool = False,
     run_ragas: bool = False,
@@ -543,6 +557,7 @@ def get_demo_jobs() -> list[dict]:
 def delete_graph(confirm: bool = False) -> dict[str, int]:
     # Extra safety: always require API_KEY for destructive operations
     import os
+
     if not os.environ.get("API_KEY", "").strip():
         raise HTTPException(
             status_code=403,
@@ -728,6 +743,7 @@ def get_graph_data() -> dict:
 
 # ── KG Snapshot endpoints ─────────────────────────────────────────────────────
 
+
 @router.get(
     "/kg/snapshots",
     response_model=list[KGSnapshotMeta],
@@ -736,6 +752,7 @@ def get_graph_data() -> dict:
 )
 def list_kg_snapshots() -> list[KGSnapshotMeta]:
     from src.graph.kg_registry import list_snapshots
+
     return [KGSnapshotMeta(**s) for s in list_snapshots()]
 
 
@@ -747,6 +764,7 @@ def list_kg_snapshots() -> list[KGSnapshotMeta]:
 )
 def get_active_kg_snapshot() -> KGSnapshotMeta | None:
     from src.graph.kg_registry import get_active_snapshot
+
     snap = get_active_snapshot()
     return KGSnapshotMeta(**snap) if snap else None
 
@@ -763,10 +781,13 @@ def get_active_kg_snapshot() -> KGSnapshotMeta | None:
 def save_kg_snapshot(req: SaveSnapshotRequest) -> KGSnapshotMeta:
     try:
         from src.graph.kg_registry import save_snapshot
+
         snap = save_snapshot(name=req.name, description=req.description)
         return KGSnapshotMeta(**snap)
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Check server logs."
+        ) from exc
 
 
 @router.post(
@@ -782,6 +803,7 @@ def save_kg_snapshot(req: SaveSnapshotRequest) -> KGSnapshotMeta:
 def load_kg_snapshot(snapshot_id: str) -> KGSnapshotMeta:
     try:
         from src.graph.kg_registry import load_snapshot
+
         snap = load_snapshot(snapshot_id)
         return KGSnapshotMeta(**snap)
     except ValueError as exc:
@@ -789,7 +811,9 @@ def load_kg_snapshot(snapshot_id: str) -> KGSnapshotMeta:
     except FileNotFoundError as exc:
         raise HTTPException(status_code=410, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Check server logs."
+        ) from exc
 
 
 @router.post(
@@ -802,6 +826,7 @@ def load_kg_snapshot(snapshot_id: str) -> KGSnapshotMeta:
 )
 def eject_kg_snapshot() -> dict[str, str]:
     from src.graph.kg_registry import eject_snapshot
+
     eject_snapshot()
     return {"status": "ejected"}
 
@@ -814,12 +839,15 @@ def eject_kg_snapshot() -> dict[str, str]:
 def delete_kg_snapshot(snapshot_id: str) -> dict[str, str]:
     try:
         from src.graph.kg_registry import delete_snapshot
+
         delete_snapshot(snapshot_id)
         return {"status": "deleted", "id": snapshot_id}
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Check server logs."
+        ) from exc
 
 
 @router.patch(
@@ -831,15 +859,19 @@ def delete_kg_snapshot(snapshot_id: str) -> dict[str, str]:
 def rename_kg_snapshot(snapshot_id: str, req: RenameSnapshotRequest) -> KGSnapshotMeta:
     try:
         from src.graph.kg_registry import rename_snapshot
+
         snap = rename_snapshot(snapshot_id, req.name, req.description)
         return KGSnapshotMeta(**snap)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Check server logs."
+        ) from exc
 
 
 # ── Conversation endpoints ────────────────────────────────────────────────────
+
 
 @router.get(
     "/conversations",
@@ -849,6 +881,7 @@ def rename_kg_snapshot(snapshot_id: str, req: RenameSnapshotRequest) -> KGSnapsh
 )
 def list_conversations() -> list[ConversationMeta]:
     from src.graph.conversation_registry import list_conversations as _list
+
     return [ConversationMeta(**c) for c in _list()]
 
 
@@ -862,6 +895,7 @@ def get_conversation(conversation_id: str) -> ConversationDetail:
     from pydantic import ValidationError
 
     from src.graph.conversation_registry import get_conversation as _get
+
     try:
         conv = _get(conversation_id)
     except ValueError as exc:
@@ -869,7 +903,9 @@ def get_conversation(conversation_id: str) -> ConversationDetail:
     try:
         return ConversationDetail(**conv)
     except ValidationError as exc:
-        raise HTTPException(status_code=500, detail="Stored conversation data is corrupted.") from exc
+        raise HTTPException(
+            status_code=500, detail="Stored conversation data is corrupted."
+        ) from exc
 
 
 @router.post(
@@ -880,6 +916,7 @@ def get_conversation(conversation_id: str) -> ConversationDetail:
 )
 def save_conversation(req: SaveConversationRequest) -> ConversationMeta:
     from src.graph.conversation_registry import save_conversation as _save
+
     try:
         conv = _save(
             session_id=req.session_id,
@@ -889,7 +926,9 @@ def save_conversation(req: SaveConversationRequest) -> ConversationMeta:
         )
         return ConversationMeta(**conv)
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Check server logs."
+        ) from exc
 
 
 @router.patch(
@@ -900,13 +939,16 @@ def save_conversation(req: SaveConversationRequest) -> ConversationMeta:
 )
 def rename_conversation(conversation_id: str, req: RenameConversationRequest) -> ConversationMeta:
     from src.graph.conversation_registry import rename_conversation as _rename
+
     try:
         conv = _rename(conversation_id, req.title)
         return ConversationMeta(**conv)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Check server logs."
+        ) from exc
 
 
 @router.delete(
@@ -916,11 +958,13 @@ def rename_conversation(conversation_id: str, req: RenameConversationRequest) ->
 )
 def delete_conversation(conversation_id: str) -> dict[str, str]:
     from src.graph.conversation_registry import delete_conversation as _delete
+
     try:
         _delete(conversation_id)
         return {"status": "deleted", "id": conversation_id}
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail="Internal server error. Check server logs.") from exc
-
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Check server logs."
+        ) from exc

@@ -122,9 +122,7 @@ def safe_json_loads(text: str, *, max_depth: int = _MAX_JSON_DEPTH) -> object:
         if ch in "{[":
             depth += 1
             if depth > max_depth:
-                raise ValueError(
-                    f"JSON nesting depth ({depth}) exceeds maximum ({max_depth})."
-                )
+                raise ValueError(f"JSON nesting depth ({depth}) exceeds maximum ({max_depth}).")
         elif ch in "}]":
             depth -= 1
     return json.loads(text)

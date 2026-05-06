@@ -267,9 +267,7 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
             # ── Stage 4: Evaluation Bundle ────────────────────────────────
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
-            bundle_dir = (
-                _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
-            )
+            bundle_dir = _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
                 output_dir=bundle_dir,
@@ -474,9 +472,7 @@ def _run_ablation_task_with_preset(
 
             from src.evaluation.bundle_writer import write_evaluation_bundle
 
-            bundle_dir = (
-                _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
-            )
+            bundle_dir = _ROOT / "outputs" / "ablation" / req.study_id / "datasets" / dataset_id
             bundle_dir.mkdir(parents=True, exist_ok=True)
             bundle_path = write_evaluation_bundle(
                 output_dir=bundle_dir,
@@ -737,7 +733,8 @@ def _bundle_path(study_id: str, dataset_id: str) -> Path:
         _ROOT
         / "notebooks"
         / "ablation"
-        / "outputs" / "ablation"
+        / "outputs"
+        / "ablation"
         / study_id
         / dataset_id
         / "evaluation_bundle.json"
@@ -786,7 +783,6 @@ def get_ai_judge_payload(study_id: str, dataset_id: str) -> JSONResponse:
             status_code=500,
             detail="AI_JUDGE_PROMPT.md not found in docs/.",
         )
-
 
     prompt_text = prompt_file.read_text(encoding="utf-8")
     bundle_data = json.loads(bundle_file.read_text(encoding="utf-8"))

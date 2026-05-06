@@ -165,8 +165,7 @@ def enrich_all(
     results: dict[int, EnrichedTableSchema] = {}
     with ThreadPoolExecutor(max_workers=min(max_workers, len(tables))) as pool:
         future_to_idx = {
-            pool.submit(enrich_schema, table, llm): i
-            for i, table in enumerate(tables)
+            pool.submit(enrich_schema, table, llm): i for i, table in enumerate(tables)
         }
         for future in as_completed(future_to_idx):
             idx = future_to_idx[future]

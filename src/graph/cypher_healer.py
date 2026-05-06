@@ -71,12 +71,23 @@ def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
     """
     # Safety: reject Cypher containing destructive or admin operations.
     _BLOCKED_KEYWORDS = (
-        "DROP ", "DETACH DELETE", "DELETE ", "REMOVE ",
-        "CALL dbms.", "CALL db.index.fulltext.drop",
-        "CREATE USER", "ALTER USER", "DROP USER",
-        "CREATE ROLE", "ALTER ROLE", "DROP ROLE",
-        "GRANT ", "REVOKE ", "DENY ",
-        "CREATE DATABASE", "DROP DATABASE",
+        "DROP ",
+        "DETACH DELETE",
+        "DELETE ",
+        "REMOVE ",
+        "CALL dbms.",
+        "CALL db.index.fulltext.drop",
+        "CREATE USER",
+        "ALTER USER",
+        "DROP USER",
+        "CREATE ROLE",
+        "ALTER ROLE",
+        "DROP ROLE",
+        "GRANT ",
+        "REVOKE ",
+        "DENY ",
+        "CREATE DATABASE",
+        "DROP DATABASE",
         "LOAD CSV",
     )
     upper = cypher.upper()

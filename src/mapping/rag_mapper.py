@@ -309,7 +309,10 @@ def propose_mapping_heuristic(
 
         overlap = len(set(name_tokens) & table_tokens)
         if overlap:
-            bonus += min(settings.mapping_overlap_bonus_max, overlap * settings.mapping_overlap_bonus_per_token)
+            bonus += min(
+                settings.mapping_overlap_bonus_max,
+                overlap * settings.mapping_overlap_bonus_per_token,
+            )
 
         adjusted = max(0.0, min(1.0, base_confidence - penalty + bonus))
 

@@ -51,13 +51,13 @@ def _distill_text(chunk: RetrievedChunk) -> str:
         # Find first sentence-like boundary (. or newline followed by capital/marker)
         for i, ch in enumerate(text):
             if ch == "\n" and i + 1 < len(text):
-                text = text[i + 1:]
+                text = text[i + 1 :]
                 break
         else:
             # No newline found, try period
             dot = text.find(". ")
             if dot != -1 and dot < 80:
-                text = text[dot + 2:]
+                text = text[dot + 2 :]
 
     if ":" in text and len(text) > 800:
         head, body = text.split(":", 1)
@@ -95,8 +95,12 @@ def distill_context_chunks(
         return []
 
     settings = get_settings()
-    effective_max_chunks = max_chunks if max_chunks is not None else settings.generation_max_context_chunks
-    effective_token_budget = token_budget if token_budget is not None else settings.generation_token_budget
+    effective_max_chunks = (
+        max_chunks if max_chunks is not None else settings.generation_max_context_chunks
+    )
+    effective_token_budget = (
+        token_budget if token_budget is not None else settings.generation_token_budget
+    )
 
     out: list[RetrievedChunk] = []
     seen_text: set[str] = set()

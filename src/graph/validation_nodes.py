@@ -32,7 +32,13 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
         best_proposal: MappingProposal | None = state.get("best_proposal")
 
         if proposal is None:
-            log_node_event(logger, "validate_mapping", "no proposal", f"attempts={attempts + 1}", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "validate_mapping",
+                "no proposal",
+                f"attempts={attempts + 1}",
+                timer.elapsed_ms,
+            )
             return {"reflection_attempts": attempts + 1, "best_proposal": best_proposal}
 
         # Layer 1: Pydantic
@@ -44,7 +50,13 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
                     attempts,
                     proposal.table_name,
                 )
-                log_node_event(logger, "validate_mapping", f"table={proposal.table_name}", "best proposal accepted", timer.elapsed_ms)
+                log_node_event(
+                    logger,
+                    "validate_mapping",
+                    f"table={proposal.table_name}",
+                    "best proposal accepted",
+                    timer.elapsed_ms,
+                )
                 return {
                     "mapping_proposal": best_proposal,
                     "best_proposal": None,
@@ -58,15 +70,29 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
                 error=error,
                 original_input=proposal.model_dump_json(),
             )
-            log_node_event(logger, "validate_mapping", f"table={proposal.table_name}", f"pydantic error, retry={attempts + 1}", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "validate_mapping",
+                f"table={proposal.table_name}",
+                f"pydantic error, retry={attempts + 1}",
+                timer.elapsed_ms,
+            )
             return {"reflection_prompt": ref_prompt, "reflection_attempts": attempts + 1}
 
-        if best_proposal is None or (validated.confidence or 0.0) > (best_proposal.confidence or 0.0):
+        if best_proposal is None or (validated.confidence or 0.0) > (
+            best_proposal.confidence or 0.0
+        ):
             best_proposal = validated
 
         # Optional ablation: skip critic and accept Pydantic-valid proposal directly.
         if use_lazy or not settings.enable_critic_validation:
-            log_node_event(logger, "validate_mapping", f"table={validated.table_name}", f"accepted conf={validated.confidence:.2f}", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "validate_mapping",
+                f"table={validated.table_name}",
+                f"accepted conf={validated.confidence:.2f}",
+                timer.elapsed_ms,
+            )
             return {
                 "mapping_proposal": validated,
                 "best_proposal": None,
@@ -83,7 +109,13 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
                 validated.confidence or 0.0,
                 settings.critic_confidence_gate,
             )
-            log_node_event(logger, "validate_mapping", f"table={validated.table_name}", "accepted (gate pass)", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "validate_mapping",
+                f"table={validated.table_name}",
+                "accepted (gate pass)",
+                timer.elapsed_ms,
+            )
             return {
                 "mapping_proposal": validated,
                 "best_proposal": None,
@@ -106,7 +138,13 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
                     concept,
                     conf,
                 )
-                log_node_event(logger, "validate_mapping", f"table={validated.table_name}", "best proposal accepted", timer.elapsed_ms)
+                log_node_event(
+                    logger,
+                    "validate_mapping",
+                    f"table={validated.table_name}",
+                    "best proposal accepted",
+                    timer.elapsed_ms,
+                )
                 return {
                     "mapping_proposal": best_proposal,
                     "best_proposal": None,
@@ -120,14 +158,26 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
                 error=critique,
                 original_input=proposal.model_dump_json(),
             )
-            log_node_event(logger, "validate_mapping", f"table={validated.table_name}", f"critic rejected, retry={attempts + 1}", timer.elapsed_ms)
+            log_node_event(
+                logger,
+                "validate_mapping",
+                f"table={validated.table_name}",
+                f"critic rejected, retry={attempts + 1}",
+                timer.elapsed_ms,
+            )
             return {
                 "reflection_prompt": ref_prompt,
                 "best_proposal": best_proposal,
                 "reflection_attempts": attempts + 1,
             }
 
-        log_node_event(logger, "validate_mapping", f"table={validated.table_name}", f"approved conf={validated.confidence:.2f}", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "validate_mapping",
+            f"table={validated.table_name}",
+            f"approved conf={validated.confidence:.2f}",
+            timer.elapsed_ms,
+        )
         return {
             "mapping_proposal": validated,
             "best_proposal": None,

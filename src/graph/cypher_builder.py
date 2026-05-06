@@ -93,7 +93,10 @@ def build_upsert_cypher(
     enriched_cols_json = ""
     if hasattr(table, "enriched_columns") and table.enriched_columns:
         enriched_cols_json = json.dumps(
-            [{"original": ec.original_name, "enriched": ec.enriched_name} for ec in table.enriched_columns]
+            [
+                {"original": ec.original_name, "enriched": ec.enriched_name}
+                for ec in table.enriched_columns
+            ]
         )
 
     params: dict = {
@@ -214,9 +217,7 @@ def build_attribute_cypher(table: EnrichedTableSchema) -> list[tuple[str, dict]]
 
         # Build description text (used for embedding)
         nullable_str = "nullable" if nullable else "NOT NULL"
-        desc = (
-            f"{table.table_name}.{col.name} ({col.data_type}, {nullable_str}) — {enriched_name}."
-        )
+        desc = f"{table.table_name}.{col.name} ({col.data_type}, {nullable_str}) — {enriched_name}."
         if table.table_description:
             desc += f" Column in table {table.table_name}: {table.table_description}"
 

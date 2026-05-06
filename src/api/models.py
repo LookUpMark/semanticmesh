@@ -68,11 +68,27 @@ class PipelineConfig(BaseModel):
     """
 
     # ── LLM Provider Selection ──────────────────────────────────────────────
-    provider: Literal[
-        "auto", "openrouter", "openai", "anthropic", "lmstudio", "ollama",
-        "groq", "google", "bedrock", "azure", "mistral", "together",
-        "deepseek", "xai", "nvidia", "huggingface",
-    ] | None = Field(
+    provider: (
+        Literal[
+            "auto",
+            "openrouter",
+            "openai",
+            "anthropic",
+            "lmstudio",
+            "ollama",
+            "groq",
+            "google",
+            "bedrock",
+            "azure",
+            "mistral",
+            "together",
+            "deepseek",
+            "xai",
+            "nvidia",
+            "huggingface",
+        ]
+        | None
+    ) = Field(
         default="openrouter",
         description=_LLM_PROVIDER_DESC,
         examples=["openrouter", "openai", "lmstudio"],
@@ -126,48 +142,62 @@ class PipelineConfig(BaseModel):
 
     # ── LLM Parameters ──────────────────────────────────────────────────────
     temperature_extraction: float | None = Field(
-        default=0.0, ge=0.0, le=2.0,
+        default=0.0,
+        ge=0.0,
+        le=2.0,
         description="Temperature for extraction LLM (0.0 = deterministic JSON).",
     )
     temperature_reasoning: float | None = Field(
-        default=0.0, ge=0.0, le=2.0,
+        default=0.0,
+        ge=0.0,
+        le=2.0,
         description="Temperature for reasoning/mapping LLM (0.0 = deterministic).",
     )
     temperature_generation: float | None = Field(
-        default=0.3, ge=0.0, le=2.0,
+        default=0.3,
+        ge=0.0,
+        le=2.0,
         description="Temperature for answer generation LLM (0.3 for fluency).",
     )
     max_tokens_extraction: int | None = Field(
-        default=8192, ge=256, le=32768,
+        default=8192,
+        ge=256,
+        le=32768,
         description="Max output tokens for extraction LLM.",
     )
     max_tokens_reasoning: int | None = Field(
-        default=4096, ge=256, le=32768,
+        default=4096,
+        ge=256,
+        le=32768,
         description="Max output tokens for reasoning LLM.",
     )
 
     # ── Chunking ────────────────────────────────────────────────────────────
     chunk_size: int | None = Field(
-        default=256, ge=64, le=2048,
-        description=(
-            "Child chunk token size. Must be greater than chunk_overlap."
-        ),
+        default=256,
+        ge=64,
+        le=2048,
+        description=("Child chunk token size. Must be greater than chunk_overlap."),
     )
     chunk_overlap: int | None = Field(
-        default=32, ge=0, le=1024,
-        description=(
-            "Child chunk overlap in tokens. Must be strictly less than chunk_size."
-        ),
+        default=32,
+        ge=0,
+        le=1024,
+        description=("Child chunk overlap in tokens. Must be strictly less than chunk_size."),
     )
     parent_chunk_size: int | None = Field(
-        default=800, ge=128, le=4096,
+        default=800,
+        ge=128,
+        le=4096,
         description=(
             "Parent chunk token size. "
             "Must be greater than parent_chunk_overlap and greater than chunk_size."
         ),
     )
     parent_chunk_overlap: int | None = Field(
-        default=96, ge=0, le=2048,
+        default=96,
+        ge=0,
+        le=2048,
         description=(
             "Parent chunk overlap in tokens. Must be strictly less than parent_chunk_size."
         ),
@@ -211,11 +241,15 @@ class PipelineConfig(BaseModel):
         description="Retrieval channel combination.",
     )
     retrieval_vector_top_k: int | None = Field(
-        default=20, ge=1, le=100,
+        default=20,
+        ge=1,
+        le=100,
         description="Vector search candidates.",
     )
     retrieval_bm25_top_k: int | None = Field(
-        default=10, ge=1, le=100,
+        default=10,
+        ge=1,
+        le=100,
         description="BM25 keyword candidates.",
     )
     enable_reranker: bool | None = Field(
@@ -223,35 +257,49 @@ class PipelineConfig(BaseModel):
         description="Enable cross-encoder reranking (bge-reranker-v2-m3).",
     )
     reranker_top_k: int | None = Field(
-        default=12, ge=1, le=50,
+        default=12,
+        ge=1,
+        le=50,
         description="Candidates kept after reranking.",
     )
 
     # ── Entity Resolution ───────────────────────────────────────────────────
     er_similarity_threshold: float | None = Field(
-        default=0.75, ge=0.0, le=1.0,
+        default=0.75,
+        ge=0.0,
+        le=1.0,
         description="Cosine similarity threshold for entity blocking.",
     )
     er_blocking_top_k: int | None = Field(
-        default=10, ge=1, le=50,
+        default=10,
+        ge=1,
+        le=50,
         description="K-NN candidates per entity in blocking.",
     )
 
     # ── Mapping & Validation ────────────────────────────────────────────────
     confidence_threshold: float | None = Field(
-        default=0.90, ge=0.0, le=1.0,
+        default=0.90,
+        ge=0.0,
+        le=1.0,
         description="Mapping confidence threshold for HITL interrupt.",
     )
     max_reflection_attempts: int | None = Field(
-        default=3, ge=1, le=10,
+        default=3,
+        ge=1,
+        le=10,
         description="Max Actor-Critic reflection retries.",
     )
     max_cypher_healing_attempts: int | None = Field(
-        default=3, ge=0, le=10,
+        default=3,
+        ge=0,
+        le=10,
         description="Max Cypher healing retries before deterministic fallback.",
     )
     max_hallucination_retries: int | None = Field(
-        default=3, ge=0, le=10,
+        default=3,
+        ge=0,
+        le=10,
         description="Max hallucination regeneration retries.",
     )
 
@@ -650,6 +698,7 @@ class BuildResultResponse(BaseModel):
 
 # ── KG Snapshot models ────────────────────────────────────────────────────────
 
+
 class KGSnapshotMeta(BaseModel):
     """Metadata for a saved Knowledge Graph snapshot."""
 
@@ -686,6 +735,7 @@ class RenameSnapshotRequest(BaseModel):
 
 
 # ── Conversation models ────────────────────────────────────────────────────────
+
 
 class ConversationMessage(BaseModel):
     """A single chat message stored in a conversation."""
@@ -728,7 +778,9 @@ class SaveConversationRequest(BaseModel):
         description="Human-readable title (defaults to first user message if empty).",
         default="",
     )
-    messages: list[ConversationMessage] = Field(max_length=500, description="Full message list to persist.")
+    messages: list[ConversationMessage] = Field(
+        max_length=500, description="Full message list to persist."
+    )
     active_snapshot_id: str | None = Field(
         default=None,
         description="ID of the KG snapshot that was active during this conversation.",
@@ -758,8 +810,8 @@ class QueryRequest(BaseModel):
     session_id: str | None = Field(
         default=None,
         description="Client-generated session UUID. The server uses it as LangGraph thread_id "
-                    "so the MemorySaver checkpoint carries the full conversation history "
-                    "server-side — no need to replay history in the request body.",
+        "so the MemorySaver checkpoint carries the full conversation history "
+        "server-side — no need to replay history in the request body.",
     )
 
 
@@ -858,5 +910,3 @@ class GraphStatsResponse(BaseModel):
     references_edges: int
     total_nodes: int
     total_relationships: int
-
-

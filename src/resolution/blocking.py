@@ -52,9 +52,7 @@ def extract_unique_entities(triplets: list[Triplet]) -> list[str]:
                 rejected += 1
     unique = sorted(entities)
     if rejected:
-        logger.info(
-            "Filtered %d low-quality entity names before blocking.", rejected
-        )
+        logger.info("Filtered %d low-quality entity names before blocking.", rejected)
     logger.info("Extracted %d unique entities from %d triplets.", len(unique), len(triplets))
     return unique
 

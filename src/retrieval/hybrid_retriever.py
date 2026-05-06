@@ -206,8 +206,7 @@ def attribute_vector_search(
                 metadata={
                     key: val
                     for key, val in rec.items()
-                    if key not in ("name", "description", "score", "node_type")
-                    and val is not None
+                    if key not in ("name", "description", "score", "node_type") and val is not None
                 },
             )
         )
@@ -480,8 +479,12 @@ def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
         if enriched_cols_raw:
             try:
                 import json as _json_mod  # noqa: PLC0415
-                ec_list = (_json_mod.loads(enriched_cols_raw)
-                           if isinstance(enriched_cols_raw, str) else enriched_cols_raw)
+
+                ec_list = (
+                    _json_mod.loads(enriched_cols_raw)
+                    if isinstance(enriched_cols_raw, str)
+                    else enriched_cols_raw
+                )
                 enriched_names = [e.get("enriched", e.get("original", "")) for e in ec_list if e]
             except (TypeError, ValueError):
                 pass

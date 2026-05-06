@@ -11,6 +11,7 @@ Swagger UI:  http://127.0.0.1:8000/docs
 ReDoc:       http://127.0.0.1:8000/redoc
 OpenAPI:     http://127.0.0.1:8000/openapi.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -57,8 +58,7 @@ def main(argv: list[str] | None = None) -> None:
         import uvicorn
     except ImportError:
         print(
-            "uvicorn not found. Install it with:\n"
-            '    pip install "uvicorn[standard]"',
+            'uvicorn not found. Install it with:\n    pip install "uvicorn[standard]"',
             file=sys.stderr,
         )
         sys.exit(1)

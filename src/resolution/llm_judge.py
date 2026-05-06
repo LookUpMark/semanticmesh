@@ -156,8 +156,7 @@ def judge_cluster(
     # Use the capped reflection attempts for this expensive reasoning-tier path
     max_attempts: int = settings.max_reflection_attempts_reasoning
     _fmt = (
-        '{"merge": <bool>, "canonical_name": "<str>",'
-        ' "reasoning": "<str>", "definition": "<str>"}'
+        '{"merge": <bool>, "canonical_name": "<str>", "reasoning": "<str>", "definition": "<str>"}'
     )
 
     for attempt in range(1, max_attempts + 1):

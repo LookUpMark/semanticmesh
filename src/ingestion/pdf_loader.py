@@ -180,6 +180,7 @@ def load_pdfs_batch(paths: list[Path]) -> list[Document]:
 
         # Group by source filename so we can log per-file counts.
         from collections import defaultdict
+
         per_file: dict[str, list] = defaultdict(list)
         for lc_doc in lc_docs:
             src = Path(lc_doc.metadata.get("source", "")).name

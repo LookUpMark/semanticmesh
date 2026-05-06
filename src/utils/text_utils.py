@@ -152,14 +152,41 @@ _CAMEL_SPLIT_RE: Final[re.Pattern[str]] = re.compile(r"([a-z])([A-Z])")
 
 #: English articles/determiners and common sentence-starter verbs to skip when
 #: extracting a noun phrase from a sentence-like concept name.
-_LEADING_SKIP_WORDS: Final[frozenset[str]] = frozenset({
-    "a", "an", "the", "this", "that", "these", "those",
-    "each", "every", "any", "some", "all",
-    "it", "its", "they", "their",
-    "is", "are", "was", "were", "be", "been",
-    "represents", "contains", "stores", "holds", "describes",
-    "indicates", "records", "defines", "specifies",
-})
+_LEADING_SKIP_WORDS: Final[frozenset[str]] = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "this",
+        "that",
+        "these",
+        "those",
+        "each",
+        "every",
+        "any",
+        "some",
+        "all",
+        "it",
+        "its",
+        "they",
+        "their",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "represents",
+        "contains",
+        "stores",
+        "holds",
+        "describes",
+        "indicates",
+        "records",
+        "defines",
+        "specifies",
+    }
+)
 
 #: Regex to detect a sentence-like concept name: starts with a determiner/article
 #: or has a subordinating clause marker.
@@ -168,36 +195,134 @@ _SENTENCE_MARKER_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 #: Words that alone (or as the sole content) are too generic to be a valid entity.
-_STOPWORD_ONLY_NAMES: Final[frozenset[str]] = frozenset({
-    "it", "its", "they", "them", "their", "this", "that", "these", "those",
-    "he", "she", "we", "you", "me", "him", "her", "us",
-    "is", "are", "was", "were", "be", "been", "being",
-    "has", "have", "had", "do", "does", "did",
-    "the", "a", "an", "some", "any", "all", "each", "every",
-    "data", "value", "item", "thing", "type", "record", "field",
-    "null", "none", "true", "false", "yes", "no",
-})
+_STOPWORD_ONLY_NAMES: Final[frozenset[str]] = frozenset(
+    {
+        "it",
+        "its",
+        "they",
+        "them",
+        "their",
+        "this",
+        "that",
+        "these",
+        "those",
+        "he",
+        "she",
+        "we",
+        "you",
+        "me",
+        "him",
+        "her",
+        "us",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "has",
+        "have",
+        "had",
+        "do",
+        "does",
+        "did",
+        "the",
+        "a",
+        "an",
+        "some",
+        "any",
+        "all",
+        "each",
+        "every",
+        "data",
+        "value",
+        "item",
+        "thing",
+        "type",
+        "record",
+        "field",
+        "null",
+        "none",
+        "true",
+        "false",
+        "yes",
+        "no",
+    }
+)
 
 #: Verbs/modals/auxiliaries that indicate a clause fragment, not a noun phrase.
 #: If a short phrase (2-4 words) contains one of these, it's likely not a proper entity.
-_CLAUSE_INDICATOR_WORDS: Final[frozenset[str]] = frozenset({
-    # Modals
-    "can", "could", "may", "might", "shall", "should", "will", "would", "must",
-    # Auxiliaries
-    "is", "are", "was", "were", "be", "been", "being",
-    "has", "have", "had", "do", "does", "did",
-    # Common verbs that produce fragments
-    "before", "after", "when", "while", "where", "then", "than",
-    "if", "unless", "until", "although", "because", "since",
-    # Prepositions that indicate truncated clauses
-    "into", "onto", "upon", "within", "without", "between", "among",
-    "through", "during", "against", "towards",
-})
+_CLAUSE_INDICATOR_WORDS: Final[frozenset[str]] = frozenset(
+    {
+        # Modals
+        "can",
+        "could",
+        "may",
+        "might",
+        "shall",
+        "should",
+        "will",
+        "would",
+        "must",
+        # Auxiliaries
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "has",
+        "have",
+        "had",
+        "do",
+        "does",
+        "did",
+        # Common verbs that produce fragments
+        "before",
+        "after",
+        "when",
+        "while",
+        "where",
+        "then",
+        "than",
+        "if",
+        "unless",
+        "until",
+        "although",
+        "because",
+        "since",
+        # Prepositions that indicate truncated clauses
+        "into",
+        "onto",
+        "upon",
+        "within",
+        "without",
+        "between",
+        "among",
+        "through",
+        "during",
+        "against",
+        "towards",
+    }
+)
 
 # Suffixes that indicate the LLM confused a database field with a concept
-_IDENTIFIER_SUFFIXES: Final[frozenset[str]] = frozenset({
-    "id", "ids", "key", "code", "number", "num", "no", "pk", "fk",
-})
+_IDENTIFIER_SUFFIXES: Final[frozenset[str]] = frozenset(
+    {
+        "id",
+        "ids",
+        "key",
+        "code",
+        "number",
+        "num",
+        "no",
+        "pk",
+        "fk",
+    }
+)
+
 
 def is_valid_entity_name(name: str) -> bool:
     """Check whether a raw entity string is a valid concept name.
@@ -255,10 +380,7 @@ def is_valid_entity_name(name: str) -> bool:
         return False
 
     # Reject if ALL words are stopwords
-    content_words = [
-        w for w in words
-        if w.lower().strip(".,;:!?\"'()") not in _STOPWORD_ONLY_NAMES
-    ]
+    content_words = [w for w in words if w.lower().strip(".,;:!?\"'()") not in _STOPWORD_ONLY_NAMES]
     if not content_words:
         return False
 

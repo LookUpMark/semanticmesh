@@ -59,6 +59,7 @@ def close_shared_driver() -> None:
         _singleton_uri = None
         _singleton_auth = None
 
+
 _SCHEMA_STATEMENTS: list[str] = [
     "CREATE CONSTRAINT businessconcept_name_unique IF NOT EXISTS "
     "FOR (n:BusinessConcept) REQUIRE n.name IS UNIQUE",

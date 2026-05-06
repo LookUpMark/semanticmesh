@@ -41,6 +41,7 @@ def invalidate_bm25_cache() -> None:
     from src.retrieval.hybrid_retriever import (  # local import breaks cycle
         invalidate_bm25_cache as _invalidate,
     )
+
     _invalidate()
 
 

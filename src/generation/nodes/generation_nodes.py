@@ -34,6 +34,7 @@ _PRIORITY_STRUCTURE_TOKENS = ("references", "foreign key")
 
 def _query_terms(query: str) -> set[str]:
     from src.utils.query_utils import query_terms as _qt
+
     return _qt(query)
 
 
@@ -61,7 +62,9 @@ def _compose_generation_chunks(
 
     settings = get_settings()
     _max_core = max_core if max_core is not None else settings.generation_max_core_chunks
-    _max_support = max_support if max_support is not None else settings.generation_max_support_chunks
+    _max_support = (
+        max_support if max_support is not None else settings.generation_max_support_chunks
+    )
 
     terms = _query_terms(query)
 
@@ -131,7 +134,9 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
         llm = get_reasoning_llm()
         query: str = state["user_query"]
         chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
-        generation_chunks = state.get("generation_chunks") or _compose_generation_chunks(query, chunks)
+        generation_chunks = state.get("generation_chunks") or _compose_generation_chunks(
+            query, chunks
+        )
         critique: str | None = state.get("last_critique")
         sufficiency: str = state.get("context_sufficiency", "insufficient")
 
@@ -156,7 +161,14 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
             history=history,
         )
         iteration = state.get("iteration_count", 0) + 1
-        log_node_event(logger, "answer_generation", f"iteration={iteration} chunks={len(generation_chunks)}", "answer generated", timer.elapsed_ms, model_used=get_settings().llm_model_reasoning)
+        log_node_event(
+            logger,
+            "answer_generation",
+            f"iteration={iteration} chunks={len(generation_chunks)}",
+            "answer generated",
+            timer.elapsed_ms,
+            model_used=get_settings().llm_model_reasoning,
+        )
         return {
             "current_answer": answer,
             "iteration_count": iteration,
@@ -198,5 +210,11 @@ def _node_grade_hallucination(state: QueryState) -> dict[str, Any]:
         if decision.action == "regenerate":
             update["last_critique"] = decision.critique
             update["grader_rejection_count"] = int(state.get("grader_rejection_count", 0)) + 1
-        log_node_event(logger, "grade_hallucination", f"iteration={iteration}", f"action={decision.action}", timer.elapsed_ms)
+        log_node_event(
+            logger,
+            "grade_hallucination",
+            f"iteration={iteration}",
+            f"action={decision.action}",
+            timer.elapsed_ms,
+        )
         return update
