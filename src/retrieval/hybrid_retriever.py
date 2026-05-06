@@ -76,22 +76,22 @@ def build_node_index(client: Neo4jClient) -> list[dict[str, Any]]:
             logger.debug("build_node_index: cache hit (%d nodes).", len(_NODE_INDEX_CACHE))
             return _NODE_INDEX_CACHE
 
-    concept_records = client.execute_cypher(
+    all_nodes = client.execute_cypher(
         "MATCH (n:BusinessConcept) RETURN n.name AS name, "
         "n.definition AS definition, 'BusinessConcept' AS node_type, "
-        "n.synonyms AS synonyms, n.source_doc AS source_doc"
-    )
-    table_records = client.execute_cypher(
+        "n.synonyms AS synonyms, n.source_doc AS source_doc, "
+        "null AS column_names, null AS text, null AS chunk_index "
+        "UNION ALL "
         "MATCH (n:PhysicalTable) RETURN n.table_name AS name, "
         "'' AS definition, 'PhysicalTable' AS node_type, "
         "[] AS synonyms, n.source_doc AS source_doc, "
-        "n.column_names AS column_names"
+        "n.column_names AS column_names, null AS text, null AS chunk_index "
+        "UNION ALL "
+        "MATCH (pc:ParentChunk) RETURN null AS name, "
+        "null AS definition, 'ParentChunk' AS node_type, "
+        "null AS synonyms, pc.source_doc AS source_doc, "
+        "null AS column_names, pc.text AS text, pc.parent_chunk_index AS chunk_index"
     )
-    chunk_records = client.execute_cypher(
-        "MATCH (pc:ParentChunk) RETURN pc.text AS text, "
-        "pc.parent_chunk_index AS chunk_index, pc.source_doc AS source_doc, 'ParentChunk' AS node_type"
-    )
-    all_nodes = concept_records + table_records + chunk_records
     logger.debug("build_node_index: %d nodes fetched from Neo4j.", len(all_nodes))
 
     with _NODE_INDEX_LOCK:
