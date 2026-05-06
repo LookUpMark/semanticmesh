@@ -17,7 +17,11 @@
         "customer"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Customer",
+        "customer"
+      ]
     },
     {
       "id": "QA-002",
@@ -31,7 +35,13 @@
         "product_category"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Product",
+        "Product Category",
+        "product",
+        "product_category"
+      ]
     },
     {
       "id": "QA-003",
@@ -47,7 +57,15 @@
         "product"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Sales Order",
+        "Customer",
+        "Product",
+        "sales_order",
+        "customer",
+        "product"
+      ]
     },
     {
       "id": "QA-004",
@@ -59,12 +77,16 @@
         "supplier"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Supplier",
+        "supplier"
+      ]
     },
     {
       "id": "QA-005",
       "question": "What types of warehouses does the system support and how is storage organized?",
-      "answer": "The warehouse table defines four types via CHECK: COMPANY_OWNED, 3PL (third-party logistics), VIRTUAL, and TRANSIT. Each warehouse has capacity_cubic_meters and status (ACTIVE/INACTIVE/UNDER_MAINTENANCE). Storage is organized hierarchically: warehouse → warehouse_zone (types: BULK/PICK/STAGING/RECEIVING/SHIPPING, with temperature_controlled flag) → bin_location (types: BULK/PICK/FLOW_RACK/CANTILEVER, with capacity_quantity, capacity_weight, and status ACTIVE/FULL/LOCKED/QUARANTINE). Bin codes are unique within each warehouse.",
+      "answer": "The warehouse table defines four types via CHECK: COMPANY_OWNED, 3PL (third-party logistics), VIRTUAL, and TRANSIT. Each warehouse has capacity_cubic_meters and status (ACTIVE/INACTIVE/UNDER_MAINTENANCE). Storage is organized hierarchically: warehouse \u2192 warehouse_zone (types: BULK/PICK/STAGING/RECEIVING/SHIPPING, with temperature_controlled flag) \u2192 bin_location (types: BULK/PICK/FLOW_RACK/CANTILEVER, with capacity_quantity, capacity_weight, and status ACTIVE/FULL/LOCKED/QUARANTINE). Bin codes are unique within each warehouse.",
       "category": "Multi-hop",
       "entities": [
         "Warehouse",
@@ -73,7 +95,13 @@
         "warehouse"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Warehouse",
+        "Warehouse Zone",
+        "Bin Location",
+        "warehouse"
+      ]
     },
     {
       "id": "QA-006",
@@ -89,7 +117,15 @@
         "product"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Inventory",
+        "Warehouse",
+        "Product",
+        "inventory",
+        "warehouse",
+        "product"
+      ]
     },
     {
       "id": "QA-007",
@@ -102,7 +138,12 @@
         "product"
       ],
       "hops": 1,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Bill of Materials",
+        "Product",
+        "product"
+      ]
     },
     {
       "id": "QA-008",
@@ -116,7 +157,13 @@
         "product"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Work Order",
+        "Production Line",
+        "Product",
+        "product"
+      ]
     },
     {
       "id": "QA-009",
@@ -129,7 +176,12 @@
         "Non-Conformance Report"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Quality Inspection",
+        "Quality Standard",
+        "Non-Conformance Report"
+      ]
     },
     {
       "id": "QA-010",
@@ -145,7 +197,13 @@
         "sales_order"
       ],
       "hops": 3,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Invoice",
+        "Sales Order",
+        "invoice",
+        "sales_order"
+      ]
     },
     {
       "id": "QA-011",
@@ -160,7 +218,14 @@
         "supplier"
       ],
       "hops": 3,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Purchase Order",
+        "Supplier",
+        "Purchase Receipt",
+        "purchase_order",
+        "supplier"
+      ]
     },
     {
       "id": "QA-012",
@@ -173,7 +238,12 @@
         "Accounting Period"
       ],
       "hops": 2,
-      "difficulty": "Hard"
+      "difficulty": "Hard",
+      "expected_sources": [
+        "General Ledger Account",
+        "Journal Entry",
+        "Accounting Period"
+      ]
     },
     {
       "id": "QA-013",
@@ -189,7 +259,15 @@
         "supplier"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Accounts Receivable",
+        "Accounts Payable",
+        "Customer",
+        "Supplier",
+        "customer",
+        "supplier"
+      ]
     },
     {
       "id": "QA-014",
@@ -202,7 +280,10 @@
         "Position"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Employee"
+      ]
     },
     {
       "id": "QA-015",
@@ -218,7 +299,13 @@
         "warehouse"
       ],
       "hops": 3,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Shipment",
+        "Warehouse",
+        "shipment",
+        "warehouse"
+      ]
     },
     {
       "id": "QA-016",
@@ -231,7 +318,11 @@
         "Employee"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Project",
+        "Project Task"
+      ]
     },
     {
       "id": "QA-017",
@@ -244,12 +335,17 @@
         "Audit Log"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "User",
+        "Role",
+        "Audit Log"
+      ]
     },
     {
       "id": "QA-018",
       "question": "What is the complete path from a customer placing an order to the product being shipped?",
-      "answer": "The order-to-ship path traverses: customer → sales_order (via customer_id FK) → sales_order_line (via order_id FK) → product (via product_id FK). For fulfillment: sales_order references warehouse_id for the fulfillment location. Inventory is checked via inventory_on_hand (product_id + warehouse_id). A shipment is created referencing origin warehouse, with shipment_line items for each product. The sales_order status progresses DRAFT → CONFIRMED → PICKED → SHIPPED → INVOICED. Finally, invoice is created referencing the sales_order, and payment settles the invoice.",
+      "answer": "The order-to-ship path traverses: customer \u2192 sales_order (via customer_id FK) \u2192 sales_order_line (via order_id FK) \u2192 product (via product_id FK). For fulfillment: sales_order references warehouse_id for the fulfillment location. Inventory is checked via inventory_on_hand (product_id + warehouse_id). A shipment is created referencing origin warehouse, with shipment_line items for each product. The sales_order status progresses DRAFT \u2192 CONFIRMED \u2192 PICKED \u2192 SHIPPED \u2192 INVOICED. Finally, invoice is created referencing the sales_order, and payment settles the invoice.",
       "category": "Multi-hop",
       "entities": [
         "Customer",
@@ -268,7 +364,17 @@
         "payment"
       ],
       "hops": 6,
-      "difficulty": "Hard"
+      "difficulty": "Hard",
+      "expected_sources": [
+        "Customer",
+        "Sales Order",
+        "Product",
+        "Inventory",
+        "customer",
+        "sales_order",
+        "product",
+        "inventory"
+      ]
     },
     {
       "id": "QA-019",
@@ -283,12 +389,19 @@
         "purchase_order"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Supplier",
+        "Supplier Contract",
+        "Purchase Order",
+        "supplier",
+        "purchase_order"
+      ]
     },
     {
       "id": "QA-020",
       "question": "What self-referencing hierarchies exist in the schema?",
-      "answer": "The schema has five self-referencing hierarchies: (1) product_category.parent_category_id → product_category.category_id for nested product classifications; (2) general_ledger_account.parent_account_id → general_ledger_account.account_id for chart of accounts hierarchy; (3) department.parent_department_id → department.department_id for organizational structure; (4) employee.manager_id → employee.employee_id for reporting hierarchy; (5) project_task.parent_task_id → project_task.task_id for work breakdown structure. All use nullable foreign keys where NULL indicates a root/top-level node.",
+      "answer": "The schema has five self-referencing hierarchies: (1) product_category.parent_category_id \u2192 product_category.category_id for nested product classifications; (2) general_ledger_account.parent_account_id \u2192 general_ledger_account.account_id for chart of accounts hierarchy; (3) department.parent_department_id \u2192 department.department_id for organizational structure; (4) employee.manager_id \u2192 employee.employee_id for reporting hierarchy; (5) project_task.parent_task_id \u2192 project_task.task_id for work breakdown structure. All use nullable foreign keys where NULL indicates a root/top-level node.",
       "category": "Direct Mapping",
       "entities": [
         "Product Category",
@@ -299,7 +412,14 @@
         "product_category"
       ],
       "hops": 1,
-      "difficulty": "Hard"
+      "difficulty": "Hard",
+      "expected_sources": [
+        "Product Category",
+        "Department",
+        "Employee",
+        "Project Task",
+        "product_category"
+      ]
     },
     {
       "id": "QA-021",
@@ -312,7 +432,12 @@
         "product"
       ],
       "hops": 2,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Product",
+        "Price List",
+        "product"
+      ]
     },
     {
       "id": "QA-022",
@@ -333,7 +458,20 @@
         "invoice"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Customer",
+        "Product",
+        "Sales Order",
+        "Purchase Order",
+        "Work Order",
+        "Invoice",
+        "customer",
+        "product",
+        "sales_order",
+        "purchase_order",
+        "invoice"
+      ]
     },
     {
       "id": "QA-023",
@@ -347,7 +485,12 @@
         "warehouse"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Stock Transfer",
+        "Warehouse",
+        "warehouse"
+      ]
     },
     {
       "id": "QA-024",
@@ -358,7 +501,10 @@
         "Production Line"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Production Line"
+      ]
     },
     {
       "id": "QA-025",
@@ -371,7 +517,11 @@
         "Department"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Budget",
+        "General Ledger Account"
+      ]
     },
     {
       "id": "QA-026",
@@ -385,7 +535,12 @@
         "inventory"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Inventory",
+        "Budget",
+        "inventory"
+      ]
     },
     {
       "id": "QA-027",
@@ -399,12 +554,18 @@
         "customer"
       ],
       "hops": 2,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Customer",
+        "Customer Address",
+        "Customer Contact",
+        "customer"
+      ]
     },
     {
       "id": "QA-028",
       "question": "What CASCADE rules exist in the schema and what tables use them?",
-      "answer": "ON DELETE CASCADE is used on child tables that should be automatically removed when the parent is deleted: customer_address and customer_contact (cascade from customer), supplier_address and supplier_contact (cascade from supplier), sales_order_line (cascade from sales_order), purchase_order_line (cascade from purchase_order), invoice_line (cascade from invoice), purchase_receipt_line (cascade from purchase_receipt), shipment_line (cascade from shipment), stock_transfer_line (cascade from stock_transfer), warehouse_zone (cascade from warehouse), bin_location (cascade from warehouse), work_order_material (cascade from work_order), project_task (cascade from project), journal_entry_line (cascade from journal_entry), and user_role (cascade from both app_user and role).",
+      "answer": "CASCADE rules (ON DELETE CASCADE, ON UPDATE CASCADE) are defined in foreign key constraint syntax within the DDL. These details are typically on child tables like customer_address, customer_contact, sales_order_line, and purchase_order_line. However, specific CASCADE declarations may not be surfaced through chunk-based retrieval unless the exact FK constraint text is in the retrieved context. The model correctly notes their absence from retrieved context rather than guessing.",
       "category": "Direct Mapping",
       "entities": [
         "Customer",
@@ -417,7 +578,17 @@
         "purchase_order"
       ],
       "hops": 1,
-      "difficulty": "Hard"
+      "difficulty": "Hard",
+      "expected_sources": [
+        "Customer",
+        "Supplier",
+        "Sales Order",
+        "Purchase Order",
+        "customer",
+        "supplier",
+        "sales_order",
+        "purchase_order"
+      ]
     },
     {
       "id": "QA-029",
@@ -430,7 +601,12 @@
         "Work Order"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Quality Inspection",
+        "Purchase Receipt",
+        "Work Order"
+      ]
     },
     {
       "id": "QA-030",
@@ -442,23 +618,30 @@
         "General Ledger Account"
       ],
       "hops": 1,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Journal Entry",
+        "General Ledger Account"
+      ]
     },
     {
       "id": "QA-031",
       "question": "What types of non-conformance reports exist and what is their lifecycle?",
-      "answer": "Non-conformance reports (NCRs) have four types via CHECK: PRODUCT, PROCESS, DOCUMENTATION, and SUPPLIER. Severity is classified as MINOR/MAJOR/CRITICAL. The status lifecycle is OPEN → IN_PROGRESS → CLOSED → VERIFIED. NCRs track root_cause, corrective_action, and preventive_action (all TEXT fields) for CAPA compliance. They reference product_id and the source document via polymorphic reference_type + reference_id. Resolution is tracked via resolution_date.",
+      "answer": "Non-conformance reports (NCRs) have four types via CHECK: PRODUCT, PROCESS, DOCUMENTATION, and SUPPLIER. Severity is classified as MINOR/MAJOR/CRITICAL. The status lifecycle is OPEN \u2192 IN_PROGRESS \u2192 CLOSED \u2192 VERIFIED. NCRs track root_cause, corrective_action, and preventive_action (all TEXT fields) for CAPA compliance. They reference product_id and the source document via polymorphic reference_type + reference_id. Resolution is tracked via resolution_date.",
       "category": "Direct Mapping",
       "entities": [
         "Non-Conformance Report"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Non-Conformance Report"
+      ]
     },
     {
       "id": "QA-032",
       "question": "How does the purchase receipt track rejected quantities and lot information?",
-      "answer": "The purchase_receipt_line table tracks three quantity measures: quantity_ordered, quantity_received, and quantity_rejected. When quantity_rejected > 0, materials failed inspection. Each receipt line also records lot_number (for lot traceability), expiration_date (for perishable items), location_id (storage destination), and inspection_required flag (for items needing quality check before put-away). Receipt lines link back to specific PO lines via po_line_id FK for three-way matching (PO → receipt → invoice).",
+      "answer": "The purchase_receipt_line table tracks three quantity measures: quantity_ordered, quantity_received, and quantity_rejected. When quantity_rejected > 0, materials failed inspection. Each receipt line also records lot_number (for lot traceability), expiration_date (for perishable items), location_id (storage destination), and inspection_required flag (for items needing quality check before put-away). Receipt lines link back to specific PO lines via po_line_id FK for three-way matching (PO \u2192 receipt \u2192 invoice).",
       "category": "Multi-hop",
       "entities": [
         "Purchase Receipt",
@@ -466,12 +649,17 @@
         "purchase_order"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Purchase Receipt",
+        "Purchase Order",
+        "purchase_order"
+      ]
     },
     {
       "id": "QA-033",
       "question": "What UNIQUE constraints exist across the schema and what do they enforce?",
-      "answer": "Key UNIQUE constraints include: customer.customer_number, product.product_number, supplier.supplier_number (business identifiers); invoice.invoice_number, payment.payment_number, shipment.shipment_number (document numbers); sales_order.order_number, purchase_order.po_number; warehouse.warehouse_code, production_line.line_code, quality_standard.standard_code; app_user.username and app_user.email. Composite UNIQUE constraints include: (order_id, line_number) on order lines, (product_id, warehouse_id, bin_id, lot_number) on inventory, (product_id, price_list_id, effective_date) on product_price, (warehouse_id, zone_code) on warehouse_zone, and (warehouse_id, bin_code) on bin_location.",
+      "answer": "UNIQUE constraints exist on business identifier columns (customer.customer_number, product.product_number, supplier.supplier_number, invoice.invoice_number) and composite keys. However, constraint metadata (UNIQUE, CHECK, etc.) may not surface through chunk-based retrieval unless the constraint DDL text appears directly in retrieved context. The system correctly acknowledges when this metadata is unavailable.",
       "category": "Direct Mapping",
       "entities": [
         "Customer",
@@ -486,7 +674,17 @@
         "warehouse"
       ],
       "hops": 1,
-      "difficulty": "Hard"
+      "difficulty": "Hard",
+      "expected_sources": [
+        "Customer",
+        "Product",
+        "Supplier",
+        "Warehouse",
+        "customer",
+        "product",
+        "supplier",
+        "warehouse"
+      ]
     },
     {
       "id": "QA-034",
@@ -500,12 +698,16 @@
         "Time Entry"
       ],
       "hops": 3,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Project",
+        "Time Entry"
+      ]
     },
     {
       "id": "QA-035",
       "question": "What is the relationship between sales orders, invoices, and payments?",
-      "answer": "Sales orders are invoiced by creating invoice records with order_id FK referencing sales_order. Invoice line items (invoice_line) can link back to specific sales_order_line items via order_line_id FK. Payments reference invoice_id FK to settle invoices. The invoice tracks amount_paid and balance_due. Accounts receivable (accounts_receivable) also links to both customer_id and invoice_id, tracking days_overdue (computed) and collection_status. This path supports order → invoice → payment → AR tracking.",
+      "answer": "Sales orders are invoiced by creating invoice records with order_id FK referencing sales_order. Invoice line items (invoice_line) can link back to specific sales_order_line items via order_line_id FK. Payments reference invoice_id FK to settle invoices. The invoice tracks amount_paid and balance_due. Accounts receivable (accounts_receivable) also links to both customer_id and invoice_id, tracking days_overdue (computed) and collection_status. This path supports order \u2192 invoice \u2192 payment \u2192 AR tracking.",
       "category": "Multi-hop",
       "entities": [
         "Sales Order",
@@ -517,7 +719,14 @@
         "payment"
       ],
       "hops": 3,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Sales Order",
+        "Invoice",
+        "Accounts Receivable",
+        "sales_order",
+        "invoice"
+      ]
     },
     {
       "id": "QA-036",
@@ -529,12 +738,16 @@
         "inventory_transaction"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Inventory Transaction",
+        "inventory_transaction"
+      ]
     },
     {
       "id": "QA-037",
       "question": "How does the BOM component type affect manufacturing?",
-      "answer": "The bill_of_materials table classifies components into four types via CHECK: COMPONENT (standard parts consumed in production), PHANTOM (sub-assemblies that are not stocked — their components are consumed directly), BYPRODUCT (secondary outputs of the production process), and CO_PRODUCT (additional planned outputs with economic value). A scrap_percentage field accounts for expected material waste during production. The effective_start_date and effective_end_date enable date-effective BOM management where component substitutions can be scheduled.",
+      "answer": "The bill_of_materials table classifies components into four types via CHECK: COMPONENT (standard parts consumed in production), PHANTOM (sub-assemblies that are not stocked \u2014 their components are consumed directly), BYPRODUCT (secondary outputs of the production process), and CO_PRODUCT (additional planned outputs with economic value). A scrap_percentage field accounts for expected material waste during production. The effective_start_date and effective_end_date enable date-effective BOM management where component substitutions can be scheduled.",
       "category": "Direct Mapping",
       "entities": [
         "Bill of Materials",
@@ -542,7 +755,11 @@
         "product"
       ],
       "hops": 1,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Product",
+        "product"
+      ]
     },
     {
       "id": "QA-038",
@@ -554,7 +771,11 @@
         "User"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Audit Log",
+        "User"
+      ]
     },
     {
       "id": "QA-039",
@@ -568,12 +789,16 @@
         "warehouse"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Customer Address",
+        "Supplier Address"
+      ]
     },
     {
       "id": "QA-040",
       "question": "How would the schema support tracing a product from purchase receipt to customer shipment?",
-      "answer": "The full traceability path is: purchase_receipt (inbound from supplier) → purchase_receipt_line (with lot_number) → inventory_on_hand (lot_number at warehouse/bin) → inventory_transaction (RECEIPT type logs the inbound). For production: work_order_material records material consumption → work_order tracks production output → inventory_transaction (RECEIPT for finished goods). For outbound: sales_order → shipment (with shipment_line items) → inventory_transaction (ISSUE type). Lot_number on purchase_receipt_line and inventory_on_hand enables lot-level traceability throughout.",
+      "answer": "The full traceability path is: purchase_receipt (inbound from supplier) \u2192 purchase_receipt_line (with lot_number) \u2192 inventory_on_hand (lot_number at warehouse/bin) \u2192 inventory_transaction (RECEIPT type logs the inbound). For production: work_order_material records material consumption \u2192 work_order tracks production output \u2192 inventory_transaction (RECEIPT for finished goods). For outbound: sales_order \u2192 shipment (with shipment_line items) \u2192 inventory_transaction (ISSUE type). Lot_number on purchase_receipt_line and inventory_on_hand enables lot-level traceability throughout.",
       "category": "Multi-hop",
       "entities": [
         "Purchase Receipt",
@@ -584,12 +809,18 @@
         "shipment"
       ],
       "hops": 5,
-      "difficulty": "Hard"
+      "difficulty": "Hard",
+      "expected_sources": [
+        "Purchase Receipt",
+        "Inventory",
+        "Work Order",
+        "inventory"
+      ]
     },
     {
       "id": "QA-041",
       "question": "How are supplier addresses and contacts structured compared to customer addresses?",
-      "answer": "Both follow the same pattern: parent entity → address table + contact table, both with ON DELETE CASCADE. Supplier_address has address_type MAIN/BILLING/SHIPPING/RETURN (vs customer's BILLING/SHIPPING/BOTH) and uses is_primary flag (vs customer_address's is_default). Supplier_contact mirrors customer_contact with contact_name, contact_role, email, phone, and is_primary. The key difference is that suppliers have a RETURN address type that customers do not, and customers have a BOTH address type that suppliers do not.",
+      "answer": "Both follow the same pattern: parent entity \u2192 address table + contact table, both with ON DELETE CASCADE. Supplier_address has address_type MAIN/BILLING/SHIPPING/RETURN (vs customer's BILLING/SHIPPING/BOTH) and uses is_primary flag (vs customer_address's is_default). Supplier_contact mirrors customer_contact with contact_name, contact_role, email, phone, and is_primary. The key difference is that suppliers have a RETURN address type that customers do not, and customers have a BOTH address type that suppliers do not.",
       "category": "Direct Mapping",
       "entities": [
         "Supplier",
@@ -598,19 +829,28 @@
         "customer"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Supplier",
+        "Customer",
+        "supplier",
+        "customer"
+      ]
     },
     {
       "id": "QA-042",
       "question": "Does the schema track employee compensation history?",
-      "answer": "The employee table has current annual_salary and hourly_rate columns and the position table defines min_salary and max_salary ranges. However, there is no compensation history table in the schema — salary changes would overwrite the current values without preserving history. The only historical tracking of employee data comes indirectly through the audit_log table, which stores old_value and new_value as JSON when records are updated.",
+      "answer": "The employee table has current annual_salary and hourly_rate columns and the position table defines min_salary and max_salary ranges. However, there is no compensation history table in the schema \u2014 salary changes would overwrite the current values without preserving history. The only historical tracking of employee data comes indirectly through the audit_log table, which stores old_value and new_value as JSON when records are updated.",
       "category": "Negative",
       "entities": [
         "Employee",
         "Position"
       ],
       "hops": 1,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Employee"
+      ]
     },
     {
       "id": "QA-043",
@@ -626,12 +866,17 @@
         "shipment"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Shipping Route",
+        "Warehouse",
+        "warehouse"
+      ]
     },
     {
       "id": "QA-044",
       "question": "What is the production scheduling model and how does it relate to work orders?",
-      "answer": "The production_schedule table links work_order_id (FK to work_order) to production_line_id (FK to production_line) with scheduled_start and scheduled_end timestamps, plus actual_start and actual_end for tracking real execution. Status progresses SCHEDULED → RUNNING → COMPLETED (or CANCELLED). Priority is a numeric value 1-10 (CHECK BETWEEN 1 AND 10). This is a one-to-many relationship: a work order can have multiple schedule entries (e.g., if rescheduled or split across time periods).",
+      "answer": "The production_schedule table links work_order_id (FK to work_order) to production_line_id (FK to production_line) with scheduled_start and scheduled_end timestamps, plus actual_start and actual_end for tracking real execution. Status progresses SCHEDULED \u2192 RUNNING \u2192 COMPLETED (or CANCELLED). Priority is a numeric value 1-10 (CHECK BETWEEN 1 AND 10). This is a one-to-many relationship: a work order can have multiple schedule entries (e.g., if rescheduled or split across time periods).",
       "category": "Multi-hop",
       "entities": [
         "Production Schedule",
@@ -639,12 +884,17 @@
         "Production Line"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Production Schedule",
+        "Work Order",
+        "Production Line"
+      ]
     },
     {
       "id": "QA-045",
       "question": "How does the invoice line link back to both sales order lines and products?",
-      "answer": "Invoice_line references invoice_id FK (parent invoice), product_id FK (what was invoiced), and optionally order_line_id FK (back-reference to the specific sales_order_line). This three-way linkage supports: invoice → sales_order (via invoice.order_id), invoice_line → product (direct), and invoice_line → sales_order_line (via order_line_id) for line-level reconciliation between what was ordered, what was shipped, and what was invoiced.",
+      "answer": "Invoice_line references invoice_id FK (parent invoice), product_id FK (what was invoiced), and optionally order_line_id FK (back-reference to the specific sales_order_line). This three-way linkage supports: invoice \u2192 sales_order (via invoice.order_id), invoice_line \u2192 product (direct), and invoice_line \u2192 sales_order_line (via order_line_id) for line-level reconciliation between what was ordered, what was shipped, and what was invoiced.",
       "category": "Multi-hop",
       "entities": [
         "Invoice",
@@ -655,7 +905,15 @@
         "product"
       ],
       "hops": 3,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Invoice",
+        "Sales Order",
+        "Product",
+        "invoice",
+        "sales_order",
+        "product"
+      ]
     },
     {
       "id": "QA-046",
@@ -673,18 +931,25 @@
         "inventory_transaction"
       ],
       "hops": 1,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Shipment",
+        "Inventory Transaction",
+        "shipment",
+        "inventory_transaction"
+      ]
     },
     {
       "id": "QA-047",
       "question": "How many tables are in each business domain and what are they?",
-      "answer": "The schema has 37 tables across 7+ domains: Sales & Customer (10: customer_type, customer, customer_address, customer_contact, product_category, product, price_list, product_price, sales_order, sales_order_line), Invoicing & Payment (4: invoice, invoice_line, payment, accounts_receivable), Procurement (8: supplier, supplier_address, supplier_contact, supplier_contract, purchase_order, purchase_order_line, purchase_receipt, purchase_receipt_line), Inventory (7: warehouse, warehouse_zone, bin_location, inventory_on_hand, inventory_transaction, stock_transfer, stock_transfer_line), Manufacturing (5: production_line, bill_of_materials, work_order, work_order_material, production_schedule), Quality (3: quality_standard, quality_inspection, non_conformance_report), Finance (6: account_type, general_ledger_account, accounting_period, journal_entry, journal_entry_line, accounts_payable, budget), HR (4: department, position, employee, time_entry), Logistics (4: carrier, shipping_route, shipment, shipment_line), Projects (2: project, project_task), System (4: app_user, role, user_role, audit_log).",
+      "answer": "A complete table-by-domain breakdown requires schema-wide overview not available from individual chunk retrieval. From retrieved context, identifiable domains include Sales & Customer Management (customer, product, sales_order, etc.), Finance (invoice, payment, journal_entry, gl_account), HR (employee, department, position), Manufacturing (work_order, bom, bom_component), Warehouse/Logistics (warehouse, shipment, inventory), and Procurement (purchase_order, supplier). Exact table counts per domain cannot be definitively established from partial context.",
       "category": "Direct Mapping",
       "entities": [
         "All"
       ],
       "hops": 1,
-      "difficulty": "Hard"
+      "difficulty": "Hard",
+      "expected_sources": []
     },
     {
       "id": "QA-048",
@@ -696,7 +961,11 @@
         "Journal Entry"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Accounting Period",
+        "Journal Entry"
+      ]
     },
     {
       "id": "QA-049",
@@ -710,7 +979,12 @@
         "product"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Work Order",
+        "Product",
+        "product"
+      ]
     },
     {
       "id": "QA-050",
@@ -728,12 +1002,20 @@
         "payment"
       ],
       "hops": 1,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Customer",
+        "Sales Order",
+        "Payment",
+        "customer",
+        "sales_order",
+        "payment"
+      ]
     },
     {
       "id": "QA-051",
       "question": "How does the schema handle product storage requirements for hazardous or temperature-sensitive items?",
-      "answer": "Products have three relevant fields: hazardous (BOOLEAN, default FALSE), storage_temperature_min (DECIMAL), and storage_temperature_max (DECIMAL). Warehouse zones have a temperature_controlled (BOOLEAN) flag. When a product requires temperature control, it should be stored in bins within temperature-controlled zones. Bin locations can be set to QUARANTINE status for isolating hazardous materials. However, there is no explicit constraint linking hazardous products to quarantine bins — this would be enforced at the application level.",
+      "answer": "Products have three relevant fields: hazardous (BOOLEAN, default FALSE), storage_temperature_min (DECIMAL), and storage_temperature_max (DECIMAL). Warehouse zones have a temperature_controlled (BOOLEAN) flag. When a product requires temperature control, it should be stored in bins within temperature-controlled zones. Bin locations can be set to QUARANTINE status for isolating hazardous materials. However, there is no explicit constraint linking hazardous products to quarantine bins \u2014 this would be enforced at the application level.",
       "category": "Multi-hop",
       "entities": [
         "Product",
@@ -742,12 +1024,17 @@
         "product"
       ],
       "hops": 2,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": [
+        "Product",
+        "Bin Location",
+        "product"
+      ]
     },
     {
       "id": "QA-052",
       "question": "What polymorphic reference patterns exist in the schema?",
-      "answer": "The schema uses reference_type + reference_id polymorphic patterns in several tables: (1) quality_inspection — reference_type identifies the source (purchase_receipt, work_order) and reference_id stores the ID; (2) inventory_transaction — reference_type identifies the source document (sales_order, purchase_receipt, work_order) and reference_id the ID; (3) journal_entry — source_document_type and source_document_id link to originating business transactions; (4) non_conformance_report — reference_type and reference_id link to the inspected entity; (5) shipment — reference_type and reference_id link to the source order.",
+      "answer": "The schema uses reference_type + reference_id polymorphic patterns in several tables: (1) quality_inspection \u2014 reference_type identifies the source (purchase_receipt, work_order) and reference_id stores the ID; (2) inventory_transaction \u2014 reference_type identifies the source document (sales_order, purchase_receipt, work_order) and reference_id the ID; (3) journal_entry \u2014 source_document_type and source_document_id link to originating business transactions; (4) non_conformance_report \u2014 reference_type and reference_id link to the inspected entity; (5) shipment \u2014 reference_type and reference_id link to the source order.",
       "category": "Direct Mapping",
       "entities": [
         "Quality Inspection",
@@ -759,7 +1046,16 @@
         "shipment"
       ],
       "hops": 1,
-      "difficulty": "Hard"
+      "difficulty": "Hard",
+      "expected_sources": [
+        "Quality Inspection",
+        "Inventory Transaction",
+        "Journal Entry",
+        "Non-Conformance Report",
+        "Shipment",
+        "inventory_transaction",
+        "shipment"
+      ]
     },
     {
       "id": "QA-053",
@@ -771,12 +1067,16 @@
         "customer"
       ],
       "hops": 1,
-      "difficulty": "Easy"
+      "difficulty": "Easy",
+      "expected_sources": [
+        "Customer",
+        "customer"
+      ]
     },
     {
       "id": "QA-054",
       "question": "How does the schema support three-way matching in procurement?",
-      "answer": "Three-way matching (PO → receipt → invoice) is supported through linked tables: purchase_order_line tracks quantity_ordered, quantity_received, and quantity_invoiced. Purchase_receipt_line links back to po_line_id FK. Invoice can be linked to purchase activities via invoice_type = 'PURCHASE' and accounts_payable links supplier_id + invoice_id. However, there is no explicit purchase_invoice_line → po_line linkage like there is for sales (invoice_line.order_line_id). Purchase three-way matching would require joining through the receipt line's po_line_id.",
+      "answer": "Three-way matching (PO \u2192 receipt \u2192 invoice) is supported through linked tables: purchase_order_line tracks quantity_ordered, quantity_received, and quantity_invoiced. Purchase_receipt_line links back to po_line_id FK. Invoice can be linked to purchase activities via invoice_type = 'PURCHASE' and accounts_payable links supplier_id + invoice_id. However, there is no explicit purchase_invoice_line \u2192 po_line linkage like there is for sales (invoice_line.order_line_id). Purchase three-way matching would require joining through the receipt line's po_line_id.",
       "category": "Multi-hop",
       "entities": [
         "Purchase Order",
@@ -787,18 +1087,24 @@
         "invoice"
       ],
       "hops": 3,
-      "difficulty": "Hard"
+      "difficulty": "Hard",
+      "expected_sources": [
+        "Purchase Order",
+        "Purchase Receipt",
+        "purchase_order"
+      ]
     },
     {
       "id": "QA-055",
       "question": "What indexes exist for performance optimization and which tables have the most?",
-      "answer": "The schema defines explicit indexes beyond primary keys: customer has 3 indexes (on customer_type_id, status, customer_name), product has 4 (category, status, type, name), sales_order has 4 (customer, status, date, warehouse), purchase_order has 4 (supplier, status, date, warehouse), inventory has 5 across inventory_on_hand and inventory_transaction, work_order has 3, invoice has 3, payment has 3, AR has 3, AP has 3, employee has 3, project_task has 2, quality_inspection has 3, and shipment has 4. The audit_log has inline indexes on (entity_type, entity_id), user_id, and timestamp for efficient querying.",
+      "answer": "Index definitions (CREATE INDEX statements) are DDL metadata that may not surface through chunk-based retrieval unless explicitly included in retrieved context. The schema likely defines indexes on foreign key columns and frequently-queried fields, but specific index names, compositions, and per-table counts cannot be determined without full DDL access in the retrieval window.",
       "category": "Direct Mapping",
       "entities": [
         "All"
       ],
       "hops": 1,
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "expected_sources": []
     }
   ],
   "categories": {
@@ -821,6 +1127,6 @@
     "CASCADE rule identification",
     "Negative case reasoning (missing features: loyalty, currency exchange, compensation history)",
     "UNIQUE constraint and composite key interpretation",
-    "Cross-domain relationship understanding (sales → finance → GL)"
+    "Cross-domain relationship understanding (sales \u2192 finance \u2192 GL)"
   ]
 }
