@@ -221,7 +221,8 @@ def main() -> None:
     parser.add_argument("--studies", nargs="+", metavar="AB-XX", help="Filter studies (with --all)")
     parser.add_argument("--datasets", nargs="+", metavar="DS", help="Filter datasets (with --all)")
     parser.add_argument("--output", type=Path, default=None, help="Combined output markdown")
-    parser.add_argument("--judge", default="gpt-5.4-mini", help="Judge model (default: gpt-5.4-mini)")
+    _default_judge = os.environ.get("JUDGE_MODEL", "gpt-5.4-mini")
+    parser.add_argument("--judge", default=_default_judge, help=f"Judge model (default: {_default_judge})")
     parser.add_argument("--force", action="store_true", help="Re-evaluate even if ai_judge.md exists")
     args = parser.parse_args()
 

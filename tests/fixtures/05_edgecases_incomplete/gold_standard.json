@@ -21,89 +21,128 @@
       "question": "What is a customer?",
       "answer": "The business glossary defines Customer as \"an individual or organization that... [definition incomplete]\". Related terms include Client (a person or company that purchases goods or services, sometimes used interchangeably with Customer), Account Holder (the primary owner of an account), and End User (the actual user, who may differ from the purchaser).",
       "category": "missing_definition",
-      "robustness_test": "System should identify incomplete definition and surface related concepts"
+      "robustness_test": "System should identify incomplete definition and surface related concepts",
+      "expected_sources": [
+        "Customer"
+      ]
     },
     {
       "id": "ec_002",
       "question": "What's the difference between firstName and first_name in the CUSTOMERS table?",
       "answer": "Both columns exist in the CUSTOMERS table with identical VARCHAR(50) data types. The data dictionary notes they appear to be duplicates resulting from inconsistent naming conventions (snake_case vs camelCase), but the actual usage by the application is not documented.",
       "category": "duplicate_columns",
-      "robustness_test": "System should recognize duplicate columns and highlight naming inconsistency"
+      "robustness_test": "System should recognize duplicate columns and highlight naming inconsistency",
+      "expected_sources": [
+        "CUSTOMERS"
+      ]
     },
     {
       "id": "ec_003",
       "question": "Which customer column should be used as a foreign key reference: customer_id or CustomerID?",
       "answer": "The CUSTOMERS table has both customer_id (defined as PRIMARY KEY) and CustomerID (defined as INTEGER with no constraints). The ORDERS table also has both customer_id and CustomerID columns with ambiguous FK references. The data dictionary indicates this inconsistency is documented but not yet resolved, pending verification with the DBA team.",
       "category": "conflicting_references",
-      "robustness_test": "System should identify conflicting FK references and recommend the PK column"
+      "robustness_test": "System should identify conflicting FK references and recommend the PK column",
+      "expected_sources": [
+        "CUSTOMERS",
+        "ORDERS"
+      ]
     },
     {
       "id": "ec_004",
       "question": "What are the valid values for order_status?",
       "answer": "The business glossary documents several order statuses: Pending, Processing, Completed, Cancelled, On Hold, and Failed (which is marked as [definition missing]). However, these are not enforced by a CHECK constraint in the schema, and the data dictionary notes that valid values reference '[missing documentation]'.",
       "category": "missing_constraint",
-      "robustness_test": "System should find available status values despite incomplete documentation"
+      "robustness_test": "System should find available status values despite incomplete documentation",
+      "expected_sources": [
+        "Order"
+      ]
     },
     {
       "id": "ec_005",
       "question": "Is there a difference between Product, Item, and SKU?",
       "answer": "The glossary indicates these terms are related but distinct: Product is defined as \"A thing that is... [definition needs clarification]\"; Item is a synonym for Product used in inventory context; SKU (Stock Keeping Unit) is a unique identifier for a product variant; Inventory Item refers to physical products in stock; and Merchandise is described as goods available for sale, similar to Product. The exact distinctions are not clearly defined.",
       "category": "ambiguous_synonyms",
-      "robustness_test": "System should surface related terms and note definitional uncertainty"
+      "robustness_test": "System should surface related terms and note definitional uncertainty",
+      "expected_sources": [
+        "PRODUCTS"
+      ]
     },
     {
       "id": "ec_006",
       "question": "Which table should ORDER_ITEMS.product_id reference: PRODUCTS or INVENTORY?",
       "answer": "The data dictionary states the FK reference is to 'PRODUCTS (or INVENTORY?)' and notes it is 'not verified'. The schema provides two potential targets: PRODUCTS table (which has product_id) and an INVENTORY table that is referenced in documentation but not defined in the DDL. The actual relationship cannot be determined from the available documentation.",
       "category": "ambiguous_reference",
-      "robustness_test": "System should identify ambiguous FK references and missing tables"
+      "robustness_test": "System should identify ambiguous FK references and missing tables",
+      "expected_sources": [
+        "ORDER_ITEMS",
+        "PRODUCTS"
+      ]
     },
     {
       "id": "ec_007",
       "question": "What's the difference between Revenue and Sales?",
       "answer": "Both terms show circular definitions: Revenue is defined as 'Income from sales. The same as... [definition circular, see Sales]', while Sales is defined as 'Revenue from selling products. See Revenue.' The glossary provides no clear distinction between these concepts.",
       "category": "circular_definition",
-      "robustness_test": "System should detect circular definitions and flag them"
+      "robustness_test": "System should detect circular definitions and flag them",
+      "expected_sources": [
+        "PRODUCTS"
+      ]
     },
     {
       "id": "ec_008",
       "question": "Can one order have multiple payments?",
       "answer": "The PAYMENTS table has an order_id column, suggesting a many-to-one relationship (multiple payments can reference a single order). However, the relationship section in the glossary asks 'Or is it one-to-one?' indicating uncertainty. The ORDERS table has both payment_status and payment_method columns (singular), which might suggest a single payment per order, but this conflicts with the PAYMENTS table structure.",
       "category": "conflicting_cardinality",
-      "robustness_test": "System should identify conflicting cardinality signals"
+      "robustness_test": "System should identify conflicting cardinality signals",
+      "expected_sources": [
+        "ORDERS",
+        "PAYMENTS"
+      ]
     },
     {
       "id": "ec_009",
       "question": "What payment methods are accepted?",
       "answer": "The PAYMENTS table has a payment_method column (VARCHAR(30)), but the data dictionary notes '[missing valid values]' and no CHECK constraint exists to enumerate acceptable methods. The schema does not document what values are valid (e.g., credit_card, debit, paypal, etc.).",
       "category": "missing_enum_values",
-      "robustness_test": "System should acknowledge missing information and avoid hallucinating values"
+      "robustness_test": "System should acknowledge missing information and avoid hallucinating values",
+      "expected_sources": [
+        "PAYMENTS"
+      ]
     },
     {
       "id": "ec_010",
       "question": "What's the correct table name: ORDER_ITEMS or ORDER_DETAILS?",
       "answer": "The DDL creates a table named ORDER_ITEMS, but the data dictionary header shows 'ORDER_ITEMS (or ORDER_DETAILS?)' and notes 'Table name ambiguity: ORDER_ITEMS vs ORDER_DETAILS'. The actual table name in the schema is ORDER_ITEMS, but documentation suggests the application may reference it differently.",
       "category": "naming_ambiguity",
-      "robustness_test": "System should use the actual DDL table name while documenting aliases"
+      "robustness_test": "System should use the actual DDL table name while documenting aliases",
+      "expected_sources": [
+        "ORDER_ITEMS"
+      ]
     },
     {
       "id": "ec_011",
       "question": "Which date column should be used to track when an order was created: order_date, OrderDate, or created_at?",
       "answer": "The ORDERS table has three date-related columns: order_date (DATE type), OrderDate (DATETIME type with different precision), and created_at (TIMESTAMP type). The data dictionary provides no guidance on which is actually used by the application or why three columns exist for potentially the same purpose.",
       "category": "duplicate_columns",
-      "robustness_test": "System should identify duplicate columns with different data types"
+      "robustness_test": "System should identify duplicate columns with different data types",
+      "expected_sources": [
+        "ORDERS"
+      ]
     },
     {
       "id": "ec_012",
       "question": "What does the Failed order status mean?",
       "answer": "The business glossary lists Failed as an order status but marks it as '[definition missing]'. Other statuses have definitions (Pending, Processing, Completed, Cancelled, On Hold), but Failed is undefined despite being a valid status value.",
       "category": "missing_definition",
-      "robustness_test": "System should acknowledge undefined status values"
+      "robustness_test": "System should acknowledge undefined status values",
+      "expected_sources": [
+        "Order"
+      ]
     },
     {
       "id": "ec_013",
       "question": "Are there any NOT NULL constraints defined in the schema?",
-      "answer": "No NOT NULL constraints are defined in the DDL. The data dictionary explicitly states 'NOT NULL constraints not defined' under 'Missing Documentation' and notes 'assumed, not verified'. All columns are nullable by default.",
+      "answer": "No explicit NOT NULL constraints are written in the DDL. The schema comment states 'NOT NULL constraints not defined' and the data dictionary notes them as 'assumed, not verified'. However, PRIMARY KEY columns (e.g., ORDER_ID, CUSTOMER_ID) are implicitly NOT NULL per SQL standard, even though the keyword is not written. All non-PK columns are effectively nullable by default.",
       "category": "missing_constraints",
       "robustness_test": "System should identify missing data integrity constraints"
     },
@@ -112,49 +151,75 @@
       "question": "What's the difference between unit_price and current_price in PRODUCTS?",
       "answer": "The PRODUCTS table has both unit_price and current_price columns (both DECIMAL(10,2)). The data dictionary asks 'Different from unit_price?' but provides no explanation of the distinction or when each would be used.",
       "category": "duplicate_columns",
-      "robustness_test": "System should flag ambiguous column purposes"
+      "robustness_test": "System should flag ambiguous column purposes",
+      "expected_sources": [
+        "PRODUCTS"
+      ]
     },
     {
       "id": "ec_015",
       "question": "When is an invoice generated vs payment processed?",
       "answer": "The relationship section in the glossary asks 'An invoice is generated for an order. But when? And can one order have multiple invoices?' indicating the timing and cardinality are not defined. The glossary defines Invoice as 'A document requesting payment. Related to Bill' and Payment as 'The transfer of money to settle an order', but doesn't specify the workflow or sequence.",
       "category": "missing_workflow",
-      "robustness_test": "System should identify missing process documentation"
+      "robustness_test": "System should identify missing process documentation",
+      "expected_sources": [
+        "Order",
+        "Payment"
+      ]
     },
     {
       "id": "ec_016",
       "question": "Is the sku column in PRODUCTS unique?",
       "answer": "The PRODUCTS table has both product_sku and sku columns. The data dictionary notes sku 'should be UNIQUE?' but the DDL does not define a UNIQUE constraint on either column. No index is documented for these columns.",
       "category": "missing_uniqueness",
-      "robustness_test": "System should identify natural keys that lack uniqueness enforcement"
+      "robustness_test": "System should identify natural keys that lack uniqueness enforcement",
+      "expected_sources": [
+        "PRODUCTS"
+      ]
     },
     {
       "id": "ec_017",
       "question": "What is the relationship between customers and orders?",
       "answer": "The glossary states 'A customer can place multiple orders. Or is it accounts that place orders?' indicating uncertainty about the relationship. The ORDERS table has both customer_id and CustomerID columns with ambiguous FK references, and the data dictionary notes they reference 'customer (which table?)' and '[FK reference unclear]' respectively.",
       "category": "ambiguous_relationship",
-      "robustness_test": "System should identify poorly documented relationships"
+      "robustness_test": "System should identify poorly documented relationships",
+      "expected_sources": [
+        "CUSTOMERS",
+        "ORDERS"
+      ]
     },
     {
       "id": "ec_018",
       "question": "Which price column represents what the customer actually pays?",
       "answer": "Multiple price columns exist across tables: ORDERS has orderAmount and total_amount; ORDER_ITEMS has unit_price and UnitPrice; PRODUCTS has unit_price, current_price, and cost_price. The data dictionary does not explain which represents the final customer price, whether discounts are applied, or how these columns relate to each other.",
       "category": "semantic_ambiguity",
-      "robustness_test": "System should identify semantic ambiguity in pricing columns"
+      "robustness_test": "System should identify semantic ambiguity in pricing columns",
+      "expected_sources": [
+        "ORDERS",
+        "ORDER_ITEMS",
+        "PRODUCTS"
+      ]
     },
     {
       "id": "ec_019",
       "question": "What's the difference between Shipment, Delivery, and Fulfillment?",
       "answer": "The glossary provides definitions but unclear boundaries: Shipment is 'The process of delivering goods to a customer'; Delivery is 'The completion of a Shipment when goods reach the customer'; Fulfillment is 'The process of preparing and delivering orders. Encompasses Shipment and Delivery.' The exact distinction and sequence of these processes is not clearly defined, and Fulfillment appears to be a superset of the other two.",
       "category": "overlapping_concepts",
-      "robustness_test": "System should identify overlapping or hierarchical concept relationships"
+      "robustness_test": "System should identify overlapping or hierarchical concept relationships",
+      "expected_sources": [
+        "ORDERS"
+      ]
     },
     {
       "id": "ec_020",
       "question": "Are foreign key constraints enforced in the schema?",
-      "answer": "No foreign key constraints are enforced in the DDL. While the data dictionary documents FK relationships (e.g., customer_id → CUSTOMERS, order_id → ORDERS), the actual CREATE TABLE statements omit the REFERENCES clauses. The schema explicitly notes 'FK constraints defined in data dictionary but not enforced in DDL' under known inconsistencies.",
+      "answer": "No foreign key constraints are enforced in the DDL. While the data dictionary documents FK relationships (e.g., customer_id \u2192 CUSTOMERS, order_id \u2192 ORDERS), the actual CREATE TABLE statements omit the REFERENCES clauses. The schema explicitly notes 'FK constraints defined in data dictionary but not enforced in DDL' under known inconsistencies.",
       "category": "missing_fk_enforcement",
-      "robustness_test": "System should identify declared but unenforced relationships"
+      "robustness_test": "System should identify declared but unenforced relationships",
+      "expected_sources": [
+        "CUSTOMERS",
+        "ORDERS"
+      ]
     }
   ],
   "expected_behaviors": {

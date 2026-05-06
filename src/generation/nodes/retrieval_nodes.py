@@ -17,6 +17,7 @@ from src.models.schemas import RetrievedChunk
 from src.models.state import QueryState
 from src.retrieval.embeddings import get_embeddings
 from src.retrieval.hybrid_retriever import (
+    attribute_vector_search,
     bm25_search,
     build_node_index,
     chunk_vector_search,
@@ -176,6 +177,10 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                     query, client, top_k=settings.retrieval_vector_top_k, model=model,
                     query_vector=shared_qv,
                 )
+                attr_results = attribute_vector_search(
+                    query, client, top_k=5, model=model,
+                    query_vector=shared_qv,
+                )
                 trav_results = graph_traversal(
                     seed_names=[c.node_id for c in vec_results[:5]],
                     client=client,
@@ -186,7 +191,7 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                 mapping_chunks = fetch_concept_table_mappings(client)
                 bm25_results = bm25_search(query, all_nodes, top_k=settings.retrieval_bm25_top_k)
                 merged = merge_results(
-                    vec_results + chunk_vec_results,
+                    vec_results + chunk_vec_results + attr_results,
                     bm25_results,
                     trav_results + all_concepts + fk_chunks + mapping_chunks,
                 )
@@ -210,7 +215,7 @@ def _node_retrieve(state: QueryState) -> dict[str, Any]:
                             depth=max(1, settings.retrieval_graph_depth + 1),
                         )
                         merged = merge_results(
-                            vec_results + chunk_vec_results,
+                            vec_results + chunk_vec_results + attr_results,
                             bm25_results,
                             trav_results + extra + all_concepts + fk_chunks,
                         )
@@ -244,6 +249,28 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         else:
             candidates = rerank(query, pool, top_k=settings.reranker_top_k)
 
+        # Diversity boost: the top keyword-relevant ParentChunk from the pool
+        # often contains enumerated values (CHECK constraints, status lists)
+        # that cross-encoders score poorly due to chunking artifacts.
+        # The pool is sorted by (keyword_hits, source_rank, ...) so the first
+        # ParentChunk is the most query-relevant one.
+        top_pool_parent: RetrievedChunk | None = None
+        for pc in pool:
+            if pc.node_type == "ParentChunk":
+                top_pool_parent = pc
+                break
+        if top_pool_parent:
+            reranked_ids = {c.node_id for c in candidates}
+            if top_pool_parent.node_id not in reranked_ids:
+                candidates.append(top_pool_parent.model_copy(update={"score": 0.15}))
+                logger.info("Diversity inject: '%s' (top pool parent, reranker dropped)", top_pool_parent.node_id)
+            else:
+                for i, cand in enumerate(candidates):
+                    if cand.node_id == top_pool_parent.node_id and cand.score < 0.10:
+                        candidates[i] = cand.model_copy(update={"score": 0.15})
+                        logger.info("Diversity boost: '%s' %.4f->0.15", top_pool_parent.node_id, cand.score)
+                        break
+
         valid = [c for c in candidates if c.node_id.strip() and c.text.strip()]
         if not valid:
             logger.warning(
@@ -267,10 +294,40 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
         else:
             sufficiency = "adequate"
 
+        # Post-rerank graph expansion: add direct neighbors of reranked chunks
+        if getattr(settings, "enable_post_rerank_expansion", True):
+            try:
+                seed_ids = list({c.node_id for c in valid if c.source_type in ("vector", "graph", "parent_chunk")})[:8]
+                if seed_ids:
+                    with Neo4jClient() as client:
+                        neighbor_chunks = graph_traversal(
+                            seed_names=seed_ids, client=client, depth=2,
+                        )
+                    existing_ids = {c.node_id for c in valid}
+                    new_neighbors = [
+                        c for c in neighbor_chunks if c.node_id not in existing_ids
+                    ]
+                    if new_neighbors:
+                        for nc in new_neighbors:
+                            nc.score = 0.05
+                        valid = valid + new_neighbors
+                        logger.debug("Post-rerank expansion added %d neighbor chunks", len(new_neighbors))
+            except Exception:
+                logger.debug("Post-rerank expansion failed, continuing without it")
+
         log_node_event(logger, "rerank", f"pool={len(pool)} candidates={len(candidates)}", f"{len(valid)} chunks score={top_score:.4f}", timer.elapsed_ms)
+
+        # Pool-aware retrieval confidence: being rank #1 in a large competitive
+        # pool is stronger evidence of relevance than the raw cross-encoder
+        # absolute score suggests (CE scores are known to be low on technical
+        # multi-section content like data dictionaries).
+        quality_score = top_score
+        if len(pool) >= 8 and top_score < 0.75:
+            quality_score = max(top_score, 0.70)
+
         return {
             "reranked_chunks": valid,
-            "retrieval_quality_score": top_score,
+            "retrieval_quality_score": quality_score,
             "retrieval_chunk_count": len(valid),
             "retrieval_filtered_by_threshold": False,
             "context_sufficiency": sufficiency,

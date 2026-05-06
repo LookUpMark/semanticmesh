@@ -1,14 +1,14 @@
 # AB-BEST — 02_intermediate_finance — Run Analysis
 
-**Timestamp:** 2026-04-21 20:28:41  
-**Run tag:** `run-20260421_221024`
+**Timestamp:** 2026-05-06 09:32:46  
+**Run tag:** `run-20260506_112507`
 
 ## Configuration
 
 | Parameter | Value |
 |-----------|-------|
-| Extraction model | `LLM (openai/gpt-4.1-nano)` |
-| Reasoning model | `openai/gpt-oss-120b` |
+| Extraction model | `LLM (gpt-5-nano-2025-08-07)` |
+| Reasoning model | `gpt-5.4-nano-2026-03-17` |
 | Embedding model | `BAAI/bge-m3` |
 | Retrieval mode | `hybrid` |
 | Reranker | `True` |
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 148 |
-| Entities resolved | 52 |
+| Triplets extracted | 261 |
+| Entities resolved | 250 |
 | Tables parsed | 8 |
 | Tables completed | 8 |
 
@@ -31,9 +31,9 @@
 |--------|-------|
 | Questions | 25 |
 | Grounded | **25/25 (100%)** |
-| Avg GT Coverage | 94% |
-| Avg Top Score | 0.4720 |
-| Avg Chunk Count | 20.0 |
+| Avg GT Coverage | 100% |
+| Avg Top Score | 0.7448 |
+| Avg Chunk Count | 38.8 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `Bank Account→ACCOUNTS`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_10`, `Financial Transaction→TRANSACTIONS`, `parent_chunk_data_dictionary.md_12`, `Account→CUSTOMER_ACCOUNT`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_0`, `ACCOUNTS.ACCOUNT_TYPE`, `ACCOUNTS.ACCOUNT_ID`, `ACCOUNTS.ACCOUNT_NUMBER`, `ACCOUNTS.CURRENT_BALANCE`, `ACCOUNTS.AVAILABLE_BALANCE`
 
 ---
 
@@ -68,14 +68,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_11`, `Bank Account→ACCOUNTS`, `Financial Transaction→TRANSACTIONS`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_8`, `CUSTOMER_ACCOUNT.OWNERSHIP_PERCENTAGE`, `parent_chunk_business_glossary.md_1`, `Linked Account And Customer`, `ACCOUNTS.INTEREST_RATE`
 
 ---
 
 ### ✅ 3 — What is APR versus APY?
 
 **Status:** GROUNDED  
-**GT Coverage:** 67% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > APR (Annual Percentage Rate) is the annual cost of a loan including interest and fees, used for loan products. APY (Annual Percentage Yield) is the effective annual rate including compounding effects for deposit products. APY is higher than the nominal rate when compounding is more frequent than ann…
@@ -83,7 +83,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_11`, `LoanAmortizationSchedule→LOANS`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_12`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_1`, `ACCOUNTS.INTEREST_RATE`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_6`
 
 ---
 
@@ -98,7 +98,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_12`, `Customer→CUSTOMERS`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.md_6`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_7`, `Customer Dimension Table`, `CUSTOMERS.KYC_STATUS`, `parent_chunk_data_dictionary.md_5`
 
 ---
 
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_12`, `Bank Account→ACCOUNTS`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `Account→CUSTOMER_ACCOUNT`, `ACCOUNTS→BRANCHES`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_11`, `Transaction Fact Table`, `Branch`, `parent_chunk_business_glossary.md_0`, `Payment Card`
 
 ---
 
@@ -128,7 +128,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_7`, `LoanAmortizationSchedule→LOANS`, `LOANS→CUSTOMERS`, `LOANS→ACCOUNTS`, `Bank Account→ACCOUNTS`, `Physical Bank Location→BRANCHES`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_12`, `Loan`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_7`, `LOANS→CUSTOMERS`
 
 ---
 
@@ -143,7 +143,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `Card→CARDS`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_8`, `Atm Location→ATMS`, `Physical Bank Location→BRANCHES`, `Customer→CUSTOMERS`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_3`, `parent_chunk_business_glossary.md_0`, `CARDS.ATM_DAILY_LIMIT`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_6`
 
 ---
 
@@ -158,7 +158,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_12`, `ACCOUNTS→ACCOUNTS`, `Bank Account→ACCOUNTS`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `CARDS→ACCOUNTS`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `ACCOUNTS.PARENT_ACCOUNT_ID`, `ACCOUNTS.ACCOUNT_ID`, `ACCOUNTS→ACCOUNTS`, `parent_chunk_data_dictionary.md_11`
 
 ---
 
@@ -173,7 +173,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_11`, `Card→CARDS`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_9`, `CARDS→CUSTOMERS`, `CARDS→ACCOUNTS`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_6`, `CARDS→CUSTOMERS`, `CARDS→ACCOUNTS`, `CARDS.STATUS`
 
 ---
 
@@ -188,7 +188,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_9`, `TRANSACTIONS→ACCOUNTS`, `Financial Transaction→TRANSACTIONS`, `parent_chunk_data_dictionary.md_7`, `ACCOUNTS→BRANCHES`, `ACCOUNTS→ACCOUNTS`, `Bank Account→ACCOUNTS`, `parent_chunk_data_dictionary.md_10`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_9`, `Transaction Fact Table`, `parent_chunk_business_glossary.md_1`, `TRANSACTIONS.BALANCE_AFTER`, `TRANSACTIONS.STATUS`, `TRANSACTIONS.AMOUNT`, `TRANSACTIONS.LOCATION`
 
 ---
 
@@ -203,7 +203,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `Account→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_12`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `parent_chunk_data_dictionary.md_7`, `CUSTOMER_ACCOUNT→ACCOUNTS`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_11`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_7`, `Transaction Fact Table`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_11`, `Linked Account And Customer`, `CUSTOMER_ACCOUNT.RELATIONSHIP_TYPE`
 
 ---
 
@@ -218,7 +218,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `Bank Account→ACCOUNTS`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_9`, `ACCOUNTS→ACCOUNTS`, `ACCOUNTS→BRANCHES`, `Account→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_8`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `ACCOUNTS.AVAILABLE_BALANCE`, `ACCOUNTS.CURRENT_BALANCE`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_business_glossary.md_0`, `ACCOUNTS.UPDATED_AT`, `ACCOUNTS.MINIMUM_BALANCE`, `parent_chunk_data_dictionary.md_10`
 
 ---
 
@@ -233,7 +233,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_12`, `LOANS→CUSTOMERS`, `LOANS→ACCOUNTS`, `parent_chunk_data_dictionary.md_10`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `parent_chunk_data_dictionary.md_8`, `CUSTOMER_ACCOUNT→ACCOUNTS`, `Account→CUSTOMER_ACCOUNT`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_11`, `LOANS.ACCOUNT_ID`, `LOANS.TERM_MONTHS`, `LOANS.CUSTOMER_ID`, `LOANS.BALANCE_DUE`, `LOANS→CUSTOMERS`
 
 ---
 
@@ -248,7 +248,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_7`, `Financial Transaction→TRANSACTIONS`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_11`, `Atm Location→ATMS`, `TRANSACTIONS→ACCOUNTS`, `Bank Account→ACCOUNTS`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_11`, `Transaction Fact Table`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `TRANSACTIONS.TRANSACTION_TYPE`
 
 ---
 
@@ -263,7 +263,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_12`, `Account→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_11`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `CUSTOMER_ACCOUNT→ACCOUNTS`, `parent_chunk_data_dictionary.md_9`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `Linked Account And Customer`, `parent_chunk_data_dictionary.md_11`, `CUSTOMER_ACCOUNT.ACCOUNT_ID`, `CUSTOMER_ACCOUNT.IS_PRIMARY`, `CUSTOMER_ACCOUNT.OWNERSHIP_PERCENTAGE`, `CUSTOMER_ACCOUNT.CUSTOMER_ID`, `CUSTOMER_ACCOUNT.RELATIONSHIP_TYPE`
 
 ---
 
@@ -278,14 +278,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `CARDS→CUSTOMERS`, `CARDS→ACCOUNTS`, `Card→CARDS`, `Account→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_10`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `CUSTOMER_ACCOUNT→ACCOUNTS`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_8`, `CARDS→CUSTOMERS`, `CARDS→ACCOUNTS`, `parent_chunk_data_dictionary.md_12`, `Linked Account And Customer`, `parent_chunk_business_glossary.md_3`
 
 ---
 
 ### ✅ 17 — How does the schema handle interest rates across deposit and loan products?
 
 **Status:** GROUNDED  
-**GT Coverage:** 80% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Interest rates are stored differently for deposits and loans. The accounts table has an interest_rate column (nullable DECIMAL 5,4) and interest_earned for year-to-date tracking. The loans table has its own interest_rate column representing APR. The business glossary explains that APR (Annual Percen…
@@ -293,14 +293,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_7`, `LoanAmortizationSchedule→LOANS`, `LOANS→CUSTOMERS`, `Bank Account→ACCOUNTS`, `LOANS→ACCOUNTS`, `Atm Location→ATMS`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_7`, `LOANS.INTEREST_RATE`, `Loan`
 
 ---
 
 ### ✅ 18 — What types of branches does the bank operate and how do they differ in capabilities?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The branches table supports three types via CHECK constraint: FullService, Satellite, and ATMOnly. The business glossary details each: FullService branches offer complete banking services including loan origination, financial advisors, and safe deposit boxes; Satellite branches have limited hours an…
@@ -308,14 +308,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Physical Bank Location→BRANCHES`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_6`, `Atm Location→ATMS`, `Bank Account→ACCOUNTS`, `ATMS→BRANCHES`, `ACCOUNTS→BRANCHES`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_7`, `BRANCHES.BRANCH_TYPE`, `parent_chunk_business_glossary.md_1`, `BRANCHES.STATE`, `BRANCHES.STATUS`
 
 ---
 
 ### ✅ 19 — How are ATMs related to branches in the schema and what types of ATMs exist?
 
 **Status:** GROUNDED  
-**GT Coverage:** 75% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The atms table has an optional branch_id foreign key referencing branches. When branch_id is NULL, the ATM is standalone and not affiliated with any branch. ATM types are defined by CHECK constraint: Branch (on-premises), DriveThrough (vehicle-accessible), and Standalone (independent locations). Eac…
@@ -323,7 +323,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `ATMS→BRANCHES`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_data_dictionary.md_12`, `Atm Location→ATMS`, `Physical Bank Location→BRANCHES`, `ACCOUNTS→BRANCHES`, `Financial Transaction→TRANSACTIONS`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_12`, `ATMS→BRANCHES`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.md_5`, `parent_chunk_business_glossary.md_2`, `Branch`, `ATMS.BRANCH_ID`
 
 ---
 
@@ -338,7 +338,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_10`, `LoanAmortizationSchedule→LOANS`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_12`, `LOANS→CUSTOMERS`, `LOANS→ACCOUNTS`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_1`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_2`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_12`, `LOANS→CUSTOMERS`, `LOANS→ACCOUNTS`, `Loan`, `LOANS.TERM_MONTHS`
 
 ---
 
@@ -353,14 +353,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Customer→CUSTOMERS`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_data_dictionary.md_8`, `Card→CARDS`, `CARDS→CUSTOMERS`, `parent_chunk_data_dictionary.md_6`
+**Sources retrieved (12):** `Customer Dimension Table`, `parent_chunk_data_dictionary.md_4`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `CARDS→CUSTOMERS`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `CUSTOMERS.KYC_STATUS`
 
 ---
 
 ### ✅ 22 — How does the accounts table support interest tracking and what business rules govern interest?
 
 **Status:** GROUNDED  
-**GT Coverage:** 75% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > The accounts table has interest_rate (nullable DECIMAL for the annual rate) and interest_earned (DECIMAL for year-to-date interest credited). The business glossary states that deposit interest is credited monthly (typically the first day of the month) and that APY accounts for compounding effects. P…
@@ -368,7 +368,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `Bank Account→ACCOUNTS`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_10`, `ACCOUNTS→BRANCHES`, `ACCOUNTS→ACCOUNTS`, `Account→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_8`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_7`, `parent_chunk_data_dictionary.md_10`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_1`, `ACCOUNTS.INTEREST_RATE`, `ACCOUNTS.INTEREST_EARNED`, `parent_chunk_data_dictionary.md_12`
 
 ---
 
@@ -383,7 +383,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_8`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `parent_chunk_data_dictionary.md_12`, `CUSTOMER_ACCOUNT→ACCOUNTS`, `Account→CUSTOMER_ACCOUNT`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_data_dictionary.md_10`, `Customer→CUSTOMERS`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.md_8`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_11`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_10`, `CUSTOMER_ACCOUNT→CUSTOMERS`, `CUSTOMER_ACCOUNT→ACCOUNTS`
 
 ---
 
@@ -398,7 +398,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_9`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_7`, `TRANSACTIONS→ACCOUNTS`, `Financial Transaction→TRANSACTIONS`, `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_0`, `parent_chunk_business_glossary.md_3`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.md_9`, `parent_chunk_business_glossary.md_1`, `parent_chunk_data_dictionary.md_12`, `TRANSACTIONS.DESCRIPTION`, `TRANSACTIONS.STATUS`, `TRANSACTIONS.BALANCE_AFTER`, `TRANSACTIONS.CURRENCY`, `TRANSACTIONS.REFERENCE_NUMBER`
 
 ---
 
@@ -413,7 +413,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.md_6`, `Atm Location→ATMS`, `Physical Bank Location→BRANCHES`, `ATMS→BRANCHES`, `parent_chunk_data_dictionary.md_12`, `parent_chunk_data_dictionary.md_11`, `Card→CARDS`, `parent_chunk_data_dictionary.md_7`
+**Sources retrieved (12):** `parent_chunk_business_glossary.md_1`, `parent_chunk_business_glossary.md_2`, `parent_chunk_business_glossary.md_3`, `parent_chunk_data_dictionary.md_6`, `parent_chunk_business_glossary.md_0`, `parent_chunk_data_dictionary.md_12`, `ATMS→BRANCHES`, `parent_chunk_data_dictionary.md_11`
 
 ---
 

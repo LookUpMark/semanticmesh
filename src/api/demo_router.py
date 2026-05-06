@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 import tempfile
 import threading
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 
 from src.api.jobs import create_job, get_job, list_jobs, set_done, set_failed, set_running
 from src.api.models import (
@@ -40,14 +42,27 @@ _ROOT = Path(__file__).parent.parent.parent  # repo root
 
 
 def _to_abs(path: str) -> str:
-    p = Path(path).resolve()
-    if not str(p).startswith(str(_ROOT.resolve())):
-        raise ValueError(f"Path '{path}' is outside the allowed directory.")
-    return str(p)
+    """Resolve path and validate it's within an allowed directory (symlink-safe)."""
+    p = Path(path).resolve(strict=False)
+    root = _ROOT.resolve(strict=False)
+    upload_dir = Path(tempfile.gettempdir(), "thesis_uploads").resolve(strict=False)
+    # Allow paths under repo root OR the upload temp directory
+    for allowed in (root, upload_dir):
+        try:
+            common = Path(os.path.commonpath([str(allowed), str(p)]))
+        except ValueError:
+            continue
+        if common == allowed:
+            return str(p)
+    raise ValueError(f"Path '{path}' is outside the allowed directory.")
 
 
-_MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB per file
 _ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".sql", ".ddl"}
+
+
+def _get_max_upload_bytes() -> int:
+    from src.config.settings import get_settings
+    return get_settings().api_max_upload_bytes
 
 
 def _sanitize_filename(raw: str | None) -> str:
@@ -70,13 +85,14 @@ async def _save_uploads(files: list[UploadFile]) -> list[str]:
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     paths = []
+    max_bytes = _get_max_upload_bytes()
     for file in files:
         content = await file.read()
 
-        if len(content) > _MAX_UPLOAD_BYTES:
+        if len(content) > max_bytes:
             raise HTTPException(
                 status_code=413,
-                detail=f"File '{file.filename}' exceeds 100 MB limit.",
+                detail=f"File '{file.filename}' exceeds {max_bytes // (1024*1024)} MB limit.",
             )
 
         safe_name = _sanitize_filename(file.filename)
@@ -311,7 +327,7 @@ def get_build_status(job_id: str) -> BuildResultResponse:
         "Emits a JSON event each time the pipeline advances to a new node. "
         "The stream closes automatically when status reaches `done` or `failed`."
     ),
-    response_class=__import__("fastapi.responses", fromlist=["StreamingResponse"]).StreamingResponse,
+    response_class=StreamingResponse,
     include_in_schema=True,
 )
 async def stream_build_status(job_id: str):
@@ -512,10 +528,18 @@ def get_demo_jobs() -> list[dict]:
     summary="Wipe the Knowledge Graph",
     description=(
         "Deletes ALL nodes and relationships from Neo4j (``MATCH (n) DETACH DELETE n``). "
-        "This action is irreversible. Requires ``?confirm=true`` query parameter."
+        "This action is irreversible. Requires ``?confirm=true`` query parameter. "
+        "Always requires API_KEY authentication, even if auth is globally disabled."
     ),
 )
 def delete_graph(confirm: bool = False) -> dict[str, int]:
+    # Extra safety: always require API_KEY for destructive operations
+    import os
+    if not os.environ.get("API_KEY", "").strip():
+        raise HTTPException(
+            status_code=403,
+            detail="Destructive operations require API_KEY to be configured. Set API_KEY env var.",
+        )
     if not confirm:
         raise HTTPException(
             status_code=400,

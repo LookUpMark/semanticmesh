@@ -223,6 +223,18 @@ def _build_openai_compatible_chat(
 
     from src.config.provider_detection import _PROVIDER_BASE_URLS, _PROVIDER_ENV_KEY_MAP
 
+    settings = get_settings()
+    # Prefer settings-based URLs (env-overrideable) over hardcoded constants
+    _settings_urls: dict[str, str] = {
+        "groq": settings.groq_base_url,
+        "together": settings.together_base_url,
+        "nvidia": settings.nvidia_base_url,
+        "deepseek": settings.deepseek_base_url,
+        "xai": settings.xai_base_url,
+        "cohere": settings.cohere_base_url,
+        "ollama": settings.ollama_base_url,
+    }
+
     # Strip the "<provider>/" prefix so we send the native model id
     prefix = f"{provider}/"
     native_model = model[len(prefix) :] if model.lower().startswith(prefix) else model
@@ -230,6 +242,7 @@ def _build_openai_compatible_chat(
     base_url = (
         base_url_override
         or os.environ.get("PROVIDER_BASE_URL")
+        or _settings_urls.get(provider)
         or _PROVIDER_BASE_URLS.get(provider, "")
     )
     env_key = _PROVIDER_ENV_KEY_MAP.get(provider, "")
@@ -271,11 +284,9 @@ def _build_ollama_chat(
     """
     import os
 
-    from src.config.provider_detection import _PROVIDER_BASE_URLS
-
     # Strip provider prefix
     native_model = model[len("ollama/") :] if model.lower().startswith("ollama/") else model
-    ollama_base = base_url or os.environ.get("OLLAMA_BASE_URL") or _PROVIDER_BASE_URLS["ollama"]
+    ollama_base = base_url or os.environ.get("OLLAMA_BASE_URL") or get_settings().ollama_base_url
 
     try:
         from langchain_ollama import ChatOllama  # type: ignore[import-not-found]

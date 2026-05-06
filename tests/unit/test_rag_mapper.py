@@ -214,6 +214,7 @@ class TestProposeMapping:
 
 
 class TestProposeMappingHeuristic:
+    @patch("src.mapping.rag_mapper._embed_texts_batch")
     @patch("src.mapping.rag_mapper.embed_text")
     @patch("src.mapping.retrieval.retrieve_top_entities")
     @patch("src.mapping.rag_mapper.get_settings")
@@ -222,18 +223,21 @@ class TestProposeMappingHeuristic:
         mock_get_settings,
         mock_retrieve_top,
         mock_embed_text,
+        mock_embed_texts_batch,
     ) -> None:
         table = _make_enriched("TB_CST")
         entities = [_make_entity("Customer", "A person who buys things")]
         mock_get_settings.return_value = MagicMock(heuristic_mapping_confidence_threshold=0.60)
         mock_retrieve_top.return_value = entities
-        mock_embed_text.side_effect = [[1.0, 0.0], [1.0, 0.0]]
+        mock_embed_text.return_value = [1.0, 0.0]
+        mock_embed_texts_batch.return_value = [[1.0, 0.0]]
 
         out = propose_mapping_heuristic(table, entities, MagicMock())
 
         assert out.mapped_concept == "Customer"
         assert out.confidence >= 0.9
 
+    @patch("src.mapping.rag_mapper._embed_texts_batch")
     @patch("src.mapping.rag_mapper.embed_text")
     @patch("src.mapping.retrieval.retrieve_top_entities")
     @patch("src.mapping.rag_mapper.get_settings")
@@ -242,6 +246,7 @@ class TestProposeMappingHeuristic:
         mock_get_settings,
         mock_retrieve_top,
         mock_embed_text,
+        mock_embed_texts_batch,
     ) -> None:
         base = _make_table("TB_PRODUCT")
         base.columns.append(ColumnSchema(name="WEIGHT_KG", data_type="DECIMAL"))
@@ -255,17 +260,15 @@ class TestProposeMappingHeuristic:
         mock_get_settings.return_value = MagicMock(heuristic_mapping_confidence_threshold=0.55)
         mock_retrieve_top.return_value = entities
 
-        mock_embed_text.side_effect = [
-            [1.0, 0.0],
-            [1.0, 0.0],
-            [0.98, 0.02],
-        ]
+        mock_embed_text.return_value = [1.0, 0.0]
+        mock_embed_texts_batch.return_value = [[1.0, 0.0], [0.98, 0.02]]
 
         out = propose_mapping_heuristic(table, entities, MagicMock())
 
         assert out.mapped_concept == "Product"
         assert out.confidence >= 0.55
 
+    @patch("src.mapping.rag_mapper._embed_texts_batch")
     @patch("src.mapping.rag_mapper.embed_text")
     @patch("src.mapping.retrieval.retrieve_top_entities")
     @patch("src.mapping.rag_mapper.get_settings")
@@ -274,6 +277,7 @@ class TestProposeMappingHeuristic:
         mock_get_settings,
         mock_retrieve_top,
         mock_embed_text,
+        mock_embed_texts_batch,
     ) -> None:
         base = _make_table("TB_PRODUCT")
         base.columns.append(ColumnSchema(name="WEIGHT_KG", data_type="DECIMAL"))
@@ -283,7 +287,8 @@ class TestProposeMappingHeuristic:
         entities = [_make_entity("WEIGHT_KG", "Numeric weight")]
         mock_get_settings.return_value = MagicMock(heuristic_mapping_confidence_threshold=0.60)
         mock_retrieve_top.return_value = entities
-        mock_embed_text.side_effect = [[1.0, 0.0], [1.0, 0.0]]
+        mock_embed_text.return_value = [1.0, 0.0]
+        mock_embed_texts_batch.return_value = [[1.0, 0.0]]
 
         out = propose_mapping_heuristic(table, entities, MagicMock())
 

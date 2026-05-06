@@ -283,16 +283,16 @@ def get_reasoning_llm() -> LLMProtocol:
     Used for: schema mapping, Actor-Critic, LLM judge, hallucination grader,
     schema enrichment, Cypher generation/healing.
 
-    ``reasoning_effort=medium`` (OpenAI) / ``reasoning.effort=medium`` (OpenRouter)
-    gives the model sufficient thinking budget for multi-hop synthesis across chunks.
+    ``reasoning_effort=high`` (OpenAI) / ``reasoning.effort=high`` (OpenRouter)
+    gives the model full thinking budget for multi-hop synthesis across chunks.
     """
     s = get_settings()
     provider_override = s.llm_provider if s.llm_provider != "auto" else None
     effective_provider = provider_override or detect_provider(s.llm_model_reasoning)
     if effective_provider == "openrouter":
-        low_reasoning: dict | None = {"reasoning": {"effort": "medium"}}
+        low_reasoning: dict | None = {"reasoning": {"effort": "high"}}
     elif effective_provider == "openai":
-        low_reasoning = {"reasoning_effort": "medium"}
+        low_reasoning = {"reasoning_effort": "high"}
     else:
         low_reasoning = None
     return make_llm(
@@ -333,13 +333,13 @@ def get_extraction_llm() -> LLMProtocol:
         )
 
     # Cloud model (OpenRouter, OpenAI, Anthropic): use make_llm for provider routing
-    # For OpenAI reasoning models (o-series, gpt-5*): suppress chain-of-thought with
-    # reasoning_effort="none" to get deterministic JSON at minimal cost.
+    # For OpenAI reasoning models (o-series, gpt-5*): use minimal reasoning effort.
+    # reasoning_effort="none" is not supported; "minimal" is the lowest valid value.
     # Standard chat models (gpt-4o*) don't accept reasoning_effort at all → pass None.
     # Note: OpenRouter models have mandatory reasoning that cannot be overridden here.
     no_reasoning: dict | None = None
     if effective_provider == "openai" and is_openai_reasoning_model(s.llm_model_extraction):
-        no_reasoning = {"reasoning_effort": "none"}
+        no_reasoning = {"reasoning_effort": "minimal"}
     return make_llm(
         model=s.llm_model_extraction,
         temperature=s.llm_temperature_extraction,
@@ -375,13 +375,13 @@ def get_lightweight_llm() -> LLMProtocol:
 
     Used for simple classification tasks: entity resolution judge,
     schema enrichment. Uses the extraction model (nano) with
-    ``reasoning_effort=none`` to suppress chain-of-thought.
+    ``reasoning_effort=minimal`` (lowest valid value for gpt-5* models).
     """
     s = get_settings()
     provider_override = s.llm_provider if s.llm_provider != "auto" else None
     no_reasoning: dict | None = None
     if is_openai_reasoning_model(s.llm_model_extraction):
-        no_reasoning = {"reasoning_effort": "none"}
+        no_reasoning = {"reasoning_effort": "minimal"}
     return make_llm(
         model=s.llm_model_extraction,
         temperature=s.llm_temperature_extraction,
@@ -404,9 +404,9 @@ def get_midtier_llm() -> LLMProtocol:
     provider_override = s.llm_provider if s.llm_provider != "auto" else None
     effective_provider = provider_override or detect_provider(s.llm_model_midtier)
     if effective_provider == "openrouter":
-        low_reasoning: dict | None = {"reasoning": {"effort": "low"}}
+        low_reasoning: dict | None = {"reasoning": {"effort": "medium"}}
     elif effective_provider == "openai":
-        low_reasoning = {"reasoning_effort": "low"}
+        low_reasoning = {"reasoning_effort": "medium"}
     else:
         low_reasoning = None
     return make_llm(

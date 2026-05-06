@@ -92,7 +92,7 @@
     {
       "id": 6,
       "question": "What types of loan products does the bank offer?",
-      "answer": "The bank offers five loan types defined by the CHECK constraint on loans.loan_type: (1) Mortgage — secured by real estate, glossary example shows $350,000 at 5.50% APR for 360 months; (2) Personal Loan — unsecured, example $15,000 at 8.50% APR for 48 months; (3) Auto Loan — secured by vehicle, example $35,000 at 6.50% APR for 60 months; (4) HELOC — revolving home equity credit line at variable rates, example $50,000 at 8.50% APR; (5) Credit Card — revolving credit, example $10,000 limit at 18.50% APR. The glossary notes that rates vary by type and creditworthiness, mortgages require collateral, and defaulted loans trigger collections.",
+      "answer": "The bank offers five loan types defined by the CHECK constraint on loans.loan_type: (1) Mortgage \u2014 secured by real estate, glossary example shows $350,000 at 5.50% APR for 360 months; (2) Personal Loan \u2014 unsecured, example $15,000 at 8.50% APR for 48 months; (3) Auto Loan \u2014 secured by vehicle, example $35,000 at 6.50% APR for 60 months; (4) HELOC \u2014 revolving home equity credit line at variable rates, example $50,000 at 8.50% APR; (5) Credit Card \u2014 revolving credit, example $10,000 limit at 18.50% APR. The glossary notes that rates vary by type and creditworthiness, mortgages require collateral, and defaulted loans trigger collections.",
       "category": "Direct Mapping",
       "entities": [
         "Loan",
@@ -107,8 +107,8 @@
     },
     {
       "id": 7,
-      "question": "What is the daily ATM withdrawal limit for standard customers?",
-      "answer": "The cards table has an atm_daily_limit column with a default value of $500. The business glossary Card Examples confirm this: a standard Debit Card has a $500 ATM limit, while a Premium Debit card has a $2,000 ATM limit. The daily_limit column (default $3,000) controls POS spending separately. These limits are per-card, not per-customer, so different card types can have different limits. The glossary states that daily limits prevent fraud and control exposure.",
+      "question": "What is the daily ATM withdrawal limit defined in the schema?",
+      "answer": "The cards table has an atm_daily_limit column (DECIMAL 10,2, NOT NULL) with a default value of 500.00. This is a per-card limit, not per-customer \u2014 different card records can have different limits. The daily_limit column (default 3000.00) controls POS spending separately. The business glossary notes that daily limits prevent fraud and control exposure.",
       "category": "Direct Mapping",
       "entities": [
         "ATM",
@@ -394,7 +394,7 @@
     {
       "id": 22,
       "question": "How does the accounts table support interest tracking and what business rules govern interest?",
-      "answer": "The accounts table has interest_rate (nullable DECIMAL for the annual rate) and interest_earned (DECIMAL for year-to-date interest credited). The business glossary states that deposit interest is credited monthly (typically the first day of the month) and that APY accounts for compounding effects. Promotional rates may be temporary (e.g., 12-month CD bonus rates), and penalty rates may apply for rule violations such as early CD withdrawal. The interest_rate column is nullable because not all account types earn interest — non-interest-bearing checking accounts would have NULL for this field.",
+      "answer": "The accounts table has interest_rate (nullable DECIMAL for the annual rate) and interest_earned (DECIMAL for year-to-date interest credited). The business glossary states that deposit interest is credited monthly (typically the first day of the month) and that APY accounts for compounding effects. Promotional rates may be temporary (e.g., 12-month CD bonus rates), and penalty rates may apply for rule violations such as early CD withdrawal. The interest_rate column is nullable because not all account types earn interest \u2014 non-interest-bearing checking accounts would have NULL for this field.",
       "category": "Direct Mapping",
       "entities": [
         "Account",
@@ -413,7 +413,7 @@
     {
       "id": 23,
       "question": "Can an account exist without any customer linked to it?",
-      "answer": "Looking at the schema, there is no database-level constraint that forces every account to have a customer_account row. The accounts table has no direct foreign key to customers — the relationship is through the customer_account junction table with a composite primary key (customer_id, account_id). However, the business glossary states that accounts cannot exist without customer ownership, so this is a business rule enforced at the application level rather than a schema constraint. The junction table's relationship_type defaults to Owner, and the business rule ensures at least one Owner relationship exists per account.",
+      "answer": "Looking at the schema, there is no database-level constraint that forces every account to have a customer_account row. The accounts table has no direct foreign key to customers \u2014 the relationship is through the customer_account junction table with a composite primary key (customer_id, account_id). However, the business glossary states that accounts cannot exist without customer ownership, so this is a business rule enforced at the application level rather than a schema constraint. The junction table's relationship_type defaults to Owner, and the business rule ensures at least one Owner relationship exists per account.",
       "category": "Negative",
       "entities": [
         "Account",
@@ -435,7 +435,7 @@
     {
       "id": 24,
       "question": "How does the schema handle failed or cancelled transactions?",
-      "answer": "The transactions table has a status column with CHECK constraint allowing Pending, Posted, Failed, Cancelled, and OnHold states. The business glossary explains that failed transactions are logged for audit but do not affect the account balance — the balance_after field would reflect no change. Posted transactions are final and cannot be modified, only reversed with a new transaction. The transaction record preserves all fields (description, reference_number, location, amount) regardless of status, maintaining a complete audit trail for regulatory compliance.",
+      "answer": "The transactions table has a status column with CHECK constraint allowing Pending, Posted, Failed, Cancelled, and OnHold states. The business glossary explains that failed transactions are logged for audit but do not affect the account balance \u2014 the balance_after field would reflect no change. Posted transactions are final and cannot be modified, only reversed with a new transaction. The transaction record preserves all fields (description, reference_number, location, amount) regardless of status, maintaining a complete audit trail for regulatory compliance.",
       "category": "Negative",
       "entities": [
         "Transaction",

@@ -139,9 +139,10 @@ def _strip_non_table_ddl(ddl_text: str) -> str:
     return result
 
 
-# Matches CHECK (...) constraints (possibly nested parens) in DDL source
+# Matches CHECK (...) constraints (possibly nested parens up to 3 levels deep) in DDL source.
+# Uses atomic-style matching via possessive-like pattern to avoid ReDoS on malformed input.
 _CHECK_RE = re.compile(
-    r",?\s*CHECK\s*\((?:[^()]*|\((?:[^()]*|\([^()]*\))*\))*\)",
+    r",?\s*CHECK\s*\((?:[^()]*|\([^()]*\)|\((?:[^()]*|\([^()]*\))*\))*\)",
     re.IGNORECASE,
 )
 

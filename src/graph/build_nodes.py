@@ -13,7 +13,7 @@ from typing import Any
 from src.config.llm_factory import get_reasoning_llm
 from src.config.logging import NodeTimer, get_logger, log_node_event
 from src.config.settings import get_settings
-from src.graph.cypher_builder import build_fk_cypher, build_upsert_cypher
+from src.graph.cypher_builder import build_attribute_cypher, build_fk_cypher, build_upsert_cypher
 from src.graph.cypher_generator import generate_cypher
 from src.graph.cypher_healer import heal_cypher
 from src.graph.neo4j_client import Neo4jClient
@@ -21,7 +21,7 @@ from src.models.schemas import EnrichedTableSchema, Entity, MappingProposal
 from src.models.state import BuilderState
 from src.prompts.few_shot import load_cypher_examples
 from src.retrieval.embeddings import embed_text, get_embeddings
-from src.utils.text_utils import normalize_concept_name
+from src.utils.text_utils import is_valid_entity_name, normalize_concept_name
 
 logger: logging.Logger = get_logger(__name__)
 
@@ -211,6 +211,32 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
         # Normalize the concept name to Title Case before any graph writes
         concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
 
+        # Reject concept names that are still garbage after normalization
+        # Fallback to enriched_table_name (e.g. "Shipment" for SHIPMENT) instead of skipping entirely
+        if not is_valid_entity_name(concept_name):
+            fallback_name = normalize_concept_name(
+                getattr(table, "enriched_table_name", None) or table.table_name
+            )
+            if is_valid_entity_name(fallback_name):
+                logger.warning(
+                    "Concept name '%s' (raw: '%s') rejected by quality gate — "
+                    "falling back to enriched table name '%s'.",
+                    concept_name,
+                    proposal.mapped_concept,
+                    fallback_name,
+                )
+                concept_name = fallback_name
+            else:
+                logger.warning(
+                    "Concept name '%s' (raw: '%s') rejected by quality gate — skipping graph write.",
+                    concept_name,
+                    proposal.mapped_concept,
+                )
+                log_node_event(logger, "build_graph", f"table={proposal.table_name}", "rejected concept name", timer.elapsed_ms)
+                completed = list(state.get("completed_tables") or [])
+                completed.append(proposal.table_name)
+                return {"completed_tables": completed}
+
         # Resolve entity early — needed for both LLM and fallback paths.
         # If no matching resolved entity exists (e.g. the RAG Mapper normalised the
         # concept name differently from what entity resolution produced), fall back
@@ -240,11 +266,11 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     break
             if not cypher_failed:
                 logger.info("Executing LLM-healed Cypher for '%s'.", proposal.table_name)
-            exec_cypher = llm_cypher
-            # Safety-net params: the system prompt tells the LLM to inline values,
-            # but it sometimes copies parameterised style from few-shot examples.
-            # Providing the params avoids ParameterMissing errors at runtime.
-            exec_params = _build_llm_cypher_params(proposal, table, entity_for_write)
+                exec_cypher = llm_cypher
+                # Safety-net params: the system prompt tells the LLM to inline values,
+                # but it sometimes copies parameterised style from few-shot examples.
+                # Providing the params avoids ParameterMissing errors at runtime.
+                exec_params = _build_llm_cypher_params(proposal, table, entity_for_write)
         else:
             logger.info(
                 "LLM Cypher failed for '%s' — falling back to deterministic builder.",
@@ -253,55 +279,80 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=entity_for_write)
 
         with Neo4jClient() as client:
-            client.execute_cypher(exec_cypher, exec_params)
+            try:
+                client.execute_cypher(exec_cypher, exec_params)
+            except Exception as cypher_exec_err:
+                # LLM Cypher may use CREATE instead of MERGE, causing constraint
+                # violations when the same BusinessConcept already exists.
+                # Fallback to deterministic builder which always uses MERGE.
+                from neo4j.exceptions import ConstraintError
+                if isinstance(cypher_exec_err, ConstraintError):
+                    logger.warning(
+                        "LLM Cypher failed with constraint error for '%s' — "
+                        "retrying with deterministic builder: %s",
+                        proposal.table_name,
+                        cypher_exec_err,
+                    )
+                    fallback_cypher, fallback_params = build_upsert_cypher(
+                        proposal, table, entity=entity_for_write
+                    )
+                    client.execute_cypher(fallback_cypher, fallback_params)
+                else:
+                    raise
             logger.info("Graph updated for table '%s'.", proposal.table_name)
 
-            # Normalize PhysicalTable.table_name to canonical UPPERCASE
-            # (LLM Cypher may use lowercase from DDL source text, while
-            # build_fk_cypher always uses the UPPERCASE name from the parser)
-            client.execute_cypher(
-                "MATCH (pt:PhysicalTable) "
-                "WHERE toLower(pt.table_name) = toLower($name) "
-                "SET pt.table_name = $canonical",
-                {"name": table.table_name, "canonical": table.table_name},
-            )
-
-            # Always stamp source_file regardless of which Cypher path was used
-            # (LLM-generated Cypher doesn't know about this property)
-            if table.source_file:
+            # ── Normalize BusinessConcept name created by LLM Cypher ──────────
+            # The LLM Cypher may create the BusinessConcept with a name that
+            # differs from our quality-gated `concept_name`. Force-rename it.
+            if proposal.mapped_concept:
                 client.execute_cypher(
-                    "MATCH (pt:PhysicalTable) "
-                    "WHERE toLower(pt.table_name) = toLower($name) "
-                    "SET pt.source_file = $source_file",
-                    {"name": table.table_name, "source_file": table.source_file},
+                    "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
+                    "WHERE toLower(pt.table_name) = toLower($tbl) AND bc.name <> $target "
+                    "SET bc.name = $target",
+                    {"tbl": table.table_name, "target": concept_name},
+                )
+                # ── Ensure MAPPED_TO edge exists (LLM Cypher may omit it) ─────
+                client.execute_cypher(
+                    "MATCH (bc:BusinessConcept {name: $bc_name}) "
+                    "MATCH (pt:PhysicalTable) WHERE toLower(pt.table_name) = toLower($tbl) "
+                    "MERGE (bc)-[r:MAPPED_TO]->(pt) "
+                    "ON CREATE SET r.confidence = $conf, r.validated_by = 'llm_judge', r.created_at = datetime() "
+                    "ON MATCH SET r.confidence = $conf, r.updated_at = datetime()",
+                    {"bc_name": concept_name, "tbl": table.table_name, "conf": proposal.confidence},
                 )
 
-            # Always stamp enriched metadata on the PhysicalTable node so that
-            # nodes written via the LLM Cypher path get full properties too.
-            enriched_params: dict[str, Any] = {"name": table.table_name}
-            enriched_set_clauses: list[str] = []
+            # ── Consolidate property updates into single Cypher call ──────────
+            # Combines: normalization, source_file stamp, enriched metadata
+            set_clauses: list[str] = ["pt.table_name = $canonical", "pt.name = $canonical"]
+            merged_params: dict[str, Any] = {
+                "name": table.table_name,
+                "canonical": table.table_name,
+            }
+            if table.source_file:
+                set_clauses.append("pt.source_file = $source_file")
+                merged_params["source_file"] = table.source_file
             if getattr(table, "enriched_table_name", None):
-                enriched_set_clauses.append("pt.enriched_table_name = $etn")
-                enriched_params["etn"] = table.enriched_table_name
+                set_clauses.append("pt.enriched_table_name = $etn")
+                merged_params["etn"] = table.enriched_table_name
             if getattr(table, "table_description", None):
-                enriched_set_clauses.append("pt.table_description = $td")
-                enriched_params["td"] = table.table_description
+                set_clauses.append("pt.table_description = $td")
+                merged_params["td"] = table.table_description
             if getattr(table, "enriched_columns", None):
-                enriched_set_clauses.append("pt.enriched_columns = $ec")
-                enriched_params["ec"] = _json.dumps(
+                set_clauses.append("pt.enriched_columns = $ec")
+                merged_params["ec"] = _json.dumps(
                     [{"original": ec.original_name, "enriched": ec.enriched_name}
                      for ec in table.enriched_columns]
                 )
             if table.comment:
-                enriched_set_clauses.append("pt.comment = $cmt")
-                enriched_params["cmt"] = table.comment
-            if enriched_set_clauses:
-                client.execute_cypher(
-                    "MATCH (pt:PhysicalTable) "
-                    "WHERE toLower(pt.table_name) = toLower($name) "
-                    f"SET {', '.join(enriched_set_clauses)}",
-                    enriched_params,
-                )
+                set_clauses.append("pt.comment = $cmt")
+                merged_params["cmt"] = table.comment
+
+            client.execute_cypher(
+                "MATCH (pt:PhysicalTable) "
+                "WHERE toLower(pt.table_name) = toLower($name) "
+                f"SET {', '.join(set_clauses)}",
+                merged_params,
+            )
 
             fk_statements = build_fk_cypher(table)
             if fk_statements:
@@ -311,15 +362,41 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 except Exception as exc:
                     logger.warning("Could not write FK edges for '%s': %s", table.table_name, exc)
 
+            # ── Attribute nodes: one per column for fine-grained retrieval ──
+            attr_statements = build_attribute_cypher(table)
+            if attr_statements:
+                try:
+                    client.execute_batch(attr_statements)
+                    logger.info("Attribute nodes: %d upserted for table '%s'.", len(attr_statements), table.table_name)
+                    # Set embeddings on Attribute nodes
+                    model = get_embeddings()
+                    attr_texts = [params["description"] for _, params in attr_statements]
+                    attr_names = [params["attr_name"] for _, params in attr_statements]
+                    vectors = model.encode(attr_texts, batch_size=len(attr_texts))
+                    for attr_name, vec in zip(attr_names, vectors):
+                        client.execute_cypher(
+                            "MATCH (a:Attribute {name: $name}) SET a.embedding = $emb",
+                            {"name": attr_name, "emb": vec.tolist()},
+                        )
+                    logger.info("Embeddings set for %d Attribute nodes.", len(attr_names))
+                except Exception as exc:
+                    logger.warning("Could not write Attribute nodes for '%s': %s", table.table_name, exc)
+
             if proposal.mapped_concept:
                 try:
                     model = get_embeddings()
                     vector = embed_text(concept_name, model=model)
-                    client.execute_cypher(
-                        "MATCH (c:BusinessConcept {name: $name}) SET c.embedding = $emb",
-                        {"name": concept_name, "emb": vector},
-                    )
-                    logger.info("Embedding set for BusinessConcept '%s'.", concept_name)
+                    for _attempt in range(3):
+                        try:
+                            client.execute_cypher(
+                                "MATCH (c:BusinessConcept {name: $name}) SET c.embedding = $emb",
+                                {"name": concept_name, "emb": vector},
+                            )
+                            logger.info("Embedding set for BusinessConcept '%s'.", concept_name)
+                            break
+                        except Exception:
+                            if _attempt == 2:
+                                raise
                 except Exception as exc:
                     logger.warning("Could not set embedding for '%s': %s", concept_name, exc)
 

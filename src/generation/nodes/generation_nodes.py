@@ -65,7 +65,7 @@ def _compose_generation_chunks(
         text_l = chunk.text.lower()
         nid_l = chunk.node_id.lower()
         has_structure = int("→" in chunk.node_id or _has_priority_structure_tokens(text_l))
-        keyword_hits = int(any(term in text_l or term in nid_l for term in terms))
+        keyword_hits = sum(1 for term in terms if term in text_l or term in nid_l)
         source_rank = 2 if chunk.source_type in {"vector", "bm25"} else 1
         return (keyword_hits, has_structure, source_rank, float(chunk.score))
 
@@ -73,8 +73,8 @@ def _compose_generation_chunks(
     target = max_core + max_support
 
     source_caps: dict[str, int] = {
-        "vector": min(5, target),
-        "bm25": min(4, target),
+        "vector": min(6, target),
+        "bm25": min(6, target),
         "graph": min(6, target),
     }
 

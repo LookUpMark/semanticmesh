@@ -161,6 +161,59 @@ def vector_search(
     return chunks
 
 
+# ── Attribute Vector Search ────────────────────────────────────────────────────
+
+
+def attribute_vector_search(
+    query: str,
+    client: Neo4jClient,
+    top_k: int = 5,
+    model=None,
+    query_vector: list[float] | None = None,
+) -> list[RetrievedChunk]:
+    """Search the ``attribute_embedding`` vector index for column-level nodes.
+
+    Returns Attribute nodes as RetrievedChunks with ``source_type="vector"``
+    and ``node_type="Attribute"``.
+    """
+    qv: list[float] = query_vector if query_vector is not None else embed_text(query, model=model)
+
+    cypher = (
+        "CALL db.index.vector.queryNodes('attribute_embedding', $k, $embedding) "
+        "YIELD node, score "
+        "RETURN node.name AS name, node.description AS description, "
+        "node.table_name AS table_name, node.column_name AS column_name, "
+        "node.data_type AS data_type, node.nullable AS nullable, "
+        "node.is_fk AS is_fk, node.fk_target AS fk_target, "
+        "score, 'Attribute' AS node_type"
+    )
+    records = client.execute_cypher(cypher, {"k": top_k, "embedding": qv})
+
+    chunks: list[RetrievedChunk] = []
+    for rec in records:
+        name = (rec.get("name") or "").strip()
+        desc = rec.get("description") or ""
+        if not name:
+            continue
+        chunks.append(
+            RetrievedChunk(
+                node_id=name,
+                node_type="Attribute",
+                text=desc,
+                score=float(rec.get("score", 0.0)),
+                source_type="vector",
+                metadata={
+                    key: val
+                    for key, val in rec.items()
+                    if key not in ("name", "description", "score", "node_type")
+                    and val is not None
+                },
+            )
+        )
+    logger.debug("attribute_vector_search: %d results for query '%s'.", len(chunks), query[:60])
+    return chunks
+
+
 # ── Chunk Vector Search ────────────────────────────────────────────────────────
 
 
@@ -255,11 +308,11 @@ def graph_traversal(
 
     cypher = (
         f"MATCH (start)-[r*1..{d}]-(neighbor) "
-        "WHERE start.name IN $seed_names "
-        "RETURN neighbor.name AS name, "
+        "WHERE start.name IN $seed_names OR start.table_name IN $seed_names "
+        "RETURN COALESCE(neighbor.name, neighbor.table_name) AS name, "
         "COALESCE(neighbor.definition, neighbor.table_name, '') AS definition, "
         "labels(neighbor)[0] AS node_type, type(r[0]) AS rel_type "
-        "LIMIT 20"
+        "LIMIT 30"
     )
     records = client.execute_cypher(cypher, {"seed_names": seed_names})
 
@@ -405,7 +458,9 @@ def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
     records = client.execute_cypher(
         "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
         "RETURN bc.name AS concept_name, bc.definition AS concept_def, "
-        "pt.table_name AS table_name, pt.column_names AS column_names"
+        "pt.table_name AS table_name, pt.column_names AS column_names, "
+        "pt.table_description AS table_description, "
+        "pt.enriched_columns AS enriched_columns"
     )
     chunks: list[RetrievedChunk] = []
     for rec in records:
@@ -415,11 +470,27 @@ def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
             continue
         concept_def = (rec.get("concept_def") or "").strip()
         columns = rec.get("column_names") or []
-        col_part = f" (columns: {', '.join(columns)})" if columns else ""
+        table_desc = (rec.get("table_description") or "").strip()
+        enriched_cols_raw = rec.get("enriched_columns") or ""
+
+        # Build enriched column display: prefer enriched names over raw names
+        enriched_names: list[str] = []
+        if enriched_cols_raw:
+            try:
+                import json as _json_mod  # noqa: PLC0415
+                ec_list = (_json_mod.loads(enriched_cols_raw)
+                           if isinstance(enriched_cols_raw, str) else enriched_cols_raw)
+                enriched_names = [e.get("enriched", e.get("original", "")) for e in ec_list if e]
+            except (TypeError, ValueError):
+                pass
+        col_display = enriched_names if enriched_names else columns
+        col_part = f" Stored fields: {', '.join(col_display)}." if col_display else ""
+
         def_part = f" — {concept_def}" if concept_def else ""
+        desc_part = f" {table_desc}" if table_desc else ""
         text = (
             f"Business concept '{concept}'{def_part} is implemented by "
-            f"physical table {table}{col_part}."
+            f"physical table {table}.{desc_part}{col_part}"
         )
         chunks.append(
             RetrievedChunk(
@@ -463,29 +534,14 @@ def merge_results(
     rrf_scores: dict[str, float] = {}
     representative: dict[str, RetrievedChunk] = {}
 
-    for rank, chunk in enumerate(vector):
-        nid = chunk.node_id
-        if not nid.strip() or not chunk.text.strip():
-            continue
-        rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
-        if nid not in representative:
-            representative[nid] = chunk
-
-    for rank, chunk in enumerate(bm25):
-        nid = chunk.node_id
-        if not nid.strip() or not chunk.text.strip():
-            continue
-        rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
-        if nid not in representative:
-            representative[nid] = chunk
-
-    for rank, chunk in enumerate(graph):
-        nid = chunk.node_id
-        if not nid.strip() or not chunk.text.strip():
-            continue
-        rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
-        if nid not in representative:
-            representative[nid] = chunk
+    for source in (vector, bm25, graph):
+        for rank, chunk in enumerate(source):
+            nid = chunk.node_id
+            if not nid.strip() or not chunk.text.strip():
+                continue
+            rrf_scores[nid] = rrf_scores.get(nid, 0.0) + 1.0 / (rrf_k + rank)
+            if nid not in representative:
+                representative[nid] = chunk
 
     merged = [
         representative[nid].model_copy(update={"score": score})

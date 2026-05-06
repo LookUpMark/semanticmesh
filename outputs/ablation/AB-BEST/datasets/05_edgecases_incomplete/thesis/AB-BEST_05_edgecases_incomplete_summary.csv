@@ -1,2 +1,2 @@
 study_id,dataset_id,run_tag,timestamp,extraction_mode,reasoning_model,embedding_model,retrieval_mode,enable_reranker,reranker_top_k,chunk_size,chunk_overlap,er_similarity_threshold,triplets,entities,tables_parsed,tables_completed,builder_elapsed_s,total_questions,grounded_count,grounded_rate,avg_gt_coverage,avg_top_score,avg_chunk_count,abstained_count
-AB-BEST,05_edgecases_incomplete,,2026-04-21T21:09:37.387545+00:00,LLM (openai/gpt-4.1-nano),openai/gpt-oss-120b,BAAI/bge-m3,hybrid,True,20,128,16,0.65,0,0,5,5,0,20,20,1.0,,0.4742514639574401,14.0,0
+AB-BEST,05_edgecases_incomplete,,2026-05-06T10:49:09.046507+00:00,LLM (gpt-5-nano-2025-08-07),gpt-5.4-nano-2026-03-17,BAAI/bge-m3,hybrid,True,20,128,16,0.65,0,0,5,5,0,20,20,1.0,1.0,0.7930140515815874,32.3,0

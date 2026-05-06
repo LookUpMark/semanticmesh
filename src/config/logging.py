@@ -68,6 +68,7 @@ def setup_notebook_logging() -> None:
 
     logging.getLogger("src.graph.neo4j_client").setLevel(logging.WARNING)
     logging.getLogger("neo4j.notifications").setLevel(logging.WARNING)
+    logging.getLogger("langgraph.checkpoint.serde.jsonplus").setLevel(logging.ERROR)
     try:
         import transformers  # type: ignore[import]
 
@@ -98,6 +99,7 @@ def _configure_root_logger() -> None:
     root.addHandler(handler)
 
     logging.getLogger("neo4j.notifications").setLevel(logging.WARNING)
+    logging.getLogger("langgraph.checkpoint.serde.jsonplus").setLevel(logging.ERROR)
 
 
 # Configure root logger at module import time

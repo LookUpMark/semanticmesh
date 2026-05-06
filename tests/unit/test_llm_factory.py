@@ -45,15 +45,21 @@ class TestLlmFactory:
 
     def test_reasoning_llm_temperature(self) -> None:
         llm = get_reasoning_llm()
-        assert llm._model.temperature == 0.0  # type: ignore[attr-defined]
+        # Reasoning models (gpt-5*, o-series) don't support temperature → None
+        temp = llm._model.temperature  # type: ignore[attr-defined]
+        assert temp is None or temp == 0.0
 
     def test_generation_llm_temperature(self) -> None:
         llm = get_generation_llm()
-        assert llm._model.temperature == 0.3  # type: ignore[attr-defined]
+        # Reasoning models ignore temperature; standard models use 0.3
+        temp = llm._model.temperature  # type: ignore[attr-defined]
+        assert temp is None or temp == 0.3
 
     def test_extraction_llm_temperature(self) -> None:
         llm = get_extraction_llm()
-        assert llm._model.temperature == 0.0  # type: ignore[attr-defined]
+        # Reasoning models (gpt-5*) don't support temperature → None
+        temp = llm._model.temperature  # type: ignore[attr-defined]
+        assert temp is None or temp == 0.0
 
     def test_reasoning_and_generation_same_model_slug(self) -> None:
         r = get_reasoning_llm()

@@ -20,7 +20,14 @@ Output format: a single JSON object matching this schema exactly:
 Rules:
 - Output ONLY valid JSON. No markdown. No explanation. No preamble.
 - "provenance_text" must be copied VERBATIM from the input. Never paraphrase.
-- "subject" and "object" must be noun phrases. "predicate" must be a verb phrase or relation label.
+- "subject" and "object" must be SHORT noun phrases (1-4 words). "predicate" must be a verb phrase or relation label.
+- GOOD subject/object examples: "Customer", "Sales Order", "Product Category", "Invoice Line Item"
+- BAD subject/object examples (DO NOT produce these):
+  - Sentence fragments: "a unique identifier assigned to each customer"
+  - Descriptions: "the table that stores all order data"
+  - Pronouns or generic words: "it", "the data", "this value"
+  - Full clauses: "when an order is placed by a customer"
+- If an entity is described by a long phrase, extract only the core noun: "Customer" not "a registered customer in the system"
 - If the text contains no extractable triplets, return: {"triplets": []}
 - Do NOT infer facts not stated in the text.
 - Confidence: 1.0 = explicitly stated, 0.7 = strongly implied, 0.5 = weakly implied."""
@@ -314,7 +321,15 @@ Rules:
 - Do not invent table names, column names, entities, or relationships that are not present in the context.
 - If the question asks about specific customers, transactions, balances, or other instance-level records but the context only contains schema definitions and business concepts, explain that the knowledge graph contains schema-level metadata only, not operational data records. Still describe the relevant schema structure.
 - Be concise and direct. Cite the specific concept name or table name from the context when relevant.
-- Format: plain prose. No bullet lists unless the question explicitly asks for a list."""
+- Format: plain prose. No bullet lists unless the question explicitly asks for a list.
+
+CRITICAL — Possibility/Requirement questions:
+When the question asks whether something is "possible", "required", or "can exist without", you MUST reason about physical DDL constraints, NOT relationship summary statements. Specifically:
+(a) A "KEY RELATIONSHIP SUMMARY" statement like "A has one or more B" describes the TYPICAL business flow — it does NOT mean the database prevents A from existing without B.
+(b) If the foreign key is on table B's side (e.g., B.a_id → A.pk), then rows in A CAN exist with zero rows in B pointing to them — the FK only forces B to reference a valid A.
+(c) A column with Nullable=YES (e.g., PAYMENT_CONFIRMED_AT DATETIME | YES) means that step/relationship is optional at the database level.
+(d) Only an explicit NOT NULL constraint on A's side would make B mandatory for A.
+Always state your reasoning about nullable columns and FK direction when answering these questions."""
 
 ANSWER_SYSTEM_SPARSE = """You are a precise data governance analyst assistant with limited but potentially useful retrieved evidence.
 

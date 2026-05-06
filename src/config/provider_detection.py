@@ -50,6 +50,10 @@ __all__ = [
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
+# NOTE: These are default constants for module-level reference / export.
+# At runtime, model_builders.py reads the actual values from get_settings()
+# (which support env var overrides: OPENROUTER_BASE_URL, LMSTUDIO_BASE_URL,
+#  GROQ_BASE_URL, TOGETHER_BASE_URL, etc.)
 _OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 _LMSTUDIO_DEFAULT_URL = "http://localhost:1234/v1"
 

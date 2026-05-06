@@ -78,8 +78,9 @@ class TestRerank:
         reranker = _make_reranker([0.7, 0.5])
         rerank("what is a customer?", chunks, reranker=reranker, top_k=2)
         call_args = reranker.compute_score.call_args[0][0]
-        assert call_args[0] == ("what is a customer?", "Customer: some definition text")
-        assert call_args[1] == ("what is a customer?", "Product: some definition text")
+        # Short BC chunks are enriched with [node_type | node_id] prefix
+        assert call_args[0] == ("what is a customer?", "[BusinessConcept | Customer] Customer: some definition text")
+        assert call_args[1] == ("what is a customer?", "[BusinessConcept | Product] Product: some definition text")
 
     def test_invalid_chunks_are_dropped_before_scoring(self) -> None:
         valid = _chunk("Customer")
@@ -98,7 +99,56 @@ class TestRerank:
         assert len(result) == 1
         assert result[0].node_id == "Customer"
         call_args = reranker.compute_score.call_args[0][0]
-        assert call_args == [("query", "Customer: some definition text")]
+        assert call_args == [("query", "[BusinessConcept | Customer] Customer: some definition text")]
+
+    def test_floor_large_pool_rank1_gets_055(self) -> None:
+        """Pool ≥10 → rank #1 floor is 0.55 (max of linear interpolation)."""
+        chunks = [_chunk(f"C{i}") for i in range(12)]
+        # All get low scores (0.01..0.12) → floor should kick in
+        reranker = _make_reranker([0.01 * (i + 1) for i in range(12)])
+        result = rerank("query", chunks, reranker=reranker, top_k=5)
+        # Rank #1 (highest raw = 0.12) should be floored to 0.55
+        assert result[0].score == pytest.approx(0.55)
+        # Rank #2 → 0.50
+        assert result[1].score == pytest.approx(0.50)
+        # Rank #5 → 0.35
+        assert result[4].score == pytest.approx(0.35)
+
+    def test_floor_small_pool_rank1_gets_040(self) -> None:
+        """Pool=3 (minimum) → rank #1 floor is 0.40."""
+        chunks = [_chunk(f"C{i}") for i in range(3)]
+        reranker = _make_reranker([0.01, 0.02, 0.03])
+        result = rerank("query", chunks, reranker=reranker, top_k=5)
+        # Rank #1 floor = 0.40 (pool=3, min of interpolation)
+        assert result[0].score == pytest.approx(0.40)
+        # Rank #2 floor = 0.35
+        assert result[1].score == pytest.approx(0.35)
+
+    def test_floor_mid_pool_interpolated(self) -> None:
+        """Pool=6 → floor interpolated between 0.40 and 0.55."""
+        chunks = [_chunk(f"C{i}") for i in range(6)]
+        reranker = _make_reranker([0.01] * 6)
+        result = rerank("query", chunks, reranker=reranker, top_k=5)
+        # pool=6: floor = 0.40 + (6-3)*(0.15/7) = 0.40 + 0.0643 ≈ 0.464
+        expected_floor = 0.40 + (6 - 3) * 0.15 / 7
+        assert result[0].score == pytest.approx(expected_floor, abs=0.001)
+
+    def test_floor_not_applied_when_score_already_above(self) -> None:
+        """Floor should not downgrade scores above the floor."""
+        chunks = [_chunk(f"C{i}") for i in range(12)]
+        reranker = _make_reranker([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.04, 0.03])
+        result = rerank("query", chunks, reranker=reranker, top_k=5)
+        # Top chunks already above floor, should keep original scores
+        assert result[0].score == pytest.approx(0.9)
+        assert result[1].score == pytest.approx(0.8)
+
+    def test_floor_metadata_stores_original_score(self) -> None:
+        """When floor is applied, original score stored in metadata."""
+        chunks = [_chunk(f"C{i}") for i in range(12)]
+        reranker = _make_reranker([0.01] * 12)
+        result = rerank("query", chunks, reranker=reranker, top_k=5)
+        assert "score_floored_from" in result[0].metadata
+        assert result[0].metadata["score_floored_from"] == pytest.approx(0.01)
 
 
 # ── TestGetReranker ───────────────────────────────────────────────────────────

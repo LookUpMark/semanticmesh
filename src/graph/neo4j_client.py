@@ -81,6 +81,14 @@ _SCHEMA_STATEMENTS: list[str] = [
         "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
     )
     % _EMBEDDING_DIMENSION,
+    "CREATE CONSTRAINT attribute_name_unique IF NOT EXISTS "
+    "FOR (a:Attribute) REQUIRE a.name IS UNIQUE",
+    (
+        "CREATE VECTOR INDEX attribute_embedding IF NOT EXISTS "
+        "FOR (a:Attribute) ON a.embedding "
+        "OPTIONS {indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: 'cosine'}}"
+    )
+    % _EMBEDDING_DIMENSION,
 ]
 
 

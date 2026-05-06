@@ -418,26 +418,34 @@ def _run_single(
                 expected_sources = pair.get("expected_sources", [])
                 covered_sources: list[str] = []
                 if expected_sources:
-                    # Build token-level index from entity_names.
+                    # Build token-level index from entity_names + sources.
                     # entity_names may use "ConceptName→TABLE_NAME" format — expand both sides
                     # then split each normalized part into individual tokens.
                     norm_retrieved_tokens: set[str] = set()
-                    for s in entity_names:
+                    for s in (*entity_names, *sources):
                         if s:
                             for part in s.split("→"):
                                 norm_retrieved_tokens.update(_ns(part.strip()).split())
-                    # Fallback: if entity_names is empty, extract section headers from
-                    # retrieved contexts (e.g. "## Interest\n\n..." → "interest").
-                    if not norm_retrieved_tokens:
-                        _header_re = _re.compile(r"^##\s+(.+?)(?:\n|$)", _re.MULTILINE)
-                        for chunk in r.get("retrieved_contexts", []):
-                            for header in _header_re.findall(str(chunk)):
-                                norm_retrieved_tokens.update(_ns(header.strip()).split())
+                    # Always extract section headers from retrieved contexts
+                    # (e.g. "## Interest\n\n..." → "interest") to cover glossary
+                    # chunks that appear in context but aren't BC node names.
+                    _header_re = _re.compile(r"^##?\s+(.+?)(?:\n|$)", _re.MULTILINE)
+                    for chunk in r.get("retrieved_contexts", []):
+                        for header in _header_re.findall(str(chunk)):
+                            norm_retrieved_tokens.update(_ns(header.strip()).split())
                     # Partial token overlap: a source is covered if at least one of its
-                    # tokens appears in the retrieved token index.
+                    # tokens appears in (or is a stem-prefix of) the retrieved token index.
                     for es in expected_sources:
                         es_tokens = set(_ns(str(es)).split())
-                        if es_tokens and (es_tokens & norm_retrieved_tokens):
+                        if es_tokens and (
+                            es_tokens & norm_retrieved_tokens
+                            or any(
+                                rt.startswith(et) or et.startswith(rt)
+                                for et in es_tokens
+                                for rt in norm_retrieved_tokens
+                                if len(et) >= 3 and len(rt) >= 3
+                            )
+                        ):
                             covered_sources.append(str(es))
                 # None when no expected_sources — metric is not applicable (not inflated to 1.0)
                 gt_coverage: float | None = (
@@ -601,7 +609,7 @@ def _run_single(
                     "expected_sources": pq.get("expected_sources", []),
                     "generated_answer": pq.get("generated_answer", ""),
                     "sources_retrieved": pq.get("sources", []),
-                    "contexts_retrieved": [c[:500] for c in pq.get("retrieved_contexts", [])],
+                    "contexts_retrieved": list(pq.get("retrieved_contexts", [])),
                     "covered_sources": pq.get("covered_sources", []),
                     "gt_coverage": pq.get("gt_coverage", 0.0),
                     "grounded": pq.get("grounded", False),

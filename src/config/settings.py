@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     # ── LLM ─────────────────────────────────────────────────────────────────────
     lmstudio_base_url: str = DEFAULT_CONFIG.lmstudio_base_url
     openrouter_base_url: str = DEFAULT_CONFIG.openrouter_base_url
+    groq_base_url: str = DEFAULT_CONFIG.groq_base_url
+    together_base_url: str = DEFAULT_CONFIG.together_base_url
+    nvidia_base_url: str = DEFAULT_CONFIG.nvidia_base_url
+    deepseek_base_url: str = DEFAULT_CONFIG.deepseek_base_url
+    xai_base_url: str = DEFAULT_CONFIG.xai_base_url
+    cohere_base_url: str = DEFAULT_CONFIG.cohere_base_url
+    ollama_base_url: str = DEFAULT_CONFIG.ollama_base_url
     openrouter_api_key: SecretStr = SecretStr("")
     openai_api_key: SecretStr = SecretStr("")
     llm_provider: str = DEFAULT_CONFIG.llm_provider
@@ -58,6 +65,16 @@ class Settings(BaseSettings):
     # ── Entity Resolution ──────────────────────────────────────────────────────
     er_blocking_top_k: int = DEFAULT_CONFIG.er_blocking_top_k
     er_similarity_threshold: float = DEFAULT_CONFIG.er_similarity_threshold
+    er_max_cluster_size: int = DEFAULT_CONFIG.er_max_cluster_size
+
+    # ── API Server ──────────────────────────────────────────────────────────────
+    api_server_host: str = DEFAULT_CONFIG.api_server_host
+    api_server_port: int = DEFAULT_CONFIG.api_server_port
+    api_max_upload_bytes: int = DEFAULT_CONFIG.api_max_upload_bytes
+    api_max_concurrent_jobs: int = DEFAULT_CONFIG.api_max_concurrent_jobs
+    api_job_ttl_seconds: int = DEFAULT_CONFIG.api_job_ttl_seconds
+    api_rate_limit_max_attempts: int = DEFAULT_CONFIG.api_rate_limit_max_attempts
+    api_rate_limit_window_seconds: int = DEFAULT_CONFIG.api_rate_limit_window_seconds
 
     # ── Confidence & Loop Guards ───────────────────────────────────────────────
     confidence_threshold: float = DEFAULT_CONFIG.confidence_threshold
@@ -103,6 +120,7 @@ class Settings(BaseSettings):
     )
     enable_lazy_expansion: bool = DEFAULT_CONFIG.enable_lazy_expansion
     lazy_expansion_confidence_threshold: float = DEFAULT_CONFIG.lazy_expansion_confidence_threshold
+    enable_post_rerank_expansion: bool = DEFAULT_CONFIG.enable_post_rerank_expansion
     # ── Performance / Cost Optimisation ────────────────────────────────────────
     enable_singleton_llm_definitions: bool = DEFAULT_CONFIG.enable_singleton_llm_definitions
     critic_confidence_gate: float = DEFAULT_CONFIG.critic_confidence_gate
