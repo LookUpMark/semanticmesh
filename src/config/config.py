@@ -61,7 +61,7 @@ class AppConfig:
     embedding_dimensions: int = 1024
     embedding_batch_size: int = 32
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
-    reranker_top_k: int = 20
+    reranker_top_k: int = 5
     reranker_weight_rerank: float = 0.40
     reranker_weight_vector: float = 0.55
     reranker_weight_bm25: float = 0.05

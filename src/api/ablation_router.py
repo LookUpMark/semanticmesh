@@ -731,11 +731,10 @@ def get_ablation_jobs() -> list[AblationJobResponse]:
 def _bundle_path(study_id: str, dataset_id: str) -> Path:
     return (
         _ROOT
-        / "notebooks"
-        / "ablation"
         / "outputs"
         / "ablation"
         / study_id
+        / "datasets"
         / dataset_id
         / "evaluation_bundle.json"
     )
