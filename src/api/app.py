@@ -21,7 +21,7 @@ _logger = get_logger(__name__)
 
 app = FastAPI(
     title="GraphRAG Thesis API",
-    version="1.4.1",
+    version="1.4.2",
     summary=(
         "Multi-Agent Framework for Semantic Discovery & GraphRAG — "
         "REST interface for end-to-end demos and ablation studies."
