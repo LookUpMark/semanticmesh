@@ -17,11 +17,9 @@ Master's thesis, Politecnico di Torino, March 2026.
 - [Key Features](#key-features)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
-- [Observability](#observability-langsmith--langfuse)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
 - [Evaluation](#evaluation)
-- [Development](#development)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -138,55 +136,165 @@ Business Docs (PDF/TXT)         DDL Schemas (SQL)
 
 ### Prerequisites
 
-- **Python** 3.11+
-- **Neo4j** 5.x (Docker recommended)
-- At least one LLM API key (OpenRouter, OpenAI, Anthropic) or a local LLM server (LM Studio, Ollama)
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Python | 3.11+ | 3.12 recommended |
+| Neo4j | 5.x | Docker recommended (only external service) |
+| LLM API key | — | At least one: OpenAI, Anthropic, OpenRouter, or local (Ollama/LM Studio) |
+| Docker | 20+ | Only for Neo4j |
+| GPU (optional) | CUDA 11.8+ | Accelerates embedding (BGE-M3) and reranker (bge-reranker-v2-m3) |
 
-### Installation
+### Step 1: Clone & Install
 
 ```bash
-# 1. Clone the repository
-git clone <repo-url>
-cd thesis
+git clone https://github.com/LookUpMark/semanticmesh.git
+cd semanticmesh
 
-# 2. Create and activate a virtual environment
-python -m venv .venv
-source .venv/bin/activate   # Linux/macOS
-# .venv\Scripts\activate    # Windows
+# Create virtual environment
+python3.12 -m venv .venv
+source .venv/bin/activate
 
-# 3. Install dependencies
+# Install all dependencies (includes langfuse, langgraph, sentence-transformers, etc.)
 pip install -e ".[dev]"
-
-# 4. Configure environment
-cp .env.example .env
-# Edit .env -- add at least one LLM API key and set your Neo4j password
 ```
 
-### Start Neo4j
+### Step 2: Start Neo4j
 
 ```bash
-docker run -d --name neo4j-thesis \
+docker run -d --name thesis-neo4j \
   -p 7474:7474 -p 7687:7687 \
   -e NEO4J_AUTH=neo4j/your_password_here \
   -v neo4j-thesis-data:/data \
   neo4j:5
 ```
 
-> Neo4j is the only service that requires Docker.
+Verify: open http://localhost:7474 → login with `neo4j` / `your_password_here`.
 
-### Start the API
+### Step 3: Get LLM API Keys
+
+You need **at least one** LLM provider. Recommended: **OpenAI** (best quality for this project).
+
+| Provider | Sign up | Key format |
+|----------|---------|------------|
+| OpenAI | https://platform.openai.com/signup → API Keys | `sk-proj-...` |
+| OpenRouter | https://openrouter.ai → Keys | `sk-or-v1-...` |
+| Anthropic | https://console.anthropic.com → API Keys | `sk-ant-...` |
+| Ollama (local) | https://ollama.com → Install → `ollama pull llama3.1` | No key needed |
+
+### Step 4: Configure Environment
 
 ```bash
-python -m scripts.serve_api              # Default: http://127.0.0.1:8000
-python -m scripts.serve_api --reload     # Auto-reload on code changes
+cp .env.example .env
 ```
 
-| Service         | URL                          |
-|-----------------|------------------------------|
-| Swagger UI      | http://localhost:8000/docs   |
-| ReDoc           | http://localhost:8000/redoc  |
-| Health check    | http://localhost:8000/health |
-| Neo4j Browser   | http://localhost:7474        |
+Edit `.env` with your values:
+
+```dotenv
+# ── Required ─────────────────────────────────────────────────────────────────
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your_password_here        # Must match Docker -e NEO4J_AUTH
+
+OPENAI_API_KEY=sk-proj-...               # At least one LLM key
+
+# Generate a secure API key for the REST API:
+# python -c "import secrets; print(secrets.token_urlsafe(32))"
+API_KEY=your-generated-key
+
+# ── Optional: Model Selection ────────────────────────────────────────────────
+LLM_MODEL_REASONING=gpt-4.1             # For complex reasoning/judge tasks
+LLM_MODEL_EXTRACTION=gpt-4.1-nano       # For triplet extraction (fast + cheap)
+LLM_MODEL_MIDTIER=gpt-4.1-nano          # For schema enrichment, mapping
+```
+
+### Step 5: Start the API Server
+
+```bash
+source .venv/bin/activate
+set -a && source .env && set +a          # Load env vars into shell
+
+python -m scripts.serve_api              # http://127.0.0.1:8000
+python -m scripts.serve_api --reload     # Dev mode (auto-reload on code changes)
+```
+
+| Service | URL |
+|---------|-----|
+| Swagger UI (interactive docs) | http://localhost:8000/docs |
+| ReDoc (read-only docs) | http://localhost:8000/redoc |
+| Health check | http://localhost:8000/health |
+| Neo4j Browser | http://localhost:7474 |
+
+### Step 6: Verify Installation
+
+```bash
+# Health check (no auth)
+curl http://localhost:8000/health
+# → {"status": "ok"}
+
+# Authenticated request (requires API_KEY)
+curl -H "X-API-Key: YOUR_KEY" http://localhost:8000/api/v1/demo/graph/stats
+# → {"nodes": 0, "relationships": 0, ...}
+```
+
+### Step 7 (Optional): Enable Observability
+
+#### LangSmith — Pipeline tracing & visualization
+
+1. **Sign up**: https://smith.langchain.com (free with GitHub/Google)
+2. Go to **Settings → API Keys** → Create API Key → copy `lsv2_pt_...`
+3. (Optional) Create a project named "semanticmesh" in **Projects**
+4. Add to `.env`:
+
+```dotenv
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=lsv2_pt_...
+LANGCHAIN_PROJECT=semanticmesh
+```
+
+**Free tier**: 5,000 traces/month, 14-day retention.
+**Dashboard**: https://smith.langchain.com → Projects → semanticmesh
+
+#### Langfuse — Cost analytics & open-source tracing
+
+1. **Sign up**: https://cloud.langfuse.com (free with GitHub/Google/email)
+2. Create a new **Project** (e.g. "semanticmesh")
+3. Go to **Settings → API Keys** → Create new API keys
+4. Copy both `Public Key` (pk-lf-...) and `Secret Key` (sk-lf-...)
+5. Add to `.env`:
+
+```dotenv
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+**Hobby tier (free)**: 50k observations/month, all features, no credit card.
+**Dashboard**: https://cloud.langfuse.com
+
+#### LangGraph Studio — Interactive graph visualization
+
+```bash
+# Install CLI (already included in dev dependencies)
+pip install "langgraph-cli[inmem]"
+
+# Start Studio dev server
+set -a && source .env && set +a
+langgraph dev
+
+# Open in browser:
+# https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
+```
+
+Requires a LangSmith account (uses LANGCHAIN_API_KEY). Shows animated graph execution, state inspection, and step-through debugging.
+
+### Step 8 (Optional): Run the Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev    # http://localhost:5173
+```
+
+The React SPA connects to the API server at port 8000 (configured via Vite proxy).
 
 ---
 
@@ -195,30 +303,9 @@ python -m scripts.serve_api --reload     # Auto-reload on code changes
 The application uses a two-tier configuration system:
 
 1. **`src/config/config.py`** -- Non-sensitive defaults (dataclass). All defaults are visible in code and overridable via environment variables.
-2. **`.env`** -- Sensitive values only (API keys, passwords).
+2. **`.env`** -- Sensitive values only (API keys, passwords). See [.env.example](.env.example) for the full template.
 
-### Environment Variables
-
-Create a `.env` file in the project root (see [.env.example](.env.example) for a full template):
-
-```dotenv
-# Neo4j
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=your_password_here
-
-# LLM API key (set at least one)
-OPENAI_API_KEY=sk-proj-...
-# OPENROUTER_API_KEY=sk-or-v1-...
-# ANTHROPIC_API_KEY=sk-ant-...
-
-# Model selection
-LLM_MODEL_REASONING=gpt-4.1
-LLM_MODEL_EXTRACTION=gpt-4.1-nano
-LLM_MODEL_MIDTIER=gpt-4.1-nano
-
-# API authentication (generate: python -c "import secrets; print(secrets.token_urlsafe(32))")
-API_KEY=your-secret-key-here
-```
+All 70+ settings are documented in [.env.example](.env.example) and can be overridden at runtime via `POST /api/v1/config` without restarting the server.
 
 ### LLM Provider Auto-Detection
 
@@ -232,24 +319,6 @@ The factory auto-detects the provider from the model name:
 | `ollama/*` | Ollama |
 | `google/*`, `vertex_ai/*` | Google Gemini/Vertex AI |
 | Other | LM Studio local |
-
-### Observability (LangSmith + Langfuse)
-
-Both LangSmith and Langfuse are supported for tracing LLM calls, token usage, latency, and full pipeline execution. Both are **opt-in** via environment variables:
-
-```dotenv
-# LangSmith (auto-enabled by LangChain when set)
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=ls-...
-LANGCHAIN_PROJECT=semanticmesh
-
-# Langfuse (injected as LangChain callback handler)
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
-LANGFUSE_HOST=https://cloud.langfuse.com
-```
-
-Both can run simultaneously. See [docs/RUNNING_SERVICES.md](docs/RUNNING_SERVICES.md#observability-langsmith--langfuse) for the full architecture diagram.
 
 ---
 
