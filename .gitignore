@@ -61,6 +61,9 @@ data/hf_cache/**
 
 # Langfuse local cache
 .langfuse/
+
+# LangGraph Studio dev artifacts
+.langgraph_api/
 data/memory/**
 !data/memory/.gitkeep
 
