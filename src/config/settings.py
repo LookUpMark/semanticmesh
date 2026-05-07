@@ -186,6 +186,14 @@ class Settings(BaseSettings):
     # ── Azure OpenAI ────────────────────────────────────────────────────────────
     azure_openai_api_version: str = DEFAULT_CONFIG.azure_openai_api_version
 
+    # ── Observability (LangSmith + Langfuse) ───────────────────────────────────
+    langchain_tracing_v2: bool = False
+    langchain_api_key: SecretStr = SecretStr("")
+    langchain_project: str = "semanticmesh"
+    langfuse_public_key: str = ""
+    langfuse_secret_key: SecretStr = SecretStr("")
+    langfuse_host: str = "https://cloud.langfuse.com"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

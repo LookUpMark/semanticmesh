@@ -105,6 +105,7 @@ class InstrumentedLLM:
         **kwargs: Any,
     ) -> AIMessage:
         """Invoke the model with retry and structured logging."""
+        kwargs = self._inject_observability_callbacks(kwargs)
         attempt = 0
         try:
             for attempt_ctx in Retrying(
@@ -138,6 +139,7 @@ class InstrumentedLLM:
         **kwargs: Any,
     ) -> AIMessage:
         """Asynchronous invoke with retry and structured logging."""
+        kwargs = self._inject_observability_callbacks(kwargs)
         attempt = 0
         try:
             async for attempt_ctx in AsyncRetrying(
@@ -194,6 +196,24 @@ class InstrumentedLLM:
 
     def __repr__(self) -> str:
         return f"InstrumentedLLM(name={self._name!r}, model={self._model!r})"
+
+    def _inject_observability_callbacks(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """Merge observability callbacks into kwargs (Langfuse, etc.)."""
+        from src.config.observability import get_observability_callbacks
+
+        obs_callbacks = get_observability_callbacks()
+        if not obs_callbacks:
+            return kwargs
+
+        # LangChain accepts callbacks either as top-level kwarg or inside config dict
+        existing = kwargs.get("config", {}).get("callbacks", []) or kwargs.get("callbacks", [])
+        merged = list(existing) + obs_callbacks
+
+        if "config" in kwargs:
+            kwargs["config"] = {**kwargs["config"], "callbacks": merged}
+        else:
+            kwargs["config"] = {"callbacks": merged}
+        return kwargs
 
 
 # ── FallbackLLM ─────────────────────────────────────────────────────────────
