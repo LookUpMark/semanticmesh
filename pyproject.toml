@@ -1,6 +1,6 @@
 [project]
 name = "thesis"
-version = "1.4.0"
+version = "1.4.1"
 description = "Multi-Agent Framework for Semantic Discovery & GraphRAG"
 readme = "README.md"
 license = { text = "MIT" }
