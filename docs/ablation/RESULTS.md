@@ -46,7 +46,7 @@ The pipeline has two phases:
 | AB-18 | HITL threshold=0.85 | HITL | 7/7 | 59 | 36 | 100% | 15/15 | 0.4104 | **4.75/5** |
 | AB-19 | Cypher healing OFF | Pipeline Components | 7/7 | 89 | 48 | 100% | 15/15 | 0.4585 | 4.30/5 |
 | AB-20 | Hallucination grader OFF | Pipeline Components | 7/7 | 93 | — | 98% | 15/15 | 0.4296 | **4.65/5** |
-| **AB-BEST** | **Data-driven best config** | **Optimised** | **7/7** | **112** | **51** | **98%** | **15/15** | **0.7914** | **4.99/5** |
+| **AB-BEST** | **Data-driven best config** | **Optimised** | **7/7** | **112** | **51** | **98%** | **15/15** | **0.7914** | **5.00/5** |
 
 > † AB-03 `avg_top_score = 5.63` is a non-comparable outlier: with the reranker OFF the metric reports raw BM25/hybrid scores (not cross-encoder probabilities in [0,1]).  
 > GT Coverage = proportion of expected sources retrieved. N/A when `expected_sources` is empty.
@@ -191,21 +191,21 @@ The AB-BEST configuration was re-derived on 2026-05-06 using v1.1.1 AI-Judge sco
 }
 ```
 
-### AB-BEST results across all 7 datasets (updated 2026-05-06)
+### AB-BEST results across all 7 datasets (updated 2026-05-07)
 
 | Dataset | Tables | Questions | GT Cov | Grounded | AI Judge |
 |---------|:------:|:---------:|:------:|:--------:|:--------:|
-| 01 E-Commerce | 7 | 15 | 98% | 15/15 | **4.99/5** |
+| 01 E-Commerce | 7 | 15 | 98% | 15/15 | **5.00/5** |
 | 02 Finance | 8 | 25 | 99% | 25/25 | **5.00/5** |
 | 03 Healthcare | 10 | 30 | 97% | 30/30 | **4.70/5** |
 | 04 Manufacturing | 13 | 40 | 86% | 40/40 | **4.75/5** |
 | 05 Edge-incomplete | 5 | 20 | 82% | 20/20 | **4.30/5** |
-| 06 Edge-legacy | 10 | 25 | 76% | 25/25 | **4.99/5** |
-| 07 Stress (58 tables) | 58 | 55 | 100% | 55/55 | **4.50/5** |
-| **Average** | — | **210** | **91%** | **210/210** | **4.75/5** |
+| 06 Edge-legacy | 10 | 25 | 76% | 25/25 | **5.00/5** |
+| 07 Stress (58 tables) | 58 | 55 | 78% | 55/55 | **4.35/5** |
+| **Average** | — | **210** | **88%** | **210/210** | **4.73/5** |
 
-> **210/210 answers grounded (100%), zero hallucinations.** DS02-DS06 re-judged on 2026-05-06 with `ablation_context` injection (provides judge with baseline comparison data for Ablation Impact dimension). DS07 retains provisional 4.50 pending re-judge.
-AB-BEST achieves **100% builder completion and 100% grounded answers** across all seven datasets, including the stress dataset with 58 tables. Average AI Judge score: **4.75/5**.
+> **210/210 answers grounded (100%), zero hallucinations.** DS02-DS06 re-judged on 2026-05-06. DS07 re-judged on 2026-05-07 with `baseline_comparison` injection for Ablation Impact scoring. DS-07 GT coverage penalized by `reranker_top_k=5` on a 58-table schema; AB-BEST-K20 comparison complete — K5 still wins (4.35 vs 3.65).
+AB-BEST achieves **100% builder completion and 100% grounded answers** across all seven datasets, including the stress dataset with 58 tables. Average AI Judge score: **4.73/5**.
 
 ---
 
@@ -216,8 +216,8 @@ AB-BEST achieves **100% builder completion and 100% grounded answers** across al
 3. **Schema enrichment and Actor-Critic are critical safety nets.** Disabling either drops GT coverage by ≥33 pp in v1.0.x (still penalised at 4.05-4.50 in v1.1.1).
 4. **Most parameters are neutral on simple datasets.** Chunking, extraction tokens, ER thresholds all score 4.50 regardless of value — discrimination requires complex/multi-hop datasets.
 5. **top_k=5 is the efficient optimum.** Same quality as top_k=20 (both 4.90) with 4× fewer cross-encoder inference calls per query.
-6. **AB-BEST averages 4.75/5 across 7 datasets** — with DS02 achieving a perfect 5.00/5 and DS01/DS06 at 4.99/5. Lower scores on edge-case datasets (DS05=4.30) reflect genuine retrieval challenges on incomplete/ambiguous schemas.
-7. **K5 superiority validated cross-dataset (Section 8).** A full 6-dataset comparison (AB-BEST-K20) confirms K5 wins 5/6 datasets with avg 4.79 vs 4.66. The sole K20 win (DS05, +0.50) is explained by marginally-relevant sources at reranker ranks 6–20 that compensate for incomplete schema documentation. This does not justify a global K20 default.
+6. **AB-BEST averages 4.73/5 across 7 datasets** — with DS01, DS02, DS06 achieving a perfect 5.00/5. Lower scores on edge-case datasets (DS05=4.30) and the stress test (DS07=4.35) reflect genuine retrieval challenges on large/incomplete schemas.
+7. **K5 superiority validated cross-dataset (Section 8).** A full 7-dataset comparison (AB-BEST-K20) confirms K5 wins 6/7 datasets with avg 4.73 vs 4.53. The sole K20 win (DS05, +0.50) is explained by marginally-relevant sources at reranker ranks 6–20 that compensate for incomplete schema documentation. DS07 shows the largest K5 advantage (Δ=-0.70): more retrieved context on complex schemas dilutes answer precision. This does not justify a global K20 default.
 
 ---
 
@@ -309,7 +309,7 @@ Pipeline re-run with code version 1.1.1 (68 audit fixes, SSRF hardening, O(n²) 
 | AB-18 | HITL threshold=0.85 | 4.50/5 |
 | AB-19 | Cypher healing OFF | 4.05/5 |
 | AB-20 | Hallucination grader OFF | 4.50/5 |
-| **AB-BEST** | **Combined optimal (top_k=5, safety ON)** | **4.99/5** |
+| **AB-BEST** | **Combined optimal (top_k=5, safety ON)** | **5.00/5** |
 
 ### 7.2 Key Differences vs. Previous Run
 
@@ -335,29 +335,31 @@ AB-BEST uses `reranker_top_k=5` based on the DS01 finding that K5 and K20 both s
 
 | Dataset | AB-BEST (K5) | AB-BEST-K20 | Delta | Winner |
 |---------|:------------:|:-----------:|:-----:|:------:|
-| 01 E-Commerce (15q) | **4.99** | 4.65 | -0.34 | K5 |
+| 01 E-Commerce (15q) | **5.00** | 4.65 | -0.35 | K5 |
 | 02 Finance (25q) | **5.00** | 4.60 | -0.40 | K5 |
 | 03 Healthcare (30q) | **4.70** | 4.35 | -0.35 | K5 |
 | 04 Manufacturing (40q) | **4.75** | 4.65 | -0.10 | K5 |
 | 05 Edge-incomplete (20q) | 4.30 | **4.80** | +0.50 | K20 |
-| 06 Edge-legacy (25q) | **4.99** | 4.90 | -0.09 | K5 |
-| **Average** | **4.79** | **4.66** | **-0.13** | **K5** |
+| 06 Edge-legacy (25q) | **5.00** | 4.90 | -0.10 | K5 |
+| 07 Stress (55q) | 4.35 | 3.65 | -0.70 | K5 |
+| **Average (DS01-07)** | **4.73** | **4.53** | **-0.20** | **K5** |
 
 ### 8.3 Interpretation
 
-- **K5 wins 5 out of 6 datasets** with an average advantage of -0.13 points.
+- **K5 wins 6 out of 7 datasets** with an average advantage of -0.20 points.
 - **K20 wins only on DS05 (edge-cases incomplete)** — the dataset with the most ambiguous/incomplete schema, where broader retrieval context (20 chunks vs 5) helps compensate for sparse information.
-- **The delta is NOT due to more context helping K20.** On well-structured datasets (DS01-DS04, DS06), the additional 15 reranked chunks likely introduce noise that dilutes answer precision.
-- **Efficiency conclusion confirmed:** K5 is strictly better on 5/6 datasets AND 4× cheaper in reranker compute. The DS05 exception is attributable to a specific edge-case scenario (incomplete DDL with missing foreign keys).
+- **DS07 (58 tables): K5 wins decisively** (4.35 vs 3.65, Δ=-0.70). Despite K20 achieving higher GT coverage (92% vs 78%), the broader retrieval window introduces noise on the large schema — the AI Judge penalises Answer Quality (3/5) because answers underspecify constraints and enumerations. More context ≠ better answers on complex schemas.
+- **The delta is NOT due to more context helping K20.** On well-structured datasets (DS01-DS04, DS06-DS07), the additional 15 reranked chunks likely introduce noise that dilutes answer precision.
+- **Efficiency conclusion confirmed:** K5 is strictly better on 6/7 datasets AND 4× cheaper in reranker compute. The DS05 exception is attributable to a specific edge-case scenario (incomplete DDL with missing foreign keys).
 
 ### 8.4 Conclusion
 
-The original AB-BEST decision to use `reranker_top_k=5` is **validated across all 6 datasets**. K5 provides:
-- Higher average quality (4.79 vs 4.66)
+The original AB-BEST decision to use `reranker_top_k=5` is **validated across all 7 datasets**. K5 provides:
+- Higher average quality (4.73 vs 4.53)
 - 4× fewer cross-encoder inference calls per query
 - Better answer precision on well-structured schemas
 
-The single exception (DS05) does not justify increasing top_k globally, as the quality degradation on the other 5 datasets (-0.26 avg) outweighs the single improvement (+0.50).
+The single exception (DS05) does not justify increasing top_k globally, as the quality degradation on the other 6 datasets (-0.33 avg) outweighs the single improvement (+0.50).
 
 ### 8.5 DS05 Deep Dive: Why K20 Wins on Incomplete Schemas
 
@@ -402,3 +404,28 @@ With K5, these marginally-relevant sources are excluded from the answer context,
 2. **On well-structured datasets**, chunks between rank 6–20 are typically noise (redundant paraphrases, tangential glossary entries) that dilutes answer precision
 3. The K5 AI Judge penalty (4.30 vs 4.80) is partially due to **Answer Quality = 3/5** caused by one false abstention on `ec_019` — a generation error independent of retrieval depth
 4. A production system can adaptively increase top_k when retrieval confidence is low (avg_top_score < threshold) without defaulting to K20 globally
+
+---
+
+### 8.6 DS07 Deep Dive: Why K5 Wins Despite Lower GT Coverage
+
+#### Pipeline Metrics Comparison
+
+| Metric | K5 | K20 | Interpretation |
+|--------|:---:|:---:|---------------|
+| grounded_rate | 1.00 | 1.00 | Both fully grounded |
+| **avg_gt_coverage** | 0.78 | **0.92** | K20 retrieves more expected sources |
+| avg_top_score | — | 0.7274 | Healthy reranker confidence |
+| tables_completed | 58/58 | 58/58 | Both 100% builder success |
+| triplets_extracted | — | 138 | Dense KG |
+| entities_resolved | — | 108 | Post-ER entity count |
+
+#### Why More Context Hurts on Complex Schemas
+
+The AI Judge scored K20 Answer Quality at **3/5** despite 92% GT coverage. Root cause analysis:
+
+1. **Information overload:** 20 chunks from a 58-table schema overwhelm the generator with tangential information (e.g., related tables, similar constraints from other domains)
+2. **Underspecification:** The generator produces higher-level conceptual answers rather than the exact enumerations/constraints expected by the benchmark
+3. **Noise dilution:** Chunks ranked 6–20 on a 58-table schema often contain related-but-wrong tables (e.g., `PURCHASE_ORDER_HEADER` chunks when the question asks about `SALES_ORDER_HEADER`)
+
+K5 forces the generator to work with only the 5 most relevant chunks, producing more focused answers even if some expected sources are missed. The precision trade-off is favourable: better to answer 78% of the question precisely than 92% vaguely.
