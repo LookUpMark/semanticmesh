@@ -198,26 +198,25 @@ The application uses a two-tier configuration system:
 
 ### Environment Variables
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root (see [.env.example](.env.example) for a full template):
 
 ```dotenv
 # Neo4j
-NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=your_password_here
 
-# Cloud LLM providers (set whichever you use)
-OPENROUTER_API_KEY=sk-or-...
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
+# LLM API key (set at least one)
+OPENAI_API_KEY=sk-proj-...
+# OPENROUTER_API_KEY=sk-or-v1-...
+# ANTHROPIC_API_KEY=sk-ant-...
 
-# Local LLM (LM Studio)
-LMSTUDIO_BASE_URL=http://localhost:1234/v1
+# Model selection
+LLM_MODEL_REASONING=gpt-4.1
+LLM_MODEL_EXTRACTION=gpt-4.1-nano
+LLM_MODEL_MIDTIER=gpt-4.1-nano
 
-# Model selection (examples)
-LLM_MODEL_REASONING=gpt-5.4-2026-03-05
-LLM_MODEL_EXTRACTION=gpt-5.4-nano-2026-03-17
-LLM_MODEL_MIDTIER=gpt-5.4-mini-2026-03-17
+# API authentication (generate: python -c "import secrets; print(secrets.token_urlsafe(32))")
+API_KEY=your-secret-key-here
 ```
 
 ### LLM Provider Auto-Detection
@@ -237,9 +236,51 @@ The factory auto-detects the provider from the model name:
 
 ## Usage
 
-### Running the Builder Pipeline
+### REST API (Recommended)
 
-The builder is exposed via the REST API (recommended) or invoked directly in code:
+The primary interface is the FastAPI REST API:
+
+```bash
+# Start the server
+python -m scripts.serve_api              # Default: http://127.0.0.1:8000
+python -m scripts.serve_api --reload     # Auto-reload for development
+```
+
+**API Endpoints Summary:**
+
+| Group | Endpoints | Description |
+|-------|-----------|-------------|
+| **Health** | `GET /health` | Liveness probe (no auth) |
+| **Config** | `GET/POST /api/v1/config` | View/override runtime settings |
+| **Build** | `POST /demo/build`, `/build/upload` | Build KG from docs + DDL |
+| **Query** | `POST /demo/query` | Synchronous Q&A against loaded KG |
+| **Pipeline** | `POST /demo/pipeline`, `/pipeline/upload` | Full E2E: build + query |
+| **Graph** | `GET /demo/graph/stats`, `/graph/data` | Live Neo4j statistics and export |
+| **Snapshots** | CRUD `/demo/kg/snapshots` | Save/load/manage KG snapshots |
+| **Conversations** | CRUD `/demo/conversations` | Persist chat history |
+| **Ablation** | `POST /ablation/run/preset`, `/run/custom` | Launch ablation studies |
+| **Results** | `GET /ablation/bundle/...`, `/evaluate/...` | Download bundles, AI Judge payloads |
+
+All `/api/v1/*` endpoints require `X-API-Key` header when `API_KEY` is set.
+Swagger UI at `http://localhost:8000/docs`.
+
+### CLI Scripts
+
+```bash
+# Run the full pipeline (build + evaluate) on one or more datasets
+pipeline-run --best --dataset 01 --auto-neo4j
+
+# Run ablation study
+pipeline-run --study AB-03 --all-datasets
+
+# Run AI Judge evaluation on completed bundles
+ai-judge --all
+
+# Neo4j database management
+python -m scripts.neo4j_lifecycle --help
+```
+
+### Python API (Programmatic)
 
 ```python
 from src.graph.builder_graph import run_builder
@@ -252,28 +293,11 @@ run_builder(
 )
 ```
 
-### Running Queries
-
 ```python
 from src.generation.query_graph import run_query
 
 result = run_query("Which table stores customer data?")
 print(result["final_answer"])
-```
-
-### REST API
-
-```bash
-python -m scripts.serve_api              # Default: http://127.0.0.1:8000
-python -m scripts.serve_api --reload     # Auto-reload on code changes
-```
-
-Swagger UI at `http://127.0.0.1:8000/docs`.
-
-### Neo4j Management
-
-```bash
-python -m scripts.neo4j_lifecycle --help  # Clear database, setup schema
 ```
 
 ---
@@ -317,38 +341,39 @@ frontend/           React 19 + TypeScript SPA (Vite, Tailwind CSS 4, TanStack Qu
 
 ### Evaluation Results (AB-BEST)
 
-Best configuration evaluated across 7 datasets (110 tables, 205 questions), scored by AI Judge (`gpt-5.4-nano`):
+Best configuration evaluated across 7 datasets (110 tables, 205 questions), scored by AI Judge (`gpt-5.4-nano-2026-03-17`):
 
 | Dataset | Tables | Questions | Grounded | Score |
 |---------|:------:|:---------:|:--------:|:-----:|
-| ds01 (E-commerce) | 7 | 15 | 15/15 | **4.50** |
-| ds02 (Finance) | 9 | 20 | 20/20 | **4.50** |
-| ds03 (Healthcare) | 10 | 30 | 30/30 | **4.50** |
-| ds04 (Manufacturing) | 13 | 40 | 40/40 | **4.50** |
-| ds05 (Edge: Incomplete) | 5 | 20 | 20/20 | **4.50** |
-| ds06 (Edge: Legacy) | 8 | 25 | 25/25 | **4.50** |
-| ds07 (Stress: 58 tables) | 58 | 55 | 55/55 | **4.50** |
+| DS01 E-commerce | 7 | 15 | 15/15 | **4.99** |
+| DS02 Finance | 9 | 20 | 20/20 | **5.00** |
+| DS03 Healthcare | 10 | 30 | 30/30 | **4.70** |
+| DS04 Manufacturing | 13 | 40 | 40/40 | **4.75** |
+| DS05 Edge: Incomplete | 5 | 20 | 20/20 | **4.30** |
+| DS06 Edge: Legacy | 8 | 25 | 25/25 | **4.99** |
+| DS07 Stress (58 tables) | 58 | 55 | 55/55 | **4.50** |
 
-**205/205 answers grounded (100%), zero hallucinations.** All dimensions 5/5 (Builder, Retrieval, Answer, Pipeline).
+**205/205 answers grounded (100%), zero hallucinations.** Average score **4.75/5**.
 
 ### Ablation Campaign
 
-21 ablation studies on ds01, evaluated by AI Judge on a 1–5 scale:
+21 ablation studies + AB-BEST variant (K20), evaluated by AI Judge on a 1–5 scale:
 
 | Study | Description | Score | Delta vs AB-00 |
 |-------|-------------|:-----:|:--------------:|
-| AB-18 | HITL threshold=0.85 (best) | 4.75 | +0.50 |
+| AB-04 | Reranker top_k=5 (AB-BEST) | **4.90** | +0.65 |
+| AB-05 | Reranker top_k=20 | 4.90 | +0.65 |
 | AB-00 | Baseline (full pipeline) | 4.25 | -- |
-| AB-01 | Vector-only retrieval (worst) | 3.80 | -0.45 |
-| AB-16 | Actor-Critic OFF | 3.90 | -0.35 |
-| AB-04 | Reranker top_k=5 | 3.95 | -0.30 |
+| AB-01 | Vector-only retrieval (worst) | 3.40 | -0.85 |
 
 Key findings:
-- Hybrid retrieval is the single most critical component (-0.45 when reduced to vector-only)
-- Actor-Critic validation provides substantial quality improvement (-0.35 when disabled)
-- Larger reranker pools improve answer completeness (+0.40)
+1. **Hybrid retrieval is non-negotiable** — Vector-only scores 3.40 (-0.85 vs baseline)
+2. **Reranker top_k is the only discriminating parameter** — AB-04/AB-05 both 4.90
+3. **top_k=5 is the efficient optimum** — Same quality as top_k=20 with 4× fewer cross-encoder calls
+4. **K5 validated cross-dataset** — K5 avg 4.79 vs K20 avg 4.66 across DS01-DS06 (K5 wins 5/6)
+5. **Schema enrichment and Actor-Critic are critical safety nets** — Disabling either drops GT coverage ≥33 pp
 
-Full results in [outputs/ablation/RESULTS_REPORT.md](outputs/ablation/RESULTS_REPORT.md).
+Full results in [docs/ablation/RESULTS.md](docs/ablation/RESULTS.md).
 
 ---
 
@@ -356,17 +381,19 @@ Full results in [outputs/ablation/RESULTS_REPORT.md](outputs/ablation/RESULTS_RE
 
 | Document | Description |
 |----------|-------------|
-| [docs/RUNNING_SERVICES.md](docs/RUNNING_SERVICES.md) | Service setup guide (Neo4j, environment, troubleshooting) |
-| [docs/AI_JUDGE_PROMPT.md](docs/AI_JUDGE_PROMPT.md) | AI Judge system prompt for ablation evaluation |
+| [docs/RUNNING_SERVICES.md](docs/RUNNING_SERVICES.md) | Service setup guide (Neo4j, environment, API server) |
+| [docs/ablation/RESULTS.md](docs/ablation/RESULTS.md) | Full ablation results, K5 vs K20 comparison, DS05 deep dive |
+| [docs/AI_JUDGE_PROMPT.md](docs/AI_JUDGE_PROMPT.md) | AI Judge system prompt for evaluation |
 | [docs/draft/REQUIREMENTS.md](docs/draft/REQUIREMENTS.md) | Functional and non-functional requirements by epic |
 | [docs/draft/SPECS.md](docs/draft/SPECS.md) | Architecture specifications, state schemas, node specs |
 | [docs/draft/PROMPTS.md](docs/draft/PROMPTS.md) | Complete prompt template catalogue |
 | [docs/draft/ADR.md](docs/draft/ADR.md) | Architecture Decision Records (15 ADRs) |
-| [docs/draft/ABLATION.md](docs/draft/ABLATION.md) | Ablation study plan and results |
+| [docs/draft/ABLATION.md](docs/draft/ABLATION.md) | Ablation study plan and methodology |
 | [docs/draft/DATASET.md](docs/draft/DATASET.md) | Dataset specifications (inputs, few-shot, gold standard) |
 | [docs/draft/TEST_PLAN.md](docs/draft/TEST_PLAN.md) | Test strategy and test case catalogue |
-| [docs/changelogs/](docs/changelogs/) | Version changelogs |
+| [docs/changelogs/](docs/changelogs/) | Version changelogs (v1.0.0 → v1.1.0) |
 | [docs/audits/](docs/audits/) | Security audit reports |
+| [docs/study-guide/](docs/study-guide/) | Module-by-module study guide (15 chapters) |
 
 ---
 
