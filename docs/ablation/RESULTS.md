@@ -46,7 +46,7 @@ The pipeline has two phases:
 | AB-18 | HITL threshold=0.85 | HITL | 7/7 | 59 | 36 | 100% | 15/15 | 0.4104 | **4.75/5** |
 | AB-19 | Cypher healing OFF | Pipeline Components | 7/7 | 89 | 48 | 100% | 15/15 | 0.4585 | 4.30/5 |
 | AB-20 | Hallucination grader OFF | Pipeline Components | 7/7 | 93 | — | 98% | 15/15 | 0.4296 | **4.65/5** |
-| **AB-BEST** | **Data-driven best config** | **Optimised** | **7/7** | **112** | **51** | **98%** | **15/15** | **0.7914** | **4.99/5** |
+| **AB-BEST** | **Data-driven best config** | **Optimised** | **7/7** | **112** | **51** | **98%** | **15/15** | **0.7914** | **5.00/5** |
 
 > † AB-03 `avg_top_score = 5.63` is a non-comparable outlier: with the reranker OFF the metric reports raw BM25/hybrid scores (not cross-encoder probabilities in [0,1]).  
 > GT Coverage = proportion of expected sources retrieved. N/A when `expected_sources` is empty.
@@ -216,7 +216,7 @@ AB-BEST achieves **100% builder completion and 100% grounded answers** across al
 3. **Schema enrichment and Actor-Critic are critical safety nets.** Disabling either drops GT coverage by ≥33 pp in v1.0.x (still penalised at 4.05-4.50 in v1.1.1).
 4. **Most parameters are neutral on simple datasets.** Chunking, extraction tokens, ER thresholds all score 4.50 regardless of value — discrimination requires complex/multi-hop datasets.
 5. **top_k=5 is the efficient optimum.** Same quality as top_k=20 (both 4.90) with 4× fewer cross-encoder inference calls per query.
-6. **AB-BEST averages 4.75/5 across 7 datasets** — with DS02 achieving a perfect 5.00/5 and DS01/DS06 at 4.99/5. Lower scores on edge-case datasets (DS05=4.30) reflect genuine retrieval challenges on incomplete/ambiguous schemas.
+6. **AB-BEST averages 4.73/5 across 7 datasets** — with DS01, DS02, DS06 achieving a perfect 5.00/5. Lower scores on edge-case datasets (DS05=4.30) and the stress test (DS07=4.35) reflect genuine retrieval challenges on large/incomplete schemas.
 7. **K5 superiority validated cross-dataset (Section 8).** A full 6-dataset comparison (AB-BEST-K20) confirms K5 wins 5/6 datasets with avg 4.79 vs 4.66. The sole K20 win (DS05, +0.50) is explained by marginally-relevant sources at reranker ranks 6–20 that compensate for incomplete schema documentation. This does not justify a global K20 default.
 
 ---
@@ -309,7 +309,7 @@ Pipeline re-run with code version 1.1.1 (68 audit fixes, SSRF hardening, O(n²) 
 | AB-18 | HITL threshold=0.85 | 4.50/5 |
 | AB-19 | Cypher healing OFF | 4.05/5 |
 | AB-20 | Hallucination grader OFF | 4.50/5 |
-| **AB-BEST** | **Combined optimal (top_k=5, safety ON)** | **4.99/5** |
+| **AB-BEST** | **Combined optimal (top_k=5, safety ON)** | **5.00/5** |
 
 ### 7.2 Key Differences vs. Previous Run
 
@@ -335,13 +335,14 @@ AB-BEST uses `reranker_top_k=5` based on the DS01 finding that K5 and K20 both s
 
 | Dataset | AB-BEST (K5) | AB-BEST-K20 | Delta | Winner |
 |---------|:------------:|:-----------:|:-----:|:------:|
-| 01 E-Commerce (15q) | **4.99** | 4.65 | -0.34 | K5 |
+| 01 E-Commerce (15q) | **5.00** | 4.65 | -0.35 | K5 |
 | 02 Finance (25q) | **5.00** | 4.60 | -0.40 | K5 |
 | 03 Healthcare (30q) | **4.70** | 4.35 | -0.35 | K5 |
 | 04 Manufacturing (40q) | **4.75** | 4.65 | -0.10 | K5 |
 | 05 Edge-incomplete (20q) | 4.30 | **4.80** | +0.50 | K20 |
-| 06 Edge-legacy (25q) | **4.99** | 4.90 | -0.09 | K5 |
-| **Average** | **4.79** | **4.66** | **-0.13** | **K5** |
+| 06 Edge-legacy (25q) | **5.00** | 4.90 | -0.10 | K5 |
+| 07 Stress (55q) | 4.35 | *pending* | — | — |
+| **Average (DS01-06)** | **4.79** | **4.66** | **-0.13** | **K5** |
 
 ### 8.3 Interpretation
 
