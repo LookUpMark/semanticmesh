@@ -185,6 +185,7 @@ class Settings(BaseSettings):
     enable_singleton_llm_definitions: bool = DEFAULT_CONFIG.enable_singleton_llm_definitions
     critic_confidence_gate: float = DEFAULT_CONFIG.critic_confidence_gate
     max_reflection_attempts_reasoning: int = DEFAULT_CONFIG.max_reflection_attempts_reasoning
+    mapping_concurrency: int = DEFAULT_CONFIG.mapping_concurrency
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = DEFAULT_CONFIG.log_level
 
