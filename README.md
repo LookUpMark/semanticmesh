@@ -435,7 +435,7 @@ tests/
   fixtures/         7 synthetic datasets with gold standard QA pairs
 docs/
   draft/            Architecture specs, requirements, prompts, ADRs, ablation plan, datasets, test plan
-  changelogs/       Version changelogs (v1.0.0 → v1.4.1)
+  changelogs/       Version changelogs (v1.0.0 → v1.4.2)
   audits/           Security audit reports
   AI_JUDGE_PROMPT.md  AI Judge system prompt
   RUNNING_SERVICES.md  Setup guide
@@ -497,7 +497,7 @@ Full results in [docs/ablation/RESULTS.md](docs/ablation/RESULTS.md).
 | [docs/draft/ABLATION.md](docs/draft/ABLATION.md) | Ablation study plan and methodology |
 | [docs/draft/DATASET.md](docs/draft/DATASET.md) | Dataset specifications (inputs, few-shot, gold standard) |
 | [docs/draft/TEST_PLAN.md](docs/draft/TEST_PLAN.md) | Test strategy and test case catalogue |
-| [docs/changelogs/](docs/changelogs/) | Version changelogs (v1.0.0 → v1.4.1) |
+| [docs/changelogs/](docs/changelogs/) | Version changelogs (v1.0.0 → v1.4.2) |
 | [docs/audits/](docs/audits/) | Security audit reports |
 | [docs/study-guide/](docs/study-guide/) | Module-by-module study guide (15 chapters) |
 
