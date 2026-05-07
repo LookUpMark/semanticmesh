@@ -447,19 +447,19 @@ docs/
 
 ### Evaluation Results (AB-BEST)
 
-Best configuration evaluated across 7 datasets (110 tables, 205 questions), scored by AI Judge (`gpt-5.4-nano-2026-03-17`):
+Best configuration evaluated across 7 datasets (111 tables, 210 questions), scored by AI Judge (`gpt-5.4-nano-2026-03-17`):
 
 | Dataset | Tables | Questions | Grounded | Score |
 |---------|:------:|:---------:|:--------:|:-----:|
-| DS01 E-commerce | 7 | 15 | 15/15 | **4.99** |
-| DS02 Finance | 9 | 20 | 20/20 | **5.00** |
+| DS01 E-commerce | 7 | 15 | 15/15 | **5.00** |
+| DS02 Finance | 8 | 25 | 25/25 | **5.00** |
 | DS03 Healthcare | 10 | 30 | 30/30 | **4.70** |
 | DS04 Manufacturing | 13 | 40 | 40/40 | **4.75** |
 | DS05 Edge: Incomplete | 5 | 20 | 20/20 | **4.30** |
-| DS06 Edge: Legacy | 8 | 25 | 25/25 | **4.99** |
-| DS07 Stress (58 tables) | 58 | 55 | 55/55 | **4.50** |
+| DS06 Edge: Legacy | 10 | 25 | 25/25 | **5.00** |
+| DS07 Stress (58 tables) | 58 | 55 | 55/55 | **4.35** |
 
-**205/205 answers grounded (100%), zero hallucinations.** Average score **4.75/5**.
+**210/210 answers grounded (100%), zero hallucinations.** Average score **4.73/5**.
 
 ### Ablation Campaign
 
@@ -476,7 +476,7 @@ Key findings:
 1. **Hybrid retrieval is non-negotiable** — Vector-only scores 3.40 (-0.85 vs baseline)
 2. **Reranker top_k is the only discriminating parameter** — AB-04/AB-05 both 4.90
 3. **top_k=5 is the efficient optimum** — Same quality as top_k=20 with 4× fewer cross-encoder calls
-4. **K5 validated cross-dataset** — K5 avg 4.79 vs K20 avg 4.66 across DS01-DS06 (K5 wins 5/6)
+4. **K5 validated across all 7 datasets** — K5 avg 4.73 vs K20 avg 4.53 (K5 wins 6/7)
 5. **Schema enrichment and Actor-Critic are critical safety nets** — Disabling either drops GT coverage ≥33 pp
 
 Full results in [docs/ablation/RESULTS.md](docs/ablation/RESULTS.md).
@@ -497,7 +497,7 @@ Full results in [docs/ablation/RESULTS.md](docs/ablation/RESULTS.md).
 | [docs/draft/ABLATION.md](docs/draft/ABLATION.md) | Ablation study plan and methodology |
 | [docs/draft/DATASET.md](docs/draft/DATASET.md) | Dataset specifications (inputs, few-shot, gold standard) |
 | [docs/draft/TEST_PLAN.md](docs/draft/TEST_PLAN.md) | Test strategy and test case catalogue |
-| [docs/changelogs/](docs/changelogs/) | Version changelogs (v1.0.0 → v1.2.0) |
+| [docs/changelogs/](docs/changelogs/) | Version changelogs (v1.0.0 → v1.4.0) |
 | [docs/audits/](docs/audits/) | Security audit reports |
 | [docs/study-guide/](docs/study-guide/) | Module-by-module study guide (15 chapters) |
 
