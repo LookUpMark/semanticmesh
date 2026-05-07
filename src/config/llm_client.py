@@ -33,6 +33,39 @@ from src.config.logging import NodeTimer, get_logger
 
 logger: logging.Logger = get_logger(__name__)
 
+
+# ── Global LLM Usage Tracker ─────────────────────────────────────────────────
+
+_usage_lock = threading.Lock()
+_usage_counters: dict[str, dict[str, int]] = {}
+# Structure: {"reasoning": {"input_tokens": N, "output_tokens": N, "calls": N}, ...}
+
+
+def _record_usage(tier: str, input_tokens: int, output_tokens: int) -> None:
+    """Record token usage for a given tier (thread-safe)."""
+    with _usage_lock:
+        if tier not in _usage_counters:
+            _usage_counters[tier] = {"input_tokens": 0, "output_tokens": 0, "calls": 0}
+        _usage_counters[tier]["input_tokens"] += input_tokens
+        _usage_counters[tier]["output_tokens"] += output_tokens
+        _usage_counters[tier]["calls"] += 1
+
+
+def get_llm_usage_summary() -> dict[str, dict[str, int]]:
+    """Return cumulative LLM usage per tier since last reset.
+
+    Returns:
+        Dict mapping tier name to {"input_tokens", "output_tokens", "calls"}.
+    """
+    with _usage_lock:
+        return {k: dict(v) for k, v in _usage_counters.items()}
+
+
+def reset_llm_usage() -> None:
+    """Reset all usage counters (call before a new pipeline run)."""
+    with _usage_lock:
+        _usage_counters.clear()
+
 # ── Exceptions that warrant a retry ──────────────────────────────────────────
 
 try:
@@ -193,6 +226,11 @@ class InstrumentedLLM:
             usage.get("output_tokens", "?"),
             usage.get("total_tokens", "?"),
         )
+        # Accumulate in global tracker
+        in_tok = usage.get("input_tokens", 0)
+        out_tok = usage.get("output_tokens", 0)
+        if isinstance(in_tok, int) and isinstance(out_tok, int):
+            _record_usage(self._name, in_tok, out_tok)
 
     def __repr__(self) -> str:
         return f"InstrumentedLLM(name={self._name!r}, model={self._model!r})"
@@ -367,6 +405,11 @@ class FallbackLLM:
             usage.get("output_tokens", "?"),
             usage.get("total_tokens", "?"),
         )
+        # Accumulate in global tracker
+        in_tok = usage.get("input_tokens", 0)
+        out_tok = usage.get("output_tokens", 0)
+        if isinstance(in_tok, int) and isinstance(out_tok, int):
+            _record_usage(self._name, in_tok, out_tok)
 
     def __repr__(self) -> str:
         mode = "fallback" if self._using_fallback else "primary"

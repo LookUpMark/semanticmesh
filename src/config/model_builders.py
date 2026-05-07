@@ -140,6 +140,7 @@ def _build_openai_chat(
     max_tokens: int | None,
     openai_api_key: str | None,
     extra_model_kwargs: dict | None,
+    openai_base_url: str | None = None,
 ) -> ChatOpenAI:
     """Build a ChatOpenAI instance for OpenAI direct API.
 
@@ -163,6 +164,8 @@ def _build_openai_chat(
         "api_key": api_key,
         "request_timeout": get_settings().llm_request_timeout,
     }
+    if openai_base_url:
+        chat_kwargs["base_url"] = _validate_base_url(openai_base_url)
     if mkwargs:
         chat_kwargs["model_kwargs"] = mkwargs
     if reasoning_effort is not None:
@@ -175,6 +178,7 @@ def _build_anthropic_chat(
     *,
     temperature: float,
     max_tokens: int | None,
+    base_url: str | None = None,
 ) -> LLMProtocol:
     """Build a ChatAnthropic instance for Anthropic direct API.
 
@@ -192,12 +196,15 @@ def _build_anthropic_chat(
     import os
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    return ChatAnthropic(
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens or 4096,
-        api_key=api_key,
-    )
+    kwargs: dict = {
+        "model": model,
+        "temperature": temperature,
+        "max_tokens": max_tokens or 4096,
+        "api_key": api_key,
+    }
+    if base_url:
+        kwargs["base_url"] = base_url
+    return ChatAnthropic(**kwargs)
 
 
 def _build_lmstudio_chat(
@@ -351,6 +358,7 @@ def _build_google_chat(
     *,
     temperature: float,
     max_tokens: int | None,
+    base_url: str | None = None,
 ) -> LLMProtocol:
     """Build a ChatGoogleGenerativeAI instance for Google Gemini / Vertex AI.
 
@@ -373,7 +381,8 @@ def _build_google_chat(
             break
 
     return ChatGoogleGenerativeAI(  # type: ignore[no-any-return]
-        model=model, temperature=temperature, max_output_tokens=max_tokens
+        model=model, temperature=temperature, max_output_tokens=max_tokens,
+        **({"base_url": base_url} if base_url else {}),
     )
 
 
@@ -382,6 +391,7 @@ def _build_bedrock_chat(
     *,
     temperature: float,
     max_tokens: int | None,
+    base_url: str | None = None,
 ) -> LLMProtocol:
     """Build a ChatBedrock instance for AWS Bedrock.
 
@@ -401,6 +411,7 @@ def _build_bedrock_chat(
     return ChatBedrock(  # type: ignore[no-any-return]
         model_id=native_model,
         model_kwargs={"temperature": temperature, "max_tokens": max_tokens},
+        **({"endpoint_url": base_url} if base_url else {}),
     )
 
 
@@ -409,6 +420,7 @@ def _build_azure_chat(
     *,
     temperature: float,
     max_tokens: int | None,
+    base_url: str | None = None,
 ) -> LLMProtocol:
     """Build an AzureChatOpenAI instance for Azure OpenAI Service.
 
@@ -433,7 +445,7 @@ def _build_azure_chat(
 
     return AzureChatOpenAI(
         azure_deployment=model,
-        azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
+        azure_endpoint=base_url or os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
         api_key=os.environ.get("AZURE_OPENAI_API_KEY", ""),  # type: ignore[arg-type]
         api_version=os.environ.get(
             "AZURE_OPENAI_API_VERSION", get_settings().azure_openai_api_version
@@ -448,6 +460,7 @@ def _build_mistral_chat(
     *,
     temperature: float,
     max_tokens: int | None,
+    base_url: str | None = None,
 ) -> LLMProtocol:
     """Build a ChatMistralAI instance for Mistral AI.
 
@@ -467,7 +480,10 @@ def _build_mistral_chat(
             model = model[len(prefix) :]
             break
 
-    return ChatMistralAI(model=model, temperature=temperature, max_tokens=max_tokens)  # type: ignore[no-any-return]
+    return ChatMistralAI(  # type: ignore[no-any-return]
+        model=model, temperature=temperature, max_tokens=max_tokens,
+        **({"endpoint_url": base_url} if base_url else {}),
+    )
 
 
 def _build_huggingface_chat(
@@ -475,6 +491,7 @@ def _build_huggingface_chat(
     *,
     temperature: float,
     max_tokens: int | None,
+    base_url: str | None = None,
 ) -> LLMProtocol:
     """Build a ChatHuggingFace instance for the HuggingFace Hub inference API.
 
@@ -499,7 +516,8 @@ def _build_huggingface_chat(
             break
 
     endpoint = HuggingFaceEndpoint(
-        repo_id=model, temperature=temperature, max_new_tokens=max_tokens
+        repo_id=model, temperature=temperature, max_new_tokens=max_tokens,
+        **({"endpoint_url": base_url} if base_url else {}),
     )
     return ChatHuggingFace(llm=endpoint)  # type: ignore[no-any-return]
 

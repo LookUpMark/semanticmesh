@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import os
+from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -122,10 +125,61 @@ def _log_observability_status() -> None:
         _logger.info("Observability: Langfuse tracing ENABLED")
 
 
+# ── Session File Logging ─────────────────────────────────────────────────────
+
+_SESSION_LOG_DIR = Path("outputs/api")
+_session_file_handler: logging.FileHandler | None = None
+
+
+@app.on_event("startup")
+def _setup_session_logging() -> None:
+    """Create a timestamped log file under outputs/api/ for this API session."""
+    global _session_file_handler  # noqa: PLW0603
+    _SESSION_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    log_path = _SESSION_LOG_DIR / f"session_{timestamp}.log"
+
+    from pythonjsonlogger import jsonlogger  # noqa: PLC0415
+
+    handler = logging.FileHandler(log_path, encoding="utf-8")
+    formatter = jsonlogger.JsonFormatter(
+        fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+        rename_fields={"asctime": "ts", "name": "logger", "levelname": "level"},
+    )
+    handler.setFormatter(formatter)
+    logging.getLogger().addHandler(handler)
+    _session_file_handler = handler
+    _logger.info("API session log: %s", log_path)
+
+
 @app.on_event("shutdown")
 def _flush_observability() -> None:
     """Flush pending observability data before shutdown."""
     flush_observability()
+
+
+@app.on_event("shutdown")
+def _close_session_logging() -> None:
+    """Write LLM usage summary and close the session log file."""
+    import json  # noqa: PLC0415
+
+    from src.config.llm_client import get_llm_usage_summary  # noqa: PLC0415
+
+    usage = get_llm_usage_summary()
+    if usage:
+        _logger.info("LLM usage summary: %s", json.dumps(usage, default=str))
+        # Also write a standalone summary file
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        summary_path = _SESSION_LOG_DIR / f"usage_{timestamp}.json"
+        summary_path.write_text(json.dumps(usage, indent=2, default=str), encoding="utf-8")
+
+    global _session_file_handler  # noqa: PLW0603
+    if _session_file_handler:
+        _session_file_handler.flush()
+        _session_file_handler.close()
+        logging.getLogger().removeHandler(_session_file_handler)
+        _session_file_handler = None
 
 
 # ── Runtime Configuration Overrides ──────────────────────────────────────────

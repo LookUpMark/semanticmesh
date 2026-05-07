@@ -151,10 +151,35 @@ API_KEY=your-generated-key
 ### Optional Overrides
 
 ```bash
+# ── Per-Tier LLM Configuration (preferred) ───────────────────────────
+# Each tier has 4 env vars: PROVIDER, MODEL, ENDPOINT, EFFORT
+# Tiers: REASONING, EXTRACTION, GENERATION, MIDTIER
+
+# Provider selection (openai, openrouter, anthropic, lmstudio, ollama, etc.)
+LLM_PROVIDER_REASONING=openai
+LLM_PROVIDER_EXTRACTION=openai
+LLM_PROVIDER_GENERATION=openai
+LLM_PROVIDER_MIDTIER=openai
+
 # Model selection (defaults to gpt-4.1 family)
 LLM_MODEL_REASONING=gpt-4.1
 LLM_MODEL_EXTRACTION=gpt-4.1-nano
 LLM_MODEL_MIDTIER=gpt-4.1-nano
+LLM_MODEL_GENERATION=            # Empty = falls back to reasoning model
+
+# Custom endpoints (empty = provider default)
+LLM_ENDPOINT_REASONING=
+LLM_ENDPOINT_EXTRACTION=
+LLM_ENDPOINT_GENERATION=
+LLM_ENDPOINT_MIDTIER=
+
+# Reasoning effort (only for OpenAI reasoning models: o1-*, o3-*, gpt-5*)
+LLM_EFFORT_REASONING=high        # high for main reasoning
+LLM_EFFORT_EXTRACTION=minimal    # minimal for JSON extraction
+LLM_EFFORT_MIDTIER=medium        # medium for Actor-Critic, grading
+
+# ── Fallback: Global provider (deprecated, backward compat) ──────────
+# LLM_PROVIDER=auto              # "auto" = detect from model name
 
 # Retrieval tuning
 RETRIEVAL_VECTOR_TOP_K=20

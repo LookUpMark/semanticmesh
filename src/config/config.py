@@ -39,12 +39,14 @@ class AppConfig:
     # Other values: "openrouter", "openai", "anthropic", "lmstudio", "ollama",
     # "google", "bedrock", "azure", "groq", "mistral", "together", "deepseek",
     # "xai", "nvidia", "huggingface".
+    # DEPRECATED: prefer per-tier LLM_PROVIDER_<TIER> variables.
     llm_provider: str = "auto"
 
     # ── LLM Models ─────────────────────────────────────────────────────────────
     llm_model_reasoning: str = "gpt-5.4-2026-03-05"
     llm_model_extraction: str = "gpt-5.4-nano-2026-03-17"
     llm_model_midtier: str = "gpt-5.4-mini-2026-03-17"
+    llm_model_generation: str = ""
     azure_openai_api_version: str = "2024-11-01-preview"
 
     # Temperature: extraction/reasoning at 0.0 for deterministic JSON, generation at 0.3 for fluency
@@ -55,6 +57,31 @@ class AppConfig:
     llm_max_tokens_extraction: int = 8192
     llm_max_tokens_reasoning: int = 8192
     llm_request_timeout: int = 120
+
+    # ── Explicit Per-Tier LLM Configuration ────────────────────────────────────
+    # Provider: "openai" | "openrouter" | "anthropic" | "lmstudio" | "ollama" |
+    #           "google" | "bedrock" | "azure" | "groq" | "mistral" | "together" |
+    #           "deepseek" | "xai" | "nvidia" | "cohere" | "huggingface"
+    # When empty, falls back to LLM_PROVIDER global, then auto-detection.
+    llm_provider_reasoning: str = ""
+    llm_provider_extraction: str = ""
+    llm_provider_generation: str = ""
+    llm_provider_midtier: str = ""
+
+    # Endpoint: explicit base URL for the provider API.
+    # When empty, uses the provider's default URL.
+    llm_endpoint_reasoning: str = ""
+    llm_endpoint_extraction: str = ""
+    llm_endpoint_generation: str = ""
+    llm_endpoint_midtier: str = ""
+
+    # Reasoning effort: "minimal" | "low" | "medium" | "high" | "" (provider default)
+    # Only effective for OpenAI reasoning models (o-series, gpt-5*) via OpenAI or OpenRouter.
+    # When empty, uses tier-specific hardcoded defaults.
+    llm_effort_reasoning: str = ""
+    llm_effort_extraction: str = ""
+    llm_effort_generation: str = ""
+    llm_effort_midtier: str = ""
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = "BAAI/bge-m3"

@@ -1,5 +1,12 @@
 """Provider auto-detection from model names.
 
+.. deprecated::
+    Prefer the explicit per-tier configuration variables
+    (``LLM_PROVIDER_REASONING``, ``LLM_ENDPOINT_REASONING``, etc.)
+    over auto-detection.  This module is retained for backward
+    compatibility with ``make_llm()`` direct calls and the legacy
+    ``LLM_PROVIDER`` global override.
+
 This module provides utilities to infer the LLM provider from a model name string.
 
 Detection rules (applied in order, first match wins):

@@ -39,56 +39,80 @@ The system employs self-reflection loops (Actor-Critic validation, Cypher healin
 
 ### Two-Graph Pipeline
 
-```ascii
-Business Docs (PDF/TXT)         DDL Schemas (SQL)
-        |                              |
-        v                              v
-  +-----------+                 +-----------+
-  |  Triplet  |                 | DDL Parse |
-  | Extraction|                 |  + Schema |
-  |  (SLM)   |                 | Enrichment|
-  +-----------+                 +-----------+
-        |                              |
-        v                              |
-  +-----------+                        |
-  |  Entity   |                        |
-  | Resolution|                        |
-  | (K-NN +   |                        |
-  |  LLM)     |                        |
-  +-----------+                        |
-        |                              |
-        +----------+   +--------------+
-                   v   v
-            +----------------+
-            |  RAG Mapping   |
-            |  (Map-Reduce   |  <-- Actor-Critic Loop
-            |   per table)   |
-            +----------------+
-                   |
-                   v
-            +----------------+
-            | Cypher Gen +   |  <-- Cypher Healing Loop
-            | Neo4j Upsert   |
-            +----------------+
-                   |
-                   v
-            +================+
-            | NEO4J KNOWLEDGE|
-            |     GRAPH      |
-            +================+
-                   |
-                   v
-            +----------------+
-            | Hybrid         |
-            | Retrieval +    |
-            | Reranking +    |
-            | Answer Gen +   |
-            | Hallucination  |
-            | Grading        |
-            +----------------+
-                   |
-                   v
-            Grounded Answer
+#### Builder Graph
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#FAFAFA', 'primaryTextColor': '#212121', 'primaryBorderColor': '#9E9E9E', 'lineColor': '#616161', 'fontSize': '13px', 'fontFamily': 'Inter, Helvetica, Arial, sans-serif'}}}%%
+flowchart TD
+    A("Business Documents<br/>PDF / TXT"):::input
+    B("DDL Schemas<br/>SQL"):::input
+    C("Triplet Extraction<br/>SLM"):::process
+    D("DDL Parse + Schema Enrichment<br/>LLM-expanded identifiers"):::process
+    E("Entity Resolution<br/>K-NN blocking + LLM Judge"):::key
+    F("RAG Mapping<br/>Map-Reduce per table"):::process
+    G("Actor-Critic Validation<br/>Structured critique"):::key
+    H("HITL Interrupt<br/>Low confidence"):::optional
+    I("Cypher Generation<br/>CREATE / MERGE"):::process
+    J("Cypher Healing<br/>EXPLAIN dry-run + LLM fix"):::key
+    K("Neo4j Upsert<br/>MERGE + FK edges + embeddings"):::process
+    L[("Neo4j<br/>Knowledge Graph")]:::database
+
+    A --> C
+    B --> D
+    C --> E
+    E --> F
+    D --> F
+    F --> G
+    G -- "rejected" --> F
+    G -. "conf < gate" .-> H
+    H --> I
+    G -- "approved" --> I
+    I --> J
+    J -- "EXPLAIN failed" --> I
+    J -- "valid" --> K
+    K --> L
+    K -. "next table" .-> F
+
+    classDef input fill:#FAFAFA,stroke:#424242,stroke-width:2px
+    classDef process fill:#F5F5F5,stroke:#9E9E9E,stroke-width:1.5px
+    classDef key fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+    classDef optional fill:#FAFAFA,stroke:#9E9E9E,stroke-width:1.5px,stroke-dasharray: 5 5
+    classDef database fill:#37474F,stroke:#263238,stroke-width:2px,color:#ECEFF1
+```
+
+#### Query Graph
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#FAFAFA', 'primaryTextColor': '#212121', 'primaryBorderColor': '#9E9E9E', 'lineColor': '#616161', 'fontSize': '13px', 'fontFamily': 'Inter, Helvetica, Arial, sans-serif'}}}%%
+flowchart TD
+    A("Natural Language Question"):::input
+    B("Hybrid Retrieval<br/>Dense + BM25 + Graph Traversal"):::process
+    C("Cross-Encoder Reranking"):::process
+    D{"Retrieval<br/>Quality Gate"}:::gate
+    E("Context Distillation<br/>adequate / sparse / insufficient"):::process
+    F("Answer Generation<br/>Context-adaptive"):::process
+    G("Hallucination Grader<br/>Self-RAG structured critique"):::key
+    H("Grader Consistency Validator"):::key
+    I("Grounded Answer + Sources"):::output
+    J("Abstain<br/>Insufficient context"):::optional
+
+    A --> B
+    B --> C
+    C --> D
+    D -- "proceed" --> E
+    D -. "abstain" .-> J
+    E --> F
+    F --> G
+    G --> H
+    H -- "regenerate" --> F
+    H -- "pass" --> I
+
+    classDef input fill:#FAFAFA,stroke:#424242,stroke-width:2px
+    classDef process fill:#F5F5F5,stroke:#9E9E9E,stroke-width:1.5px
+    classDef key fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+    classDef gate fill:#FAFAFA,stroke:#424242,stroke-width:2px
+    classDef output fill:#37474F,stroke:#263238,stroke-width:2px,color:#ECEFF1
+    classDef optional fill:#FAFAFA,stroke:#9E9E9E,stroke-width:1.5px,stroke-dasharray: 5 5
 ```
 
 ### Builder Graph

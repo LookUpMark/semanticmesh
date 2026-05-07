@@ -158,7 +158,7 @@ MERGE (child)-[:REFERENCES {fk_column: $fk_col, ref_column: $ref_col}]->(parent)
 |---|---|---|
 | **Orchestration** | LangGraph | DAG state machine, conditional routing, checkpointing |
 | **Chain Management** | LangChain | Prompt templates, chain composition |
-| **LLM Factory** | `src/config/llm_factory.py` | 5-tier model routing, provider auto-detection |
+| **LLM Factory** | `src/config/llm_factory.py` | 5-tier model routing, per-tier explicit provider config |
 | **Dense Embeddings** | BGE-M3 (BAAI) | 1024-dim multilingual semantic embeddings |
 | **Reranking** | bge-reranker-v2-m3 (BAAI) | Cross-encoder scoring (query x chunk) |
 | **Graph + Vector DB** | Neo4j 5.x | Graph topology + vector index + fulltext BM25 |
@@ -178,13 +178,24 @@ The LLM factory (`src/config/llm_factory.py`) provides five tiers of model acces
 | **Generation** | `get_generation_llm()` | (same as reasoning) | Answer generation | 0.3 |
 | **Reasoning** | `get_reasoning_llm()` | gpt-5.4 | Cypher generation, complex reasoning | 0.0 |
 
-**Provider auto-detection** (`src/config/provider_detection.py`):
+**Provider routing** (`_resolve_provider()` in `llm_factory.py`):
+
+Each tier resolves its provider via a 3-level fallback chain:
+1. **Explicit per-tier** (`LLM_PROVIDER_<TIER>`) — preferred, wins if non-empty
+2. **Global override** (`LLM_PROVIDER`) — backward compat fallback
+3. **Auto-detection** (`detect_provider(model)`) — infers from model name prefix (legacy)
+
+Provider auto-detection rules (`src/config/provider_detection.py`):
 - `"provider/model"` (contains `/`) → OpenRouter
 - `"gpt-*"`, `"o1-*"`, `"o3-*"`, `"o4-*"`, `"gpt-5*"` → OpenAI direct
 - `"claude-*"` → Anthropic direct
 - `"ollama/*"` → Ollama
 - `"google/*"`, `"vertex_ai/*"` → Google Gemini/Vertex AI
 - Anything else → LM Studio local
+
+**Reasoning effort** (`_build_effort_kwargs()`) handles OpenAI vs OpenRouter format differences:
+- OpenAI: `{"reasoning_effort": "high"}` (top-level param)
+- OpenRouter: `{"reasoning": {"effort": "high"}}` (nested in model_kwargs)
 
 All node functions type-annotate LLMs as `llm: LLMProtocol` (structural type) for provider agnosticism.
 

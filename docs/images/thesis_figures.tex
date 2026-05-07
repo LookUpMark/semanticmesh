@@ -1,0 +1,19 @@
+% === Builder Graph ===
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{images/builder_graph.png}
+  \caption{Builder Graph architecture. Key nodes highlighted in blue represent
+    critical validation and self-healing stages: Entity Resolution,
+    Actor-Critic Validation, and Cypher Healing.}
+  \label{fig:builder-graph}
+\end{figure}
+
+% === Query Graph ===
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{images/query_graph.png}
+  \caption{Query Graph architecture. The pipeline performs hybrid retrieval,
+    cross-encoder reranking, quality gating, and Self-RAG hallucination
+    grading before producing a grounded answer.}
+  \label{fig:query-graph}
+\end{figure}

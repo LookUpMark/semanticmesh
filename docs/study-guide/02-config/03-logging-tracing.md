@@ -14,8 +14,9 @@ Il logging risponde alla domanda *"cosa sta succedendo ora?"*, mentre il tracing
 
 ```
 src/config/
-├── logging.py   ← Logging JSON strutturato, helper per nodi LangGraph
-└── tracing.py   ← BuilderTrace, QueryTrace, ComparisonReport
+├── logging.py        ← Logging JSON strutturato, helper per nodi LangGraph
+├── tracing.py        ← BuilderTrace, QueryTrace, ComparisonReport
+└── observability.py  ← LangSmith + Langfuse callback management
 ```
 
 **Consumatori del logging:**
@@ -447,7 +448,7 @@ builder_trace_{id}.json (JSON singolo)
 | Parametro | Config Field | Default | Descrizione |
 |-----------|-------------|---------|-------------|
 | `enable_debug_trace` | `settings.enable_debug_trace` | `False` | Abilita trace system globalmente |
-| `trace_output_dir` | `settings.trace_output_dir` | `"notebooks/ablation/ablation_results/traces/debug"` | Directory output trace |
+| `trace_output_dir` | `settings.trace_output_dir` | `"outputs/ablation/traces/debug"` | Directory output trace |
 | `trace_compress_large_fields` | `settings.trace_compress_large_fields` | `True` | Abilita troncamento campi grandi |
 | `trace_truncate_length` | `settings.trace_truncate_length` | `500` | Lunghezza max testo nei trace |
 | `trace_max_items` | `settings.trace_max_items` | `100` | Elementi max per lista nei trace |
