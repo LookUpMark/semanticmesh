@@ -62,11 +62,11 @@ Full 7-dataset comparison validating `reranker_top_k=5` as the optimal global de
 | DS05 Edge-incomplete (20q) | 4.30 | **4.80** | +0.50 | K20 |
 | DS06 Edge-legacy (25q) | **5.00** | 4.90 | -0.10 | K5 |
 | DS07 Stress 58-tab (55q) | **4.35** | 3.65 | -0.70 | K5 |
-| **Average** | **4.73** | **4.53** | **-0.20** | **K5** |
+| **Average** | **4.73** | **4.51** | **-0.22** | **K5** |
 
 ### Key Insights
 
-1. **K5 wins 6/7 datasets** — average advantage of 0.20 points
+1. **K5 wins 6/7 datasets** — average advantage of 0.22 points
 2. **Largest gap on DS07** (Δ=-0.70): 20 chunks from a 58-table schema overwhelm the generator with noise, causing underspecification of constraint enumerations
 3. **K20 wins only on DS05** (incomplete schemas): broader retrieval compensates for sparse documentation
 4. **Higher GT coverage ≠ higher quality**: DS07 K20 achieves 92% GT vs K5's 78%, yet scores 0.70 points lower — precision > recall for answer quality

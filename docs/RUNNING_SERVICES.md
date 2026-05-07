@@ -161,10 +161,10 @@ LLM_PROVIDER_EXTRACTION=openai
 LLM_PROVIDER_GENERATION=openai
 LLM_PROVIDER_MIDTIER=openai
 
-# Model selection (defaults to gpt-4.1 family)
-LLM_MODEL_REASONING=gpt-4.1
-LLM_MODEL_EXTRACTION=gpt-4.1-nano
-LLM_MODEL_MIDTIER=gpt-4.1-nano
+# Model selection (defaults to gpt-5.4-nano / gpt-5-nano family)
+LLM_MODEL_REASONING=gpt-5.4-nano-2026-03-17
+LLM_MODEL_EXTRACTION=gpt-5-nano-2025-08-07
+LLM_MODEL_MIDTIER=gpt-5-nano-2025-08-07
 LLM_MODEL_GENERATION=            # Empty = falls back to reasoning model
 
 # Custom endpoints (empty = provider default)

@@ -155,7 +155,7 @@ retrieval_mode: str = "hybrid"              # AB-01/02: "vector" | "bm25"
 # ── Tunable Parameters ──────────────────────────────────────────────────────────
 chunk_size: int = 256                       # AB-06/07/08
 chunk_overlap: int = 32
-reranker_top_k: int = 10                    # AB-04/05
+reranker_top_k: int = 5                     # AB-04/05
 er_similarity_threshold: float = 0.75       # AB-11/12
 er_blocking_top_k: int = 10                # AB-13/14
 confidence_threshold: float = 0.90          # AB-17/18
@@ -170,20 +170,21 @@ These flags **must not affect production defaults** — they exist solely for co
 
 ### 5.1 Evaluation Datasets
 
-Each ablation study is executed against **six synthetic datasets** of increasing complexity:
+Each ablation study is executed against **seven synthetic datasets** of increasing complexity:
 
 | ID | Name | Tables | Complexity |
 |---|---|---|---|
 | DS01 | `01_basics_ecommerce` | 7 | Basic e-commerce schema |
-| DS02 | `02_intermediate_finance` | — | Intermediate finance domain |
-| DS03 | `03_advanced_healthcare` | — | Advanced healthcare domain |
-| DS04 | `04_edge_cases_temporal` | — | Temporal/edge-case patterns |
-| DS05 | `05_cross_domain_logistics` | — | Cross-domain logistics |
-| DS06 | `06_stress_test_wide` | — | Wide table stress test |
+| DS02 | `02_intermediate_finance` | 8 | Intermediate finance domain |
+| DS03 | `03_advanced_healthcare` | 10 | Advanced healthcare domain |
+| DS04 | `04_complex_manufacturing` | 13 | Complex manufacturing domain |
+| DS05 | `05_edgecases_incomplete` | 5 | Incomplete schema edge cases |
+| DS06 | `06_edgecases_legacy` | 10 | Legacy naming edge cases |
+| DS07 | `07_stress_large_scale` | 58 | Large-scale stress test |
 
 ### 5.2 Evaluation Method
 
-Each run produces a `run.json` with pipeline metrics (triplets, entities, tables processed, Cypher success rate). An **AI Judge** (GPT-5.4-mini) evaluates each run across five dimensions:
+Each run produces a `run.json` with pipeline metrics (triplets, entities, tables processed, Cypher success rate). An **AI Judge** (`gpt-5.4-nano-2026-03-17`) evaluates each run across five dimensions:
 
 | Dimension | Weight | Description |
 |---|---|---|
@@ -207,7 +208,7 @@ Studies marked `run_ragas=True` additionally collect automated RAGAS metrics:
 
 ## 6. Results Summary
 
-Campaign results across 126 runs (21 studies x 6 datasets). All scores are AI Judge Overall (1.0–5.0 scale).
+Campaign results across 147 runs (21 studies × 7 datasets). All scores are AI Judge Overall (1.0–5.0 scale).
 
 ### 6.1 Score Summary Table
 
@@ -267,7 +268,7 @@ Campaign results across 126 runs (21 studies x 6 datasets). All scores are AI Ju
 
 ### 7.1 Environment
 
-- All ablation runs executed on the **same hardware** and **same LLM models** (gpt-5.4-nano extraction, gpt-5.4-mini midtier, gpt-5.4 reasoning)
+- All ablation runs executed on the **same hardware** and **same LLM models** (gpt-5-nano-2025-08-07 extraction, gpt-5-nano-2025-08-07 midtier, gpt-5.4-nano-2026-03-17 reasoning)
 - Same Neo4j 5.x instance, database cleared between runs
 - Each study is a separate invocation of `src/evaluation/ablation_runner.py`
 
@@ -308,7 +309,7 @@ Each ablation result is documented in the following format:
 ### AB-XX — [Component Name]
 
 **Date:** YYYY-MM-DD
-**LLM Configuration:** gpt-5.4-nano / gpt-5.4-mini / gpt-5.4
+**LLM Configuration:** gpt-5-nano-2025-08-07 / gpt-5.4-nano-2026-03-17
 
 #### Results
 
