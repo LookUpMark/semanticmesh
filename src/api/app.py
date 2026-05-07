@@ -91,7 +91,7 @@ _cors_origins = os.environ.get("CORS_ORIGINS", "http://127.0.0.1:8000,http://loc
 if _cors_origins == ["*"]:
     _logger.error(
         "CORS_ORIGINS='*' is insecure — rejecting wildcard. "
-        "Set explicit origins (e.g. 'http://localhost:5173,http://localhost:8000')."
+        "Set explicit origins (e.g. 'http://localhost:3000,http://localhost:8000')."
     )
     _cors_origins = ["http://127.0.0.1:8000", "http://localhost:8000"]
 app.add_middleware(
@@ -129,7 +129,7 @@ def _flush_observability() -> None:
 
 
 # ── Runtime Configuration Overrides ──────────────────────────────────────────
-# Allows the frontend Settings page to push env-var overrides to the running
+# Allows a client Settings page to push env-var overrides to the running
 # server without a restart.  Overrides are applied in-process only; they are
 # NOT written to .env.  Sensitive keys (API credentials) are accepted here but
 # never echoed back in GET responses.
