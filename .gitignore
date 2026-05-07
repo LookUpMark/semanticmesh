@@ -70,19 +70,9 @@ data/memory/**
 # Study guide
 docs/study-guide/
 
-# Vite build artifacts
-.vite/
+# Node / build artifacts
 node_modules/
-frontend/dist/
-frontend/.vite/
-frontend/node_modules/
-frontend/build/
-frontend/.cache/
-frontend/package-lock.json
-frontend/package.json
-
-# Frontend duplicate (empty scaffold — safe to delete)
-# frontend/frontend/
+.vite/
 
 graphify-out
 .obsidian
