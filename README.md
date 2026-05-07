@@ -229,9 +229,9 @@ OPENAI_API_KEY=sk-proj-...               # At least one LLM key
 API_KEY=your-generated-key
 
 # ── Optional: Model Selection ────────────────────────────────────────────────
-LLM_MODEL_REASONING=gpt-4.1             # For complex reasoning/judge tasks
-LLM_MODEL_EXTRACTION=gpt-4.1-nano       # For triplet extraction (fast + cheap)
-LLM_MODEL_MIDTIER=gpt-4.1-nano          # For schema enrichment, mapping
+LLM_MODEL_REASONING=gpt-5.4-nano-2026-03-17   # For complex reasoning/judge tasks
+LLM_MODEL_EXTRACTION=gpt-5-nano-2025-08-07    # For triplet extraction (fast + cheap)
+LLM_MODEL_MIDTIER=gpt-5-nano-2025-08-07       # For schema enrichment, mapping
 ```
 
 ### Step 5: Start the API Server
@@ -435,7 +435,7 @@ tests/
   fixtures/         7 synthetic datasets with gold standard QA pairs
 docs/
   draft/            Architecture specs, requirements, prompts, ADRs, ablation plan, datasets, test plan
-  changelogs/       Version changelogs (v1.0.0 → v1.2.0)
+  changelogs/       Version changelogs (v1.0.0 → v1.4.1)
   audits/           Security audit reports
   AI_JUDGE_PROMPT.md  AI Judge system prompt
   RUNNING_SERVICES.md  Setup guide
@@ -476,7 +476,7 @@ Key findings:
 1. **Hybrid retrieval is non-negotiable** — Vector-only scores 3.40 (-0.85 vs baseline)
 2. **Reranker top_k is the only discriminating parameter** — AB-04/AB-05 both 4.90
 3. **top_k=5 is the efficient optimum** — Same quality as top_k=20 with 4× fewer cross-encoder calls
-4. **K5 validated across all 7 datasets** — K5 avg 4.73 vs K20 avg 4.53 (K5 wins 6/7)
+4. **K5 validated across all 7 datasets** — K5 avg 4.73 vs K20 avg 4.51 (K5 wins 6/7)
 5. **Schema enrichment and Actor-Critic are critical safety nets** — Disabling either drops GT coverage ≥33 pp
 
 Full results in [docs/ablation/RESULTS.md](docs/ablation/RESULTS.md).
@@ -497,7 +497,7 @@ Full results in [docs/ablation/RESULTS.md](docs/ablation/RESULTS.md).
 | [docs/draft/ABLATION.md](docs/draft/ABLATION.md) | Ablation study plan and methodology |
 | [docs/draft/DATASET.md](docs/draft/DATASET.md) | Dataset specifications (inputs, few-shot, gold standard) |
 | [docs/draft/TEST_PLAN.md](docs/draft/TEST_PLAN.md) | Test strategy and test case catalogue |
-| [docs/changelogs/](docs/changelogs/) | Version changelogs (v1.0.0 → v1.4.0) |
+| [docs/changelogs/](docs/changelogs/) | Version changelogs (v1.0.0 → v1.4.1) |
 | [docs/audits/](docs/audits/) | Security audit reports |
 | [docs/study-guide/](docs/study-guide/) | Module-by-module study guide (15 chapters) |
 
