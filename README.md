@@ -17,6 +17,7 @@ Master's thesis, Politecnico di Torino, March 2026.
 - [Key Features](#key-features)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
+- [Observability](#observability-langsmith--langfuse)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
 - [Evaluation](#evaluation)
@@ -231,6 +232,24 @@ The factory auto-detects the provider from the model name:
 | `ollama/*` | Ollama |
 | `google/*`, `vertex_ai/*` | Google Gemini/Vertex AI |
 | Other | LM Studio local |
+
+### Observability (LangSmith + Langfuse)
+
+Both LangSmith and Langfuse are supported for tracing LLM calls, token usage, latency, and full pipeline execution. Both are **opt-in** via environment variables:
+
+```dotenv
+# LangSmith (auto-enabled by LangChain when set)
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=ls-...
+LANGCHAIN_PROJECT=semanticmesh
+
+# Langfuse (injected as LangChain callback handler)
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+Both can run simultaneously. See [docs/RUNNING_SERVICES.md](docs/RUNNING_SERVICES.md#observability-langsmith--langfuse) for the full architecture diagram.
 
 ---
 
