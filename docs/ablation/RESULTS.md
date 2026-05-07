@@ -191,21 +191,21 @@ The AB-BEST configuration was re-derived on 2026-05-06 using v1.1.1 AI-Judge sco
 }
 ```
 
-### AB-BEST results across all 7 datasets (updated 2026-05-06)
+### AB-BEST results across all 7 datasets (updated 2026-05-07)
 
 | Dataset | Tables | Questions | GT Cov | Grounded | AI Judge |
 |---------|:------:|:---------:|:------:|:--------:|:--------:|
-| 01 E-Commerce | 7 | 15 | 98% | 15/15 | **4.99/5** |
+| 01 E-Commerce | 7 | 15 | 98% | 15/15 | **5.00/5** |
 | 02 Finance | 8 | 25 | 99% | 25/25 | **5.00/5** |
 | 03 Healthcare | 10 | 30 | 97% | 30/30 | **4.70/5** |
 | 04 Manufacturing | 13 | 40 | 86% | 40/40 | **4.75/5** |
 | 05 Edge-incomplete | 5 | 20 | 82% | 20/20 | **4.30/5** |
-| 06 Edge-legacy | 10 | 25 | 76% | 25/25 | **4.99/5** |
-| 07 Stress (58 tables) | 58 | 55 | 100% | 55/55 | **4.50/5** |
-| **Average** | — | **210** | **91%** | **210/210** | **4.75/5** |
+| 06 Edge-legacy | 10 | 25 | 76% | 25/25 | **5.00/5** |
+| 07 Stress (58 tables) | 58 | 55 | 78% | 55/55 | **4.35/5** |
+| **Average** | — | **210** | **88%** | **210/210** | **4.73/5** |
 
-> **210/210 answers grounded (100%), zero hallucinations.** DS02-DS06 re-judged on 2026-05-06 with `ablation_context` injection (provides judge with baseline comparison data for Ablation Impact dimension). DS07 retains provisional 4.50 pending re-judge.
-AB-BEST achieves **100% builder completion and 100% grounded answers** across all seven datasets, including the stress dataset with 58 tables. Average AI Judge score: **4.75/5**.
+> **210/210 answers grounded (100%), zero hallucinations.** DS02-DS06 re-judged on 2026-05-06. DS07 re-judged on 2026-05-07 with `baseline_comparison` injection for Ablation Impact scoring. DS-07 GT coverage penalized by `reranker_top_k=5` on a 58-table schema; AB-BEST-K20 comparison pending.
+AB-BEST achieves **100% builder completion and 100% grounded answers** across all seven datasets, including the stress dataset with 58 tables. Average AI Judge score: **4.73/5**.
 
 ---
 

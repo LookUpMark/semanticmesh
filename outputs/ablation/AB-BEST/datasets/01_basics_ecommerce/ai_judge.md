@@ -22,7 +22,7 @@ The only notable minor weakness is that some multi-hop questions appear to have 
 | Answer Quality | 5 | 30% | 1.50 |
 | Pipeline Health | 5 | 10% | 0.50 |
 | Ablation Impact | 5 | 10% | 0.50 |
-| **Overall** |  |  | **4.99** |
+| **Overall** |  |  | **5.00** |
 
 ---
 
