@@ -326,13 +326,33 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             # ── Normalize BusinessConcept name created by LLM Cypher ──────────
             # The LLM Cypher may create the BusinessConcept with a name that
             # differs from our quality-gated `concept_name`. Force-rename it.
+            # If the target concept already exists (another table mapped to it),
+            # delete the duplicate and re-link the PhysicalTable instead.
             if proposal.mapped_concept:
-                client.execute_cypher(
-                    "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
-                    "WHERE toLower(pt.table_name) = toLower($tbl) AND bc.name <> $target "
-                    "SET bc.name = $target",
-                    {"tbl": table.table_name, "target": concept_name},
+                # Check if target concept already exists as a separate node
+                existing = client.execute_cypher(
+                    "MATCH (bc:BusinessConcept {name: $target}) RETURN bc",
+                    {"target": concept_name},
                 )
+                if existing:
+                    # Target concept exists — delete the duplicate created by LLM
+                    # Cypher and link PhysicalTable to the existing one.
+                    client.execute_cypher(
+                        "MATCH (dup:BusinessConcept)-[r:MAPPED_TO]->(pt:PhysicalTable) "
+                        "WHERE toLower(pt.table_name) = toLower($tbl) AND dup.name <> $target "
+                        "DELETE r "
+                        "WITH dup WHERE NOT EXISTS { (dup)-[:MAPPED_TO]->() } "
+                        "DETACH DELETE dup",
+                        {"tbl": table.table_name, "target": concept_name},
+                    )
+                else:
+                    # Target concept doesn't exist — safe to rename
+                    client.execute_cypher(
+                        "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
+                        "WHERE toLower(pt.table_name) = toLower($tbl) AND bc.name <> $target "
+                        "SET bc.name = $target",
+                        {"tbl": table.table_name, "target": concept_name},
+                    )
                 # ── Ensure MAPPED_TO edge exists (LLM Cypher may omit it) ─────
                 client.execute_cypher(
                     "MATCH (bc:BusinessConcept {name: $bc_name}) "

@@ -51,6 +51,8 @@ class BuilderState(TypedDict, total=False):
     ingestion_errors: list[str]
     completed_tables: list[str]
     skipped_files: list[str]
+    # Pre-computed mapping proposals from parallel mapping phase
+    precomputed_proposals: dict[str, MappingProposal]
 
     # Debug tracing fields (use Any to avoid circular imports)
     trace_enabled: bool

@@ -204,6 +204,10 @@ class AppConfig:
     # Max reflection retries for expensive reasoning-tier calls (mapping, ER judge).
     # Cheaper extraction-tier retries use max_reflection_attempts unchanged.
     max_reflection_attempts_reasoning: int = 2
+    # Parallel mapping: number of concurrent tables processed during mapping+validation.
+    # Set to 1 to disable parallelism (sequential). Default 5 for good throughput
+    # without overwhelming the LLM API rate limits.
+    mapping_concurrency: int = 5
 
     # ── Logging ────────────────────────────────────────────────────────────────
     log_level: str = "INFO"

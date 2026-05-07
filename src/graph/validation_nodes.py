@@ -31,6 +31,28 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
         attempts: int = state.get("reflection_attempts", 0)
         best_proposal: MappingProposal | None = state.get("best_proposal")
 
+        # Fast path: proposal already validated by parallel mapping phase
+        precomputed = state.get("precomputed_proposals") or {}
+        if (
+            proposal is not None
+            and table is not None
+            and getattr(table, "table_name", None) in precomputed
+        ):
+            log_node_event(
+                logger,
+                "validate_mapping",
+                f"table={table.table_name} (precomputed)",
+                f"accepted conf={proposal.confidence:.2f}",
+                timer.elapsed_ms,
+            )
+            return {
+                "mapping_proposal": proposal,
+                "best_proposal": None,
+                "validation_error": None,
+                "reflection_attempts": 0,
+                "hitl_flag": False,
+            }
+
         if proposal is None:
             log_node_event(
                 logger,

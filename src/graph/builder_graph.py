@@ -31,6 +31,7 @@ from src.graph.build_nodes import (
     _route_after_heal,
 )
 from src.graph.neo4j_client import Neo4jClient, setup_schema
+from src.graph.parallel_mapping import parallel_map_all_tables
 from src.graph.validation_nodes import _node_validate_mapping, _route_after_validate
 from src.ingestion.ddl_parser import parse_ddl_file
 from src.ingestion.file_registry import (
@@ -148,6 +149,44 @@ def _node_enrich_schema(state: BuilderState) -> dict[str, Any]:
         return {"enriched_tables": enriched}
 
 
+def _node_parallel_mapping(state: BuilderState) -> dict[str, Any]:
+    """Pre-compute mapping proposals for all tables in parallel.
+
+    When mapping_concurrency > 1 and there are multiple tables, this node
+    runs all mapping+validation concurrently. Results are stored in
+    `precomputed_proposals` and consumed by subsequent `rag_mapping` calls
+    (which skip LLM calls when a precomputed proposal is available).
+
+    When mapping_concurrency == 1, this is a no-op pass-through.
+    """
+    with NodeTimer() as timer:
+        settings = get_settings()
+        enriched_tables = state.get("enriched_tables") or []
+        entities: list[Entity] = state.get("entities") or []
+
+        if settings.mapping_concurrency <= 1 or len(enriched_tables) <= 1:
+            log_node_event(
+                logger,
+                "parallel_mapping",
+                f"{len(enriched_tables)} tables",
+                "skipped (sequential mode)",
+                timer.elapsed_ms,
+            )
+            return {"precomputed_proposals": {}}
+
+        proposals = parallel_map_all_tables(
+            enriched_tables, entities, concurrency=settings.mapping_concurrency
+        )
+        log_node_event(
+            logger,
+            "parallel_mapping",
+            f"{len(enriched_tables)} tables",
+            f"{len(proposals)} proposals computed",
+            timer.elapsed_ms,
+        )
+        return {"precomputed_proposals": proposals}
+
+
 def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
     """Generate RAG-augmented mapping proposal for current table."""
     with NodeTimer() as timer:
@@ -158,6 +197,7 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
         enriched_tables = state.get("enriched_tables") or []
         entities: list[Entity] = state.get("entities") or []
         reflection_prompt: str | None = state.get("reflection_prompt")
+        precomputed: dict = state.get("precomputed_proposals") or {}
 
         # Process next table from remaining queue, or retry current on reflection
         if reflection_prompt and state.get("current_table"):
@@ -172,6 +212,29 @@ def _node_rag_mapping(state: BuilderState) -> dict[str, Any]:
                 return {"pending_tables": [], "current_table": None}
             current_table = pending[0]
             remaining = pending[1:]
+
+        # Fast path: use precomputed proposal from parallel mapping
+        if precomputed and current_table.table_name in precomputed and not reflection_prompt:
+            proposal = precomputed[current_table.table_name]
+            query = build_retrieval_query(current_table)
+            top_entities = retrieve_top_entities(
+                query, entities, embeddings, top_k=settings.retrieval_vector_top_k
+            )
+            log_node_event(
+                logger,
+                "rag_mapping",
+                f"table={current_table.table_name} (precomputed)",
+                f"concept={getattr(proposal, 'mapped_concept', '?')}",
+                timer.elapsed_ms,
+            )
+            return {
+                "mapping_proposal": proposal,
+                "current_table": current_table,
+                "current_entities": top_entities,
+                "pending_tables": remaining,
+                "reflection_prompt": None,
+                "reflection_attempts": 0,
+            }
 
         query = build_retrieval_query(current_table)
         top_entities = retrieve_top_entities(
@@ -269,6 +332,7 @@ def build_builder_graph(*, production: bool = False):
     graph.add_node("entity_resolution", _node_entity_resolution)
     graph.add_node("parse_ddl", _node_parse_ddl)
     graph.add_node("enrich_schema", _node_enrich_schema)
+    graph.add_node("parallel_mapping", _node_parallel_mapping)
     graph.add_node("rag_mapping", _node_rag_mapping)
     graph.add_node("validate_mapping", _node_validate_mapping)
     graph.add_node("hitl", hitl_node)
@@ -284,7 +348,8 @@ def build_builder_graph(*, production: bool = False):
     graph.add_edge("extract_triplets", "entity_resolution")
     graph.add_edge("entity_resolution", "parse_ddl")
     graph.add_edge("parse_ddl", "enrich_schema")
-    graph.add_edge("enrich_schema", "rag_mapping")
+    graph.add_edge("enrich_schema", "parallel_mapping")
+    graph.add_edge("parallel_mapping", "rag_mapping")
     graph.add_edge("rag_mapping", "validate_mapping")
     graph.add_edge("hitl", "generate_cypher")
     graph.add_edge("generate_cypher", "heal_cypher")

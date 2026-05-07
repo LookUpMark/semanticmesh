@@ -18,7 +18,7 @@ AB-BEST shows strong end-to-end performance: the builder completed all 10 parsed
 | Answer Quality | 5 | 30% | 1.50 |
 | Pipeline Health | 5 | 10% | 0.50 |
 | Ablation Impact | 5 | 10% | 0.50 |
-| **Overall** |  |  | **4.99** |
+| **Overall** |  |  | **5.00** |
 
 ## Dimension Analysis
 
