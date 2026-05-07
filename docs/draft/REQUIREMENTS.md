@@ -141,7 +141,7 @@ thesis/
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── settings.py              # Pydantic BaseSettings, all env vars
-│   │   ├── llm_factory.py           # ChatOpenRouter builder per role (reasoning/extraction/generation)
+│   │   ├── llm_factory.py           # 5-tier LLM factory with provider-agnostic routing
 │   │   └── logging.py               # Structured JSON logging setup
 │   ├── models/
 │   │   ├── __init__.py

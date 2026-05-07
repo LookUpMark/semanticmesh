@@ -599,6 +599,11 @@ def _run_single(
             if ragas_metrics is not None:
                 summary["ragas"] = ragas_metrics
 
+            # Add LLM usage to summary
+            from src.config.llm_client import get_llm_usage_summary  # noqa: PLC0415
+
+            summary["llm_usage"] = get_llm_usage_summary()
+
             # run.json
             (out / "run.json").write_text(
                 json.dumps(summary, indent=2, default=str), encoding="utf-8"
@@ -857,10 +862,12 @@ def main() -> None:
 
     # Run
     from src.config.llm_factory import reconfigure_from_env  # noqa: PLC0415
+    from src.config.llm_client import reset_llm_usage  # noqa: PLC0415
     from src.config.logging import setup_notebook_logging  # noqa: PLC0415
 
     reconfigure_from_env()
     setup_notebook_logging()
+    reset_llm_usage()
 
     all_results: list[dict[str, Any]] = []
     total_start = _time.perf_counter()
@@ -899,6 +906,34 @@ def main() -> None:
     print(f"  COMPLETE: {successful}/{len(all_results)} runs successful")
     print(f"  Elapsed: {total_elapsed:.1f}s ({total_elapsed / 60:.1f}m)")
     print("=" * 60)
+
+    # ── LLM Usage Summary ──
+    from src.config.llm_client import get_llm_usage_summary  # noqa: PLC0415
+
+    usage = get_llm_usage_summary()
+    if usage:
+        print()
+        print("┌─────────────────────────────────────────────────────────┐")
+        print("│  LLM USAGE SUMMARY                                      │")
+        print("├──────────────┬──────────┬──────────┬──────────┬─────────┤")
+        print("│ Tier         │ Calls    │ In Tok   │ Out Tok  │ Total   │")
+        print("├──────────────┼──────────┼──────────┼──────────┼─────────┤")
+        total_in = total_out = total_calls = 0
+        for tier, stats in sorted(usage.items()):
+            in_t = stats["input_tokens"]
+            out_t = stats["output_tokens"]
+            calls = stats["calls"]
+            total_in += in_t
+            total_out += out_t
+            total_calls += calls
+            print(
+                f"│ {tier:<12} │ {calls:>8,} │ {in_t:>8,} │ {out_t:>8,} │ {in_t + out_t:>7,} │"
+            )
+        print("├──────────────┼──────────┼──────────┼──────────┼─────────┤")
+        print(
+            f"│ {'TOTAL':<12} │ {total_calls:>8,} │ {total_in:>8,} │ {total_out:>8,} │ {total_in + total_out:>7,} │"
+        )
+        print("└──────────────┴──────────┴──────────┴──────────┴─────────┘")
 
 
 if __name__ == "__main__":

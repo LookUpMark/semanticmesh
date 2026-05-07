@@ -1,28 +1,28 @@
 """EP-01: LLM client factory.
 
-Split-routing architecture:
-  * Reasoning + Generation → OpenRouter (cloud, ``openai/gpt-oss-120b:free``)
-  * Extraction SLM         → LM Studio  (local, ``qwen3.5-35b-a3b``)
+Explicit per-tier configuration — each tier has its own provider, model,
+endpoint, and reasoning effort set via environment variables::
+
+    LLM_PROVIDER_REASONING=openai
+    LLM_MODEL_REASONING=gpt-5.4-nano-2026-03-17
+    LLM_ENDPOINT_REASONING=https://api.openai.com/v1
+    LLM_EFFORT_REASONING=high
+
+Fallback chain (backward compatible):
+  1. Per-tier ``LLM_PROVIDER_<TIER>`` (new, explicit)
+  2. Global ``LLM_PROVIDER`` (legacy override)
+  3. ``detect_provider(model)`` (legacy auto-detection from model name prefix)
 
 All callers import from here — no pipeline node constructs an LLM directly.
-To swap providers, only this file changes; all nodes depend on ``LLMProtocol``.
-
-Environment variables:
-  OPENROUTER_API_KEY   — required for reasoning/generation
-  LMSTUDIO_BASE_URL    — LM Studio endpoint (default: http://localhost:1234/v1)
-  LLM_MODEL_REASONING  — override reasoning model (default: openai/gpt-oss-120b:free)
-  LLM_MODEL_EXTRACTION — override extraction model (default: local-model)
-
-Provider auto-detection
------------------------
-Provider detection logic is in :mod:`src.config.provider_detection`.
-Model builders are in :mod:`src.config.model_builders`.
+To swap providers, change the ``.env`` file; all nodes depend on ``LLMProtocol``.
 
 Cached factory functions
 ------------------------
-  * :func:`get_reasoning_llm()` — OpenRouter, T=0.0 (mapping, validation, Cypher)
-  * :func:`get_extraction_llm()` — Auto-detected, T=0.0 (triplet extraction)
-  * :func:`get_generation_llm()` — OpenRouter, T=0.3 (answer generation)
+  * :func:`get_reasoning_llm()`  — mapping, validation, Cypher (T=0.0, effort=high)
+  * :func:`get_extraction_llm()` — triplet extraction (T=0.0, effort=minimal)
+  * :func:`get_generation_llm()` — answer generation (T=0.3, effort=none)
+  * :func:`get_lightweight_llm()` — entity resolution, enrichment (T=0.0, effort=minimal)
+  * :func:`get_midtier_llm()`    — RAG mapping, grading (T=0.0, effort=medium)
 """
 
 from __future__ import annotations
@@ -65,12 +65,40 @@ __all__ = [
 ]
 
 
-# ── Public factory function ───────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 
 def _instrument(chat_like: LLMProtocol, role: str) -> LLMProtocol:
     """Wrap an LLM client with instrumentation and retry logic."""
     return InstrumentedLLM(chat_like, name=role, max_retries=get_settings().max_llm_retries)
+
+
+def _resolve_provider(tier_provider: str, model: str) -> str:
+    """Resolve LLM provider: explicit tier > global override > auto-detection."""
+    if tier_provider:
+        return tier_provider
+    s = get_settings()
+    if s.llm_provider and s.llm_provider != "auto":
+        return s.llm_provider
+    return detect_provider(model)
+
+
+def _build_effort_kwargs(effort: str, provider: str) -> dict | None:
+    """Build reasoning-effort keyword arguments for the given provider.
+
+    Returns ``None`` when *effort* is empty/``"none"`` or the provider
+    does not support reasoning-effort control.
+    """
+    if not effort or effort == "none":
+        return None
+    if provider == "openrouter":
+        return {"reasoning": {"effort": effort}}
+    if provider == "openai":
+        return {"reasoning_effort": effort}
+    return None
+
+
+# ── Public factory function ───────────────────────────────────────────────────
 
 
 def make_llm(
@@ -79,63 +107,32 @@ def make_llm(
     max_tokens: int | None = None,
     role: str = "custom",
     *,
-    # Provider overrides (auto-detected from model name if not given)
     openrouter_api_key: str | None = None,
     openrouter_base_url: str | None = None,
     openai_api_key: str | None = None,
     lmstudio_base_url: str | None = None,
-    # Generic base URL override — forwarded to any OpenAI-compatible provider
-    # (Ollama, LMStudio, Groq self-hosted, custom proxy, etc.)
     provider_base_url: str | None = None,
-    # Optional explicit provider override — if set (and != "auto"), skips
-    # detect_provider() and uses this string directly.
     provider: str | None = None,
     extra_model_kwargs: dict | None = None,
     enable_fallback: bool = True,
 ) -> LLMProtocol:
     """Create an instrumented LLM, auto-detecting the provider from *model*.
 
-    Provider detection
-    ------------------
-    Provider is inferred from the model name prefix (see
-    :func:`src.config.provider_detection.detect_provider`):
+    Provider resolution
+    -------------------
+    When *provider* is given (and != ``"auto"``) it is used directly.
+    Otherwise the provider is inferred from the model name prefix (see
+    :func:`src.config.provider_detection.detect_provider`).
 
-    - ``ollama/<model>``    → Ollama (requires ``langchain-ollama``, falls back to compat)
-    - ``google/<model>``    → Google Gemini (requires ``langchain-google-genai``)
-    - ``bedrock/<model>``   → AWS Bedrock (requires ``langchain-aws``)
-    - ``azure/<model>``     → Azure OpenAI (already in ``langchain-openai``)
-    - ``groq/<model>``      → Groq API (OpenAI-compat, no extra package)
-    - ``mistral/<model>``   → Mistral AI (requires ``langchain-mistralai``)
-    - ``together/<model>``  → Together AI (OpenAI-compat, no extra package)
-    - ``huggingface/<model>`` / ``hf/<model>`` → HuggingFace Hub
-      (requires ``langchain-huggingface``)
-    - ``cohere/<model>``    → Cohere (requires ``langchain-cohere``, falls back to compat)
-    - ``nvidia/<model>``    → Nvidia NIM (OpenAI-compat, no extra package)
-    - ``deepseek/<model>``  → DeepSeek (OpenAI-compat, no extra package)
-    - ``xai/<model>``       → xAI Grok (OpenAI-compat, no extra package)
-    - ``<provider>/<model>`` (any other slash) → OpenRouter
-    - ``gpt-*``, ``o1-*``, ``o4-*`` (no slash) → OpenAI direct
-    - ``claude-*`` (no slash) → Anthropic direct
-    - ``gemini-*``, ``mistral-*``, ``deepseek-*``, ``grok-*`` → respective provider
-    - anything else → LM Studio local endpoint
+    The ``provider_base_url`` parameter is forwarded to the resolved builder
+    so that any provider can be pointed at a custom endpoint.
 
     Automatic free→paid fallback
     ----------------------------
     If *enable_fallback* is True (default) and the model name ends with ``:free``,
     a FallbackLLM is created that automatically switches to the paid version when
     rate limits (HTTP 429) are encountered.
-
-    Examples
-    --------
-    >>> make_llm("openai/gpt-oss-120b:free")          # → FallbackLLM (free→paid)
-    >>> make_llm("gpt-4o")                            # → InstrumentedLLM (OpenAI)
-    >>> make_llm("claude-3-5-sonnet-20241022")        # → InstrumentedLLM (Anthropic)
-    >>> make_llm("ollama/llama3.1")                   # → InstrumentedLLM (Ollama)
-    >>> make_llm("groq/llama3-70b-8192")              # → InstrumentedLLM (Groq)
-    >>> make_llm("gemini-2.0-flash")                  # → InstrumentedLLM (Google)
-    >>> make_llm("local-model")                       # → InstrumentedLLM (LM Studio)
     """
-    # Resolve provider: explicit override > auto-detection from model name
     resolved_provider = (
         provider if (provider and provider != "auto") else None
     ) or detect_provider(model)
@@ -149,7 +146,7 @@ def make_llm(
                 temperature=temperature,
                 max_tokens=max_tokens,
                 openrouter_api_key=openrouter_api_key,
-                openrouter_base_url=openrouter_base_url,
+                openrouter_base_url=openrouter_base_url or provider_base_url,
                 extra_model_kwargs=extra_model_kwargs,
             )
             fallback_chat = _build_openrouter_chat(
@@ -157,7 +154,7 @@ def make_llm(
                 temperature=temperature,
                 max_tokens=max_tokens,
                 openrouter_api_key=openrouter_api_key,
-                openrouter_base_url=openrouter_base_url,
+                openrouter_base_url=openrouter_base_url or provider_base_url,
                 extra_model_kwargs=extra_model_kwargs,
             )
             fallback_llm = FallbackLLM(
@@ -172,7 +169,7 @@ def make_llm(
             temperature=temperature,
             max_tokens=max_tokens,
             openrouter_api_key=openrouter_api_key,
-            openrouter_base_url=openrouter_base_url,
+            openrouter_base_url=openrouter_base_url or provider_base_url,
             extra_model_kwargs=extra_model_kwargs,
         )
         return _instrument(chat, role)
@@ -184,54 +181,93 @@ def make_llm(
             max_tokens=max_tokens,
             openai_api_key=openai_api_key,
             extra_model_kwargs=extra_model_kwargs,
+            openai_base_url=provider_base_url,
         )
         return _instrument(chat, role)
 
     if resolved_provider == "anthropic":
         return _instrument(
-            _build_anthropic_chat(model, temperature=temperature, max_tokens=max_tokens),
+            _build_anthropic_chat(
+                model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                base_url=provider_base_url,
+            ),
             role,
         )
 
     if resolved_provider == "ollama":
         return _instrument(
             _build_ollama_chat(
-                model, temperature=temperature, max_tokens=max_tokens, base_url=provider_base_url
+                model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                base_url=provider_base_url,
             ),
             role,
         )
 
     if resolved_provider == "google":
         return _instrument(
-            _build_google_chat(model, temperature=temperature, max_tokens=max_tokens), role
+            _build_google_chat(
+                model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                base_url=provider_base_url,
+            ),
+            role,
         )
 
     if resolved_provider == "bedrock":
         return _instrument(
-            _build_bedrock_chat(model, temperature=temperature, max_tokens=max_tokens), role
+            _build_bedrock_chat(
+                model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                base_url=provider_base_url,
+            ),
+            role,
         )
 
     if resolved_provider == "azure":
         return _instrument(
-            _build_azure_chat(model, temperature=temperature, max_tokens=max_tokens), role
+            _build_azure_chat(
+                model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                base_url=provider_base_url,
+            ),
+            role,
         )
 
     if resolved_provider == "mistral":
         return _instrument(
-            _build_mistral_chat(model, temperature=temperature, max_tokens=max_tokens), role
+            _build_mistral_chat(
+                model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                base_url=provider_base_url,
+            ),
+            role,
         )
 
     if resolved_provider == "huggingface":
         return _instrument(
-            _build_huggingface_chat(model, temperature=temperature, max_tokens=max_tokens), role
+            _build_huggingface_chat(
+                model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                base_url=provider_base_url,
+            ),
+            role,
         )
 
     if resolved_provider == "cohere":
         return _instrument(
-            _build_cohere_chat(model, temperature=temperature, max_tokens=max_tokens), role
+            _build_cohere_chat(model, temperature=temperature, max_tokens=max_tokens),
+            role,
         )
 
-    # OpenAI-compatible providers: groq, together, nvidia, deepseek, xai
     if resolved_provider in ("groq", "together", "nvidia", "deepseek", "xai"):
         return _instrument(
             _build_openai_compatible_chat(
@@ -245,8 +281,6 @@ def make_llm(
             role,
         )
 
-    # Default: LM Studio local endpoint
-    # Strip explicit "lmstudio/" prefix so the model name matches what LM Studio serves
     effective_model = model
     if model.lower().startswith("lmstudio/"):
         effective_model = model[len("lmstudio/") :]
@@ -270,7 +304,7 @@ def reconfigure_from_env() -> None:
     Call this from the notebook after changing ``os.environ`` to pick up new
     model names or API keys without restarting the kernel.
     """
-    reload_settings()  # re-reads os.environ into a fresh Settings object
+    reload_settings()
     get_reasoning_llm.cache_clear()
     get_extraction_llm.cache_clear()
     get_generation_llm.cache_clear()
@@ -280,144 +314,137 @@ def reconfigure_from_env() -> None:
 
 @lru_cache(maxsize=1)
 def get_reasoning_llm() -> LLMProtocol:
-    """Reasoning LLM — T=0.0.
+    """Reasoning LLM — T=0.0, effort=high (default).
 
     Used for: schema mapping, Actor-Critic, LLM judge, hallucination grader,
     schema enrichment, Cypher generation/healing.
 
-    ``reasoning_effort=high`` (OpenAI) / ``reasoning.effort=high`` (OpenRouter)
-    gives the model full thinking budget for multi-hop synthesis across chunks.
+    Configuration (env vars):
+      ``LLM_PROVIDER_REASONING``, ``LLM_MODEL_REASONING``,
+      ``LLM_ENDPOINT_REASONING``, ``LLM_EFFORT_REASONING``.
     """
     s = get_settings()
-    provider_override = s.llm_provider if s.llm_provider != "auto" else None
-    effective_provider = provider_override or detect_provider(s.llm_model_reasoning)
-    if effective_provider == "openrouter":
-        low_reasoning: dict | None = {"reasoning": {"effort": "high"}}
-    elif effective_provider == "openai":
-        low_reasoning = {"reasoning_effort": "high"}
-    else:
-        low_reasoning = None
+    provider = _resolve_provider(s.llm_provider_reasoning, s.llm_model_reasoning)
+    effort = s.llm_effort_reasoning or "high"
+    effort_kwargs = _build_effort_kwargs(effort, provider)
     return make_llm(
         model=s.llm_model_reasoning,
         temperature=s.llm_temperature_reasoning,
         max_tokens=s.llm_max_tokens_reasoning,
         role="reasoning",
-        provider=provider_override,
-        extra_model_kwargs=low_reasoning,
+        provider=provider,
+        provider_base_url=s.llm_endpoint_reasoning or None,
+        extra_model_kwargs=effort_kwargs,
     )
 
 
 @lru_cache(maxsize=1)
 def get_extraction_llm() -> LLMProtocol:
-    """Extraction SLM — provider auto-detected from model name, T=0.0.
-
-    (or from settings.llm_provider)
+    """Extraction SLM — T=0.0, effort=minimal (default).
 
     Used for: triplet extraction from PDF chunks.
 
-    - LM Studio local models (e.g. ``local-model``, ``qwen3-8b``): JSON mode,
-      ``enable_thinking: false`` to disable Qwen3 chain-of-thought.
-    - OpenRouter models (e.g. ``openai/gpt-oss-20b:free``): routed to OpenRouter.
-    - OpenAI direct (e.g. ``gpt-4o-mini``): routed to OpenAI.
+    Configuration (env vars):
+      ``LLM_PROVIDER_EXTRACTION``, ``LLM_MODEL_EXTRACTION``,
+      ``LLM_ENDPOINT_EXTRACTION``, ``LLM_EFFORT_EXTRACTION``.
     """
     s = get_settings()
-    provider_override = s.llm_provider if s.llm_provider != "auto" else None
-    effective_provider = provider_override or detect_provider(s.llm_model_extraction)
-
-    if effective_provider == "lmstudio":
-        return _instrument(
-            make_llm(
-                model=s.llm_model_extraction,
-                temperature=s.llm_temperature_extraction,
-                max_tokens=s.llm_max_tokens_extraction,
-                role="extraction",
-                provider="lmstudio",
-            ),
-            "extraction",
-        )
-
-    # Cloud model (OpenRouter, OpenAI, Anthropic): use make_llm for provider routing
-    # For OpenAI reasoning models (o-series, gpt-5*): use minimal reasoning effort.
-    # reasoning_effort="none" is not supported; "minimal" is the lowest valid value.
-    # Standard chat models (gpt-4o*) don't accept reasoning_effort at all → pass None.
-    # Note: OpenRouter models have mandatory reasoning that cannot be overridden here.
-    no_reasoning: dict | None = None
-    if effective_provider == "openai" and is_openai_reasoning_model(s.llm_model_extraction):
-        no_reasoning = {"reasoning_effort": "minimal"}
+    provider = _resolve_provider(s.llm_provider_extraction, s.llm_model_extraction)
+    effort = s.llm_effort_extraction
+    if not effort:
+        effort = "minimal" if provider in ("openai", "openrouter") and is_openai_reasoning_model(
+            s.llm_model_extraction
+        ) else ""
+    effort_kwargs = _build_effort_kwargs(effort, provider) if effort else None
     return make_llm(
         model=s.llm_model_extraction,
         temperature=s.llm_temperature_extraction,
         max_tokens=s.llm_max_tokens_extraction,
         role="extraction",
-        provider=provider_override,
-        extra_model_kwargs=no_reasoning,
+        provider=provider,
+        provider_base_url=s.llm_endpoint_extraction or None,
+        extra_model_kwargs=effort_kwargs,
     )
 
 
 @lru_cache(maxsize=1)
 def get_generation_llm() -> LLMProtocol:
-    """Generation LLM — OpenRouter, T=0.3.
+    """Generation LLM — T=0.3.
 
-    Same model as reasoning but higher temperature for answer fluency.
-    Thinking is mandatory for this model; OpenRouter keeps it in a separate
-    field so the content returned is always clean prose.
+    Uses the reasoning model by default (or ``LLM_MODEL_GENERATION`` if set).
+
+    Configuration (env vars):
+      ``LLM_PROVIDER_GENERATION``, ``LLM_MODEL_GENERATION``,
+      ``LLM_ENDPOINT_GENERATION``, ``LLM_EFFORT_GENERATION``.
     """
     s = get_settings()
-    provider_override = s.llm_provider if s.llm_provider != "auto" else None
+    model = s.llm_model_generation or s.llm_model_reasoning
+    provider = _resolve_provider(s.llm_provider_generation, model)
+    effort_kwargs = (
+        _build_effort_kwargs(s.llm_effort_generation, provider)
+        if s.llm_effort_generation
+        else None
+    )
     return make_llm(
-        model=s.llm_model_reasoning,
+        model=model,
         temperature=s.llm_temperature_generation,
         max_tokens=s.llm_max_tokens_reasoning,
         role="generation",
-        provider=provider_override,
+        provider=provider,
+        provider_base_url=s.llm_endpoint_generation or None,
+        extra_model_kwargs=effort_kwargs,
     )
 
 
 @lru_cache(maxsize=1)
 def get_lightweight_llm() -> LLMProtocol:
-    """Lightweight LLM — nano model with reasoning disabled, T=0.0.
+    """Lightweight LLM — reuses extraction model, T=0.0, effort=minimal (default).
 
-    Used for simple classification tasks: entity resolution judge,
-    schema enrichment. Uses the extraction model (nano) with
-    ``reasoning_effort=minimal`` (lowest valid value for gpt-5* models).
+    Used for: entity resolution judge, schema enrichment.
+
+    Configuration (env vars):
+      Reuses ``LLM_PROVIDER_EXTRACTION``, ``LLM_MODEL_EXTRACTION``,
+      ``LLM_ENDPOINT_EXTRACTION``, ``LLM_EFFORT_EXTRACTION``.
     """
     s = get_settings()
-    provider_override = s.llm_provider if s.llm_provider != "auto" else None
-    no_reasoning: dict | None = None
-    if is_openai_reasoning_model(s.llm_model_extraction):
-        no_reasoning = {"reasoning_effort": "minimal"}
+    provider = _resolve_provider(s.llm_provider_extraction, s.llm_model_extraction)
+    effort = s.llm_effort_extraction
+    if not effort:
+        effort = "minimal" if provider in ("openai", "openrouter") and is_openai_reasoning_model(
+            s.llm_model_extraction
+        ) else ""
+    effort_kwargs = _build_effort_kwargs(effort, provider) if effort else None
     return make_llm(
         model=s.llm_model_extraction,
         temperature=s.llm_temperature_extraction,
         max_tokens=s.llm_max_tokens_extraction,
         role="lightweight",
-        provider=provider_override,
-        extra_model_kwargs=no_reasoning,
+        provider=provider,
+        provider_base_url=s.llm_endpoint_extraction or None,
+        extra_model_kwargs=effort_kwargs,
     )
 
 
 @lru_cache(maxsize=1)
 def get_midtier_llm() -> LLMProtocol:
-    """Mid-tier LLM — mini model with low reasoning, T=0.0.
+    """Mid-tier LLM — T=0.0, effort=medium (default).
 
-    Used for tasks requiring moderate intelligence: RAG semantic mapping,
-    Actor-Critic validation, hallucination grading. Faster and cheaper
-    than the full reasoning model while still providing good accuracy.
+    Used for: RAG semantic mapping, Actor-Critic validation, hallucination grading.
+
+    Configuration (env vars):
+      ``LLM_PROVIDER_MIDTIER``, ``LLM_MODEL_MIDTIER``,
+      ``LLM_ENDPOINT_MIDTIER``, ``LLM_EFFORT_MIDTIER``.
     """
     s = get_settings()
-    provider_override = s.llm_provider if s.llm_provider != "auto" else None
-    effective_provider = provider_override or detect_provider(s.llm_model_midtier)
-    if effective_provider == "openrouter":
-        low_reasoning: dict | None = {"reasoning": {"effort": "medium"}}
-    elif effective_provider == "openai":
-        low_reasoning = {"reasoning_effort": "medium"}
-    else:
-        low_reasoning = None
+    provider = _resolve_provider(s.llm_provider_midtier, s.llm_model_midtier)
+    effort = s.llm_effort_midtier or "medium"
+    effort_kwargs = _build_effort_kwargs(effort, provider)
     return make_llm(
         model=s.llm_model_midtier,
         temperature=s.llm_temperature_reasoning,
         max_tokens=s.llm_max_tokens_reasoning,
         role="midtier",
-        provider=provider_override,
-        extra_model_kwargs=low_reasoning,
+        provider=provider,
+        provider_base_url=s.llm_endpoint_midtier or None,
+        extra_model_kwargs=effort_kwargs,
     )

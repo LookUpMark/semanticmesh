@@ -49,12 +49,27 @@ class Settings(BaseSettings):
     llm_model_reasoning: str = DEFAULT_CONFIG.llm_model_reasoning
     llm_model_extraction: str = DEFAULT_CONFIG.llm_model_extraction
     llm_model_midtier: str = DEFAULT_CONFIG.llm_model_midtier
+    llm_model_generation: str = DEFAULT_CONFIG.llm_model_generation
     llm_temperature_extraction: float = DEFAULT_CONFIG.llm_temperature_extraction
     llm_temperature_reasoning: float = DEFAULT_CONFIG.llm_temperature_reasoning
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
     llm_max_tokens_extraction: int = DEFAULT_CONFIG.llm_max_tokens_extraction
     llm_max_tokens_reasoning: int = DEFAULT_CONFIG.llm_max_tokens_reasoning
     llm_request_timeout: int = DEFAULT_CONFIG.llm_request_timeout
+
+    # ── Explicit Per-Tier LLM Configuration ────────────────────────────────────
+    llm_provider_reasoning: str = DEFAULT_CONFIG.llm_provider_reasoning
+    llm_provider_extraction: str = DEFAULT_CONFIG.llm_provider_extraction
+    llm_provider_generation: str = DEFAULT_CONFIG.llm_provider_generation
+    llm_provider_midtier: str = DEFAULT_CONFIG.llm_provider_midtier
+    llm_endpoint_reasoning: str = DEFAULT_CONFIG.llm_endpoint_reasoning
+    llm_endpoint_extraction: str = DEFAULT_CONFIG.llm_endpoint_extraction
+    llm_endpoint_generation: str = DEFAULT_CONFIG.llm_endpoint_generation
+    llm_endpoint_midtier: str = DEFAULT_CONFIG.llm_endpoint_midtier
+    llm_effort_reasoning: str = DEFAULT_CONFIG.llm_effort_reasoning
+    llm_effort_extraction: str = DEFAULT_CONFIG.llm_effort_extraction
+    llm_effort_generation: str = DEFAULT_CONFIG.llm_effort_generation
+    llm_effort_midtier: str = DEFAULT_CONFIG.llm_effort_midtier
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = DEFAULT_CONFIG.embedding_model
