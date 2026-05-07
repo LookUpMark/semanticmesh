@@ -12,6 +12,7 @@ from src.api.ablation_router import router as ablation_router
 from src.api.auth import require_api_key
 from src.api.demo_router import router as demo_router
 from src.config.logging import get_logger
+from src.config.observability import flush_observability, is_langfuse_enabled, is_langsmith_enabled
 
 _logger = get_logger(__name__)
 
@@ -110,6 +111,21 @@ app.include_router(ablation_router, prefix="/api/v1", dependencies=[Depends(requ
 def health() -> dict[str, str]:
     """Liveness probe — returns 200 OK when the server is up. No auth required."""
     return {"status": "ok"}
+
+
+@app.on_event("startup")
+def _log_observability_status() -> None:
+    """Log which observability backends are active at startup."""
+    if is_langsmith_enabled():
+        _logger.info("Observability: LangSmith tracing ENABLED")
+    if is_langfuse_enabled():
+        _logger.info("Observability: Langfuse tracing ENABLED")
+
+
+@app.on_event("shutdown")
+def _flush_observability() -> None:
+    """Flush pending observability data before shutdown."""
+    flush_observability()
 
 
 # ── Runtime Configuration Overrides ──────────────────────────────────────────
