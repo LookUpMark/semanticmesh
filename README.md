@@ -286,15 +286,6 @@ langgraph dev
 
 Requires a LangSmith account (uses LANGCHAIN_API_KEY). Shows animated graph execution, state inspection, and step-through debugging.
 
-### Step 8 (Optional): Run the Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev    # http://localhost:5173
-```
-
-The React SPA connects to the API server at port 8000 (configured via Vite proxy).
 
 ---
 
@@ -420,7 +411,6 @@ docs/
   audits/           Security audit reports
   AI_JUDGE_PROMPT.md  AI Judge system prompt
   RUNNING_SERVICES.md  Setup guide
-frontend/           React 19 + TypeScript SPA (Vite, Tailwind CSS 4, TanStack Query, vis-network)
 ```
 
 ---

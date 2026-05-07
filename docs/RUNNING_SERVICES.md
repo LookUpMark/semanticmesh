@@ -101,7 +101,7 @@ docker start neo4j-thesis
 docker rm -f neo4j-thesis
 ```
 
-> **Note:** Docker is used here only for Neo4j. The backend API and frontend run natively.
+> **Note:** Docker is used here only for Neo4j. The backend API runs natively.
 
 ### Option 2: Neo4j Desktop
 
