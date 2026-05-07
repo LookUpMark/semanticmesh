@@ -1,0 +1,10 @@
+{
+  "$schema": "https://langchain-ai.github.io/langgraph/schema.json",
+  "graphs": {
+    "builder": "./src/graph/builder_graph.py:build_builder_graph",
+    "query": "./src/generation/query_graph.py:build_query_graph"
+  },
+  "env": ".env",
+  "python_version": "3.12",
+  "dependencies": ["."]
+}

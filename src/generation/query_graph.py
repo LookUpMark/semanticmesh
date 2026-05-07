@@ -500,7 +500,17 @@ def run_query(
     # Tests that call build_query_graph() directly are unaffected (fresh graph).
     graph = _get_query_graph()
     thread_id = session_id if session_id else f"query-run-{query_index}"
-    config = {"configurable": {"thread_id": thread_id}}
+    config = {
+        "configurable": {"thread_id": thread_id},
+        "metadata": {
+            "graph": "query",
+            "study_id": study_id,
+            "query_index": query_index,
+            "question": user_query[:100],
+            "session_id": session_id or "",
+        },
+        "tags": ["query", study_id],
+    }
     # Ensure schema (vector index) exists before querying.
     with Neo4jClient() as client:
         setup_schema(client)

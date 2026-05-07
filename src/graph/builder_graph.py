@@ -613,7 +613,17 @@ def run_builder(
         "builder_trace": builder_trace,
         "trace_output_dir": settings.trace_output_dir if trace_enabled else "",
     }
-    config = {"configurable": {"thread_id": f"builder-{uuid.uuid4().hex[:8]}"}}
+    config = {
+        "configurable": {"thread_id": f"builder-{uuid.uuid4().hex[:8]}"},
+        "metadata": {
+            "graph": "builder",
+            "study_id": study_id,
+            "job_id": job_id or "",
+            "documents": len(docs_to_ingest),
+            "ddl_files": len(ddl_to_ingest),
+        },
+        "tags": ["builder", study_id],
+    }
 
     # Use graph.stream() so each completed node is visible for SSE step tracking.
     # The loop collects the last emitted state as the final_state.
