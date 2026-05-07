@@ -128,16 +128,18 @@ def _log_observability_status() -> None:
 # ── Session File Logging ─────────────────────────────────────────────────────
 
 _SESSION_LOG_DIR = Path("outputs/api")
+_session_run_dir: Path | None = None
 _session_file_handler: logging.FileHandler | None = None
 
 
 @app.on_event("startup")
 def _setup_session_logging() -> None:
-    """Create a timestamped log file under outputs/api/ for this API session."""
-    global _session_file_handler  # noqa: PLW0603
-    _SESSION_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    """Create a timestamped subdirectory under outputs/api/ for this API session."""
+    global _session_file_handler, _session_run_dir  # noqa: PLW0603
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    log_path = _SESSION_LOG_DIR / f"session_{timestamp}.log"
+    _session_run_dir = _SESSION_LOG_DIR / f"session_{timestamp}"
+    _session_run_dir.mkdir(parents=True, exist_ok=True)
+    log_path = _session_run_dir / "session.log"
 
     from pythonjsonlogger import jsonlogger  # noqa: PLC0415
 
@@ -167,11 +169,9 @@ def _close_session_logging() -> None:
     from src.config.llm_client import get_llm_usage_summary  # noqa: PLC0415
 
     usage = get_llm_usage_summary()
-    if usage:
+    if usage and _session_run_dir:
         _logger.info("LLM usage summary: %s", json.dumps(usage, default=str))
-        # Also write a standalone summary file
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        summary_path = _SESSION_LOG_DIR / f"usage_{timestamp}.json"
+        summary_path = _session_run_dir / "usage.json"
         summary_path.write_text(json.dumps(usage, indent=2, default=str), encoding="utf-8")
 
     global _session_file_handler  # noqa: PLW0603
