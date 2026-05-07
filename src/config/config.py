@@ -43,10 +43,10 @@ class AppConfig:
     llm_provider: str = "auto"
 
     # ── LLM Models ─────────────────────────────────────────────────────────────
-    llm_model_reasoning: str = "gpt-5.4-2026-03-05"
-    llm_model_extraction: str = "gpt-5.4-nano-2026-03-17"
-    llm_model_midtier: str = "gpt-5.4-mini-2026-03-17"
-    llm_model_generation: str = ""
+    llm_model_reasoning: str = "gpt-5.4-nano-2026-03-17"
+    llm_model_extraction: str = "gpt-5-nano-2025-08-07"
+    llm_model_midtier: str = "gpt-5-nano-2025-08-07"
+    llm_model_generation: str = "gpt-5.4-nano-2026-03-17"
     azure_openai_api_version: str = "2024-11-01-preview"
 
     # Temperature: extraction/reasoning at 0.0 for deterministic JSON, generation at 0.3 for fluency
@@ -55,7 +55,7 @@ class AppConfig:
     llm_temperature_generation: float = 0.3
 
     llm_max_tokens_extraction: int = 8192
-    llm_max_tokens_reasoning: int = 8192
+    llm_max_tokens_reasoning: int = 4096
     llm_request_timeout: int = 120
 
     # ── Explicit Per-Tier LLM Configuration ────────────────────────────────────
@@ -63,10 +63,10 @@ class AppConfig:
     #           "google" | "bedrock" | "azure" | "groq" | "mistral" | "together" |
     #           "deepseek" | "xai" | "nvidia" | "cohere" | "huggingface"
     # When empty, falls back to LLM_PROVIDER global, then auto-detection.
-    llm_provider_reasoning: str = ""
-    llm_provider_extraction: str = ""
-    llm_provider_generation: str = ""
-    llm_provider_midtier: str = ""
+    llm_provider_reasoning: str = "openai"
+    llm_provider_extraction: str = "openai"
+    llm_provider_generation: str = "openai"
+    llm_provider_midtier: str = "openai"
 
     # Endpoint: explicit base URL for the provider API.
     # When empty, uses the provider's default URL.
@@ -78,10 +78,10 @@ class AppConfig:
     # Reasoning effort: "minimal" | "low" | "medium" | "high" | "" (provider default)
     # Only effective for OpenAI reasoning models (o-series, gpt-5*) via OpenAI or OpenRouter.
     # When empty, uses tier-specific hardcoded defaults.
-    llm_effort_reasoning: str = ""
-    llm_effort_extraction: str = ""
-    llm_effort_generation: str = ""
-    llm_effort_midtier: str = ""
+    llm_effort_reasoning: str = "high"
+    llm_effort_extraction: str = "minimal"
+    llm_effort_generation: str = "low"
+    llm_effort_midtier: str = "medium"
 
     # ── Embeddings & Reranking ─────────────────────────────────────────────────
     embedding_model: str = "BAAI/bge-m3"
