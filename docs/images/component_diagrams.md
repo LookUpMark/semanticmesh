@@ -290,30 +290,34 @@ flowchart TD
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#FAFAFA', 'primaryTextColor': '#212121', 'primaryBorderColor': '#9E9E9E', 'lineColor': '#616161', 'fontSize': '13px', 'fontFamily': 'Inter, Helvetica, Arial, sans-serif'}}}%%
 flowchart TD
-    TBL["EnrichedTableSchema"]:::input
+    TBL["EnrichedTableSchema[]"]:::input
     ENTS["Entity[]"]:::input
 
-    subgraph retrieval["Retrieval Phase"]
+    subgraph parallel["Parallel Mapping Phase (ThreadPool)"]
+        direction TB
+        PAR("parallel_map_all_tables<br/>N workers concurrent"):::key
+        W1("Worker 1: Table A"):::process
+        W2("Worker 2: Table B"):::process
+        WN("Worker N: Table ..."):::process
+        PAR --> W1 & W2 & WN
+    end
+
+    subgraph per_table["Per-Table Pipeline (× N)"]
         QRY("build_retrieval_query<br/>Table metadata to text"):::process
         RET("retrieve_top_entities<br/>Cosine similarity"):::process
-    end
-
-    subgraph generation["Generation Phase"]
         PROP("propose_mapping<br/>LLM + few-shot"):::key
         PVAL("Pydantic Validation<br/>Schema conformance"):::process
-    end
-
-    subgraph validation["Actor-Critic Validation"]
         CRIT("Critic Review<br/>LLM adversarial check"):::key
         BEST("Best-Proposal Tracking<br/>Highest confidence across retries"):::process
+        REFL("Reflection injection<br/>Critique as context"):::process
     end
 
     HITL("HITL Interrupt<br/>conf < threshold"):::optional
-    REFL("Reflection injection<br/>Critique as context"):::process
-    OUT["MappingProposal (validated)"]:::output
+    OUT["dict[table_name, MappingProposal]"]:::output
 
-    TBL --> QRY
-    ENTS --> RET
+    TBL --> PAR
+    ENTS --> PAR
+    W1 & W2 & WN --> QRY
     QRY --> RET --> PROP
     PROP --> PVAL
     PVAL -- "error" --> REFL --> PROP
@@ -355,6 +359,12 @@ flowchart TD
         FK("build_fk_cypher<br/>FK edge statements"):::process
     end
 
+    subgraph normalize["Concept Normalization"]
+        DUP{"Concept<br/>exists?"}:::gate
+        LINK("Re-link PhysicalTable<br/>to existing concept"):::process
+        REN("Rename duplicate<br/>to target name"):::process
+    end
+
     NEO("Neo4j Upsert<br/>execute_cypher / execute_batch"):::process
     KG[("Neo4j<br/>Knowledge Graph")]:::database
 
@@ -365,7 +375,9 @@ flowchart TD
     FIX -. "max attempts" .-> DET
     DET --> NEO
     FK --> NEO
-    NEO --> KG
+    NEO --> DUP
+    DUP -- "yes" --> LINK --> KG
+    DUP -- "no" --> REN --> KG
 
     classDef input fill:#FAFAFA,stroke:#424242,stroke-width:2px
     classDef process fill:#F5F5F5,stroke:#9E9E9E,stroke-width:1.5px

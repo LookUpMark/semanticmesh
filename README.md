@@ -49,6 +49,7 @@ flowchart TD
     C("Triplet Extraction<br/>SLM"):::process
     D("DDL Parse + Schema Enrichment<br/>LLM-expanded identifiers"):::process
     E("Entity Resolution<br/>K-NN blocking + LLM Judge"):::key
+    PM("Parallel Mapping<br/>ThreadPool × N tables"):::key
     F("RAG Mapping<br/>Map-Reduce per table"):::process
     G("Actor-Critic Validation<br/>Structured critique"):::key
     H("HITL Interrupt<br/>Low confidence"):::optional
@@ -60,8 +61,9 @@ flowchart TD
     A --> C
     B --> D
     C --> E
-    E --> F
-    D --> F
+    E --> PM
+    D --> PM
+    PM --> F
     F --> G
     G -- "rejected" --> F
     G -. "conf < gate" .-> H
@@ -123,10 +125,11 @@ flowchart TD
 | Schema Enrichment | `ingestion/schema_enricher` | LLM expands abbreviated identifiers (e.g. `TB_CST` to `Customer Table`) |
 | Triplet Extraction | `extraction/triplet_extractor` | SLM extracts `(subject, predicate, object)` triplets in JSON mode |
 | Entity Resolution | `resolution/blocking` + `llm_judge` | Two-stage: K-NN blocking with BGE-M3 embeddings, then LLM judge decides merge/separate |
+| Parallel Mapping | `graph/parallel_mapping` | ThreadPool pre-computes mapping+validation for all tables concurrently (5 workers) |
 | RAG Mapping | `mapping/rag_mapper` + `validator` | Map-Reduce RAG per table with Actor-Critic validation loop |
 | HITL | `mapping/hitl` | LangGraph interrupt for low-confidence mappings |
 | Graph Build | `graph/cypher_generator` + `cypher_healer` | LLM generates Cypher, EXPLAIN dry-run validates, auto-healing on syntax errors |
-| Upsert | `graph/build_nodes` + `cypher_builder` | MERGE upserts + FK edge construction |
+| Upsert | `graph/build_nodes` + `cypher_builder` | MERGE upserts + FK edge construction + duplicate concept handling |
 
 ### Query Graph
 
@@ -144,6 +147,7 @@ flowchart TD
 
 - **Provider-agnostic LLM factory** -- Supports OpenRouter, OpenAI, Anthropic, Google, Ollama, LM Studio, and more. Auto-detects provider from model name.
 - **5-tier model routing** -- Nano (lightweight tasks), extraction (JSON mode), midtier (mapping/grading), generation (T=0.3), reasoning (complex tasks).
+- **Parallel mapping** -- ThreadPoolExecutor-based concurrent mapping+validation (configurable workers), ~5x speedup on large schemas (50+ tables).
 - **Self-reflection loops** -- Actor-Critic mapping validation with best-proposal tracking; Cypher healing with deterministic fallback builder.
 - **Hybrid retrieval with RRF** -- Dense (BGE-M3) + BM25 + graph traversal, fused via Reciprocal Rank Fusion, followed by cross-encoder reranking.
 - **Hierarchical chunking** -- Small-to-Big retrieval pattern for context-rich answer generation.
