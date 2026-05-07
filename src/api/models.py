@@ -89,26 +89,26 @@ class PipelineConfig(BaseModel):
         ]
         | None
     ) = Field(
-        default="openrouter",
+        default="openai",
         description=_LLM_PROVIDER_DESC,
-        examples=["openrouter", "openai", "lmstudio"],
+        examples=["openai", "openrouter", "lmstudio"],
     )
 
     # ── LLM Model Selection ─────────────────────────────────────────────────
     reasoning_model: str | None = Field(
-        default="openai/gpt-oss-120b",
+        default="gpt-5.4-nano-2026-03-17",
         description=_LLM_REASONING_DESC,
-        examples=["openai/gpt-oss-120b", "gpt-4.1", "groq/llama3-70b-8192"],
+        examples=["gpt-5.4-nano-2026-03-17", "gpt-5.4-2026-03-05", "gpt-5-nano-2025-08-07"],
     )
     extraction_model: str | None = Field(
-        default="openai/gpt-4.1-nano",
+        default="gpt-5-nano-2025-08-07",
         description=_LLM_EXTRACTION_DESC,
-        examples=["openai/gpt-4.1-nano", "gpt-4.1-nano"],
+        examples=["gpt-5-nano-2025-08-07", "gpt-5.4-nano-2026-03-17"],
     )
     midtier_model: str | None = Field(
-        default="openai/gpt-4.1-nano",
+        default="gpt-5-nano-2025-08-07",
         description=_LLM_MIDTIER_DESC,
-        examples=["openai/gpt-4.1-nano", "gpt-4.1-mini"],
+        examples=["gpt-5-nano-2025-08-07", "gpt-5.4-nano-2026-03-17"],
     )
     lmstudio_base_url: str | None = Field(
         default=None,
@@ -257,7 +257,7 @@ class PipelineConfig(BaseModel):
         description="Enable cross-encoder reranking (bge-reranker-v2-m3).",
     )
     reranker_top_k: int | None = Field(
-        default=12,
+        default=5,
         ge=1,
         le=50,
         description="Candidates kept after reranking.",
@@ -410,7 +410,7 @@ class CustomAblationRequest(BaseModel):
         description="Enable RAGAS evaluation. Adds ~2-5 min per 15 samples.",
     )
     ragas_model: str = Field(
-        default="gpt-4.1-mini",
+        default="gpt-5.4-nano-2026-03-17",
         description="OpenAI model used as RAGAS evaluator.",
     )
     skip_builder: bool = Field(
@@ -498,7 +498,7 @@ class CustomAblationRequest(BaseModel):
         description="Number of vector-search candidates before reranking.",
     )
     llm_max_tokens_extraction: int | None = Field(
-        default=16384,
+        default=8192,
         ge=512,
         le=32768,
         description="Max output tokens for the extraction LLM.",
@@ -508,12 +508,12 @@ class CustomAblationRequest(BaseModel):
     reasoning_model: str | None = Field(
         default=None,
         description=_LLM_REASONING_DESC,
-        examples=["groq/llama3-70b-8192", "gemini-2.0-flash", "ollama/llama3.1"],
+        examples=["gpt-5.4-nano-2026-03-17", "gpt-5-nano-2025-08-07"],
     )
     extraction_model: str | None = Field(
         default=None,
         description=_LLM_EXTRACTION_DESC,
-        examples=["groq/llama3-8b-8192", "ollama/qwen2.5-coder:7b"],
+        examples=["gpt-5-nano-2025-08-07", "gpt-5.4-nano-2026-03-17"],
     )
     provider_base_url: str | None = Field(
         default=None,
@@ -554,7 +554,7 @@ class PresetAblationRequest(BaseModel):
         description="Enable RAGAS evaluation. Adds ~2-5 min per 15 samples.",
     )
     ragas_model: str = Field(
-        default="gpt-4.1-mini",
+        default="gpt-5.4-nano-2026-03-17",
         description="OpenAI model used as RAGAS evaluator.",
     )
     skip_builder: bool = Field(
@@ -566,12 +566,12 @@ class PresetAblationRequest(BaseModel):
     reasoning_model: str | None = Field(
         default=None,
         description=_LLM_REASONING_DESC,
-        examples=["groq/llama3-70b-8192", "gemini-2.0-flash", "ollama/llama3.1"],
+        examples=["gpt-5.4-nano-2026-03-17", "gpt-5-nano-2025-08-07"],
     )
     extraction_model: str | None = Field(
         default=None,
         description=_LLM_EXTRACTION_DESC,
-        examples=["groq/llama3-8b-8192", "ollama/qwen2.5-coder:7b"],
+        examples=["gpt-5-nano-2025-08-07", "gpt-5.4-nano-2026-03-17"],
     )
     provider_base_url: str | None = Field(
         default=None,

@@ -49,8 +49,7 @@ coverage.xml
 logs/
 
 # API session artifacts (generated at runtime)
-outputs/api/session_*.log
-outputs/api/usage_*.json
+outputs/api/session_*/
 
 # Backup files
 *.bak
