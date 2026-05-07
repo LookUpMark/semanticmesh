@@ -401,7 +401,7 @@ The LLM judge **must receive** the original `provenance_text` for each variant �
 
 ### Consequences
 
-- **Constraint for agent:** Stage 1 uses `BGE-M3` + `faiss`/`sklearn`. The `er_similarity_threshold` (default 0.85) is configurable. Stage 2 LLM calls are made **only for clusters with ≥2 variants**. The `CanonicalEntityDecision.reasoning` field is logged but never shown to the user.
+- **Constraint for agent:** Stage 1 uses `BGE-M3` + `faiss`/`sklearn`. The `er_similarity_threshold` (default 0.75) is configurable. Stage 2 LLM calls are made **only for clusters with ≥2 variants**. The `CanonicalEntityDecision.reasoning` field is logged but never shown to the user.
 
 ---
 

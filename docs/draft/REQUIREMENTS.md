@@ -243,8 +243,6 @@ thesis/
 │       │   └── grader_web_search.json
 │       ├── few_shot_examples.json
 │       └── gold_standard.json
-├── notebooks/
-│   └── exploration.ipynb
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
@@ -320,10 +318,10 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr | None = None
     lmstudio_base_url: str = "http://localhost:1234/v1"
 
-    llm_model_reasoning: str              # e.g. "gpt-5.4" or "openai/gpt-5.4"
-    llm_model_extraction: str             # e.g. "gpt-5.4-nano"
-    llm_model_midtier: str                # e.g. "gpt-5.4-mini"
-    llm_model_lightweight: str            # e.g. "gpt-5.4-nano"
+    llm_model_reasoning: str              # e.g. "gpt-5.4-nano-2026-03-17"
+    llm_model_extraction: str             # e.g. "gpt-5-nano-2025-08-07"
+    llm_model_midtier: str                # e.g. "gpt-5-nano-2025-08-07"
+    llm_model_lightweight: str            # e.g. "gpt-5-nano-2025-08-07"
     llm_model_temperature_extraction: float = 0.0
     llm_model_temperature_generation: float = 0.3
     llm_max_tokens_extraction: int = 8192
@@ -332,7 +330,7 @@ class Settings(BaseSettings):
     # Embeddings & Reranking
     embedding_model: str = "BAAI/bge-m3"
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
-    reranker_top_k: int = 10
+    reranker_top_k: int = 5
 
     # Entity Resolution
     er_blocking_top_k: int = 10
@@ -409,13 +407,13 @@ Load PDF documents, extract text, and split into semantically coherent chunks th
 
 **US-02-02 — Semantic Chunking**
 
-> *As the system, I want text split into chunks of ≤512 tokens with 64-token overlap so that each SLM call has a focused, bounded context.*
+> *As the system, I want text split into chunks of ≤256 tokens with 32-token overlap so that each SLM call has a focused, bounded context.*
 
 **Acceptance Criteria:**
 - `chunk_documents(docs: list[Document]) -> list[Chunk]` in `pdf_loader.py`
 - Uses `langchain.text_splitter.RecursiveCharacterTextSplitter` with `chunk_size=settings.chunk_size`, `chunk_overlap=settings.chunk_overlap`, separators `["\n\n", "\n", ". ", " "]`
 - Each `Chunk` preserves `source`, `page`, and `chunk_index` in metadata
-- Token count estimated via `tiktoken` (`cl100k_base` tokenizer) — hard cap at 512 tokens per chunk
+- Token count estimated via `tiktoken` (`cl100k_base` tokenizer) — hard cap at `settings.chunk_size` tokens per chunk
 
 ---
 
@@ -1435,7 +1433,7 @@ RERANKER_TOP_K=5
 
 # ── Entity Resolution ─────────────────────────────────────────────────────────
 ER_BLOCKING_TOP_K=10
-ER_SIMILARITY_THRESHOLD=0.85
+ER_SIMILARITY_THRESHOLD=0.75
 
 # ── Confidence & Loop Guards ──────────────────────────────────────────────────
 CONFIDENCE_THRESHOLD=0.90
@@ -1444,8 +1442,8 @@ MAX_CYPHER_HEALING_ATTEMPTS=3
 MAX_HALLUCINATION_RETRIES=3
 
 # ── Chunking ──────────────────────────────────────────────────────────────────
-CHUNK_SIZE=512
-CHUNK_OVERLAP=64
+CHUNK_SIZE=256
+CHUNK_OVERLAP=32
 
 # ── Retrieval ─────────────────────────────────────────────────────────────────
 RETRIEVAL_VECTOR_TOP_K=20

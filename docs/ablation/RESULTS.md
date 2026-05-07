@@ -89,7 +89,7 @@ The pipeline has two phases:
 | AB-07 | 384/48 | 98% | 0.4039 | 4.55 |
 | AB-08 | 512/64 | 98% | 0.4602 | **4.65** |
 
-**Finding:** All non-baseline chunking variants achieve similar GT coverage (~98%). Smaller chunks (128/16) and larger chunks (512/64) tie at 4.65/5 on the judge. Smaller chunks are preferred in AB-BEST because they produce more diverse candidates for the top_k=20 reranker pool. Larger chunks risk exceeding context window on complex datasets.
+**Finding:** All non-baseline chunking variants achieve similar GT coverage (~98%). Smaller chunks (128/16) and larger chunks (512/64) tie at 4.65/5 on the judge. The default 256/32 is retained in AB-BEST as a balanced choice for complex documents.
 
 ---
 
@@ -157,14 +157,14 @@ The AB-BEST configuration was re-derived on 2026-05-06 using v1.1.1 AI-Judge sco
 | Dimension | Default (AB-00) | AB-BEST v1.1.1 | Rationale |
 |-----------|---------|---------|---------|
 | Retrieval mode | hybrid | **hybrid** | Only mode with 100% GT |
-| Reranker | ON, top_k=20 | **ON, top_k=5** | Same 4.90 as top_k=20 but 4× fewer reranker calls |
+| Reranker | ON, top_k=10 | **ON, top_k=5** | Same 4.90 as top_k=20 but 4× fewer reranker calls |
 | Chunk size/overlap | 256/32 | **256/32** | Neutral (all score 4.50); baseline retained |
 | Extraction max tokens | 8192 | **8192** | Neutral; 8192 is robust default |
 | ER similarity threshold | 0.75 | **0.75** | Neutral; baseline retained |
 | ER blocking top_k | 10 | **10** | Neutral; baseline retained |
 | Schema enrichment | ON | **ON** | Critical component |
 | Actor-Critic validation | ON | **ON** | Critical component |
-| HITL threshold | 0.80 | **0.80** | Neutral; baseline retained |
+| HITL threshold | 0.90 | **0.80** | Compromise: fewer HITL than 0.70, more safety than 0.85 |
 | Cypher healing | ON | **ON** | Essential for complex schemas |
 | Hallucination grader | ON | **ON** | Safety-first for complex datasets |
 
@@ -217,7 +217,7 @@ AB-BEST achieves **100% builder completion and 100% grounded answers** across al
 4. **Most parameters are neutral on simple datasets.** Chunking, extraction tokens, ER thresholds all score 4.50 regardless of value — discrimination requires complex/multi-hop datasets.
 5. **top_k=5 is the efficient optimum.** Same quality as top_k=20 (both 4.90) with 4× fewer cross-encoder inference calls per query.
 6. **AB-BEST averages 4.73/5 across 7 datasets** — with DS01, DS02, DS06 achieving a perfect 5.00/5. Lower scores on edge-case datasets (DS05=4.30) and the stress test (DS07=4.35) reflect genuine retrieval challenges on large/incomplete schemas.
-7. **K5 superiority validated cross-dataset (Section 8).** A full 7-dataset comparison (AB-BEST-K20) confirms K5 wins 6/7 datasets with avg 4.73 vs 4.53. The sole K20 win (DS05, +0.50) is explained by marginally-relevant sources at reranker ranks 6–20 that compensate for incomplete schema documentation. DS07 shows the largest K5 advantage (Δ=-0.70): more retrieved context on complex schemas dilutes answer precision. This does not justify a global K20 default.
+7. **K5 superiority validated cross-dataset (Section 8).** A full 7-dataset comparison (AB-BEST-K20) confirms K5 wins 6/7 datasets with avg 4.73 vs 4.51. The sole K20 win (DS05, +0.50) is explained by marginally-relevant sources at reranker ranks 6–20 that compensate for incomplete schema documentation. DS07 shows the largest K5 advantage (Δ=-0.70): more retrieved context on complex schemas dilutes answer precision. This does not justify a global K20 default.
 
 ---
 
@@ -342,11 +342,11 @@ AB-BEST uses `reranker_top_k=5` based on the DS01 finding that K5 and K20 both s
 | 05 Edge-incomplete (20q) | 4.30 | **4.80** | +0.50 | K20 |
 | 06 Edge-legacy (25q) | **5.00** | 4.90 | -0.10 | K5 |
 | 07 Stress (55q) | 4.35 | 3.65 | -0.70 | K5 |
-| **Average (DS01-07)** | **4.73** | **4.53** | **-0.20** | **K5** |
+| **Average (DS01-07)** | **4.73** | **4.51** | **-0.22** | **K5** |
 
 ### 8.3 Interpretation
 
-- **K5 wins 6 out of 7 datasets** with an average advantage of -0.20 points.
+- **K5 wins 6 out of 7 datasets** with an average advantage of -0.22 points.
 - **K20 wins only on DS05 (edge-cases incomplete)** — the dataset with the most ambiguous/incomplete schema, where broader retrieval context (20 chunks vs 5) helps compensate for sparse information.
 - **DS07 (58 tables): K5 wins decisively** (4.35 vs 3.65, Δ=-0.70). Despite K20 achieving higher GT coverage (92% vs 78%), the broader retrieval window introduces noise on the large schema — the AI Judge penalises Answer Quality (3/5) because answers underspecify constraints and enumerations. More context ≠ better answers on complex schemas.
 - **The delta is NOT due to more context helping K20.** On well-structured datasets (DS01-DS04, DS06-DS07), the additional 15 reranked chunks likely introduce noise that dilutes answer precision.
@@ -355,7 +355,7 @@ AB-BEST uses `reranker_top_k=5` based on the DS01 finding that K5 and K20 both s
 ### 8.4 Conclusion
 
 The original AB-BEST decision to use `reranker_top_k=5` is **validated across all 7 datasets**. K5 provides:
-- Higher average quality (4.73 vs 4.53)
+- Higher average quality (4.73 vs 4.51)
 - 4× fewer cross-encoder inference calls per query
 - Better answer precision on well-structured schemas
 

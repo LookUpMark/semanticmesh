@@ -172,11 +172,11 @@ The LLM factory (`src/config/llm_factory.py`) provides five tiers of model acces
 
 | Tier | Function | Default Model | Role | Temperature |
 |---|---|---|---|---|
-| **Nano** | `get_lightweight_llm()` | gpt-5.4-nano | ER judge, schema enrichment | 0.0 |
-| **Extraction** | `get_extraction_llm()` | gpt-5.4-nano | Triplet extraction (JSON Mode) | 0.0 |
-| **Midtier** | `get_midtier_llm()` | gpt-5.4-mini | RAG mapping, Actor-Critic, hallucination grading | 0.0 |
-| **Generation** | `get_generation_llm()` | (same as reasoning) | Answer generation | 0.3 |
-| **Reasoning** | `get_reasoning_llm()` | gpt-5.4 | Cypher generation, complex reasoning | 0.0 |
+| **Nano** | `get_lightweight_llm()` | gpt-5-nano-2025-08-07 | ER judge, schema enrichment | 0.0 |
+| **Extraction** | `get_extraction_llm()` | gpt-5-nano-2025-08-07 | Triplet extraction (JSON Mode) | 0.0 |
+| **Midtier** | `get_midtier_llm()` | gpt-5-nano-2025-08-07 | RAG mapping, Actor-Critic, hallucination grading | 0.0 |
+| **Generation** | `get_generation_llm()` | gpt-5.4-nano-2026-03-17 | Answer generation | 0.3 |
+| **Reasoning** | `get_reasoning_llm()` | gpt-5.4-nano-2026-03-17 | Cypher generation, complex reasoning | 0.0 |
 
 **Provider routing** (`_resolve_provider()` in `llm_factory.py`):
 
