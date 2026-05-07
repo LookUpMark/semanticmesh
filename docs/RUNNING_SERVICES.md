@@ -391,6 +391,106 @@ mypy src/                          # Type check
 
 ---
 
+## Observability (LangSmith + Langfuse)
+
+SemanticMesh supports dual observability backends for tracing every LLM call, chain invocation, and LangGraph node execution. Both are **opt-in** — if the keys are not set, the system runs with zero overhead.
+
+### LangSmith (LangChain native)
+
+LangSmith is automatically enabled by LangChain/LangGraph when the following environment variables are set:
+
+```bash
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=ls-...          # Get from https://smith.langchain.com
+LANGCHAIN_PROJECT=semanticmesh    # Optional (defaults to "default")
+```
+
+**What gets traced:**
+- Every LLM `.invoke()` / `.ainvoke()` call (model, prompt, response, tokens, latency)
+- LangGraph node transitions and state
+- Full chain-of-thought for multi-step pipelines
+
+**Dashboard:** https://smith.langchain.com
+
+### Langfuse (open-source alternative)
+
+Langfuse provides the same tracing capabilities with a self-hostable, open-source dashboard.
+
+```bash
+LANGFUSE_PUBLIC_KEY=pk-lf-...     # Get from https://cloud.langfuse.com or self-hosted
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://cloud.langfuse.com   # Or your self-hosted URL
+```
+
+**What gets traced:**
+- All LLM calls via `LangchainCallbackHandler` (injected automatically in `InstrumentedLLM`)
+- Cost tracking, token usage, latency histograms
+- Evaluation scores (if integrated with Langfuse evaluations)
+
+**Dashboard:** https://cloud.langfuse.com (or self-hosted)
+
+### Both Together
+
+You can enable both simultaneously. LangSmith traces via LangChain's internal hooks (env-var-based), while Langfuse uses an explicit callback handler injected into each LLM call.
+
+```bash
+# .env — enable both
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=ls-...
+LANGCHAIN_PROJECT=semanticmesh
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│  Pipeline Node (extraction, generation, etc.)   │
+└────────────────────┬────────────────────────────┘
+                     │ invoke()
+                     ▼
+┌─────────────────────────────────────────────────┐
+│            InstrumentedLLM                       │
+│  ┌──────────────────────────────────────────┐   │
+│  │ _inject_observability_callbacks(kwargs)   │   │
+│  │  → Merges Langfuse CallbackHandler        │   │
+│  └──────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────┐   │
+│  │ Retry logic + latency/token logging       │   │
+│  └──────────────────────────────────────────┘   │
+└────────────────────┬────────────────────────────┘
+                     │ model.invoke(input, config={"callbacks": [...]})
+                     ▼
+┌─────────────────────────────────────────────────┐
+│  LangChain BaseChatModel (ChatOpenAI, etc.)     │
+│  ┌───────────┐  ┌─────────────┐                │
+│  │ LangSmith │  │  Langfuse   │  ← callbacks   │
+│  │  (auto)   │  │ (explicit)  │                │
+│  └───────────┘  └─────────────┘                │
+└─────────────────────────────────────────────────┘
+```
+
+### Verification
+
+After setting environment variables, check the server startup logs:
+
+```
+INFO  Observability: LangSmith tracing ENABLED
+INFO  Observability: Langfuse tracing ENABLED
+```
+
+Or test programmatically:
+
+```python
+from src.config.observability import is_langsmith_enabled, is_langfuse_enabled
+print("LangSmith:", is_langsmith_enabled())
+print("Langfuse:", is_langfuse_enabled())
+```
+
+---
+
 ## Additional Resources
 
 - **Project README:** [`README.md`](../README.md)
