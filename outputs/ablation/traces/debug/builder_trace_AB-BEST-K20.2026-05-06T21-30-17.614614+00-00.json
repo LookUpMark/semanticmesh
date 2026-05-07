@@ -1,0 +1,896 @@
+{
+  "study_id": "AB-BEST-K20",
+  "timestamp": "2026-05-06T21:30:17.614614+00:00",
+  "trace_id": "AB-BEST-K20.2026-05-06T21-30-17.614614+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "tests/fixtures/05_edgecases_incomplete/business_glossary.txt",
+    "tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+  ],
+  "ddl_files": [
+    "tests/fixtures/05_edgecases_incomplete/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15\nStatus: Partial (pending review)\n\n==========================================\nCUSTOMER MANAGEMENT\n==========================================\n\nCustomer\nAn individual or organization that... [definition incomplete]\n\nClient\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts)\n\nAccount Holder\nThe person designated as the primary owner of an account. Similar to Customer bu... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "628"
+    },
+    {
+      "chunk_id": 1,
+      "text": "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation)\nLast Updated: 2024-02-28\n\n==========================================\nCUSTOMERS\n==========================================\n\nPrimary Key: customer_id (or is it CustomerID? check with DBA)\n\n| Column Name | Data Type | Constraints | Description |\n|-------------|-----------|-------------|-------------|\n| customer_id | INTEGER | PK | [missing documentation] |\n| CustomerID | INTEGER | ? | Possible duplicate of customer_id |\n|... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "698"
+    },
+    {
+      "chunk_id": 2,
+      "text": "Foreign Keys:\n- customer_id \u2192 CUSTOMERS(customer_id or CustomerID?)\n- [missing other FK definitions]\n\n==========================================\nORDER_ITEMS (or ORDER_DETAILS?)\n==========================================\n\nPrimary Key: [undocumented]\n\n| Column Name | Data Type | Constraints | Description |\n|-------------|-----------|-------------|-------------|\n| order_item_id | INTEGER | PK | [missing documentation] |\n| order_id | INTEGER | FK | References ORDERS |\n| product_id | INTEGER | FK | R... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "601"
+    },
+    {
+      "chunk_id": 3,
+      "text": "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified)\n\n| Column Name | Data Type | Constraints | Description |\n|-------------|-----------|-------------|-------------|\n| payment_id | INTEGER | PK | [missing documentation] |\n| PaymentID | INTEGER | ? | [possible duplicate] |\n| order_id | INTEGER | FK | References ORDERS |\n| customer_id | INTEGER | FK | References CUSTOMERS |\n| payment_date | DATETIME | ? | [missing docu... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "543"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 4,
+    "total_tokens": 2470,
+    "avg_tokens": 617.5
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is",
+      "object": "individual or organization",
+      "confidence": 0.4
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Client",
+      "predicate": "is",
+      "object": "person or company",
+      "confidence": 0.4
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account Holder",
+      "predicate": "designation",
+      "object": "primary owner of an account",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 0,
+      "subject": "End User",
+      "predicate": "is",
+      "object": "actual user of a product or service",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order",
+      "predicate": "is",
+      "object": "a request to purchase products or services",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Transaction",
+      "predicate": "is",
+      "object": "Similar to Order but more general",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase",
+      "predicate": "is",
+      "object": "the act of buying something",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "is",
+      "object": "an order with confirmed pricing and inventory allocation",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Quote",
+      "predicate": "is",
+      "object": "a preliminary order with estimated pricing",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "is",
+      "object": "A thing",
+      "confidence": 0.3
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Item",
+      "predicate": "is",
+      "object": "Synonym for Product",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 0,
+      "subject": "SKU",
+      "predicate": "is",
+      "object": "Stock Keeping Unit",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Inventory Item",
+      "predicate": "is",
+      "object": "Physical products held in stock",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Merchandise",
+      "predicate": "is",
+      "object": "Goods available for sale",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Payment",
+      "predicate": "is",
+      "object": "The transfer of money to settle an order",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Invoice",
+      "predicate": "is",
+      "object": "A document requesting payment",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Bill",
+      "predicate": "is",
+      "object": "A statement of money owed",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Receipt",
+      "predicate": "is",
+      "object": "Proof of payment",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Revenue",
+      "predicate": "is",
+      "object": "Income from sales",
+      "confidence": 0.4
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales",
+      "predicate": "is",
+      "object": "Revenue from selling products",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Financial Transaction",
+      "predicate": "is",
+      "object": "Any monetary exchange",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Shipment",
+      "predicate": "is",
+      "object": "The process of delivering goods to a customer",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Delivery",
+      "predicate": "is",
+      "object": "The completion of a Shipment when goods reach the customer",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Fulfillment",
+      "predicate": "is",
+      "object": "The process of preparing and delivering orders",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "has primary key",
+      "object": "customer_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "customer_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "CustomerID",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "firstName",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "first_name",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "lastName",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "last_name",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "email",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "emailAddress",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "phone",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "contains column",
+      "object": "phoneNumber",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "has primary key",
+      "object": "order_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "order_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "OrderID",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "customer_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "OrderDate",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "order_status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "orderAmount",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "total_amount",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "shippingAmount",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "tax_amount",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "TaxAmount",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "payment_status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "payment_method",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "notes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "contains column",
+      "object": "Notes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "has foreign key",
+      "object": "customer_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDER_ITEMS",
+      "predicate": "primary key",
+      "object": "[undocumented]",
+      "confidence": 1.0
+    }
+  ],
+  "extraction_summary": {
+    "total_triplets": 52,
+    "avg_confidence": 0.8576923076923078,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Customer Id",
+      "definition": "The unique integer primary key field that identifies a customer record in the customer data table.",
+      "synonyms": [
+        "CustomerID"
+      ],
+      "provenance_text": "Primary Key: customer_id (or is it CustomerID? check with DBA) | | customer_id | INTEGER | PK | [missing documentation] | | | customer_id | INTEGER | FK | References customer (which table?) | | Foreign Keys:\n- customer_id \u2192 CUSTOMERS(customer_id or CustomerID?) | | CustomerID | INTEGER | ? | Possible duplicate of customer_id |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Financial Transaction",
+      "definition": "A financial transaction is the transfer of monetary value (or other value) between parties as part of a business exchange.",
+      "synonyms": [
+        "Transaction"
+      ],
+      "provenance_text": "Financial Transaction\nAny monetary exchange. See Payment, Transaction. | Transaction\nSimilar to Order but more general. May refer to any exchange of value.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Order Id",
+      "definition": "A unique identifier for an order, stored as the primary key (column named order_id) in the orders data model.",
+      "synonyms": [
+        "OrderID"
+      ],
+      "provenance_text": "Primary Key: order_id (or OrderID - verify) | | order_id | INTEGER | PK | Unique order identifier | | | OrderID | INTEGER | ? | [possible duplicate] |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Delivery",
+      "definition": "The final step in order fulfillment where goods are handed over to the customer, completing the shipment.",
+      "synonyms": [
+        "The process of delivering goods to a customer",
+        "The process of preparing and delivering orders"
+      ],
+      "provenance_text": "Delivery\nThe completion of a Shipment when goods reach the customer. | Shipment\nThe process of delivering goods to a customer. | Fulfillment\nThe process of preparing and delivering orders. Encompasses Shipment and Delivery.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Product",
+      "definition": "A physical good or merchandise that is tracked in inventory as a product and offered for sale.",
+      "synonyms": [
+        "Goods available for sale",
+        "Physical products held in stock"
+      ],
+      "provenance_text": "Product\nA thing that is... [definition needs clarification] | Item\nSynonym for Product. Used in inventory context. | Merchandise\nGoods available for sale. Similar to Product. | Inventory Item\nPhysical products held in stock. May be referenced as Product or Item.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Revenue From Selling Products",
+      "definition": "Total income earned from selling products, i.e., sales revenue.",
+      "synonyms": [
+        "Income from sales",
+        "Revenue",
+        "Sales"
+      ],
+      "provenance_text": "Sales\nRevenue from selling products. See Revenue. | Revenue\nIncome from sales. The same as... [definition circular, see Sales]",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Notes",
+      "definition": "A textual notes field used to capture supplementary information, comments, or remarks about a business entity or record.",
+      "synonyms": [
+        "notes"
+      ],
+      "provenance_text": "| Notes | TEXT | ? | [duplicate?] | | | notes | TEXT | ? | [missing documentation] |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Product",
+      "definition": "A product is a marketable good or service that is offered for sale to customers.",
+      "synonyms": [
+        "Synonym for Product"
+      ],
+      "provenance_text": "Product\nA thing that is... [definition needs clarification] | Item\nSynonym for Product. Used in inventory context.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Total Amount",
+      "definition": "The monetary amount representing the tax portion of a transaction.",
+      "synonyms": [
+        "TaxAmount",
+        "tax_amount"
+      ],
+      "provenance_text": "| total_amount | DECIMAL(12,2) | ? | [duplicate?] | | | TaxAmount | DECIMAL(10,2) | ? | [duplicate?] | | | tax_amount | DECIMAL(10,2) | ? | Tax amount |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Order With Confirmed",
+      "definition": "A sales order that has pricing confirmed and inventory allocated for fulfillment, representing a finalized order rather than a preliminary quote.",
+      "synonyms": [
+        "a preliminary order with estimated pricing"
+      ],
+      "provenance_text": "Sales Order\nAn order with confirmed pricing and inventory allocation. Distinct from Quote. | Quote\nA preliminary order with estimated pricing, not yet confirmed.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Email Address",
+      "definition": "A database field that stores a user's email address.",
+      "synonyms": [
+        "email"
+      ],
+      "provenance_text": "| emailAddress | VARCHAR(255) | ? | [possible duplicate] | | | email | VARCHAR(255) | ? | Email address |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "First Name",
+      "definition": "Customer's first name (given name) as stored in the customer data model.",
+      "synonyms": [
+        "firstName",
+        "lastName",
+        "last_name"
+      ],
+      "provenance_text": "| first_name | VARCHAR(50) | ? | [appears to be duplicate] | | | firstName | VARCHAR(50) | ? | Customer's first name | | | lastName | VARCHAR(50) | ? | Customer's last name | | | last_name | VARCHAR(100) | ? | [appears to be duplicate] |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Person Or Company",
+      "definition": "A buyer of goods or services, i.e., a natural person or an organization (company) that purchases from a business.",
+      "synonyms": [
+        "individual or organization"
+      ],
+      "provenance_text": "Client\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) | Customer\nAn individual or organization that... [definition incomplete]",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Phone Number",
+      "definition": "A field representing the contact telephone number used to reach a person or organization.",
+      "synonyms": [
+        "phone"
+      ],
+      "provenance_text": "| phoneNumber | VARCHAR(20) | ? | [possible duplicate] | | | phone | VARCHAR(20) | ? | Contact phone number |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Document Requesting Payment",
+      "definition": "Invoice\nA document requesting payment. Related to Bill.",
+      "synonyms": [],
+      "provenance_text": "Invoice\nA document requesting payment. Related to Bill.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Statement Of Money",
+      "definition": "Bill\nA statement of money owed. Similar to Invoice.",
+      "synonyms": [],
+      "provenance_text": "Bill\nA statement of money owed. Similar to Invoice.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Account Holder",
+      "definition": "Account Holder\nThe person designated as the primary owner of an account. Similar to Customer but with account-specific context.",
+      "synonyms": [],
+      "provenance_text": "Account Holder\nThe person designated as the primary owner of an account. Similar to Customer but with account-specific context.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Any Monetary Exchange",
+      "definition": "Financial Transaction\nAny monetary exchange. See Payment, Transaction.",
+      "synonyms": [],
+      "provenance_text": "Financial Transaction\nAny monetary exchange. See Payment, Transaction.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Bill",
+      "definition": "Bill\nA statement of money owed. Similar to Invoice.",
+      "synonyms": [],
+      "provenance_text": "Bill\nA statement of money owed. Similar to Invoice.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Customers",
+      "definition": "Primary Key: customer_id (or is it CustomerID? check with DBA) | | customer_id | INTEGER | PK | [missing documentation] | | | CustomerID | INTEGER | ? | Possible duplicate of customer_id |",
+      "synonyms": [],
+      "provenance_text": "Primary Key: customer_id (or is it CustomerID? check with DBA) | | customer_id | INTEGER | PK | [missing documentation] | | | CustomerID | INTEGER | ? | Possible duplicate of customer_id |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Client",
+      "definition": "Client\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts)",
+      "synonyms": [],
+      "provenance_text": "Client\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts)",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Customer",
+      "definition": "Customer\nAn individual or organization that... [definition incomplete]",
+      "synonyms": [],
+      "provenance_text": "Customer\nAn individual or organization that... [definition incomplete]",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "End User",
+      "definition": "End User\nThe actual user of a product or service, may differ from the purchaser.",
+      "synonyms": [],
+      "provenance_text": "End User\nThe actual user of a product or service, may differ from the purchaser.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Fulfillment",
+      "definition": "Fulfillment\nThe process of preparing and delivering orders. Encompasses Shipment and Delivery.",
+      "synonyms": [],
+      "provenance_text": "Fulfillment\nThe process of preparing and delivering orders. Encompasses Shipment and Delivery.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Inventory Item",
+      "definition": "Inventory Item\nPhysical products held in stock. May be referenced as Product or Item.",
+      "synonyms": [],
+      "provenance_text": "Inventory Item\nPhysical products held in stock. May be referenced as Product or Item.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Invoice",
+      "definition": "Invoice\nA document requesting payment. Related to Bill.",
+      "synonyms": [],
+      "provenance_text": "Invoice\nA document requesting payment. Related to Bill.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Merchandise",
+      "definition": "Merchandise\nGoods available for sale. Similar to Product.",
+      "synonyms": [],
+      "provenance_text": "Merchandise\nGoods available for sale. Similar to Product.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Orders",
+      "definition": "Primary Key: order_id (or OrderID - verify) | | order_id | INTEGER | PK | Unique order identifier | | | OrderID | INTEGER | ? | [possible duplicate] |",
+      "synonyms": [],
+      "provenance_text": "Primary Key: order_id (or OrderID - verify) | | order_id | INTEGER | PK | Unique order identifier | | | OrderID | INTEGER | ? | [possible duplicate] |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Order Items",
+      "definition": "ORDER_ITEMS (or ORDER_DETAILS?)\n==========================================\nPrimary Key: [undocumented]",
+      "synonyms": [],
+      "provenance_text": "ORDER_ITEMS (or ORDER_DETAILS?)\n==========================================\nPrimary Key: [undocumented]",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Order",
+      "definition": "Order\nA request to purchase products or services. Can be in various states.",
+      "synonyms": [],
+      "provenance_text": "Order\nA request to purchase products or services. Can be in various states.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Order Date",
+      "definition": "| OrderDate | DATETIME | ? | [different precision?] |",
+      "synonyms": [],
+      "provenance_text": "| OrderDate | DATETIME | ? | [different precision?] |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Payment",
+      "definition": "Payment\nThe transfer of money to settle an order.",
+      "synonyms": [],
+      "provenance_text": "Payment\nThe transfer of money to settle an order.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Proof Of Payment",
+      "definition": "Receipt\nProof of payment. Generated after Payment is processed.",
+      "synonyms": [],
+      "provenance_text": "Receipt\nProof of payment. Generated after Payment is processed.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Purchase",
+      "definition": "Purchase\nThe act of buying something. Related to Order and Transaction.",
+      "synonyms": [],
+      "provenance_text": "Purchase\nThe act of buying something. Related to Order and Transaction.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Quote",
+      "definition": "Quote\nA preliminary order with estimated pricing, not yet confirmed.",
+      "synonyms": [],
+      "provenance_text": "Quote\nA preliminary order with estimated pricing, not yet confirmed.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Receipt",
+      "definition": "Receipt\nProof of payment. Generated after Payment is processed.",
+      "synonyms": [],
+      "provenance_text": "Receipt\nProof of payment. Generated after Payment is processed.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Sku",
+      "definition": "SKU\nStock Keeping Unit - a unique identifier for a product variant.",
+      "synonyms": [],
+      "provenance_text": "SKU\nStock Keeping Unit - a unique identifier for a product variant.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Sales Order",
+      "definition": "Sales Order\nAn order with confirmed pricing and inventory allocation. Distinct from Quote.",
+      "synonyms": [],
+      "provenance_text": "Sales Order\nAn order with confirmed pricing and inventory allocation. Distinct from Quote.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Shipment",
+      "definition": "Shipment\nThe process of delivering goods to a customer.",
+      "synonyms": [],
+      "provenance_text": "Shipment\nThe process of delivering goods to a customer.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Order",
+      "definition": "Transaction\nSimilar to Order but more general. May refer to any exchange of value.",
+      "synonyms": [],
+      "provenance_text": "Transaction\nSimilar to Order but more general. May refer to any exchange of value.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Stock Keeping Unit",
+      "definition": "SKU\nStock Keeping Unit - a unique identifier for a product variant.",
+      "synonyms": [],
+      "provenance_text": "SKU\nStock Keeping Unit - a unique identifier for a product variant.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Transfer Of Money",
+      "definition": "Payment\nThe transfer of money to settle an order.",
+      "synonyms": [],
+      "provenance_text": "Payment\nThe transfer of money to settle an order.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "[Undocumented]",
+      "definition": "ORDER_ITEMS (or ORDER_DETAILS?)\n==========================================\nPrimary Key: [undocumented]",
+      "synonyms": [],
+      "provenance_text": "ORDER_ITEMS (or ORDER_DETAILS?)\n==========================================\nPrimary Key: [undocumented]",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Request To Purchase",
+      "definition": "Order\nA request to purchase products or services. Can be in various states.",
+      "synonyms": [],
+      "provenance_text": "Order\nA request to purchase products or services. Can be in various states.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Actual User Of",
+      "definition": "End User\nThe actual user of a product or service, may differ from the purchaser.",
+      "synonyms": [],
+      "provenance_text": "End User\nThe actual user of a product or service, may differ from the purchaser.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Order Amount",
+      "definition": "| orderAmount | DECIMAL(10,2) | ? | Total order amount |",
+      "synonyms": [],
+      "provenance_text": "| orderAmount | DECIMAL(10,2) | ? | Total order amount |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Order Status",
+      "definition": "| order_status | VARCHAR(25) | ? | See valid values in... [missing reference] |",
+      "synonyms": [],
+      "provenance_text": "| order_status | VARCHAR(25) | ? | See valid values in... [missing reference] |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Payment Method",
+      "definition": "| payment_method | VARCHAR(30) | ? | [missing documentation] |",
+      "synonyms": [],
+      "provenance_text": "| payment_method | VARCHAR(30) | ? | [missing documentation] |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Payment Status",
+      "definition": "| payment_status | VARCHAR(20) | ? | [missing documentation] |",
+      "synonyms": [],
+      "provenance_text": "| payment_status | VARCHAR(20) | ? | [missing documentation] |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Primary Owner Of",
+      "definition": "Account Holder\nThe person designated as the primary owner of an account. Similar to Customer but with account-specific context.",
+      "synonyms": [],
+      "provenance_text": "Account Holder\nThe person designated as the primary owner of an account. Similar to Customer but with account-specific context.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Shipping Amount",
+      "definition": "| shippingAmount | DECIMAL(10,2) | ? | Shipping cost |",
+      "synonyms": [],
+      "provenance_text": "| shippingAmount | DECIMAL(10,2) | ? | Shipping cost |",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    },
+    {
+      "name": "Act Of Buying",
+      "definition": "Purchase\nThe act of buying something. Related to Order and Transaction.",
+      "synonyms": [],
+      "provenance_text": "Purchase\nThe act of buying something. Related to Order and Transaction.",
+      "source_doc": "tests/fixtures/05_edgecases_incomplete/business_glossary.txt"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 52
+  },
+  "tables_parsed": [
+    {
+      "name": "CUSTOMERS",
+      "columns": 16
+    },
+    {
+      "name": "ORDERS",
+      "columns": 18
+    },
+    {
+      "name": "ORDER_ITEMS",
+      "columns": 11
+    },
+    {
+      "name": "PRODUCTS",
+      "columns": 19
+    },
+    {
+      "name": "PAYMENTS",
+      "columns": 13
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customers",
+      "description": "Stores information about customers, including identifiers, contact details, account status, type, and regional data."
+    },
+    {
+      "name": "Orders",
+      "description": "Stores order records including identifiers, dates, amounts, tax/shipping details, payment status, and notes for each customer order."
+    },
+    {
+      "name": "Order Items",
+      "description": "Stores items that belong to orders, including product references, quantities, pricing, discounts, and line totals for each order item."
+    },
+    {
+      "name": "Products",
+      "description": "Stores product catalog information including identifiers, names, SKUs, categories, pricing, stock levels, activation status, and descriptive details for each product."
+    },
+    {
+      "name": "Payments",
+      "description": "Stores information about payments processed for orders, including identifiers, dates, amounts, methods, statuses, and transaction response details."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 5,
+    "tables_enriched": 5,
+    "total_columns": 77
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 111,
+    "total_relationships": 105,
+    "completed_tables": 5
+  },
+  "stage_timings": {}
+}

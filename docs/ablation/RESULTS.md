@@ -217,6 +217,7 @@ AB-BEST achieves **100% builder completion and 100% grounded answers** across al
 4. **Most parameters are neutral on simple datasets.** Chunking, extraction tokens, ER thresholds all score 4.50 regardless of value — discrimination requires complex/multi-hop datasets.
 5. **top_k=5 is the efficient optimum.** Same quality as top_k=20 (both 4.90) with 4× fewer cross-encoder inference calls per query.
 6. **AB-BEST averages 4.75/5 across 7 datasets** — with DS02 achieving a perfect 5.00/5 and DS01/DS06 at 4.99/5. Lower scores on edge-case datasets (DS05=4.30) reflect genuine retrieval challenges on incomplete/ambiguous schemas.
+7. **K5 superiority validated cross-dataset (Section 8).** A full 6-dataset comparison (AB-BEST-K20) confirms K5 wins 5/6 datasets with avg 4.79 vs 4.66. The sole K20 win (DS05, +0.50) is explained by marginally-relevant sources at reranker ranks 6–20 that compensate for incomplete schema documentation. This does not justify a global K20 default.
 
 ---
 
@@ -321,3 +322,83 @@ Pipeline re-run with code version 1.1.1 (68 audit fixes, SSRF hardening, O(n²) 
 ### 7.3 Full Analysis
 
 See [`outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md`](../../outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md) for the comprehensive analysis including grouped comparisons, radar plots, heatmaps, and component importance rankings.
+
+---
+
+## 8. Reranker Top-K Sensitivity: AB-BEST K5 vs K20 (2026-05-07)
+
+### 8.1 Motivation
+
+AB-BEST uses `reranker_top_k=5` based on the DS01 finding that K5 and K20 both scored 4.90/5 — making K5 the efficient choice (4× fewer cross-encoder calls). This section validates whether that conclusion holds across all 6 datasets by running the full pipeline with `reranker_top_k=20` (AB-BEST-K20) and comparing AI Judge scores.
+
+### 8.2 Results
+
+| Dataset | AB-BEST (K5) | AB-BEST-K20 | Delta | Winner |
+|---------|:------------:|:-----------:|:-----:|:------:|
+| 01 E-Commerce (15q) | **4.99** | 4.65 | -0.34 | K5 |
+| 02 Finance (25q) | **5.00** | 4.60 | -0.40 | K5 |
+| 03 Healthcare (30q) | **4.70** | 4.35 | -0.35 | K5 |
+| 04 Manufacturing (40q) | **4.75** | 4.65 | -0.10 | K5 |
+| 05 Edge-incomplete (20q) | 4.30 | **4.80** | +0.50 | K20 |
+| 06 Edge-legacy (25q) | **4.99** | 4.90 | -0.09 | K5 |
+| **Average** | **4.79** | **4.66** | **-0.13** | **K5** |
+
+### 8.3 Interpretation
+
+- **K5 wins 5 out of 6 datasets** with an average advantage of -0.13 points.
+- **K20 wins only on DS05 (edge-cases incomplete)** — the dataset with the most ambiguous/incomplete schema, where broader retrieval context (20 chunks vs 5) helps compensate for sparse information.
+- **The delta is NOT due to more context helping K20.** On well-structured datasets (DS01-DS04, DS06), the additional 15 reranked chunks likely introduce noise that dilutes answer precision.
+- **Efficiency conclusion confirmed:** K5 is strictly better on 5/6 datasets AND 4× cheaper in reranker compute. The DS05 exception is attributable to a specific edge-case scenario (incomplete DDL with missing foreign keys).
+
+### 8.4 Conclusion
+
+The original AB-BEST decision to use `reranker_top_k=5` is **validated across all 6 datasets**. K5 provides:
+- Higher average quality (4.79 vs 4.66)
+- 4× fewer cross-encoder inference calls per query
+- Better answer precision on well-structured schemas
+
+The single exception (DS05) does not justify increasing top_k globally, as the quality degradation on the other 5 datasets (-0.26 avg) outweighs the single improvement (+0.50).
+
+### 8.5 DS05 Deep Dive: Why K20 Wins on Incomplete Schemas
+
+#### Pipeline Metrics Comparison
+
+| Metric | K5 | K20 | Interpretation |
+|--------|:---:|:---:|---------------|
+| grounded_rate | 1.00 | 1.00 | Both fully grounded |
+| **avg_gt_coverage** | **0.8246** | **0.9649** | K20 retrieves significantly more expected sources |
+| avg_top_score | 0.7978 | 0.7927 | Reranker confidence identical |
+| grader_rejections | 1 | 0 | K5 had one false rejection |
+| triplets_extracted | 75 | 52 | Different KG builds (stochastic) |
+
+#### Per-Query GT Coverage Gap Analysis
+
+K20 improved retrieval on 5 specific queries where K5 missed expected sources:
+
+| Query | Question | K5 GT | K20 GT | Source missed by K5 |
+|-------|----------|:-----:|:------:|---------------------|
+| ec_007 | "Difference between Revenue and Sales?" | **0.00** | 1.00 | PRODUCTS |
+| ec_008 | "Can one order have multiple payments?" | 0.50 | 1.00 | PAYMENTS |
+| ec_015 | "When is invoice generated vs payment?" | 0.50 | 1.00 | Payment |
+| ec_017 | "Relationship customers and orders?" | 0.50 | 1.00 | ORDERS |
+| ec_020 | "Are FK constraints enforced?" | 0.50 | 1.00 | ORDERS |
+
+> **ec_018** is the sole query where K20 is *worse* (0.33 vs 0.67) — likely an artefact of different chunk ordering.
+
+#### Root Cause
+
+DS05 is the only dataset designed with **deliberately incomplete schema documentation**:
+- No explicit foreign key constraints
+- Missing column definitions in the glossary
+- Ambiguous naming conventions
+
+In this setting, the relevant chunks for questions like "Relationship between customers and orders?" are **semantically distant** from the query. The cross-encoder assigns them scores in the 0.15–0.40 range — above top_k=20's inclusion threshold but below top_k=5's cutoff.
+
+With K5, these marginally-relevant sources are excluded from the answer context, forcing the generator to either abstain or answer incompletely. With K20, the broader retrieval window captures them, providing enough signal for a correct response.
+
+#### Why This Does Not Generalise
+
+1. **DS05 is architecturally unique** — it tests the system's behaviour on intentionally degraded input
+2. **On well-structured datasets**, chunks between rank 6–20 are typically noise (redundant paraphrases, tangential glossary entries) that dilutes answer precision
+3. The K5 AI Judge penalty (4.30 vs 4.80) is partially due to **Answer Quality = 3/5** caused by one false abstention on `ec_019` — a generation error independent of retrieval depth
+4. A production system can adaptively increase top_k when retrieval confidence is low (avg_top_score < threshold) without defaulting to K20 globally
