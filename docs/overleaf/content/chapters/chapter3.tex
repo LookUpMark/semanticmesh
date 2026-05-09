@@ -80,13 +80,12 @@ The central architectural decision is the separation of the system into two inde
 
 Each graph is an independent LangGraph \texttt{StateGraph} with its own typed state schema (\texttt{BuilderState} and \texttt{QueryState}), its own set of nodes and conditional edges, and its own checkpointer for state persistence. The sole shared resource is the Neo4j Knowledge Graph, which the Builder writes to and the Query reads from.
 
-% Placeholder for system overview figure
-% \begin{figure}[htbp]
-% \centering
-% \borderimage[width=\textwidth]{images/chapter3/system-overview.png}
-% \caption{End-to-end data flow: DDL and PDF documents enter the Builder Graph, which populates the Neo4j Knowledge Graph. The Query Graph reads from it to produce grounded answers.}
-% \label{fig:sd:system_overview}
-% \end{figure}
+\begin{figure}[htbp]
+\centering
+\borderimage[width=\textwidth]{images/chapter3/system_overview.png}
+\caption{End-to-end system overview: PDF/TXT documents and DDL schemas enter the Builder Graph (write path), which populates the Neo4j Knowledge Graph. The Query Graph (read path) retrieves context from the graph to produce grounded answers. Self-reflection loops (×3) operate at the mapping and grading stages.}
+\label{fig:sd:system_overview}
+\end{figure}
 
 The end-to-end data flow proceeds as follows. PDF documents (business glossaries, data dictionaries) and DDL schemas enter the Builder Graph, which extracts triplets, resolves entities, maps business concepts to physical tables, generates Cypher statements, and persists them to Neo4j. The Query Graph then retrieves context from the Knowledge Graph via hybrid retrieval, reranks it, generates an answer, and validates it through hallucination grading before returning a grounded response to the user.
 
@@ -106,6 +105,15 @@ The Builder Graph is defined in \texttt{src/graph/builder\_graph.py} and orchest
 \textbf{Phase 5: Cypher Generation and Healing.} Validated mappings are converted into Cypher \texttt{MERGE} statements via few-shot prompting. Each Cypher statement is validated through an \texttt{EXPLAIN} dry-run against Neo4j. If a \texttt{CypherSyntaxError} occurs, the native error message is injected into a reflection prompt and the LLM retries generation (up to three attempts). On exhaustion, a deterministic parameterised Cypher builder produces a fallback statement immune to LLM quoting errors.
 
 \textbf{Phase 6: Graph Persistence.} The validated Cypher is executed against Neo4j via batch \texttt{UNWIND} writes, which reduce the number of individual statements by approximately 87\% compared to sequential \texttt{MERGE} operations. Foreign key edges (\texttt{REFERENCES}) are upserted as additional relationships between physical tables.
+
+Figure~\ref{fig:sd:builder_graph} illustrates the complete Builder Graph architecture, showing the flow from input documents through extraction, resolution, mapping, and persistence, with self-reflection loops at the mapping and Cypher healing stages.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=0.65\textwidth]{images/chapter3/builder_graph.png}
+\caption{Builder Graph architecture: twelve nodes organised into six phases, with Actor-Critic and Cypher Healing self-reflection loops.}
+\label{fig:sd:builder_graph}
+\end{figure}
 
 Table~\ref{tab:builder_nodes} summarises the Builder Graph nodes, their responsibilities, and their routing behaviour.
 
@@ -158,6 +166,15 @@ The retrieval parameters are configurable: vector search returns up to \texttt{r
 \textbf{Phase 4: Hallucination Grading.} Inspired by the Self-RAG paradigm~\cite{asai2023selfraglearningretrievegenerate}, a dedicated grader evaluates whether the generated answer is fully grounded in the retrieved context. The grader emits a structured decision with three fields: \texttt{grounded} (boolean), \texttt{critique} (textual explanation), and \texttt{action} (\texttt{pass} or \texttt{regenerate}). If the action is \texttt{regenerate}, the critique is injected as additional context and the answer generator retries. After a configurable maximum number of retries (default 3), the current answer is force-passed regardless of the grader's verdict. A consistency validator additionally checks for contradictory signals between the grader's boolean and action fields.
 
 \textbf{Phase 5: Finalisation.} The finalised answer is assembled with metadata including source references, retrieved contexts, and quality metrics.
+
+Figure~\ref{fig:sd:query_graph} illustrates the complete Query Graph architecture, showing the flow from question input through hybrid retrieval, reranking, generation, and hallucination grading, with the Self-RAG regeneration loop.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=0.6\textwidth]{images/chapter3/query_graph.png}
+\caption{Query Graph architecture: nine nodes organised into five phases, with a Self-RAG hallucination grading loop.}
+\label{fig:sd:query_graph}
+\end{figure}
 
 Table~\ref{tab:query_nodes} summarises the Query Graph nodes.
 
@@ -224,14 +241,6 @@ The five relationship types encode the semantic structure:
 \end{itemize}
 
 Vector indexes are configured on \texttt{Chunk.embedding}, \texttt{BusinessConcept.embedding}, and \texttt{Attribute.embedding} using BGE-M3 1024-dimensional cosine similarity, supporting K-nearest-neighbour search for both retrieval and entity resolution blocking. Unique constraints on \texttt{BusinessConcept.name}, \texttt{PhysicalTable.table\_name}, \texttt{Attribute.name}, and \texttt{SourceFile.path} enforce data integrity and ensure idempotent upserts via \texttt{MERGE}.
-
-% Placeholder for KG data model figure
-% \begin{figure}[htbp]
-% \centering
-% \borderimage[width=\textwidth]{images/chapter3/kg-data-model.png}
-% \caption{Knowledge Graph data model: node labels, properties, and relationship types.}
-% \label{fig:sd:kg_data_model}
-% \end{figure}
 
 \section{Core Design Patterns}
 \label{sec:sd:patterns}
