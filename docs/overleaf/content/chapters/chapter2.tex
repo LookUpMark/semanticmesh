@@ -1,0 +1,285 @@
+\chapter{Related Work and Background}
+\label{ch:related_work}
+
+This chapter surveys the technical foundations and related work that underpin the contributions of this thesis. We begin with the fundamentals of natural language processing, proceed through retrieval-augmented generation and its graph-based evolution, cover LLM orchestration and reasoning patterns, and conclude with evaluation methodologies for generative systems.
+
+\section{Foundations of Natural Language Processing}
+\label{sec:rw:nlp}
+
+\subsection{Text Representation and Embeddings}
+\label{sec:rw:embeddings}
+
+Representing text as numerical vectors is a prerequisite for any computational language task. Early approaches used one-hot encodings and bag-of-words representations, which are sparse and fail to capture semantic similarity. The introduction of distributed representations---Word2Vec~\cite{mikolov2013distributedrepresentationwordsphrases} and GloVe~\cite{pennington2014gloveglobalvectorsword}---marked a fundamental shift: words are mapped to dense vectors in a continuous space where geometric proximity reflects semantic relatedness.
+
+Static embeddings assign a single vector per word regardless of context, conflating distinct senses of polysemous words. Contextual embeddings address this limitation by producing word representations that depend on the surrounding sentence. ELMo (Embeddings from Language Models)~\cite{peters2018deepcontextualizedwordrepresentations} pioneered this approach using bidirectional LSTMs, while BERT~\cite{devlin2019bertpretrainingdeepbidirectional} advanced it through masked language modeling over Transformer encoders, producing representations that capture deep bidirectional context.
+
+For retrieval tasks, sentence-level and document-level embeddings are essential. Contrastive learning approaches train encoders to produce similar embeddings for semantically related text pairs while pushing unrelated pairs apart. The E5 family~\cite{wang2024multilinguale5textembeddings} extends this paradigm to multilingual settings through weakly-supervised contrastive pre-training on large-scale multilingual text pairs followed by supervised fine-tuning. BGE-M3~\cite{chen2024bgeM3embeddingmultilingualmultifunctionality}, used in this thesis, further supports dense, sparse, and multi-vector representations within a single model through multi-granularity objectives, enabling flexible retrieval strategies.
+
+The quality of embeddings directly impacts downstream retrieval performance. Cosine similarity between embedding vectors serves as the primary distance metric for semantic search, and embedding dimension, training data diversity, and contrastive loss design all influence retrieval effectiveness in practice. Figure~\ref{fig:embeddings} illustrates the evolution from sparse representations to dense contextual embeddings.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=\textwidth]{images/chapter2/embeddings.png}
+\caption{Dense representations capture semantic similarity in continuous vector spaces.}
+\label{fig:embeddings}
+\end{figure}
+
+\subsection{Transformer Architecture and Large Language Models}
+\label{sec:rw:transformers}
+
+The Transformer architecture~\cite{vaswani2017attentionisallyouneed} replaced recurrent and convolutional layers with self-attention mechanisms that compute pairwise interactions between all positions in a sequence. Multi-head attention allows the model to attend to different representation subspaces simultaneously, while positional encodings inject sequence order information. The architecture's inherent parallelism enables efficient training on large corpora. Figure~\ref{fig:transformers} illustrates the core Transformer architecture and its three main variants.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=\textwidth]{images/chapter2/transformers.png}
+\caption{The original Transformer architecture and its three variants: encoder-only (BERT), decoder-only (GPT), and encoder-decoder (T5). Each variant is optimized for different task families.}
+\label{fig:transformers}
+\end{figure}
+
+Three main Transformer variants have emerged. \emph{Encoder-only} models (BERT~\cite{devlin2019bertpretrainingdeepbidirectional}) process tokens bidirectionally and excel at classification, entity recognition, and embedding tasks. \emph{Decoder-only} models (GPT-3~\cite{brown2020languagemodelsarefewshotlearners} and its successors) generate text autoregressively and form the backbone of modern LLMs. \emph{Encoder-decoder} models (T5, BART) combine both directions for sequence-to-sequence tasks such as translation and summarization.
+
+Scale has proven transformative. As models grow beyond billions of parameters, new capabilities emerge that are absent in smaller models---a phenomenon documented through chain-of-thought prompting~\cite{wei2023chainofthoughtpromptingelicitsreasoning}, where large models generate explicit reasoning chains that dramatically improve performance on arithmetic, commonsense, and symbolic reasoning tasks. Post-training alignment techniques---RLHF (Reinforcement Learning from Human Feedback)~\cite{ouyang2022traininglanguagemodelsfollow} and instruction tuning---further refine model behavior, transforming raw next-token predictors into instruction-following agents.
+
+The LLM landscape in 2024--2026 spans commercial APIs (OpenAI, Anthropic, Google), open-weight models (Llama~\cite{touvron2023llamaopenefficientfoundation}, Mistral~\cite{jiang2023mistral7b}), and local deployment options. This diversity motivates the provider-agnostic architecture proposed in this thesis, which abstracts LLM access behind a unified factory interface.
+
+\section{Retrieval-Augmented Generation}
+\label{sec:rw:rag}
+
+\subsection{Baseline RAG Pipeline}
+\label{sec:rw:baseline_rag}
+
+The standard RAG pipeline~\cite{gao2024retrievalaugmentedgenerationlargelanguage} operates in two phases. During \emph{ingestion}, documents are split into chunks, embedded into vector representations, and stored in a vector index. During \emph{query}, the user question is embedded, the top-$k$ most similar chunks are retrieved via approximate nearest-neighbor search, and the retrieved chunks are assembled into a prompt context for the LLM to generate an answer. Figure~\ref{fig:rag_pipeline} illustrates the baseline RAG pipeline.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=\textwidth]{images/chapter2/rag.png}
+\caption{The baseline RAG pipeline: documents are chunked and embedded during ingestion; at query time, the top-$k$ chunks are retrieved and provided as context to the LLM.}
+\label{fig:rag_pipeline}
+\end{figure}
+
+Chunking strategy significantly affects retrieval quality. Fixed-size chunking with overlap is the simplest approach, but fails to respect document structure. Semantic chunking segments text at topic boundaries, while hierarchical segmentation~\cite{nguyen2025enhancingretrievalaugmentedgeneration} constructs multi-level representations by clustering segments into higher-level units. A systematic investigation by Shaukat et al.~\cite{shaukat2026systematicinvestigationdocumentchunking} demonstrates that chunking strategy and embedding model choice interact in non-trivial ways, with no single strategy dominating across all tasks.
+
+Retrieval can be further refined through reranking. A common pattern uses a bi-encoder for efficient candidate generation followed by a cross-encoder for precise relevance scoring. Déjean et al.~\cite{déjean2024thoroughcomparisoncrossencodersllms} provide a thorough comparison showing that cross-encoders remain competitive with LLM-based rerankers for the computational cost. Figure~\ref{fig:cross_encoder} illustrates the bi-encoder vs.\ cross-encoder paradigm. The granularity of retrieval units also matters: Chen et al.~\cite{chen2024densexretrievalretrieval} show that proposition-level retrieval---where the unit is a distinct factual claim---outperforms passage-level and sentence-level retrieval in terms of generalization across diverse tasks, although it faces challenges with multi-hop reasoning over long-range text.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=\textwidth]{images/chapter2/cross-encoder.png}
+\caption{While the bi-encoder encodes query and document independently for fast retrieval, the cross-encoder processes query-document pairs jointly for precise relevance scoring.}
+\label{fig:cross_encoder}
+\end{figure}
+
+\subsection{Corrective and Self-Reflective RAG}
+\label{sec:rw:corrective_rag}
+
+Baseline RAG treats retrieval as a single, unassessed step: retrieved chunks are passed to the generator regardless of relevance. This assumption fails when the retrieval is noisy, incomplete, or misleading. Two families of corrective mechanisms address this limitation.
+
+Corrective RAG (CRAG)~\cite{yan2024correctiveretrievalaugmentedgeneration} introduces a lightweight retrieval evaluator that assesses the confidence of retrieved documents. When confidence is low---indicating that retrieved chunks are likely irrelevant---CRAG triggers corrective actions such as web search or query refinement before generation. This defensive pattern significantly improves robustness on out-of-distribution queries.
+
+Self-RAG~\cite{asai2023selfraglearningretrievegenerate} goes further by enabling the model itself to control the retrieval-generation process through reflection tokens. The model predicts a \texttt{<retrieve>} token with values \texttt{yes}/\texttt{no}/\texttt{continue} that gate on-demand retrieval, followed by critique tokens: \texttt{ISREL} (\{relevant, irrelevant\}), \texttt{ISSUP} (\{fully supported, partially supported, no support\}), and \texttt{ISUSE} (a 1--5 utility scale)---to self-assess generation quality and trigger regeneration when outputs lack grounding. This creates a self-reflective loop where the model critiques its own outputs and iteratively improves them. Figure~\ref{fig:crag_selfrag} compares the CRAG and Self-RAG corrective mechanisms.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=\textwidth]{images/chapter2/crag-selfrag.png}
+\caption{Corrective RAG (left) introduces a retrieval evaluator that triggers corrective actions on low confidence; Self-RAG (right) enables the model to emit reflection tokens that control retrieval and self-assess generation quality.}
+\label{fig:crag_selfrag}
+\end{figure}
+
+In this thesis, the hallucination grading mechanism in the Query pipeline implements a Self-RAG-inspired pattern: a grader LLM evaluates the groundedness of generated answers against the retrieved context and triggers regeneration cycles when hallucinations are detected.
+
+\subsection{Agentic RAG}
+\label{sec:rw:agentic_rag}
+
+The evolution from single-pass retrieval to autonomous agents represents the current frontier of RAG systems. Agentic RAG~\cite{singh2026agenticretrievalaugmentedgenerationsurvey} replaces the fixed retrieve-then-generate pipeline with an agent that plans retrieval strategies, uses tools (search engines, SQL queries, APIs), and iteratively refines its answers based on intermediate observations.
+
+The foundational pattern is ReAct~\cite{yao2023reactsynergizingreasoningacting}, which interleaves \emph{Thought} (reasoning about the current state), \emph{Action} (executing a tool call), and \emph{Observation} (processing the result) in a loop until the task is complete. ReAct demonstrates competitive performance with chain-of-thought reasoning on multi-step benchmarks such as HotpotQA and FEVER, with particular improvements in reducing hallucination through grounding in real observations rather than relying solely on parametric knowledge. Figure~\ref{fig:agentic_rag} illustrates the evolution from baseline RAG to agentic RAG with the ReAct loop.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=\textwidth]{images/chapter2/agenticrag-react.png}
+\caption{Evolution from baseline RAG (single retrieve-then-generate) to agentic RAG: the ReAct loop interleaves Thought, Action, and Observation, enabling iterative refinement with external tools.}
+\label{fig:agentic_rag}
+\end{figure}
+
+A survey by Wang et al.~\cite{wang2025surveylargelanguagemodel} identifies four core modules of LLM-based autonomous agents: \emph{profiling} (defining the agent's role and capabilities), \emph{memory} (short-term context and long-term knowledge), \emph{planning} (decomposing tasks into executable steps), and \emph{action} (interacting with external tools and environments). These modules provide a useful taxonomy for understanding agentic systems.
+
+The Query pipeline in this thesis implements a multi-step agentic RAG architecture with conditional routing, quality gates, and self-correction mechanisms, orchestrated via LangGraph state machines that define the agent's behavior graph.
+
+\section{Graph-Based Retrieval-Augmented Generation}
+\label{sec:rw:graphrag}
+
+\subsection{Knowledge Graph Construction with LLMs}
+\label{sec:rw:kg_construction}
+
+Knowledge graphs represent information as networks of entities (nodes) connected by typed relationships (edges), with optional properties on both nodes and edges. Traditional construction methods---rule-based extraction, manual curation, crowdsourcing---struggle with scalability and adaptability to new domains.
+
+LLMs offer a compelling alternative: prompted with appropriate instructions, they can extract structured entity-relation triplets (subject, predicate, object) from unstructured text, achieving competitive triplet yields compared to specialized pretrained models---though careful prompt engineering is required to ensure entity normalization and relation quality~\cite{trajanoska2023enhancingknowledgegraphconstruction}. The extraction process typically involves: (i) segmenting documents into processing units, (ii) prompting the LLM to identify entities and their relationships, (iii) structuring the output as triplets (often enforced via JSON-mode outputs), and (iv) merging extracted triplets into a unified graph.
+
+Neo4j serves as a natural backend for knowledge graph storage. Its property graph model, Cypher query language, and support for vector indexes make it suitable for both graph traversal and semantic search within the same database. The \texttt{MERGE} operation in Cypher provides idempotent writes---ensuring that reprocessing does not create duplicate nodes or edges---which is essential for incremental update scenarios.
+
+\subsection{GraphRAG Systems}
+\label{sec:rw:graphrag_systems}
+
+GraphRAG extends the RAG paradigm by structuring external knowledge as knowledge graphs rather than flat document collections. Two comprehensive surveys~\cite{han2025retrievalaugmentedgenerationgraphsgraphrag, peng2024graphretrievalaugmentedgenerationsurvey} provide taxonomies of graph-based RAG methods, identifying key dimensions such as graph construction strategy, retrieval mechanism and granularity, and generation approach.
+
+Microsoft GraphRAG~\cite{edge2025localglobalgraphrag} represents the foundational system in this space. Its pipeline processes documents through: (i) text unit extraction, (ii) entity and relationship extraction via LLMs, (iii) Leiden community detection for hierarchical clustering, (iv) community-level summarization, and (v) construction of a graph index over the hierarchical community structure. The paper describes a \emph{Global Search} query mode that aggregates community-level summaries via map-reduce to answer broad questions; the open-source implementation further extends this with \emph{Local Search} (entity-centric retrieval) and \emph{DRIFT} (cross-community reasoning).
+
+GRAG~\cite{hu2025graggraphretrievalaugmentedgeneration} focuses on preserving graph topology during retrieval, arguing that the structural relationships between entities carry information that flat retrieval discards. By operating on subgraphs rather than individual nodes, GRAG maintains relational context that improves structural reasoning.
+
+Security considerations are also relevant: Liang et al.~\cite{liang2025graphrag} demonstrate that GraphRAG systems are vulnerable to knowledge graph poisoning attacks, where adversarial text injected into the source corpus is processed into manipulated entities that distort downstream answers. This motivates robust validation mechanisms in the construction pipeline. Figure~\ref{fig:graphrag} illustrates the GraphRAG paradigm.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=\textwidth]{images/chapter2/graphrag.png}
+\caption{The GraphRAG paradigm: documents are processed into a knowledge graph via LLM-based extraction; queries traverse the graph structure to retrieve interconnected subgraphs for answer generation.}
+\label{fig:graphrag}
+\end{figure}
+
+Table~\ref{tab:graphrag_comparison} compares the key characteristics of major GraphRAG systems~\cite{edge2025localglobalgraphrag, guo2024lightrag, hu2025graggraphretrievalaugmentedgeneration}.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of GraphRAG systems.}
+\label{tab:graphrag_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Feature} & \textbf{MS GraphRAG} & \textbf{LightRAG} & \textbf{GRAG} & \textbf{SemanticMesh} \\
+\midrule
+Graph construction & LLM-based & LLM-based & LLM-based & LLM-based \\
+Community detection & Leiden & None & None & Cosine clustering \\
+Entity resolution & Limited & None & None & Embedding + LLM \\
+Schema mapping & No & No & No & Yes \\
+Self-correction & No & No & No & Multi-loop \\
+Incremental updates & Partial & No & No & Hash-based \\
+Domain-specific & General & General & General & Data governance \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Entity Resolution in Knowledge Graphs}
+\label{sec:rw:entity_resolution}
+
+Entity resolution---identifying and merging records that refer to the same real-world entity---is critical for knowledge graph quality. In governance domains, the same business concept may appear across documents with different names (``Customer'' vs.\ ``Client'' vs.\ ``CLI''), in different languages, or with different levels of specificity.
+
+Traditional approaches use rule-based matching and probabilistic record linkage, which require domain-specific configuration and struggle with semantic variability~\cite{kejriwal2023namedentityresolutionpersonal}. Dense vector representations offer an alternative path: by encoding entities as embeddings, candidate pairs can be identified through similarity search regardless of surface-level differences.
+
+Oliya et al.~\cite{oliya2021endtoendentityresolutionquestion} propose an end-to-end differentiable approach that unifies entity resolution and question answering, demonstrating that resolution quality directly impacts downstream QA performance. Their insight---that resolution should be integrated into the query pipeline rather than treated as a separate preprocessing step---informs the design of the Builder pipeline in this thesis.
+
+The hybrid approach adopted here combines embedding-based blocking (using Union-Find with cosine similarity thresholds to cluster candidate duplicates) with LLM-based adjudication (where a judge model evaluates each cluster and decides whether to merge). This two-stage design balances recall (the blocking step captures candidates that rule-based methods would miss) with precision (the LLM judge provides semantic understanding that pure similarity scores cannot).
+
+\section{LLM Orchestration and Agentic Reasoning}
+\label{sec:rw:agents}
+
+\subsection{Prompt Engineering Techniques}
+\label{sec:rw:prompt_engineering}
+
+Prompt engineering---the design of input instructions to steer LLM behavior---has emerged as a discipline in its own right. The Prompt Report~\cite{schulhoff2025promptreportsystematicsurvey} surveys 58 text-only prompting techniques organized into six major categories: zero-shot, few-shot, thought generation, decomposition, ensembling, and self-criticism.
+
+Several techniques are directly relevant to this thesis. \emph{Few-shot prompting} provides in-context examples that guide output format and behavior without modifying model weights. \emph{Role prompting} defines the LLM's persona and task framing, establishing expectations about output style and domain expertise. \emph{Output format specification}---particularly JSON-mode enforcement---ensures that extraction tasks produce structured, parseable results rather than free-form text.
+
+Table~\ref{tab:prompt_example} illustrates how these techniques compose into a single prompt for entity extraction---a task central to the Builder pipeline. The prompt combines role assignment, output format specification, and a few-shot example to constrain the LLM into producing structured, parseable results.
+
+\begin{table}[htbp]
+\centering
+\caption{Composed prompt example for entity extraction, combining role, few-shot, and output format techniques.}
+\label{tab:prompt_example}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lp{0.6\textwidth}@{}}
+\toprule
+\textbf{Component} & \textbf{Content} \\
+\midrule
+\textbf{Role} & You are a data governance analyst. You extract business entities from requirement documents and map them to database concepts. \\[4pt]
+\textbf{Task} & Extract all business entities from the following document excerpt. For each entity, provide the entity name, a short description, and the most likely database table it maps to. \\[4pt]
+\textbf{Output Format} & Respond strictly in JSON. Each entity must have keys: \texttt{name}, \texttt{description}, \texttt{mapped\_table}. \\[4pt]
+\textbf{Few-shot Example} &
+\texttt{\{} \\
+& \quad \texttt{"name": "Customer",} \\
+& \quad \texttt{"description": "An individual or organization that purchases subscriptions",} \\
+& \quad \texttt{"mapped\_table": "CUSTOMER\_MASTER"} \\
+& \texttt{\}} \\[4pt]
+\textbf{Input} & \textit{[document excerpt]} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+The shift from fine-tuning to prompt engineering is significant: this thesis uses no fine-tuning whatsoever, relying entirely on carefully designed prompts and orchestration logic. This choice reflects the practical reality that fine-tuning requires curated training data, significant compute, and ongoing maintenance---whereas prompt engineering can adapt to new domains and requirements without retraining.
+
+\subsection{Reasoning and Acting Patterns}
+\label{sec:rw:reasoning_patterns}
+
+Chain-of-Thought (CoT) prompting~\cite{wei2023chainofthoughtpromptingelicitsreasoning} demonstrated that providing LLMs with reasoning exemplars elicits explicit reasoning chains that dramatically improve performance on arithmetic, commonsense, and symbolic reasoning tasks. Kojima et al.~\cite{kojima2022largelanguagemodelszeroshotreasoners} further showed that even zero-shot CoT---simply appending ``Let's think step by step''---improves reasoning in large models. On the GSM8K math benchmark, few-shot CoT prompting improved accuracy from 17.9\% to 56.9\%. Figure~\ref{fig:cot} illustrates the chain-of-thought prompting paradigm.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=\textwidth]{images/chapter2/chain-of-thoughts.png}
+\caption{Chain-of-Thought prompting: standard prompting (left) produces direct answers, while CoT prompting (right) elicits intermediate reasoning steps that improve accuracy on complex tasks.}
+\label{fig:cot}
+\end{figure}
+
+ReAct~\cite{yao2023reactsynergizingreasoningacting} extends CoT by interleaving reasoning with action. Rather than reasoning purely in the abstract, ReAct agents execute tool calls (search, lookup, calculation) and incorporate the results into their reasoning. This grounding in real observations reduces hallucination and produces interpretable traces that reveal the agent's decision-making process. On benchmarks such as FEVER, ReAct outperforms both pure CoT and pure acting approaches.
+
+The LangGraph-based orchestration in this thesis implements ReAct-style patterns at the pipeline level: each graph node performs an action (extraction, mapping, validation, generation), and state transitions between nodes encode the reasoning flow. Conditional edges enable dynamic routing based on intermediate results, implementing the ``thought'' component of the ReAct loop.
+
+\subsection{Self-Reflection and Self-Correction}
+\label{sec:rw:self_reflection}
+
+Self-reflection mechanisms enable LLMs to improve their own outputs through iterative feedback, without external human intervention or gradient updates.
+
+Reflexion~\cite{shinn2023reflexionlanguageagentsverbal} introduces verbal reinforcement learning: after an agent completes a task, it generates a natural-language reflection on its performance, which is stored in an episodic memory buffer. On subsequent attempts, the agent retrieves relevant reflections to avoid repeating mistakes. Multi-trial experiments show consistent improvement across reasoning and coding tasks.
+
+Self-Refine~\cite{madaan2023selfrefineiterativerefinementselffeedback} uses a single LLM in a generate-feedback-refine loop: the model produces an initial output, generates feedback on its own output, and then refines the output based on the feedback. No external model or training data is required. The approach is validated across seven diverse tasks including dialogue generation, code optimization, and mathematical reasoning.
+
+The Actor-Critic validation in this thesis adapts the Self-Refine generate-feedback-refine loop by assigning separate Actor and Critic roles to different LLM instances: an Actor LLM proposes a schema mapping, a Critic LLM evaluates it, and the critique is fed back as a reflection prompt for the next iteration. Similarly, the Cypher healing mechanism---where generated queries are validated via \texttt{EXPLAIN} and errors trigger regeneration---implements a self-correction loop grounded in the database's own query planner.
+
+Related work on Text-to-Cypher generation provides additional context. Auto-Cypher~\cite{tiwari2025autocypherimprovingllmscypher} uses an LLM-supervised pipeline for generating synthetic Cypher query data with built-in quality assurance through iterative execution and validation, showing improvements over single-pass generation approaches. SyntheT2C~\cite{zhong2025synthet2cgeneratingsyntheticdata} addresses the data scarcity problem for Text-to-Cypher by generating synthetic training data. This thesis takes a different approach: rather than fine-tuning on synthetic data, it uses few-shot prompting with carefully selected examples, combined with the self-correction loop described above.
+
+\section{Evaluation Methodologies for RAG Systems}
+\label{sec:rw:evaluation}
+
+\subsection{Automated Evaluation with LLM-as-Judge}
+\label{sec:rw:llm_judge}
+
+Evaluating generative systems is inherently challenging: outputs are open-ended, multiple valid answers may exist, and human evaluation is expensive and difficult to scale. The LLM-as-Judge paradigm~\cite{zheng2023judgingllmasajudgemtbenchchatbot} addresses this by using a strong LLM to evaluate the outputs of other LLMs.
+
+Zheng et al.\ demonstrate that GPT-4 as a judge achieves over 80\% agreement with human experts on MT-Bench, a multi-turn benchmark---comparable to the agreement rate between human annotators themselves. However, identified biases include position bias (preferring the first of two options), verbosity bias (favoring longer outputs), and self-enhancement bias (a tendency to favor outputs generated by the same model), although the authors note that the evidence for self-enhancement bias remains inconclusive.
+
+These findings motivate the design of the evaluation framework in this thesis: rather than pairwise comparison, the AI Judge uses an absolute scoring rubric with five weighted dimensions, reducing susceptibility to pairwise biases while maintaining the scalability advantages of automated evaluation.
+
+\subsection{RAG Evaluation Frameworks}
+\label{sec:rw:rag_eval}
+
+RAGAS~\cite{es2025ragasautomatedevaluationretrieval} provides reference-free metrics for RAG evaluation across four core dimensions: \emph{faithfulness} (is the answer grounded in the context?), \emph{answer relevancy} (does the answer address the question?), \emph{context precision} (are retrieved chunks relevant?), and \emph{context recall} (is all necessary information retrieved?). Faithfulness, context precision, and context recall employ LLM-based judges to assess groundedness and relevance. Answer relevancy follows a hybrid approach: the LLM generates hypothetical questions from the answer, and these are compared to the original question via cosine similarity over embeddings.
+
+While RAGAS is well-suited for evaluating factual question-answering over documents, it proved inadequate for the governance use case in this thesis for three concrete reasons. First, the answer relevancy metric's reliance on embedding cosine similarity systematically penalizes technical responses containing database identifiers, table names, and domain-specific jargon---semantically equivalent questions diverge in embedding space when the vocabulary is highly specialized. Empirical testing confirmed this: fully grounded answers consistently scored below 0.2 on answer relevancy. Second, context precision penalizes the large parent chunks (800+ tokens) required by graph-structured retrieval, as the LLM judge tends to issue ``partially relevant'' verdicts for chunks that contain relevant information alongside broader context. Third, RAGAS metrics cannot reward correct negative answers: when the system correctly responds ``I don't know,'' both context recall and faithfulness default to zero, penalizing appropriate uncertainty.
+
+The alternative adopted in this thesis is a custom AI Judge that is explicitly aware of the governance domain architecture. The judge receives the system's architectural context alongside each evaluation sample, enabling it to assess answer quality against domain-specific criteria. This approach draws from the LLM-as-Judge methodology but adapts it to the specific requirements of data governance evaluation, as detailed in Chapter~\ref{ch:evaluation}.
+
+\section{Summary and Positioning}
+\label{sec:rw:summary}
+
+This chapter has surveyed the technical landscape relevant to this thesis, spanning NLP foundations, RAG paradigms, GraphRAG systems, LLM orchestration patterns, and evaluation methodologies. Table~\ref{tab:system_comparison} positions this thesis---the SemanticMesh system---relative to existing approaches.
+
+\begin{table}[htbp]
+\centering
+\caption{Feature comparison of related systems versus SemanticMesh (this thesis).}
+\label{tab:system_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Capability} & \textbf{\shortstack{Data\\Catalogs}} & \textbf{\shortstack{MS\\GraphRAG}} & \textbf{GRAG} & \textbf{\shortstack{Light-\\RAG}} & \textbf{\shortstack{Semantic-\\Mesh}} \\
+\midrule
+Automated KG construction & Partial & Yes & Yes & Yes & Yes \\
+Entity resolution & Manual & Limited & No & No & Yes \\
+Schema mapping & Manual & No & No & No & Yes \\
+Self-correction loops & No & No & No & No & Yes \\
+Incremental updates & No & Partial & No & No & Yes \\
+Domain-specific design & No & No & No & No & Yes \\
+Ablation-based evaluation & No & No & No & No & Yes \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+The key gap identified in the literature is that no existing system combines (i) automated knowledge graph construction from heterogeneous governance documents, (ii) validated schema mapping between business concepts and physical tables, (iii) multi-loop self-correction mechanisms, (iv) incremental update support, and (v) systematic ablation-based evaluation. The SemanticMesh system addresses this gap by integrating and extending techniques from the GraphRAG, entity resolution, self-reflection, and agentic RAG literature into a unified framework specifically designed for data governance automation.
