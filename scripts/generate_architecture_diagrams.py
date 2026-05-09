@@ -292,9 +292,195 @@ def _draw_query_graph() -> None:
     print(f"  ✓ {OUTPUT_DIR / 'query_graph.png'}")
 
 
+def _draw_system_overview() -> None:
+    """Draw the high-level System Overview diagram (CQRS two-graph architecture)."""
+    fig, ax = plt.subplots(1, 1, figsize=(14, 8))
+    ax.set_xlim(-7.5, 7.5)
+    ax.set_ylim(-5.5, 3.5)
+    ax.axis("off")
+    ax.set_aspect("equal")
+
+    # Colors — consistent with builder/query graph palettes
+    c_input = "#E3F2FD"     # light blue
+    c_builder = "#FFF3E0"   # light orange (extraction tones)
+    c_builder_box = "#FFE0B2"
+    c_kg = "#263238"        # dark (Neo4j)
+    c_query = "#E8F5E9"     # light green (retrieval tones)
+    c_query_box = "#C8E6C9"
+    c_output = "#263238"    # dark
+    c_edge = "#546E7A"
+    c_loop = "#FF6F00"
+    c_phase = "#78909C"
+
+    # ── Helper functions (same style as builder/query) ──
+    def _box(cx, cy, w, h, label, color, fontsize=9, bold=False, edgecolor="#37474F"):
+        rect = mpatches.FancyBboxPatch(
+            (cx - w / 2, cy - h / 2), w, h,
+            boxstyle="round,pad=0.12", facecolor=color, edgecolor=edgecolor, linewidth=1.2
+        )
+        ax.add_patch(rect)
+        weight = "bold" if bold else "normal"
+        ax.text(cx, cy, label, ha="center", va="center", fontsize=fontsize,
+                weight=weight, linespacing=1.4)
+
+    def _arrow(x1, y1, x2, y2, color=c_edge, lw=1.5, style="-"):
+        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                    arrowprops=dict(arrowstyle="->", color=color, lw=lw, linestyle=style))
+
+    def _darrow(x1, y1, x2, y2, color=c_edge, lw=1.5):
+        """Double-headed arrow."""
+        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                    arrowprops=dict(arrowstyle="<->", color=color, lw=lw))
+
+    # ══════════════════════════════════════════════════════
+    # LEFT SIDE — Inputs
+    # ══════════════════════════════════════════════════════
+    _box(-6, 2.0, 2.6, 0.7, "PDF / TXT\nBusiness Documents", c_input, fontsize=8)
+    _box(-6, 0.8, 2.6, 0.7, "DDL / SQL\nDatabase Schemas", c_input, fontsize=8)
+
+    # ══════════════════════════════════════════════════════
+    # CENTER-LEFT — Builder Graph (simplified)
+    # ══════════════════════════════════════════════════════
+    # Outer rounded rectangle for Builder
+    builder_rect = mpatches.FancyBboxPatch(
+        (-4.2, -2.8), 4.0, 5.5,
+        boxstyle="round,pad=0.2", facecolor=c_builder, edgecolor="#E65100",
+        linewidth=2, alpha=0.35
+    )
+    ax.add_patch(builder_rect)
+    ax.text(-2.2, 2.3, "Builder Graph", ha="center", va="center",
+            fontsize=11, weight="bold", color="#BF360C")
+    ax.text(-2.2, 1.8, "(Write path — batch)", ha="center", va="center",
+            fontsize=7, color="#BF360C", style="italic")
+
+    # Builder internal nodes
+    _box(-2.2, 1.0, 3.2, 0.55, "Ingestion & Chunking", c_builder_box, fontsize=7.5)
+    _box(-2.2, 0.1, 3.2, 0.55, "Triplet Extraction + ER", c_builder_box, fontsize=7.5)
+    _box(-2.2, -0.8, 3.2, 0.55, "Schema Parsing & Enrichment", c_builder_box, fontsize=7.5)
+    _box(-2.2, -1.7, 3.2, 0.55, "Semantic Mapping (Actor-Critic)", c_builder_box, fontsize=7.5, bold=True)
+
+    # Self-reflection indicator
+    ax.annotate("", xy=(-0.55, -1.45), xytext=(-0.55, -1.0),
+                arrowprops=dict(arrowstyle="->", color=c_loop, lw=1.4,
+                                connectionstyle="arc3,rad=-0.6"))
+    ax.text(-0.1, -1.2, "×3", fontsize=6, color=c_loop, weight="bold")
+
+    _box(-2.2, -2.4, 3.2, 0.55, "Cypher Gen + Healing → Upsert", c_builder_box, fontsize=7.5)
+
+    # Arrows inside builder
+    for y_top, y_bot in [(1.0, 0.1), (0.1, -0.8), (-0.8, -1.7), (-1.7, -2.4)]:
+        _arrow(-2.2, y_top - 0.275, -2.2, y_bot + 0.275, color="#8D6E63", lw=1.0)
+
+    # Input arrows to builder
+    _arrow(-6 + 1.3, 2.0, -2.2 - 1.6, 1.0 + 0.15, color=c_edge, lw=1.2)
+    _arrow(-6 + 1.3, 0.8, -2.2 - 1.6, 0.1 + 0.0, color=c_edge, lw=1.2)
+
+    # ══════════════════════════════════════════════════════
+    # CENTER — Neo4j Knowledge Graph
+    # ══════════════════════════════════════════════════════
+    kg_rect = mpatches.FancyBboxPatch(
+        (0.5, -1.3), 2.6, 2.6,
+        boxstyle="round,pad=0.15", facecolor=c_kg, edgecolor="#455A64", linewidth=2.5
+    )
+    ax.add_patch(kg_rect)
+    ax.text(1.8, 0.45, "Neo4j", ha="center", va="center",
+            fontsize=11, weight="bold", color="white")
+    ax.text(1.8, -0.1, "Knowledge\nGraph", ha="center", va="center",
+            fontsize=9, color="#B0BEC5", linespacing=1.3)
+    ax.text(1.8, -0.85, "6 labels · 5 rels\n3 vector indexes", ha="center", va="center",
+            fontsize=6.5, color="#78909C", linespacing=1.3)
+
+    # Builder → KG (write)
+    _arrow(-0.6, -1.7, 0.5, -0.3, color="#E65100", lw=2.0)
+    ax.text(-0.3, -1.25, "WRITE", ha="center", va="center",
+            fontsize=7, weight="bold", color="#E65100",
+            bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="#E65100", alpha=0.9))
+
+    # KG → Query (read)
+    _arrow(3.1, -0.3, 4.1, -1.7, color="#2E7D32", lw=2.0)
+    ax.text(3.9, -1.25, "READ", ha="center", va="center",
+            fontsize=7, weight="bold", color="#2E7D32",
+            bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="#2E7D32", alpha=0.9))
+
+    # ══════════════════════════════════════════════════════
+    # CENTER-RIGHT — Query Graph (simplified)
+    # ══════════════════════════════════════════════════════
+    query_rect = mpatches.FancyBboxPatch(
+        (3.8, -2.8), 4.0, 5.5,
+        boxstyle="round,pad=0.2", facecolor=c_query, edgecolor="#2E7D32",
+        linewidth=2, alpha=0.35
+    )
+    ax.add_patch(query_rect)
+    ax.text(5.8, 2.3, "Query Graph", ha="center", va="center",
+            fontsize=11, weight="bold", color="#1B5E20")
+    ax.text(5.8, 1.8, "(Read path — real-time)", ha="center", va="center",
+            fontsize=7, color="#1B5E20", style="italic")
+
+    _box(5.8, 1.0, 3.2, 0.55, "Hybrid Retrieval (Vec+BM25+Graph)", c_query_box, fontsize=7.5)
+    _box(5.8, 0.1, 3.2, 0.55, "Cross-Encoder Reranking", c_query_box, fontsize=7.5)
+    _box(5.8, -0.8, 3.2, 0.55, "Quality Gate + Context Distillation", c_query_box, fontsize=7.5)
+    _box(5.8, -1.7, 3.2, 0.55, "Answer Generation", c_query_box, fontsize=7.5, bold=True)
+    _box(5.8, -2.4, 3.2, 0.55, "Hallucination Grading (Self-RAG)", c_query_box, fontsize=7.5, bold=True)
+
+    # Self-reflection indicator
+    ax.annotate("", xy=(7.45, -1.45), xytext=(7.45, -2.15),
+                arrowprops=dict(arrowstyle="->", color=c_loop, lw=1.4,
+                                connectionstyle="arc3,rad=-0.6"))
+    ax.text(7.0, -1.8, "×3", fontsize=6, color=c_loop, weight="bold")
+
+    # Arrows inside query
+    for y_top, y_bot in [(1.0, 0.1), (0.1, -0.8), (-0.8, -1.7), (-1.7, -2.4)]:
+        _arrow(5.8, y_top - 0.275, 5.8, y_bot + 0.275, color="#558B2F", lw=1.0)
+
+    # ══════════════════════════════════════════════════════
+    # RIGHT — Output + Question
+    # ══════════════════════════════════════════════════════
+    # Question input (top-right)
+    ax.text(5.8, 3.0, "Natural Language\nQuestion", ha="center", va="center", fontsize=8,
+            bbox=dict(boxstyle="round", facecolor=c_input, edgecolor="#90CAF9", linewidth=1.5))
+    _arrow(5.8, 3.0 - 0.3, 5.8, 1.0 + 0.275)
+
+    # Output (bottom-right)
+    out_rect = mpatches.FancyBboxPatch(
+        (4.3, -4.3), 3.0, 0.8,
+        boxstyle="round,pad=0.12", facecolor=c_output, edgecolor="#455A64", linewidth=2
+    )
+    ax.add_patch(out_rect)
+    ax.text(5.8, -3.9, "Grounded Answer\n+ Sources", ha="center", va="center",
+            fontsize=9, weight="bold", color="white", linespacing=1.3)
+    _arrow(5.8, -2.4 - 0.275, 5.8, -3.9 + 0.4)
+
+    # ══════════════════════════════════════════════════════
+    # BOTTOM CENTER — CQRS label
+    # ══════════════════════════════════════════════════════
+    ax.text(1.8, -4.8, "CQRS Separation: Builder writes, Query reads, Neo4j stores",
+            ha="center", va="center", fontsize=8, color="#546E7A", style="italic",
+            bbox=dict(boxstyle="round,pad=0.2", facecolor="#ECEFF1", edgecolor="#B0BEC5", alpha=0.7))
+
+    # ── Title ──
+    ax.set_title("SemanticMesh — System Overview", fontsize=14, weight="bold", pad=18)
+
+    # ── Legend ──
+    legend_elements = [
+        mpatches.Patch(facecolor=c_input, edgecolor="#90CAF9", label="Input / Question"),
+        mpatches.Patch(facecolor=c_builder_box, edgecolor="#37474F", label="Builder Graph (Write)"),
+        mpatches.Patch(facecolor=c_kg, edgecolor="#455A64", label="Neo4j Knowledge Graph"),
+        mpatches.Patch(facecolor=c_query_box, edgecolor="#37474F", label="Query Graph (Read)"),
+        mpatches.Patch(facecolor=c_loop, edgecolor=c_loop, label="Self-Reflection Loop"),
+    ]
+    ax.legend(handles=legend_elements, loc="lower left", fontsize=7.5, framealpha=0.9)
+
+    fig.tight_layout()
+    fig.savefig(OUTPUT_DIR / "system_overview.png", dpi=150, bbox_inches="tight",
+                facecolor="white", edgecolor="none")
+    plt.close(fig)
+    print(f"  ✓ {OUTPUT_DIR / 'system_overview.png'}")
+
+
 if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     print("Generating architecture diagrams...")
     _draw_builder_graph()
     _draw_query_graph()
+    _draw_system_overview()
     print("Done.")
