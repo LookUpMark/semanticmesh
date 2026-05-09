@@ -70,6 +70,26 @@ data/hf_cache/**
 data/memory/**
 !data/memory/.gitkeep
 
+# LaTeX build artifacts
+docs/overleaf/**/*.aux
+docs/overleaf/**/*.bbl
+docs/overleaf/**/*.bbl-SAVE-ERROR
+docs/overleaf/**/*.bcf
+docs/overleaf/**/*.blg
+docs/overleaf/**/*.glo
+docs/overleaf/**/*.glo-abr
+docs/overleaf/**/*.ist
+docs/overleaf/**/*.lof
+docs/overleaf/**/*.log
+docs/overleaf/**/*.lot
+docs/overleaf/**/*.out
+docs/overleaf/**/*.run.xml
+docs/overleaf/**/*.synctex.gz
+docs/overleaf/**/*.toc
+docs/overleaf/**/*.fdb_latexmk
+docs/overleaf/**/*.fls
+docs/overleaf/thesis.pdf
+
 # Study guide
 docs/study-guide/
 
