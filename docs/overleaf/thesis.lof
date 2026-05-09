@@ -1,0 +1,15 @@
+\babel@toc {italian}{}\relax 
+\babel@toc {italian}{}\relax 
+\babel@toc {italian}{}\relax 
+\babel@toc {english}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Dense representations capture semantic similarity in continuous vector spaces.}}{6}{figure.caption.2}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces The original Transformer architecture and its three variants: encoder-only (BERT), decoder-only (GPT), and encoder-decoder (T5). Each variant is optimized for different task families.}}{7}{figure.caption.3}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces The baseline RAG pipeline: documents are chunked and embedded during ingestion; at query time, the top-$k$ chunks are retrieved and provided as context to the LLM.}}{8}{figure.caption.4}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces While the bi-encoder encodes query and document independently for fast retrieval, the cross-encoder processes query-document pairs jointly for precise relevance scoring.}}{9}{figure.caption.5}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Corrective RAG (left) introduces a retrieval evaluator that triggers corrective actions on low confidence; Self-RAG (right) enables the model to emit reflection tokens that control retrieval and self-assess generation quality.}}{10}{figure.caption.6}%
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Evolution from baseline RAG (single retrieve-then-generate) to agentic RAG: the ReAct loop interleaves Thought, Action, and Observation, enabling iterative refinement with external tools.}}{11}{figure.caption.7}%
+\contentsline {figure}{\numberline {2.7}{\ignorespaces The GraphRAG paradigm: documents are processed into a knowledge graph via LLM-based extraction; queries traverse the graph structure to retrieve interconnected subgraphs for answer generation.}}{13}{figure.caption.8}%
+\contentsline {figure}{\numberline {2.8}{\ignorespaces Chain-of-Thought prompting: standard prompting (left) produces direct answers, while CoT prompting (right) elicits intermediate reasoning steps that improve accuracy on complex tasks.}}{17}{figure.caption.11}%
+\addvspace {10\p@ }
