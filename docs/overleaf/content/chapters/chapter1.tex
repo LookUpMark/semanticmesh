@@ -1,0 +1,67 @@
+\chapter{Introduction}
+\label{ch:introduction}
+
+\section{Context and Motivation}
+\label{sec:intro:motivation}
+
+Modern enterprises accumulate thousands of database tables across operational systems, data warehouses, and analytics platforms. Each table carries a schema that encodes business logic, yet the documentation describing that logic---requirement specifications, glossaries, data policies---rarely stays synchronized with the evolving database. This \emph{semantic gap} between business documentation and physical data infrastructure is a core challenge in data governance. Regulatory frameworks such as GDPR impose strict requirements on data lineage, metadata accuracy, and auditability, making the problem not merely technical but also organizational~\cite{eu2016generaldataprotectionregulation}.
+
+Data stewards address this gap through manual cataloging, lineage tracking, and ad-hoc querying of system architecture. The process is labor-intensive, error-prone, and does not scale to the volume and velocity of changes typical of enterprise environments. Business documentation speaks in domain terms---``revenue,'' ``customer churn,'' ``subscription plan''---while database schemas use technical identifiers such as \texttt{TBL\_REVENUE\_FY}, \texttt{CUST\_CHRN\_FLG}, and \texttt{SUB\_PLAN\_CD}. Bridging this vocabulary automatically would transform data governance from a reactive, manual task into a proactive, systematic capability.
+
+Large Language Models (LLMs)---built on the Transformer architecture~\cite{vaswani2017attentionisallyouneed}---have demonstrated strong capabilities in text understanding, information extraction, and structured reasoning~\cite{brown2020languagemodelsarefewshotlearners}. Retrieval-Augmented Generation (RAG) has emerged as a practical paradigm for grounding LLM outputs in real data~\cite{gao2024retrievalaugmentedgenerationlargelanguage}. However, baseline RAG---which retrieves flat document chunks via vector similarity---struggles with global sensemaking over entire document corpora and fails to capture the relational structure inherent in data governance domains~\cite{edge2025localglobalgraphrag}.
+
+Graph-based RAG (GraphRAG) represents an evolution of this paradigm: by structuring retrieved knowledge as graphs rather than flat embeddings, it enables richer, interconnected retrieval that preserves entity relationships and supports hierarchical reasoning~\cite{han2025retrievalaugmentedgenerationgraphsgraphrag, peng2024graphretrievalaugmentedgenerationsurvey}. This thesis leverages GraphRAG principles, combined with multi-stage entity resolution and self-reflective LLM orchestration, to address the specific challenges of automated data governance.
+
+\section{Problem Statement}
+\label{sec:intro:problem}
+
+This thesis addresses the following problem: given a collection of heterogeneous governance documents---requirement specifications, data glossaries, DDL scripts, and architectural diagrams---and an enterprise database schema, automatically construct a knowledge graph that maps business concepts to physical tables and enables natural-language querying of the resulting system architecture.
+
+Existing approaches fall short along several dimensions. Traditional data catalogs (e.g., Collibra, Alation) require extensive manual configuration and offer limited natural-language capabilities. Baseline RAG systems handle factual lookup but fail on cross-document reasoning and complex schema relationships. Microsoft GraphRAG~\cite{edge2025localglobalgraphrag} and related systems~\cite{hu2025graggraphretrievalaugmentedgeneration} address graph-based reasoning but are not designed for data governance specifically---they lack entity resolution across heterogeneous sources, schema mapping validation, and incremental update mechanisms.
+
+The specific challenges addressed in this thesis include:
+\begin{itemize}
+    \item \textbf{Semantic gap:} bridging business terminology and technical schema identifiers across documents with different structures and vocabularies.
+    \item \textbf{Entity deduplication:} identifying and merging entities that refer to the same business concept despite surface-level differences in naming, language, or context~\cite{kejriwal2023namedentityresolutionpersonal}.
+    \item \textbf{Mapping validation:} ensuring that the relationships between business concepts and physical database tables are semantically correct.
+    \item \textbf{Query correctness:} generating accurate queries against the constructed knowledge graph; hallucination is mitigated through self-reflective critique mechanisms~\cite{asai2023selfraglearningretrievegenerate}.
+    \item \textbf{Incremental updates:} supporting partial reprocessing when documents change, without reconstructing the entire knowledge graph.
+\end{itemize}
+
+\section{Contributions}
+\label{sec:intro:contributions}
+
+This thesis makes the following contributions:
+
+\begin{enumerate}
+    \item \textbf{Two-graph architecture for data governance.} A strict separation between a \emph{Builder} pipeline---which constructs the knowledge graph from governance documents---and a \emph{Query} pipeline---which answers natural-language questions over the graph. This separation mirrors CQRS (Command Query Responsibility Segregation) principles applied to AI pipelines, enabling independent execution and incremental updates.
+
+    \item \textbf{Multi-stage entity resolution.} A two-stage approach combining embedding-based vector blocking (Union-Find with cosine similarity clustering) with an LLM-based judge for precise deduplication. This hybrid approach is language-agnostic and applicable across heterogeneous governance documents.
+
+    \item \textbf{Self-reflection loops for quality assurance.} Three independent correction mechanisms: (i) Actor-Critic validation for schema mapping, extending the iterative generate-feedback-refine loop of Self-Refine~\cite{madaan2023selfrefineiterativerefinementselffeedback} to use separate Actor and Critic LLM instances (a design choice specific to this thesis, as Self-Refine uses a single model for all roles); (ii) Cypher healing for query generation, where generated queries are validated via \texttt{EXPLAIN} and errors are fed back for correction; and (iii) hallucination grading for answer quality, following Self-RAG principles~\cite{asai2023selfraglearningretrievegenerate}.
+
+    \item \textbf{Hybrid retrieval with ablation-backed design.} A retrieval strategy combining dense vector search, BM25 keyword matching, and graph traversal with reciprocal rank fusion. The design is validated through systematic ablation studies across multiple synthetic datasets.
+
+    \item \textbf{Provider-agnostic LLM factory.} A five-tier architecture supporting multiple LLM providers (OpenRouter, OpenAI, Anthropic, local models) with automatic provider detection and fallback, enabling cost-performance optimization across pipeline stages.
+
+    \item \textbf{Incremental update mechanism.} A hash-based change detection system that identifies modified document chunks and triggers partial reprocessing, avoiding full graph reconstruction when documents change.
+
+    \item \textbf{Evaluation framework with custom AI Judge.} A systematic ablation study evaluated through a domain-specific AI Judge rather than generic frameworks such as RAGAS~\cite{es2025ragasautomatedevaluationretrieval}. While RAGAS employs LLM-based judges for its core metrics, its \emph{answer relevancy} metric relies on cosine similarity between generated and reference question embeddings---a mechanism that penalizes technical responses containing database identifiers and domain-specific jargon, where semantically equivalent questions diverge in embedding space. Empirical testing confirmed this mismatch: fully grounded answers consistently scored below 0.2 on answer relevancy. Additionally, RAGAS's \emph{context precision} penalizes the large parent chunks required for graph-structured retrieval, and its metrics cannot reward correct negative answers (i.e., ``I don't know''). A custom LLM-as-a-Judge~\cite{zheng2023judgingllmasajudgemtbenchchatbot} prompt is therefore designed to be architecture-aware---explicitly encoding the system's pipeline structure, known limitations, and domain constraints to provide more meaningful evaluation across multiple weighted dimensions.
+\end{enumerate}
+
+\section{Thesis Structure}
+\label{sec:intro:structure}
+
+The remainder of this thesis is organized as follows:
+
+\begin{itemize}
+    \item \textbf{Chapter~\ref{ch:related_work}} provides the technical background and surveys related work, covering natural language processing foundations, retrieval-augmented generation, graph-based RAG systems, LLM orchestration patterns, and evaluation methodologies for generative systems.
+
+    \item \textbf{Chapter~\ref{ch:solution_design}} presents the high-level solution design, including the two-graph architecture, functional requirements, and the overall system design at an architectural level.
+
+    \item \textbf{Chapter~\ref{ch:implementation}} details the implementation, covering the LangGraph-based orchestration, data models, prompt engineering strategies, and the individual pipeline components.
+
+    \item \textbf{Chapter~\ref{ch:evaluation}} describes the experimental evaluation, including the synthetic dataset generation, the AI Judge methodology, ablation study design, and results analysis.
+
+    \item \textbf{Chapter~\ref{ch:conclusions}} summarizes the findings, discusses limitations, and outlines directions for future work.
+\end{itemize}
