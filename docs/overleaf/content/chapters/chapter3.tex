@@ -92,7 +92,7 @@ The end-to-end data flow proceeds as follows. PDF documents (business glossaries
 \subsection{Builder Graph Design}
 \label{sec:sd:builder}
 
-The Builder Graph is defined in \texttt{src/graph/builder\_graph.py} and orchestrates the ontology construction pipeline through twelve nodes organised into six phases.
+The Builder Graph is defined in \texttt{src/\allowbreak{}graph/\allowbreak{}builder\_graph.py} and orchestrates the ontology construction pipeline through twelve nodes organised into six phases.
 
 \textbf{Phase 1: Document Ingestion.} PDF documents are loaded via the OpenDataLoader PDF integration for LangChain and segmented using a two-level hierarchical chunking strategy. Parent chunks (800 tokens, 96-token overlap) provide rich context for downstream extraction; child chunks (256 tokens, 32-token overlap) provide fine granularity for vector similarity search. Only child chunks are embedded with BGE-M3~\cite{chen2024bgeM3embeddingmultilingualmultifunctionality} and stored in Neo4j as \texttt{Chunk} nodes; parent chunks are stored as \texttt{ParentChunk} nodes without embeddings and are retrieved at generation time by traversing \texttt{CHILD\_OF} edges from the matched child. Figure~\ref{fig:sd:builder_p1} illustrates this phase.
 
@@ -172,7 +172,7 @@ Table~\ref{tab:builder_nodes} summarises the Builder Graph nodes, their responsi
 \subsection{Query Graph Design}
 \label{sec:sd:query}
 
-The Query Graph is defined in \texttt{src/generation/query\_graph.py} and answers natural-language questions over the Knowledge Graph through nine nodes organised into five phases.
+The Query Graph is defined in \texttt{src/\allowbreak{}generation/\allowbreak{}query\_graph.py} and answers natural-language questions over the Knowledge Graph through nine nodes organised into five phases.
 
 \textbf{Phase 1: Hybrid Retrieval.} Candidate context passages are gathered through three macro-channels: (i)~dense vector search using BGE-M3 embeddings on \texttt{Chunk}, \texttt{BusinessConcept}, and \texttt{Attribute} nodes via the Neo4j vector index; (ii)~sparse keyword matching using BM25 over all node texts via the rank-bm25 library; and (iii)~graph traversal through Knowledge Graph relationships (seed-node expansion via \texttt{MENTIONS} and \texttt{MAPPED\_TO} edges, plus pre-fetched \texttt{BusinessConcept} nodes, FK edges, and concept-to-table mapping edges). Retrieved child chunks are promoted to their parent \texttt{ParentChunk} via \texttt{CHILD\_OF} traversal to supply the full-context passage to the generator. The three result sets are fused using Reciprocal Rank Fusion (RRF)~\cite{cormack2009reciprocalrankfusionoutperforms} with parameter $k=60$, defined as:
 
@@ -183,7 +183,7 @@ The Query Graph is defined in \texttt{src/generation/query\_graph.py} and answer
 
 where $R$ is the set of retrieval channels and $\text{rank}_r(d)$ is the position of document $d$ in the ranked list of channel $r$. RRF requires no weight tuning across channels, a practical advantage over linear combination alternatives.
 
-The retrieval parameters are configurable: vector search returns up to \texttt{retrieval\_vector\_top\_k} chunks (default 20), BM25 returns up to \texttt{retrieval\_bm25\_top\_k} (default 10), and graph traversal is bounded by \texttt{retrieval\_graph\_traversal\_limit} (default 30). Diversity in the merged result set is ensured by the RRF fusion, which naturally favours chunks that appear across multiple channels. Figure~\ref{fig:sd:query_p1} illustrates the three-macro-channel retrieval architecture.
+The retrieval parameters are configurable: vector search returns up to \texttt{retrieval\_\allowbreak{}vector\_\allowbreak{}top\_k} chunks (default~20), BM25 returns up to \texttt{retrieval\_\allowbreak{}bm25\_\allowbreak{}top\_k} (default~10), and graph traversal is bounded by \texttt{retrieval\_\allowbreak{}graph\_\allowbreak{}traversal\_\allowbreak{}limit} (default~30). Diversity in the merged result set is ensured by the RRF fusion, which naturally favours chunks that appear across multiple channels. Figure~\ref{fig:sd:query_p1} illustrates the three-macro-channel retrieval architecture.
 
 \begin{figure}[htbp]
 \centering
@@ -280,7 +280,7 @@ The five relationship types encode the semantic structure:
     \item \texttt{HAS\_COLUMN} (\texttt{PhysicalTable} $\rightarrow$ \texttt{Attribute}): links each physical table to its column-level \texttt{Attribute} nodes, enabling fine-grained retrieval at the column level.
 \end{itemize}
 
-Vector indexes are configured on \texttt{Chunk.embedding}, \texttt{BusinessConcept.embedding}, and \texttt{Attribute.embedding} using BGE-M3 1024-dimensional cosine similarity, supporting K-nearest-neighbour search for both retrieval and entity resolution blocking. Unique constraints on \texttt{BusinessConcept.name}, \texttt{PhysicalTable.table\_name}, \texttt{Attribute.name}, and \texttt{SourceFile.path} enforce data integrity and ensure idempotent upserts via \texttt{MERGE}.
+Vector indexes are configured on \texttt{Chunk.\allowbreak{}embedding}, \texttt{Business\allowbreak{}Concept.\allowbreak{}embedding}, and \texttt{Attribute.\allowbreak{}embedding} using BGE-M3 1024-dimensional cosine similarity, supporting K-nearest-neighbour search for both retrieval and entity resolution blocking. Unique constraints on \texttt{Business\allowbreak{}Concept.name}, \texttt{Physical\allowbreak{}Table.table\_name}, \texttt{Attribute.name}, and \texttt{Source\allowbreak{}File.path} enforce data integrity and ensure idempotent upserts via \texttt{MERGE}.
 
 \section{Core Design Patterns}
 \label{sec:sd:patterns}
