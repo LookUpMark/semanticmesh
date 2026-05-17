@@ -82,8 +82,8 @@ Each graph is an independent LangGraph \texttt{StateGraph} with its own typed st
 
 \begin{figure}[htbp]
 \centering
-\borderimage[width=\textwidth]{images/chapter3/system_overview.png}
-\caption{End-to-end system overview: PDF/TXT documents and DDL schemas enter the Builder Graph (write path), which populates the Neo4j Knowledge Graph. The Query Graph (read path) retrieves context from the graph to produce grounded answers. Self-reflection loops (×3) operate at the mapping and grading stages.}
+\borderimage[width=0.75\textwidth]{images/chapter3/system_overview.png}
+\caption{End-to-end system overview: PDF/TXT documents and DDL schemas enter the Builder Graph (write path), which populates the Neo4j Knowledge Graph. The Query Graph (read path) retrieves context from the graph to produce grounded answers.}
 \label{fig:sd:system_overview}
 \end{figure}
 
@@ -94,25 +94,51 @@ The end-to-end data flow proceeds as follows. PDF documents (business glossaries
 
 The Builder Graph is defined in \texttt{src/graph/builder\_graph.py} and orchestrates the ontology construction pipeline through twelve nodes organised into six phases.
 
-\textbf{Phase 1: Document Ingestion.} PDF documents are loaded via the OpenDataLoader PDF integration for LangChain and segmented using a two-level hierarchical chunking strategy. Parent chunks (800 tokens, 96-token overlap) provide rich context for downstream extraction; child chunks (256 tokens, 32-token overlap) provide fine granularity for vector similarity search. Both levels are embedded with BGE-M3~\cite{chen2024bgeM3embeddingmultilingualmultifunctionality} and stored in Neo4j, connected by \texttt{CHILD\_OF} edges.
-
-\textbf{Phase 2: Triplet Extraction and Entity Resolution.} An LLM in JSON mode extracts structured (subject, predicate, object) facts from parent chunks, with a self-reflection loop that retries on malformed output (up to three attempts). A deterministic heuristic fallback using spaCy dependency parsing and regex pattern matching provides robustness when the LLM fails entirely. Extracted triplets then undergo entity resolution: BGE-M3 embeddings are used to compute a full cosine similarity matrix, Union-Find clustering groups candidate duplicates by similarity threshold, and an LLM judge adjudicates each cluster to produce canonical entities.
-
-\textbf{Phase 3: Schema Parsing and Enrichment.} DDL files are parsed deterministically using sqlglot into typed schema objects (\texttt{TableSchema}, \texttt{ColumnSchema}). An optional LLM-based enrichment step expands cryptic abbreviations in column and table names (e.g., \texttt{CLI\_NM} $\rightarrow$ ``Client Name'') to improve subsequent mapping accuracy.
-
-\textbf{Phase 4: Semantic Mapping and Validation.} For each physical table, a RAG-augmented mapping node retrieves the most relevant business entities from the Knowledge Graph and proposes a semantic alignment (\texttt{MappingProposal}). The proposal undergoes Actor-Critic validation: a Pydantic schema check verifies structural correctness, then an LLM Critic evaluates semantic correctness. If the Critic rejects the proposal, its critique is injected as a reflection prompt and the Actor retries, tracking the best-seen proposal across all attempts.
-
-\textbf{Phase 5: Cypher Generation and Healing.} Validated mappings are converted into Cypher \texttt{MERGE} statements via few-shot prompting. Each Cypher statement is validated through an \texttt{EXPLAIN} dry-run against Neo4j. If a \texttt{CypherSyntaxError} occurs, the native error message is injected into a reflection prompt and the LLM retries generation (up to three attempts). On exhaustion, a deterministic parameterised Cypher builder produces a fallback statement immune to LLM quoting errors.
-
-\textbf{Phase 6: Graph Persistence.} The validated Cypher is executed against Neo4j via batch \texttt{UNWIND} writes, which reduce the number of individual statements by approximately 87\% compared to sequential \texttt{MERGE} operations. Foreign key edges (\texttt{REFERENCES}) are upserted as additional relationships between physical tables.
-
-Figure~\ref{fig:sd:builder_graph} illustrates the complete Builder Graph architecture, showing the flow from input documents through extraction, resolution, mapping, and persistence, with self-reflection loops at the mapping and Cypher healing stages.
+\textbf{Phase 1: Document Ingestion.} PDF documents are loaded via the OpenDataLoader PDF integration for LangChain and segmented using a two-level hierarchical chunking strategy. Parent chunks (800 tokens, 96-token overlap) provide rich context for downstream extraction; child chunks (256 tokens, 32-token overlap) provide fine granularity for vector similarity search. Only child chunks are embedded with BGE-M3~\cite{chen2024bgeM3embeddingmultilingualmultifunctionality} and stored in Neo4j as \texttt{Chunk} nodes; parent chunks are stored as \texttt{ParentChunk} nodes without embeddings and are retrieved at generation time by traversing \texttt{CHILD\_OF} edges from the matched child. Figure~\ref{fig:sd:builder_p1} illustrates this phase.
 
 \begin{figure}[htbp]
 \centering
-\borderimage[width=0.65\textwidth]{images/chapter3/builder_graph.png}
-\caption{Builder Graph architecture: twelve nodes organised into six phases, with Actor-Critic and Cypher Healing self-reflection loops.}
-\label{fig:sd:builder_graph}
+\borderimage[width=0.5\textwidth]{images/chapter3/builder_phase1_ingestion.png}
+\caption{Builder Graph --- Phase~1: PDF loading via OpenDataLoader, hierarchical chunking (parent 800 + child 256 tokens), BGE-M3 embedding of child chunks only, and SHA-256 change detection.}
+\label{fig:sd:builder_p1}
+\end{figure}
+
+\textbf{Phase 2: Triplet Extraction and Entity Resolution.} An LLM in JSON mode extracts structured (subject, predicate, object) facts from parent chunks, with a self-reflection loop that retries on malformed output (up to three attempts). A deterministic heuristic fallback using spaCy dependency parsing and regex pattern matching provides robustness when the LLM fails entirely. Extracted triplets then undergo entity resolution: BGE-M3 embeddings are computed for all entities; a batched K-NN search identifies the top-$k$ nearest neighbours per entity using cosine similarity, and Union-Find clustering groups candidate duplicates whose similarity exceeds the configurable threshold (default 0.75); an LLM judge adjudicates each cluster to produce canonical entities. Figure~\ref{fig:sd:builder_p2} details this pipeline.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=0.5\textwidth]{images/chapter3/builder_phase2_extraction.png}
+\caption{Builder Graph --- Phase~2: triplet extraction with self-reflection loop and heuristic fallback, followed by two-stage entity resolution (vector blocking + LLM judge).}
+\label{fig:sd:builder_p2}
+\end{figure}
+
+\textbf{Phase 3: Schema Parsing and Enrichment.} DDL files are parsed deterministically using sqlglot into typed schema objects (\texttt{TableSchema}, \texttt{ColumnSchema}). An optional LLM-based enrichment step expands cryptic abbreviations in column and table names (e.g., \texttt{CLI\_NM} $\rightarrow$ ``Client Name'') to improve subsequent mapping accuracy. Figure~\ref{fig:sd:builder_p3} shows this linear pipeline.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=0.35\textwidth]{images/chapter3/builder_phase3_schema.png}
+\caption{Builder Graph --- Phase~3: DDL parsing via sqlglot AST and LLM-based acronym expansion.}
+\label{fig:sd:builder_p3}
+\end{figure}
+
+\textbf{Phase 4: Semantic Mapping and Validation.} For each physical table, a RAG-augmented mapping node retrieves the most relevant business entities from the Knowledge Graph and proposes a semantic alignment (\texttt{MappingProposal}). The proposal undergoes Actor-Critic validation: a Pydantic schema check verifies structural correctness, then an LLM Critic evaluates semantic correctness. If the Critic rejects the proposal, its critique is injected as a reflection prompt and the Actor retries, tracking the best-seen proposal across all attempts. Figure~\ref{fig:sd:builder_p4} details the Actor-Critic loop.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=0.55\textwidth]{images/chapter3/builder_phase4_mapping.png}
+\caption{Builder Graph --- Phase~4: parallel RAG mapping with Actor-Critic validation, best-proposal tracking, and optional human-in-the-loop interrupt.}
+\label{fig:sd:builder_p4}
+\end{figure}
+
+\textbf{Phase 5: Cypher Generation and Healing.} Validated mappings are converted into Cypher \texttt{MERGE} statements via few-shot prompting. Each Cypher statement is validated through an \texttt{EXPLAIN} dry-run against Neo4j. If a \texttt{CypherSyntaxError} occurs, the native error message is injected into a reflection prompt and the LLM retries generation (up to three attempts). On exhaustion, a deterministic parameterised Cypher builder produces a fallback statement immune to LLM quoting errors.
+
+\textbf{Phase 6: Graph Persistence.} The validated Cypher is executed against Neo4j via batch \texttt{UNWIND} writes, which consolidate all node and relationship upserts into a small number of parameterised batch statements rather than individual \texttt{MERGE} calls. Foreign key edges (\texttt{REFERENCES}) are upserted as additional relationships between physical tables. Figure~\ref{fig:sd:builder_p5} illustrates the Cypher healing loop and persistence pipeline.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=0.5\textwidth]{images/chapter3/builder_phase5_cypher.png}
+\caption{Builder Graph --- Phases~5--6: Cypher generation with EXPLAIN-based healing loop, deterministic fallback, and batch UNWIND persistence to Neo4j.}
+\label{fig:sd:builder_p5}
 \end{figure}
 
 Table~\ref{tab:builder_nodes} summarises the Builder Graph nodes, their responsibilities, and their routing behaviour.
@@ -148,7 +174,7 @@ Table~\ref{tab:builder_nodes} summarises the Builder Graph nodes, their responsi
 
 The Query Graph is defined in \texttt{src/generation/query\_graph.py} and answers natural-language questions over the Knowledge Graph through nine nodes organised into five phases.
 
-\textbf{Phase 1: Hybrid Retrieval.} Candidate context passages are gathered through three independent channels: (i) dense vector search using BGE-M3 embeddings on child chunks via the Neo4j vector index, (ii) sparse keyword matching using BM25 over chunk text via the rank-bm25 library, and (iii) graph traversal through Knowledge Graph relationships (seed-node expansion via \texttt{MENTIONS} and \texttt{MAPPED\_TO} edges). The three result sets are fused using Reciprocal Rank Fusion (RRF)~\cite{cormack2009reciprocalrankfusionoutperforms} with parameter $k=60$, defined as:
+\textbf{Phase 1: Hybrid Retrieval.} Candidate context passages are gathered through three macro-channels: (i)~dense vector search using BGE-M3 embeddings on \texttt{Chunk}, \texttt{BusinessConcept}, and \texttt{Attribute} nodes via the Neo4j vector index; (ii)~sparse keyword matching using BM25 over all node texts via the rank-bm25 library; and (iii)~graph traversal through Knowledge Graph relationships (seed-node expansion via \texttt{MENTIONS} and \texttt{MAPPED\_TO} edges, plus pre-fetched \texttt{BusinessConcept} nodes, FK edges, and concept-to-table mapping edges). Retrieved child chunks are promoted to their parent \texttt{ParentChunk} via \texttt{CHILD\_OF} traversal to supply the full-context passage to the generator. The three result sets are fused using Reciprocal Rank Fusion (RRF)~\cite{cormack2009reciprocalrankfusionoutperforms} with parameter $k=60$, defined as:
 
 \begin{equation}
 \label{eq:rrf}
@@ -157,9 +183,23 @@ The Query Graph is defined in \texttt{src/generation/query\_graph.py} and answer
 
 where $R$ is the set of retrieval channels and $\text{rank}_r(d)$ is the position of document $d$ in the ranked list of channel $r$. RRF requires no weight tuning across channels, a practical advantage over linear combination alternatives.
 
-The retrieval parameters are configurable: vector search returns up to \texttt{retrieval\_vector\_top\_k} chunks (default 20), BM25 returns up to \texttt{retrieval\_bm25\_top\_k} (default 10), and graph traversal is bounded by \texttt{retrieval\_graph\_traversal\_limit} (default 30). Diversity in the merged result set is ensured by the RRF fusion, which naturally favours chunks that appear across multiple channels.
+The retrieval parameters are configurable: vector search returns up to \texttt{retrieval\_vector\_top\_k} chunks (default 20), BM25 returns up to \texttt{retrieval\_bm25\_top\_k} (default 10), and graph traversal is bounded by \texttt{retrieval\_graph\_traversal\_limit} (default 30). Diversity in the merged result set is ensured by the RRF fusion, which naturally favours chunks that appear across multiple channels. Figure~\ref{fig:sd:query_p1} illustrates the three-macro-channel retrieval architecture.
 
-\textbf{Phase 2: Reranking and Quality Gate.} The fused candidates are rescored by a cross-encoder (bge-reranker-v2-m3) that jointly encodes each (query, chunk) pair for higher precision than bi-encoder scores alone. A retrieval quality gate then evaluates the sufficiency of the reranked context and assigns one of three outcomes: \emph{proceed} (sufficient context for generation), \emph{warning} (limited context, proceed with calibrated behaviour), or \emph{abstain} (insufficient context, skip generation entirely).
+\begin{figure}[htbp]
+\centering
+\borderimage[width=0.7\textwidth]{images/chapter3/query_phase1_retrieval.png}
+\caption{Query Graph --- Phase~1: three-macro-channel retrieval (dense vector, BM25, graph traversal) fused via Reciprocal Rank Fusion ($k=60$).}
+\label{fig:sd:query_p1}
+\end{figure}
+
+\textbf{Phase 2: Reranking and Quality Gate.} The fused candidates are rescored by a cross-encoder (bge-reranker-v2-m3) that jointly encodes each (query, chunk) pair for higher precision than bi-encoder scores alone. A retrieval quality gate then evaluates the sufficiency of the reranked context and assigns one of three routing decisions: \emph{proceed} (adequate context, proceed to generation), \emph{proceed\_with\_warning} (sparse but usable evidence, proceed with calibrated behaviour), or \emph{abstain\_early} (insufficient context, skip generation entirely). Figure~\ref{fig:sd:query_p2} shows the reranking and gating pipeline.
+
+\begin{figure}[htbp]
+\centering
+\borderimage[width=0.45\textwidth]{images/chapter3/query_phase2_reranking.png}
+\caption{Query Graph --- Phase~2: cross-encoder reranking with confidence floor enforcement and retrieval quality gate (proceed / abstain routing).}
+\label{fig:sd:query_p2}
+\end{figure}
 
 \textbf{Phase 3: Answer Generation.} The answer generator receives the reranked context and the user query, and produces a response using few-shot prompting at temperature $T=0.3$ for natural-language fluency. The system prompt is selected based on the context sufficiency level assigned by the quality gate, calibrating the LLM's behaviour to the available evidence.
 
@@ -167,13 +207,13 @@ The retrieval parameters are configurable: vector search returns up to \texttt{r
 
 \textbf{Phase 5: Finalisation.} The finalised answer is assembled with metadata including source references, retrieved contexts, and quality metrics.
 
-Figure~\ref{fig:sd:query_graph} illustrates the complete Query Graph architecture, showing the flow from question input through hybrid retrieval, reranking, generation, and hallucination grading, with the Self-RAG regeneration loop.
+Figure~\ref{fig:sd:query_p3} details the generation and hallucination grading pipeline, including the Self-RAG regeneration loop.
 
 \begin{figure}[htbp]
 \centering
-\borderimage[width=0.6\textwidth]{images/chapter3/query_graph.png}
-\caption{Query Graph architecture: nine nodes organised into five phases, with a Self-RAG hallucination grading loop.}
-\label{fig:sd:query_graph}
+\borderimage[width=0.4\textwidth]{images/chapter3/query_phase3_generation.png}
+\caption{Query Graph --- Phases~3--5: context distillation, answer generation ($T=0.3$), Self-RAG hallucination grading with regeneration loop, and final output assembly.}
+\label{fig:sd:query_p3}
 \end{figure}
 
 Table~\ref{tab:query_nodes} summarises the Query Graph nodes.
@@ -187,7 +227,7 @@ Table~\ref{tab:query_nodes} summarises the Query Graph nodes.
 \toprule
 \textbf{Node} & \textbf{Phase} & \textbf{Responsibility} \\
 \midrule
-\texttt{hybrid\_retrieval} & Retrieval & Three-channel retrieval (dense vector, BM25, graph traversal) with RRF fusion \\[4pt]
+\texttt{hybrid\_retrieval} & Retrieval & Three macro-channel retrieval (dense vector on Chunk/Concept/Attribute nodes, BM25 over all nodes, graph traversal + concept/FK/mapping fetch) with RRF fusion \\[4pt]
 \texttt{reranking} & Reranking & Cross-encoder rescoring of fused candidates \\[4pt]
 \texttt{retrieval\_quality\_gate} & Reranking & Evaluate context sufficiency; route to generation or early abstention \\[4pt]
 \texttt{context\_distillation} & Preparation & Compress and filter reranked context for generation input \\[4pt]
@@ -215,11 +255,11 @@ The Knowledge Graph is stored in Neo4j 5.x and follows a purpose-designed ontolo
 \toprule
 \textbf{Node Label} & \textbf{Properties} & \textbf{Purpose} \\
 \midrule
-\texttt{BusinessConcept} & \texttt{name} (unique), \texttt{definition}, \texttt{source\_doc}, \texttt{synonyms}, \texttt{confidence\_score}, \texttt{provenance\_text} & Canonical business terms extracted from documentation \\[4pt]
+\texttt{BusinessConcept} & \texttt{name} (unique), \texttt{definition}, \texttt{source\_doc}, \texttt{synonyms}, \texttt{confidence\_score}, \texttt{provenance\_text}, \texttt{embedding} (1024-dim vector) & Canonical business terms extracted from documentation \\[4pt]
 \texttt{PhysicalTable} & \texttt{table\_name} (unique), \texttt{schema\_name}, \texttt{column\_names}, \texttt{column\_types}, \texttt{ddl\_source} & Tables parsed from DDL schemas \\[4pt]
-\texttt{Chunk} & \texttt{id} (unique), \texttt{text}, \texttt{embedding} (1024-dim vector) & Child chunks (256 tokens) for vector similarity search \\[4pt]
-\texttt{ParentChunk} & \texttt{id} (unique), \texttt{text} & Parent chunks (800 tokens) for extraction context \\[4pt]
-\texttt{SourceFile} & \texttt{path} (unique), \texttt{sha256\_hash}, \texttt{ingestion\_timestamp} & Tracks ingested files for incremental updates \\[4pt]
+\texttt{Chunk} & \texttt{chunk\_index} + \texttt{source\_doc} (composite key), \texttt{text}, \texttt{embedding} (1024-dim vector) & Child chunks (256 tokens) for vector similarity search \\[4pt]
+\texttt{ParentChunk} & \texttt{parent\_chunk\_index} + \texttt{source\_doc} (composite key), \texttt{text} & Parent chunks (800 tokens) for extraction context \\[4pt]
+\texttt{SourceFile} & \texttt{path} (unique), \texttt{sha256}, \texttt{ingested\_at}, \texttt{byte\_size}, \texttt{chunk\_count} & Tracks ingested files for incremental updates \\[4pt]
 \texttt{Attribute} & \texttt{name} (unique), \texttt{table\_name}, \texttt{data\_type}, \texttt{embedding} (1024-dim vector) & Column-level nodes for fine-grained retrieval \\
 \bottomrule
 \end{tabular}%
@@ -263,9 +303,9 @@ All three loops share a common structure: generate $\rightarrow$ validate $\righ
 
 Confidence-based routing is a cross-cutting mechanism that governs the system's behaviour at multiple decision points, trading off between thoroughness and efficiency.
 
-\textbf{Mapping confidence gate.} When the Actor produces a \texttt{MappingProposal} with confidence $\geq 0.85$, the Critic LLM call is skipped entirely---the proposal proceeds directly to approval. This optimisation reduces Critic LLM calls by approximately 60--70\% while increasing the error rate for high-confidence mappings by only approximately 2\%. For proposals with confidence below 0.85, the full Actor-Critic validation cycle runs. Proposals that pass validation but fall below the human-in-the-loop threshold (default 0.90) trigger a LangGraph \texttt{interrupt()}, pausing execution until a human reviews and approves, corrects, or rejects the proposal.
+\textbf{Mapping confidence gate.} When the Actor produces a \texttt{MappingProposal} with confidence $\geq 0.85$, the Critic LLM call is skipped entirely---the proposal proceeds directly to approval. This optimisation reduces Critic LLM calls for high-confidence mappings without requiring validation of proposals that the model itself rates as highly reliable. For proposals with confidence below 0.85, the full Actor-Critic validation cycle runs. Proposals that pass validation but fall below the human-in-the-loop threshold (default 0.90) trigger a LangGraph \texttt{interrupt()}, pausing execution until a human reviews and approves, corrects, or rejects the proposal.
 
-\textbf{Retrieval quality gate.} In the Query Graph, the quality gate evaluates the sufficiency of the retrieved context before generation begins. Three outcomes are possible: \emph{proceed} routes to answer generation with a full-evidence system prompt; \emph{warning} routes to generation with a calibrated prompt that accounts for limited context; \emph{abstain} skips generation entirely and returns a direct statement that the available knowledge is insufficient to answer the question. This prevents the system from generating speculative answers from inadequate context.
+\textbf{Retrieval quality gate.} In the Query Graph, the quality gate evaluates the sufficiency of the retrieved context before generation begins. Three outcomes are possible: \emph{proceed} routes to answer generation with a full-evidence system prompt; \emph{proceed\_with\_warning} routes to generation with a calibrated prompt that accounts for limited context; \emph{abstain\_early} skips generation entirely and returns a direct statement that the available knowledge is insufficient to answer the question. This prevents the system from generating speculative answers from inadequate context.
 
 \subsection{LLM Tier Architecture}
 \label{sec:sd:llm_tiers}
@@ -283,9 +323,9 @@ Table~\ref{tab:llm_tiers} presents the five tiers, their roles, and their temper
 \toprule
 \textbf{Tier} & \textbf{Factory Function} & \textbf{Use Cases} & \textbf{Temp.} \\
 \midrule
-Lightweight & \texttt{get\_lightweight\_llm()} & Entity resolution judge, schema enrichment & 0.0 \\[4pt]
+Lightweight & \texttt{get\_lightweight\_llm()} & Schema enrichment (acronym expansion) & 0.0 \\[4pt]
 Extraction & \texttt{get\_extraction\_llm()} & Triplet extraction in JSON mode & 0.0 \\[4pt]
-Mid-tier & \texttt{get\_midtier\_llm()} & RAG mapping, Actor-Critic validation, hallucination grading & 0.0 \\[4pt]
+Mid-tier & \texttt{get\_midtier\_llm()} & Entity resolution judge, RAG mapping, Actor-Critic validation, hallucination grading & 0.0 \\[4pt]
 Generation & \texttt{get\_generation\_llm()} & Answer generation & 0.3 \\[4pt]
 Reasoning & \texttt{get\_reasoning\_llm()} & Cypher generation and healing & 0.0 \\
 \bottomrule
@@ -300,7 +340,7 @@ Each tier is a singleton (\texttt{@lru\_cache}) that returns an \texttt{Instrume
 
 To satisfy NFR-07 (incremental updates), the system implements a SHA-256-based change detection mechanism. On each Builder run, every source file is hashed using streaming SHA-256 computation (64 KiB chunks, never loading the entire file into memory). The computed hash is compared against the stored hash in the corresponding \texttt{SourceFile} node in Neo4j. Files are classified as \texttt{unchanged} (hash matches), \texttt{modified} (hash differs), or \texttt{new} (no \texttt{SourceFile} node exists).
 
-Unchanged files are skipped entirely. For modified files, a cascading delete removes all associated data---chunks, triplets, mappings, and the \texttt{SourceFile} node itself---followed by orphan cleanup that removes any \texttt{BusinessConcept} nodes with no remaining references. The file is then reprocessed from scratch and the new data committed via \texttt{MERGE} upserts. This strategy ensures that the Knowledge Graph is never rebuilt from scratch when only a subset of sources change.
+Unchanged files are skipped entirely. For modified files, a cascading delete removes all associated data---chunks, parent chunks, physical table nodes with their mapping edges, and the \texttt{SourceFile} node itself---followed by orphan cleanup that removes any \texttt{BusinessConcept} nodes with no remaining \texttt{MENTIONS} or \texttt{MAPPED\_TO} edges. The file is then reprocessed from scratch and the new data committed via \texttt{MERGE} upserts. This strategy ensures that the Knowledge Graph is never rebuilt from scratch when only a subset of sources change.
 
 \section{Design Decisions and Trade-offs}
 \label{sec:sd:tradeoffs}
@@ -320,7 +360,7 @@ Two-graph separation (Builder / Query) & Construction and interrogation have fun
 Hierarchical chunking (800 / 256 tokens) & Parent chunks provide rich extraction context; child chunks enable precise vector search & Double text storage per document; only child chunks carry embeddings \\[4pt]
 Three-channel hybrid retrieval & No single channel covers all query types: vector captures semantics, BM25 captures identifiers, graph captures relationships & Increased retrieval complexity; requires fusion strategy (RRF) \\[4pt]
 Bounded self-reflection (max 3 retries) & Provides robustness without risking unbounded computation & May accept suboptimal results when three retries are insufficient \\[4pt]
-Confidence-based Critic bypass ($\geq 0.85$) & Reduces LLM calls by 60--70\% on high-confidence mappings & Approximately 2\% of bypassed mappings may contain errors \\[4pt]
+Confidence-based Critic bypass ($\geq 0.85$) & Reduces Critic LLM calls on high-confidence proposals without requiring exhaustive validation of mappings the model rates as reliable & A small fraction of bypassed mappings may contain errors undetected without Critic review \\[4pt]
 Deterministic Cypher fallback & Guarantees persistence always succeeds, even when LLM healing fails & Fallback Cypher is less optimised than LLM-generated alternatives \\[4pt]
 $T=0.0$ for all structured tasks & Ensures deterministic, reproducible outputs for extraction, mapping, and grading & May miss creative solutions available at higher temperatures \\
 \bottomrule

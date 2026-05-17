@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
-from src.config.llm_factory import get_midtier_llm, get_reasoning_llm
+from src.config.llm_factory import get_generation_llm, get_midtier_llm
 from src.config.logging import NodeTimer, get_logger, log_node_event
 from src.config.settings import get_settings
 from src.generation.answer_generator import generate_answer
@@ -131,7 +131,7 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
     query relevance and structural evidence while enforcing per-source caps.
     """
     with NodeTimer() as timer:
-        llm = get_reasoning_llm()
+        llm = get_generation_llm()
         query: str = state["user_query"]
         chunks: list[RetrievedChunk] = state.get("reranked_chunks") or []
         generation_chunks = state.get("generation_chunks") or _compose_generation_chunks(
@@ -167,7 +167,7 @@ def _node_answer_generation(state: QueryState) -> dict[str, Any]:
             f"iteration={iteration} chunks={len(generation_chunks)}",
             "answer generated",
             timer.elapsed_ms,
-            model_used=get_settings().llm_model_reasoning,
+            model_used=get_settings().llm_model_generation,
         )
         return {
             "current_answer": answer,
