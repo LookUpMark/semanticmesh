@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
-from src.config.logging import NodeTimer, get_logger
+from src.config.logging import NodeTimer, get_logger, log_retry_event
 from src.config.settings import get_settings
 from src.models.schemas import Chunk, Triplet, TripletExtractionResponse
 from src.prompts.templates import EXTRACTION_SYSTEM, EXTRACTION_USER
@@ -125,6 +125,8 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
             )
             if attempt == max_attempts:
                 return []
+            # AUDIT-003: log retry event before reflection
+            log_retry_event(logger, "triplet_extractor", attempt, str(exc))
             raw_json = _reflect_on_json(raw_json, str(exc), llm, truncated=(raw_json == ""))
 
     if data is None:
@@ -145,6 +147,8 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
             )
             if attempt == max_attempts:
                 return []
+            # AUDIT-003: log retry event before reflection
+            log_retry_event(logger, "triplet_extractor", attempt, str(exc))
             raw_json = _reflect_on_json(json.dumps(data), str(exc), llm)
             try:
                 data = json.loads(raw_json)

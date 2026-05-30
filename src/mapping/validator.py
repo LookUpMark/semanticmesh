@@ -76,7 +76,11 @@ def critic_review(
         (the pipeline logs the failure as a warning).
     """
     safe_entities = entities or []
-    sorted_entities = sorted(safe_entities, key=lambda e: len(getattr(e, "name", "")))[:20]
+    # AUDIT-081: settings-derived limit instead of hardcoded :20
+    entity_limit = get_settings().critic_entity_limit
+    sorted_entities = sorted(safe_entities, key=lambda e: len(getattr(e, "name", "")))[
+        :entity_limit
+    ]
     entities_json = json.dumps(
         [
             {"name": e.name, "definition": e.definition, "synonyms": e.synonyms}

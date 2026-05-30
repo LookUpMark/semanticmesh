@@ -19,7 +19,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 from sklearn.metrics.pairwise import cosine_similarity
 
-from src.config.logging import NodeTimer, get_logger
+from src.config.logging import NodeTimer, get_logger, log_retry_event
 from src.config.settings import get_settings
 from src.models.schemas import (
     EnrichedTableSchema,
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from src.config.llm_client import LLMProtocol
 
 logger: logging.Logger = get_logger(__name__)
-_settings = get_settings()
+# AUDIT-017: removed stale module-level _settings snapshot
 
 
 def _null_mapping(table_name: str, reason: str) -> MappingProposal:
@@ -84,13 +84,15 @@ def propose_mapping(
         conservative ``MappingProposal`` with ``mapped_concept=None``
         and ``confidence=0.0`` — never crashes the pipeline.
     """
+    settings = get_settings()  # AUDIT-049: use settings for provenance truncation
     entities_json = json.dumps(
         [
             {
                 "name": e.name,
                 "definition": e.definition,
                 "synonyms": e.synonyms,
-                "provenance_text": (e.provenance_text or "")[:300],
+                # AUDIT-049: use settings.provenance_max_chars instead of hardcoded [:300]
+                "provenance_text": (e.provenance_text or "")[: settings.provenance_max_chars],
             }
             for e in entities
         ]
@@ -132,7 +134,6 @@ def propose_mapping(
     )
 
     # Parse and validate — with self-reflection on failure
-    settings = get_settings()
     max_attempts: int = settings.max_reflection_attempts_reasoning
 
     for attempt in range(1, max_attempts + 1):
@@ -150,6 +151,8 @@ def propose_mapping(
                 return _null_mapping(
                     table.table_name, "JSON parse error after self-reflection exhausted."
                 )
+            # AUDIT-003: log retry event before reflection
+            log_retry_event(logger, "rag_mapper", attempt, str(exc))
             raw_json = extract_text_content(
                 llm.invoke(
                     [HumanMessage(content=_mapping_reflection_prompt(str(exc), raw_json))]
@@ -172,6 +175,8 @@ def propose_mapping(
                     table.table_name,
                     f"Pydantic validation error after self-reflection exhausted: {exc}",
                 )
+            # AUDIT-003: log retry event before reflection
+            log_retry_event(logger, "rag_mapper", attempt, str(exc))
             raw_json = extract_text_content(
                 llm.invoke(
                     [HumanMessage(content=_mapping_reflection_prompt(str(exc), json.dumps(data)))]
@@ -273,7 +278,9 @@ def propose_mapping_heuristic(
     best_adjusted = -1.0
 
     # Batch-embed all candidate texts upfront (Y-004 optimization)
-    candidates_slice = ranked[: top_k if top_k else 5]
+    # AUDIT-082: use settings.er_blocking_top_k instead of hardcoded 5
+    effective_top_k = top_k if top_k else settings.er_blocking_top_k
+    candidates_slice = ranked[:effective_top_k]
     candidate_texts = [
         f"{c.name}: {c.definition}" if c.definition else c.name for c in candidates_slice
     ]
@@ -283,6 +290,16 @@ def propose_mapping_heuristic(
         )
     else:
         candidate_vecs = np.empty((0, 0), dtype=np.float32)
+
+    # AUDIT-045: guard against empty candidate_vecs to prevent IndexError
+    if len(candidate_vecs) == 0:
+        return MappingProposal(
+            table_name=table.table_name,
+            mapped_concept=None,
+            confidence=0.0,
+            reasoning="No candidate entities available for heuristic mapping.",
+            alternative_concepts=[],
+        )
 
     for idx, candidate in enumerate(candidates_slice):
         e_vec = candidate_vecs[idx].reshape(1, -1)

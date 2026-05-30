@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import threading
 
-import pytest
-
 from src.api.jobs import (
     create_job,
     get_job,

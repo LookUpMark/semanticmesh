@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
-from src.config.logging import get_logger
+from src.config.logging import get_logger, log_retry_event
 from src.config.settings import get_settings
 from src.generation.answer_generator import format_context
 from src.prompts.templates import GRADER_SYSTEM, GRADER_USER, REFLECTION_TEMPLATE
@@ -67,7 +67,7 @@ def grade_answer(
         query:   The user's natural-language question.
         answer:  The generated answer to audit.
         chunks:  Reranked context chunks used during generation.
-        llm:     Reasoning LLM — temperature MUST be 0.0 (deterministic audit).
+        llm:     Mid-tier LLM — temperature MUST be 0.0 (deterministic audit).  # AUDIT-071
 
     Returns:
         ``GraderDecision`` with ``grounded``, ``critique``, and ``action`` fields.
@@ -120,27 +120,32 @@ def grade_answer(
     max_attempts: int = settings.max_reflection_attempts
     parse_attempts = 0
     consistency_corrections = 0
-    max_consistency_corrections = 2
+    # AUDIT-050: use settings-derived value instead of hardcoded 2
+    max_consistency_corrections = settings.grader_max_consistency_corrections
 
-    for attempt in range(1, max_attempts + 1):
-        parse_attempts = attempt
+    # AUDIT-046: separated parse_attempts and consistency_corrections into independent
+    # counters so they no longer share the same attempt budget.
+    while parse_attempts < max_attempts:
+        parse_attempts += 1
         try:
             data: dict = json.loads(raw_json)
             decision = GraderDecision(**data)
         except (json.JSONDecodeError, ValidationError) as exc:
             logger.warning(
                 "Grader response parse/validation error (attempt %d/%d): %s",
-                attempt,
+                parse_attempts,
                 max_attempts,
                 exc,
             )
-            if attempt == max_attempts:
+            if parse_attempts >= max_attempts:
                 return _pass_decision(
                     timeout_occurred=False,
                     parse_attempts=parse_attempts,
                     consistency_corrections=consistency_corrections,
                     certainty=0.3,
                 )
+            # AUDIT-003: log retry event before reflection
+            log_retry_event(logger, "hallucination_grader", parse_attempts, str(exc))
             try:
                 raw_json = _invoke_with_timeout(
                     [
@@ -180,6 +185,13 @@ def grade_answer(
                 )
 
             consistency_corrections += 1
+            # AUDIT-003: log retry event before consistency correction reflection
+            log_retry_event(
+                logger,
+                "hallucination_grader",
+                consistency_corrections,
+                f"consistency_correction: grounded=True but action={decision.action}",
+            )
             correction_prompt = REFLECTION_TEMPLATE.format(
                 role="strict factual auditor",
                 output_format=f"JSON object matching {_fmt}",

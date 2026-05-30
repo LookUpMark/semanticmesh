@@ -121,8 +121,7 @@ ABLATION_DESC: dict[str, dict[str, str]] = {
         "title": "Extraction max tokens=4096 (conservative)",
         "group": "Extraction Token Limit",
         "hypothesis": (
-            "Fewer tokens per extraction call may reduce triplet "
-            "completeness on dense documents."
+            "Fewer tokens per extraction call may reduce triplet completeness on dense documents."
         ),
         "affected_components": "Builder graph: triplet extraction node",
     },
@@ -130,8 +129,7 @@ ABLATION_DESC: dict[str, dict[str, str]] = {
         "title": "Extraction max tokens=16384 (generous)",
         "group": "Extraction Token Limit",
         "hypothesis": (
-            "Higher token budget improves extraction completeness; "
-            "may improve KG density."
+            "Higher token budget improves extraction completeness; may improve KG density."
         ),
         "affected_components": "Builder graph: triplet extraction node",
     },
@@ -265,8 +263,7 @@ ABLATION_MATRIX: dict[str, dict[str, Any]] = {
     # AB-00: Baseline with default settings
     "AB-00": {
         "description": (
-            "Baseline — default settings "
-            "(hybrid retrieval, reranker ON, chunking 256/32)"
+            "Baseline — default settings (hybrid retrieval, reranker ON, chunking 256/32)"
         ),
         "env_overrides": {},
         "primary_metric": "faithfulness",

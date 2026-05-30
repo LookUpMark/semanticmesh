@@ -13,6 +13,7 @@ integrating nodes from:
 
 from __future__ import annotations
 
+import atexit
 import threading
 import warnings
 from pathlib import Path
@@ -64,6 +65,20 @@ _CONVERSATIONS_DB = Path(__file__).parent.parent.parent / "data" / "memory" / "c
 _QUERY_GRAPH_CHECKPOINT_CONN: Any = None
 
 
+def _close_checkpoint_conn() -> None:
+    """Close the SQLite checkpoint connection on process exit."""
+    global _QUERY_GRAPH_CHECKPOINT_CONN
+    if _QUERY_GRAPH_CHECKPOINT_CONN is not None:
+        try:
+            _QUERY_GRAPH_CHECKPOINT_CONN.close()
+        except Exception:
+            pass
+        _QUERY_GRAPH_CHECKPOINT_CONN = None
+
+
+atexit.register(_close_checkpoint_conn)
+
+
 def _make_checkpointer():
     """Return a SqliteSaver backed by data/memory/conversations.db.
 
@@ -98,6 +113,11 @@ def _make_checkpointer():
 
         _CONVERSATIONS_DB.parent.mkdir(parents=True, exist_ok=True)
         if _QUERY_GRAPH_CHECKPOINT_CONN is None:
+            # AUDIT-024: check_same_thread=False allows concurrent access but
+            # SQLite in WAL mode is only thread-safe for reads. Concurrent state
+            # writes may cause "database is locked" errors under load. Accepted
+            # trade-off for simplicity; consider async-compatible checkpointer
+            # for high-concurrency deployments.
             _QUERY_GRAPH_CHECKPOINT_CONN = sqlite3.connect(
                 str(_CONVERSATIONS_DB), check_same_thread=False
             )
@@ -618,4 +638,6 @@ def run_query(
         "grader_grounded": bool(getattr(result.get("grader_decision"), "grounded", True)),
         "grader_consistency_valid": result.get("grader_consistency_valid", True),
         "grader_rejection_count": result.get("grader_rejection_count", 0),
+        # AUDIT-066: include iteration_count for observability
+        "iteration_count": result.get("iteration_count", 0),
     }

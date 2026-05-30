@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any
 
 from src.config.llm_factory import get_midtier_llm
 from src.config.logging import get_logger
@@ -64,7 +63,9 @@ def _map_validate_single(
         if error:
             logger.warning(
                 "Parallel mapping: Pydantic error for '%s' attempt %d: %s",
-                table.table_name, attempt + 1, error,
+                table.table_name,
+                attempt + 1,
+                error,
             )
             if best_proposal is None:
                 best_proposal = proposal
@@ -81,7 +82,9 @@ def _map_validate_single(
         if (validated.confidence or 0.0) >= settings.critic_confidence_gate:
             logger.info(
                 "Parallel mapping: '%s' accepted (conf=%.2f >= gate=%.2f)",
-                table.table_name, validated.confidence, settings.critic_confidence_gate,
+                table.table_name,
+                validated.confidence,
+                settings.critic_confidence_gate,
             )
             return (table.table_name, validated)
 
@@ -94,7 +97,8 @@ def _map_validate_single(
         if decision.approved:
             logger.info(
                 "Parallel mapping: '%s' approved by critic (conf=%.2f)",
-                table.table_name, validated.confidence,
+                table.table_name,
+                validated.confidence,
             )
             return (table.table_name, validated)
 
@@ -102,7 +106,9 @@ def _map_validate_single(
         reflection_prompt = decision.critique or "Mapping rejected by critic."
         logger.info(
             "Parallel mapping: '%s' rejected by critic (attempt %d/%d)",
-            table.table_name, attempt + 1, max_attempts,
+            table.table_name,
+            attempt + 1,
+            max_attempts,
         )
 
     # Exhausted attempts — return best proposal
@@ -143,7 +149,8 @@ def parallel_map_all_tables(
 
     logger.info(
         "Parallel mapping: processing %d tables with %d workers",
-        len(enriched_tables), workers,
+        len(enriched_tables),
+        workers,
     )
 
     with ThreadPoolExecutor(max_workers=min(workers, len(enriched_tables))) as pool:
@@ -171,11 +178,13 @@ def parallel_map_all_tables(
             except Exception as exc:
                 logger.error(
                     "Parallel mapping: ✗ '%s' — exception: %s",
-                    table.table_name, exc,
+                    table.table_name,
+                    exc,
                 )
 
     logger.info(
         "Parallel mapping complete: %d/%d tables mapped successfully",
-        len(results), len(enriched_tables),
+        len(results),
+        len(enriched_tables),
     )
     return results

@@ -44,7 +44,8 @@ def _insert_snapshot(snap_id: str, name: str, tmp_path: Path) -> Path:
     """)
     conn.execute("INSERT OR IGNORE INTO kg_active (singleton, snapshot_id) VALUES (1, NULL)")
     conn.execute(
-        "INSERT INTO kg_snapshots (id, name, description, created_at, node_count, edge_count, snapshot_path) "
+        "INSERT INTO kg_snapshots "
+        "(id, name, description, created_at, node_count, edge_count, snapshot_path) "
         "VALUES (?, ?, '', '2026-01-01T00:00:00', 5, 3, ?)",
         (snap_id, name, str(snap_path)),
     )

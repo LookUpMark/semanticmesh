@@ -512,9 +512,13 @@ def extract_tokens(text: str, *, min_length: int = 2) -> set[str]:
     Args:
         text: Input string to tokenize.
         min_length: Minimum token length to include (default: 2).
+            Must be >= 1; ``ValueError`` is raised otherwise.
 
     Returns:
         Set of unique, lowercase tokens meeting the length requirement.
+
+    Raises:
+        ValueError: If *min_length* is less than 1.
 
     Example:
         >>> extract_tokens("Customer_ID stores Order_123")
@@ -522,6 +526,10 @@ def extract_tokens(text: str, *, min_length: int = 2) -> set[str]:
         >>> extract_tokens("a b c", min_length=2)
         set()
     """
+    # AUDIT-065: Reject min_length < 1 which would return every single
+    # character as a token, producing a flood of noise tokens.
+    if min_length < 1:
+        raise ValueError(f"min_length must be >= 1, got {min_length}")
     return {t.lower() for t in TOKEN_RE.findall(text) if len(t) >= min_length}
 
 

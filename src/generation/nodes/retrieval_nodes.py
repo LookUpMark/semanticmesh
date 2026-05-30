@@ -348,8 +348,11 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
                     existing_ids = {c.node_id for c in valid}
                     new_neighbors = [c for c in neighbor_chunks if c.node_id not in existing_ids]
                     if new_neighbors:
-                        for nc in new_neighbors:
-                            nc.score = settings.post_rerank_expansion_score
+                        # AUDIT-030: use model_copy instead of direct mutation
+                        new_neighbors = [
+                            nc.model_copy(update={"score": settings.post_rerank_expansion_score})
+                            for nc in new_neighbors
+                        ]
                         valid = valid + new_neighbors
                         logger.debug(
                             "Post-rerank expansion added %d neighbor chunks", len(new_neighbors)

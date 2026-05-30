@@ -136,8 +136,10 @@ class TestRunAblation:
             return dict(_ZERO_METRICS)
 
         # AB-20 sets ENABLE_HALLUCINATION_GRADER=false
-        with patch(_PATCH_RAGAS, side_effect=capture_metrics), \
-             patch(_PATCH_BUILDER, return_value=_MOCK_BUILDER_STATE):
+        with (
+            patch(_PATCH_RAGAS, side_effect=capture_metrics),
+            patch(_PATCH_BUILDER, return_value=_MOCK_BUILDER_STATE),
+        ):
             run_ablation("AB-20")
 
         assert captured["ENABLE_HALLUCINATION_GRADER"] == "false"
@@ -145,8 +147,10 @@ class TestRunAblation:
     def test_env_restored_after_run(self) -> None:
         # AB-20 sets ENABLE_HALLUCINATION_GRADER=false; verify it is restored after
         before = os.environ.get("ENABLE_HALLUCINATION_GRADER", "NOT_SET")
-        with patch(_PATCH_RAGAS, side_effect=lambda *a, **kw: dict(_ZERO_METRICS)), \
-             patch(_PATCH_BUILDER, return_value=_MOCK_BUILDER_STATE):
+        with (
+            patch(_PATCH_RAGAS, side_effect=lambda *a, **kw: dict(_ZERO_METRICS)),
+            patch(_PATCH_BUILDER, return_value=_MOCK_BUILDER_STATE),
+        ):
             run_ablation("AB-20")
         after = os.environ.get("ENABLE_HALLUCINATION_GRADER", "NOT_SET")
         assert before == after
@@ -154,8 +158,10 @@ class TestRunAblation:
     def test_all_experiments_run_without_error(self) -> None:
         # Mock both RAGAS and the builder so the test validates ablation_runner
         # routing logic for all 21 experiments without real LLM/Neo4j calls.
-        with patch(_PATCH_RAGAS, side_effect=lambda *a, **kw: dict(_ZERO_METRICS)), \
-             patch(_PATCH_BUILDER, return_value=_MOCK_BUILDER_STATE):
+        with (
+            patch(_PATCH_RAGAS, side_effect=lambda *a, **kw: dict(_ZERO_METRICS)),
+            patch(_PATCH_BUILDER, return_value=_MOCK_BUILDER_STATE),
+        ):
             for exp_id in ABLATION_MATRIX:
                 result = run_ablation(exp_id)
                 assert isinstance(result, dict), f"{exp_id} returned non-dict"

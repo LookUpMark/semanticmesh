@@ -13,13 +13,13 @@ from typing import Any
 
 from neo4j import GraphDatabase, ManagedTransaction, Result
 
-from src.config.config import DEFAULT_CONFIG
 from src.config.logging import get_logger
 from src.config.settings import get_settings
 
 logger: logging.Logger = get_logger(__name__)
 
-_EMBEDDING_DIMENSION: int = DEFAULT_CONFIG.embedding_dimensions
+# AUDIT-017: removed module-level _EMBEDDING_DIMENSION capture.
+# The dimension is now read from live settings inside setup_schema().
 
 # Singleton driver — reused across all Neo4jClient instances.
 _driver_lock = Lock()
@@ -49,7 +49,14 @@ def _get_shared_driver(uri: str, auth: tuple[str, str]):
 
 
 def close_shared_driver() -> None:
-    """Close the singleton driver. Call on shutdown or settings reload."""
+    """Close the singleton driver. Call on shutdown or settings reload.
+
+    AUDIT-027: The driver property and __exit__ do not acquire _driver_lock,
+    so calling close_shared_driver() while another thread is mid-query may
+    close the driver prematurely. A reference-counting or read-write lock
+    scheme would be needed to fully resolve this — accepted as low risk since
+    close_shared_driver() is only called during shutdown or settings reload.
+    """
     global _singleton_driver, _singleton_uri, _singleton_auth
     with _driver_lock:
         if _singleton_driver is not None:
@@ -60,6 +67,7 @@ def close_shared_driver() -> None:
         _singleton_auth = None
 
 
+# Static schema statements (constraints + plain indexes) — no embedded dimension.
 _SCHEMA_STATEMENTS: list[str] = [
     "CREATE CONSTRAINT businessconcept_name_unique IF NOT EXISTS "
     "FOR (n:BusinessConcept) REQUIRE n.name IS UNIQUE",
@@ -71,27 +79,37 @@ _SCHEMA_STATEMENTS: list[str] = [
     "FOR (n:SourceFile) REQUIRE n.path IS UNIQUE",
     "CREATE INDEX chunk_source_doc IF NOT EXISTS FOR (c:Chunk) ON (c.source_doc)",
     "CREATE INDEX parentchunk_source_doc IF NOT EXISTS FOR (pc:ParentChunk) ON (pc.source_doc)",
-    (
-        "CREATE VECTOR INDEX businessconcept_embedding IF NOT EXISTS "
-        "FOR (n:BusinessConcept) ON n.embedding "
-        f"OPTIONS {{indexConfig: {{`vector.dimensions`: {_EMBEDDING_DIMENSION}, "
-        "`vector.similarity_function`: 'cosine'}}"
-    ),
-    (
-        "CREATE VECTOR INDEX chunk_embedding IF NOT EXISTS "
-        "FOR (c:Chunk) ON c.embedding "
-        f"OPTIONS {{indexConfig: {{`vector.dimensions`: {_EMBEDDING_DIMENSION}, "
-        "`vector.similarity_function`: 'cosine'}}"
-    ),
     "CREATE CONSTRAINT attribute_name_unique IF NOT EXISTS "
     "FOR (a:Attribute) REQUIRE a.name IS UNIQUE",
-    (
-        "CREATE VECTOR INDEX attribute_embedding IF NOT EXISTS "
-        "FOR (a:Attribute) ON a.embedding "
-        f"OPTIONS {{indexConfig: {{`vector.dimensions`: {_EMBEDDING_DIMENSION}, "
-        "`vector.similarity_function`: 'cosine'}}"
-    ),
 ]
+
+
+def _build_vector_index_statements(dims: int) -> list[str]:
+    """Build vector index CREATE statements using the given dimension count.
+
+    AUDIT-017: dimension is read from live settings at setup time instead of
+    being captured at module import time.
+    """
+    return [
+        (
+            "CREATE VECTOR INDEX businessconcept_embedding IF NOT EXISTS "
+            "FOR (n:BusinessConcept) ON n.embedding "
+            f"OPTIONS {{indexConfig: {{`vector.dimensions`: {dims}, "
+            "`vector.similarity_function`: 'cosine'}}"
+        ),
+        (
+            "CREATE VECTOR INDEX chunk_embedding IF NOT EXISTS "
+            "FOR (c:Chunk) ON c.embedding "
+            f"OPTIONS {{indexConfig: {{`vector.dimensions`: {dims}, "
+            "`vector.similarity_function`: 'cosine'}}"
+        ),
+        (
+            "CREATE VECTOR INDEX attribute_embedding IF NOT EXISTS "
+            "FOR (a:Attribute) ON a.embedding "
+            f"OPTIONS {{indexConfig: {{`vector.dimensions`: {dims}, "
+            "`vector.similarity_function`: 'cosine'}}"
+        ),
+    ]
 
 
 class Neo4jClient:
@@ -171,6 +189,13 @@ class Neo4jClient:
             raise RuntimeError("Neo4jClient must be used as a context manager.")
         params = params or {}
 
+        # AUDIT-069: reject multi-statement Cypher (defense-in-depth against injection)
+        if ";" in cypher.rstrip(";"):
+            raise ValueError(
+                "execute_cypher rejects multi-statement Cypher (semicolon detected). "
+                "Use execute_batch() for multiple statements."
+            )
+
         with self._driver.session() as session:
             result: Result = session.run(cypher, parameters=params)
             records: list[dict[str, Any]] = [dict(r) for r in result]
@@ -211,8 +236,12 @@ def setup_schema(client: Neo4jClient) -> None:
     Args:
         client: An active ``Neo4jClient`` context.
     """
-    logger.info("Running schema setup (%d statements)...", len(_SCHEMA_STATEMENTS))
-    for stmt in _SCHEMA_STATEMENTS:
+    # AUDIT-017: read embedding dimension from live settings instead of
+    # module-level capture so runtime config changes are reflected.
+    dims = get_settings().embedding_dimensions
+    all_statements = _SCHEMA_STATEMENTS + _build_vector_index_statements(dims)
+    logger.info("Running schema setup (%d statements)...", len(all_statements))
+    for stmt in all_statements:
         try:
             client.execute_cypher(stmt)
             logger.debug("Schema OK: %.60s...", stmt)

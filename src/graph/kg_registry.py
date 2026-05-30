@@ -225,10 +225,7 @@ def _import_graph(nodes: list[dict], edges: list[dict]) -> None:
             src = props.get("source_doc", "")
             if idx is None:
                 return None
-            rest = {
-                k: v for k, v in props.items()
-                if k not in ("parent_chunk_index", "source_doc")
-            }
+            rest = {k: v for k, v in props.items() if k not in ("parent_chunk_index", "source_doc")}
             return (
                 "MERGE (n:ParentChunk "
                 "{parent_chunk_index: $idx, source_doc: $src}) "

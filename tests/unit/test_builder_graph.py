@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from langgraph.graph import END
-
 from src.graph.builder_graph import (
     _node_extract_triplets,
     _route_after_build,
@@ -20,19 +18,39 @@ from src.models.schemas import Chunk
 
 class TestRouteAfterValidate:
     def test_routes_to_hitl_when_flag(self) -> None:
-        state = {"hitl_flag": True, "reflection_prompt": None, "current_table": MagicMock(), "mapping_proposal": MagicMock()}
+        state = {
+            "hitl_flag": True,
+            "reflection_prompt": None,
+            "current_table": MagicMock(),
+            "mapping_proposal": MagicMock(),
+        }
         assert _route_after_validate(state) == "hitl"
 
     def test_routes_to_rag_mapping_for_reflection(self) -> None:
-        state = {"hitl_flag": False, "reflection_prompt": "Please fix...", "current_table": MagicMock(), "mapping_proposal": MagicMock()}
+        state = {
+            "hitl_flag": False,
+            "reflection_prompt": "Please fix...",
+            "current_table": MagicMock(),
+            "mapping_proposal": MagicMock(),
+        }
         assert _route_after_validate(state) == "rag_mapping"
 
     def test_routes_to_generate_cypher_on_success(self) -> None:
-        state = {"hitl_flag": False, "reflection_prompt": None, "current_table": MagicMock(), "mapping_proposal": MagicMock()}
+        state = {
+            "hitl_flag": False,
+            "reflection_prompt": None,
+            "current_table": MagicMock(),
+            "mapping_proposal": MagicMock(),
+        }
         assert _route_after_validate(state) == "generate_cypher"
 
     def test_hitl_takes_precedence_over_reflection(self) -> None:
-        state = {"hitl_flag": True, "reflection_prompt": "Please fix...", "current_table": MagicMock(), "mapping_proposal": MagicMock()}
+        state = {
+            "hitl_flag": True,
+            "reflection_prompt": "Please fix...",
+            "current_table": MagicMock(),
+            "mapping_proposal": MagicMock(),
+        }
         assert _route_after_validate(state) == "hitl"
 
     def test_routes_to_save_trace_when_no_proposal(self) -> None:

@@ -17,7 +17,7 @@ from src.config.settings import get_settings
 from src.models.schemas import EnrichedTableSchema, Entity
 from src.retrieval.embeddings import embed_text, embed_texts
 
-_settings = get_settings()
+# AUDIT-017: removed stale module-level _settings snapshot
 logger = get_logger(__name__)
 
 
@@ -80,7 +80,8 @@ def retrieve_top_entities(
     Returns:
         Top-k most similar ``Entity`` objects, sorted by descending similarity.
     """
-    k = top_k if top_k is not None else _settings.retrieval_vector_top_k
+    # AUDIT-017: use local get_settings() instead of stale module-level snapshot
+    k = top_k if top_k is not None else get_settings().retrieval_vector_top_k
     if not entities:
         return []
 

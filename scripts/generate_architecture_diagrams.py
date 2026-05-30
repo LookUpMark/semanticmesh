@@ -11,7 +11,6 @@ from pathlib import Path
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-import numpy as np
 
 OUTPUT_DIR = Path(__file__).parent.parent / "docs" / "images"
 

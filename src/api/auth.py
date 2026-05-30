@@ -40,6 +40,11 @@ _logger = logging.getLogger(__name__)
 _auth_warning_logged = False
 _auth_attempts: dict[str, list[float]] = defaultdict(list)
 
+# AUDIT-010 (ORANGE): Maximum number of distinct IPs tracked for rate limiting.
+# When exceeded, the oldest entries are evicted to prevent unbounded memory growth
+# from attackers rotating X-Forwarded-For headers.
+_MAX_AUTH_IPS = 10000
+
 _API_KEY_HEADER = APIKeyHeader(
     name="X-API-Key",
     description=(
@@ -62,8 +67,12 @@ def require_api_key(
 ) -> str | None:
     """FastAPI dependency that validates the X-API-Key header.
 
-    - If ``API_KEY`` env var is **not set**: auth is disabled, all requests pass.
-    - If ``API_KEY`` is set: header must be present and match exactly.
+    - If ``API_KEY`` env var is **set**: header must be present and match exactly.
+    - If ``API_KEY`` is **not set** and ``SEMANTICMESH_DEV_MODE`` is ``true``:
+      auth is disabled (dev mode), all requests pass.
+    - If ``API_KEY`` is **not set** and ``SEMANTICMESH_DEV_MODE`` is **not set**:
+      a WARNING is logged but requests are still allowed (backward-compatible).
+      This will become a hard error in a future release.
 
     Returns the validated key (or None when auth is disabled).
     """
@@ -71,13 +80,29 @@ def require_api_key(
     if configured is None:
         global _auth_warning_logged
         if not _auth_warning_logged:
-            _logger.warning(
-                "╔══════════════════════════════════════════════════════════╗\n"
-                "║  API_KEY not set — authentication DISABLED.             ║\n"
-                "║  All endpoints (including DELETE /graph) are UNPROTECTED.║\n"
-                "║  Set API_KEY env var before deploying to production.     ║\n"
-                "╚══════════════════════════════════════════════════════════╝"
+            dev_mode = os.environ.get("SEMANTICMESH_DEV_MODE", "").strip().lower() in (
+                "true",
+                "1",
+                "yes",
             )
+            if dev_mode:
+                _logger.warning(
+                    "╔══════════════════════════════════════════════════════════╗\n"
+                    "║  SEMANTICMESH_DEV_MODE=true — authentication DISABLED.  ║\n"
+                    "║  API_KEY is not set. All endpoints are UNPROTECTED.     ║\n"
+                    "║  Only use this in local development.                    ║\n"
+                    "╚══════════════════════════════════════════════════════════╝"
+                )
+            else:
+                # AUDIT-007 (ORANGE): Explicit WARNING when neither API_KEY nor dev mode is set.
+                _logger.warning(
+                    "╔══════════════════════════════════════════════════════════╗\n"
+                    "║  API_KEY not set — authentication DISABLED.             ║\n"
+                    "║  All endpoints (including DELETE /graph) are UNPROTECTED.║\n"
+                    "║  Set API_KEY env var before deploying to production.     ║\n"
+                    "║  Or set SEMANTICMESH_DEV_MODE=true to suppress this.     ║\n"
+                    "╚══════════════════════════════════════════════════════════╝"
+                )
             _auth_warning_logged = True
         return None
 
@@ -97,8 +122,25 @@ def require_api_key(
 
     client_ip = request.client.host if request.client else "unknown"
     now = time.monotonic()
+
+    # AUDIT-010 (ORANGE): Prune expired timestamps and evict oldest IPs when limit exceeded
     _auth_attempts[client_ip] = [t for t in _auth_attempts[client_ip] if now - t < _window_seconds]
-    if len(_auth_attempts[client_ip]) >= _max_attempts:
+    # Remove dict keys whose timestamp lists are now empty
+    if not _auth_attempts[client_ip]:
+        del _auth_attempts[client_ip]
+
+    # Evict oldest entries when IP count exceeds the hard limit
+    if len(_auth_attempts) >= _MAX_AUTH_IPS:
+        # Sort by oldest timestamp and evict the oldest 10%
+        sorted_ips = sorted(
+            _auth_attempts.keys(),
+            key=lambda ip: _auth_attempts[ip][0] if _auth_attempts[ip] else now,
+        )
+        evict_count = max(1, len(sorted_ips) // 10)
+        for ip_to_evict in sorted_ips[:evict_count]:
+            del _auth_attempts[ip_to_evict]
+
+    if len(_auth_attempts.get(client_ip, [])) >= _max_attempts:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many authentication attempts. Try again later.",

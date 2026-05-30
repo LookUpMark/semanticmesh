@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timezone
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from src.api.ablation_router import router as ablation_router
 from src.api.auth import require_api_key
@@ -19,7 +22,73 @@ from src.config.observability import flush_observability, is_langfuse_enabled, i
 
 _logger = get_logger(__name__)
 
+# ── Session File Logging (module-level state for lifespan) ─────────────────────
+
+_SESSION_LOG_DIR = Path("outputs/api")
+_session_run_dir: Path | None = None
+_session_file_handler: logging.FileHandler | None = None
+
+
+# AUDIT-013 (ORANGE): Replace deprecated on_event with lifespan async context manager.
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncGenerator[dict[str, Any], None]:
+    """Application lifespan: startup and shutdown logic in one context manager.
+
+    Replaces the deprecated @app.on_event("startup") / @app.on_event("shutdown")
+    pattern which is scheduled for removal in FastAPI 1.0.
+    """
+    global _session_file_handler, _session_run_dir  # noqa: PLW0603
+
+    # ── Startup ────────────────────────────────────────────────────────────
+    # Log observability status
+    if is_langsmith_enabled():
+        _logger.info("Observability: LangSmith tracing ENABLED")
+    if is_langfuse_enabled():
+        _logger.info("Observability: Langfuse tracing ENABLED")
+
+    # Set up session file logging
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    _session_run_dir = _SESSION_LOG_DIR / f"session_{timestamp}"
+    _session_run_dir.mkdir(parents=True, exist_ok=True)
+    log_path = _session_run_dir / "session.log"
+
+    from pythonjsonlogger import jsonlogger  # noqa: PLC0415
+
+    handler = logging.FileHandler(log_path, encoding="utf-8")
+    formatter = jsonlogger.JsonFormatter(
+        fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+        rename_fields={"asctime": "ts", "name": "logger", "levelname": "level"},
+    )
+    handler.setFormatter(formatter)
+    logging.getLogger().addHandler(handler)
+    _session_file_handler = handler
+    _logger.info("API session log: %s", log_path)
+
+    yield {}  # Application runs here
+
+    # ── Shutdown ───────────────────────────────────────────────────────────
+    flush_observability()
+
+    import json  # noqa: PLC0415
+
+    from src.config.llm_client import get_llm_usage_summary  # noqa: PLC0415
+
+    usage = get_llm_usage_summary()
+    if usage and _session_run_dir:
+        _logger.info("LLM usage summary: %s", json.dumps(usage, default=str))
+        summary_path = _session_run_dir / "usage.json"
+        summary_path.write_text(json.dumps(usage, indent=2, default=str), encoding="utf-8")
+
+    if _session_file_handler:
+        _session_file_handler.flush()
+        _session_file_handler.close()
+        logging.getLogger().removeHandler(_session_file_handler)
+        _session_file_handler = None
+
+
 app = FastAPI(
+    lifespan=_lifespan,
     title="GraphRAG Thesis API",
     version="1.4.2",
     summary=(
@@ -91,9 +160,10 @@ Run, monitor, and compare ablation experiments:
 _cors_origins = os.environ.get("CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(
     ","
 )
-if _cors_origins == ["*"]:
+# AUDIT-026 (ORANGE): Check each individual origin for wildcard, not the whole list.
+if "*" in _cors_origins:
     _logger.error(
-        "CORS_ORIGINS='*' is insecure — rejecting wildcard. "
+        "CORS_ORIGINS contains '*' — rejecting wildcard. "
         "Set explicit origins (e.g. 'http://localhost:3000,http://localhost:8000')."
     )
     _cors_origins = ["http://127.0.0.1:8000", "http://localhost:8000"]
@@ -116,119 +186,77 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.on_event("startup")
-def _log_observability_status() -> None:
-    """Log which observability backends are active at startup."""
-    if is_langsmith_enabled():
-        _logger.info("Observability: LangSmith tracing ENABLED")
-    if is_langfuse_enabled():
-        _logger.info("Observability: Langfuse tracing ENABLED")
-
-
-# ── Session File Logging ─────────────────────────────────────────────────────
-
-_SESSION_LOG_DIR = Path("outputs/api")
-_session_run_dir: Path | None = None
-_session_file_handler: logging.FileHandler | None = None
-
-
-@app.on_event("startup")
-def _setup_session_logging() -> None:
-    """Create a timestamped subdirectory under outputs/api/ for this API session."""
-    global _session_file_handler, _session_run_dir  # noqa: PLW0603
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    _session_run_dir = _SESSION_LOG_DIR / f"session_{timestamp}"
-    _session_run_dir.mkdir(parents=True, exist_ok=True)
-    log_path = _session_run_dir / "session.log"
-
-    from pythonjsonlogger import jsonlogger  # noqa: PLC0415
-
-    handler = logging.FileHandler(log_path, encoding="utf-8")
-    formatter = jsonlogger.JsonFormatter(
-        fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
-        datefmt="%Y-%m-%dT%H:%M:%S",
-        rename_fields={"asctime": "ts", "name": "logger", "levelname": "level"},
-    )
-    handler.setFormatter(formatter)
-    logging.getLogger().addHandler(handler)
-    _session_file_handler = handler
-    _logger.info("API session log: %s", log_path)
-
-
-@app.on_event("shutdown")
-def _flush_observability() -> None:
-    """Flush pending observability data before shutdown."""
-    flush_observability()
-
-
-@app.on_event("shutdown")
-def _close_session_logging() -> None:
-    """Write LLM usage summary and close the session log file."""
-    import json  # noqa: PLC0415
-
-    from src.config.llm_client import get_llm_usage_summary  # noqa: PLC0415
-
-    usage = get_llm_usage_summary()
-    if usage and _session_run_dir:
-        _logger.info("LLM usage summary: %s", json.dumps(usage, default=str))
-        summary_path = _session_run_dir / "usage.json"
-        summary_path.write_text(json.dumps(usage, indent=2, default=str), encoding="utf-8")
-
-    global _session_file_handler  # noqa: PLW0603
-    if _session_file_handler:
-        _session_file_handler.flush()
-        _session_file_handler.close()
-        logging.getLogger().removeHandler(_session_file_handler)
-        _session_file_handler = None
-
-
 # ── Runtime Configuration Overrides ──────────────────────────────────────────
-# Allows a client Settings page to push env-var overrides to the running
-# server without a restart.  Overrides are applied in-process only; they are
-# NOT written to .env.  Sensitive keys (API credentials) are accepted here but
-# never echoed back in GET responses.
+# AUDIT-001 (RED): Explicit ALLOWLIST of keys that may be overridden at runtime.
+# Only safe, non-sensitive settings are permitted.  Infrastructure URLs, secrets,
+# auth keys, and provider endpoints are NEVER accepted — those require a server restart.
+#
+# Allowed categories:
+#   - Boolean ablation flags (enable_*)
+#   - Numeric thresholds and limits
+#   - String identifiers (study_name)
+#
+# NEVER allow: LLM_ENDPOINT_*, NEO4J_*, *_BASE_URL, *_API_KEY, *_PASSWORD,
+#   LMSTUDIO_*, CORS_*, LANGCHAIN_*, LANGFUSE_*, LOG_LEVEL, ENABLE_DEBUG_TRACE,
+#   or any key not listed below.
 
-_SENSITIVE_KEYS = frozenset(
+_ALLOWED_OVERRIDE_KEYS: frozenset[str] = frozenset(
     {
-        "OPENROUTER_API_KEY",
-        "OPENAI_API_KEY",
-        "ANTHROPIC_API_KEY",
-        "GROQ_API_KEY",
-        "MISTRAL_API_KEY",
-        "NEO4J_PASSWORD",
-        "API_KEY",
-        "GOOGLE_API_KEY",
-        "COHERE_API_KEY",
-        "DEEPSEEK_API_KEY",
-        "XAI_API_KEY",
-        "AZURE_OPENAI_API_KEY",
-    }
-)
-
-# Keys that must NOT be overridden at runtime (security/infra controls)
-_BLOCKED_OVERRIDE_KEYS = frozenset(
-    {
-        "LMSTUDIO_BASE_URL",
-        "OPENROUTER_BASE_URL",
-        "OLLAMA_BASE_URL",
-        "GROQ_BASE_URL",
-        "TOGETHER_BASE_URL",
-        "NVIDIA_BASE_URL",
-        "DEEPSEEK_BASE_URL",
-        "XAI_BASE_URL",
-        "COHERE_BASE_URL",
-        "PROVIDER_BASE_URL",
-        "AZURE_OPENAI_ENDPOINT",
-        "LOG_LEVEL",
-        "ENABLE_DEBUG_TRACE",
+        # ── Boolean ablation flags ─────────────────────────────────────────
+        "ENABLE_SCHEMA_ENRICHMENT",
+        "ENABLE_CYPHER_HEALING",
+        "ENABLE_CRITIC_VALIDATION",
+        "ENABLE_HALLUCINATION_GRADER",
+        "ENABLE_RERANKER",
+        "ENABLE_RETRIEVAL_QUALITY_GATE",
+        "ENABLE_GRADER_CONSISTENCY_VALIDATOR",
+        "ENABLE_SPACY_HEURISTICS",
+        "ENABLE_LAZY_EXPANSION",
+        "USE_LAZY_EXTRACTION",
+        # ── Numeric thresholds ──────────────────────────────────────────────
+        "CONFIDENCE_THRESHOLD",
+        "ER_SIMILARITY_THRESHOLD",
+        "ER_BLOCKING_TOP_K",
+        "RERANKER_TOP_K",
+        "RETRIEVAL_VECTOR_TOP_K",
+        "RETRIEVAL_BM25_TOP_K",
+        "RETRIEVAL_GRAPH_DEPTH",
+        "MAX_REFLECTION_ATTEMPTS",
+        "MAX_CYPHER_HEALING_ATTEMPTS",
+        "MAX_HALLUCINATION_RETRIES",
+        "CHUNK_SIZE",
+        "CHUNK_OVERLAP",
+        "PARENT_CHUNK_SIZE",
+        "PARENT_CHUNK_OVERLAP",
+        "PROVENANCE_MAX_CHARS",
+        "EMBEDDING_DIMENSIONS",
+        "MAPPING_CONCURRENCY",
+        "LLM_MAX_TOKENS_EXTRACTION",
+        "LLM_MAX_TOKENS_REASONING",
+        "LLM_TEMPERATURE_EXTRACTION",
+        "LLM_TEMPERATURE_REASONING",
+        "LLM_TEMPERATURE_GENERATION",
+        # ── String names ────────────────────────────────────────────────────
+        "STUDY_NAME",
+        "RETRIEVAL_MODE",
+        "LLM_MODEL_REASONING",
+        "LLM_MODEL_EXTRACTION",
+        "LLM_MODEL_MIDTIER",
+        "LLM_MODEL_GENERATION",
+        "LLM_PROVIDER",
     }
 )
 
 
 class ServerConfigRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     overrides: dict[str, str]
 
 
+# AUDIT-072 (YELLOW): TODO — Restrict the config endpoint to admin-only access.
+# Currently any authenticated user can read all model names, chunk sizes, thresholds,
+# feature flags, and internal URLs. Consider adding a separate ADMIN_API_KEY or
+# restricting this endpoint to a dedicated /admin/ prefix.
 @app.get("/api/v1/config", tags=["Configuration"], dependencies=[Depends(require_api_key)])
 def get_config() -> dict[str, str]:
     """Return current non-sensitive runtime configuration values."""
@@ -282,31 +310,22 @@ def get_config() -> dict[str, str]:
 def set_config(req: ServerConfigRequest) -> dict[str, object]:
     """Apply runtime env-var overrides to the running server (no restart needed).
 
-    Overrides are applied in-process via os.environ and the settings cache is
-    reloaded.  Only keys that correspond to known ``Settings`` fields are accepted.
+    AUDIT-001 (RED): Uses an explicit ALLOWLIST — only keys in
+    ``_ALLOWED_OVERRIDE_KEYS`` are accepted.  All other keys (secrets, endpoints,
+    infrastructure) are silently blocked.  Overrides are applied in-process only
+    via os.environ and the settings cache is reloaded on success.
     """
-    from src.config.settings import Settings
-
-    allowed_keys = frozenset(Settings.model_fields)
-    allowed_env_aliases = frozenset(f.upper() for f in allowed_keys)
     applied: list[str] = []
     blocked: list[str] = []
     errors: list[str] = []
     for key, value in req.overrides.items():
-        if key not in allowed_keys and key not in allowed_env_aliases:
-            blocked.append(key)
-            continue
-        # Never allow runtime override of secrets
-        if key in _SENSITIVE_KEYS or key.upper() in {k.upper() for k in _SENSITIVE_KEYS}:
-            blocked.append(key)
-            continue
-        # Never allow override of infrastructure/security keys
-        if key.upper() in _BLOCKED_OVERRIDE_KEYS:
+        # AUDIT-001: Only allow keys on the explicit allowlist
+        if key.upper() not in _ALLOWED_OVERRIDE_KEYS:
             blocked.append(key)
             continue
         if value:
-            os.environ[key] = value
-            applied.append(key)
+            os.environ[key.upper()] = value
+            applied.append(key.upper())
 
     if applied:
         from src.config.llm_factory import reconfigure_from_env

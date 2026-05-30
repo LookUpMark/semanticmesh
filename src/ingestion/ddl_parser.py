@@ -290,6 +290,14 @@ def parse_ddl(ddl_text: str, dialect: str = "mysql") -> list[TableSchema]:
     Raises:
         DDLParseError: If no CREATE TABLE statements could be parsed.
     """
+    # AUDIT-054: size guard on DDL input to prevent ReDoS via catastrophic backtracking
+    ddl_max_input_bytes = 1_000_000  # 1 MB safety limit for DDL text
+    if len(ddl_text.encode("utf-8", errors="replace")) > ddl_max_input_bytes:
+        raise DDLParseError(
+            f"DDL input exceeds maximum size limit ({ddl_max_input_bytes} bytes). "
+            f"Input size: {len(ddl_text.encode('utf-8', errors='replace'))} bytes."
+        )
+
     ddl_text = _strip_non_table_ddl(ddl_text)
     try:
         statements = sqlglot.parse(ddl_text, dialect=dialect, error_level=sqlglot.ErrorLevel.WARN)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import os
 import re
 import tempfile
@@ -45,10 +46,14 @@ _ROOT = Path(__file__).parent.parent.parent  # repo root
 
 
 def _to_abs(path: str) -> str:
-    """Resolve path and validate it's within an allowed directory (symlink-safe)."""
-    p = Path(path).resolve(strict=False)
-    # Reject symlinks to prevent directory escape attacks
-    if Path(path).is_symlink():
+    """Resolve path and validate it's within an allowed directory (symlink-safe).
+
+    AUDIT-031 (YELLOW): Uses resolve(strict=True) and checks is_symlink()
+    on the resolved path to prevent TOCTOU races via symlink swaps.
+    """
+    p = Path(path).resolve(strict=True)
+    # Reject symlinks on the RESOLVED path (not original) to prevent TOCTOU races
+    if p.is_symlink():
         raise ValueError(f"Symlinks are not allowed: {path}")
     root = _ROOT.resolve(strict=False)
     upload_dir = Path(tempfile.gettempdir(), "thesis_uploads").resolve(strict=False)
@@ -73,11 +78,20 @@ def _get_max_upload_bytes() -> int:
 
 
 def _sanitize_filename(raw: str | None) -> str:
-    """Strip path components and reject dangerous characters."""
+    """Strip path components and reject dangerous characters.
+
+    AUDIT-048 (YELLOW): Appends a short random suffix when the result is
+    generic (e.g. "upload") to prevent concurrent-upload collisions.
+    """
     basename = Path(raw or "upload").name
     # Keep only alphanumerics, dots, dashes, underscores
     safe = re.sub(r"[^\w.\-]", "_", basename)
-    return safe or "upload"
+    if not safe or safe in ("upload", "_"):
+        # Generate a short disambiguation suffix for generic names
+        import uuid
+
+        safe = f"{safe or 'upload'}_{uuid.uuid4().hex[:6]}"
+    return safe
 
 
 async def _save_uploads(files: list[UploadFile]) -> list[str]:
@@ -118,13 +132,32 @@ async def _save_uploads(files: list[UploadFile]) -> list[str]:
 
 
 def _query_result_to_response(result: dict[str, Any]) -> QueryResponse:
+    """Convert raw query graph result dict to API response model.
+
+    AUDIT-052 (YELLOW): Wraps float()/int() conversions in try/except and
+    rejects NaN/Inf values via math.isfinite().
+    """
     contexts = result.get("retrieved_contexts", [])
     previews = [c[:300] for c in contexts[:3]]
+
+    # AUDIT-052: Safe numeric conversion with NaN/Inf rejection
+    try:
+        score = float(result.get("retrieval_quality_score", 0.0))
+        if not math.isfinite(score):
+            score = 0.0
+    except (TypeError, ValueError):
+        score = 0.0
+
+    try:
+        chunk_count = int(result.get("retrieval_chunk_count", 0))
+    except (TypeError, ValueError):
+        chunk_count = 0
+
     return QueryResponse(
         answer=result.get("final_answer", ""),
         sources=result.get("sources", []),
-        retrieval_quality_score=float(result.get("retrieval_quality_score", 0.0)),
-        retrieval_chunk_count=int(result.get("retrieval_chunk_count", 0)),
+        retrieval_quality_score=score,
+        retrieval_chunk_count=chunk_count,
         gate_decision=result.get("retrieval_gate_decision", "proceed"),
         grounded=bool(result.get("grader_grounded", True)),
         context_previews=previews,
@@ -180,14 +213,18 @@ def _run_build_task(job_id: str, req: BuildRequest) -> None:
                 study_id=req.study_id,
                 job_id=job_id,  # passed through so run_builder can call set_step()
             )
+        # AUDIT-020 (ORANGE): BuilderState has `parent_chunks` (parent) and `chunks` (child).
+        # We count both and store under explicit keys so _build_state_to_response
+        # can read `parent_chunks` / `child_chunks` from the result dict without
+        # confusing BuilderState field names with response field names.
         result = {
             "builder": {
                 "triplets_extracted": len(builder_state.get("triplets", [])),
                 "entities_resolved": len(builder_state.get("entities", [])),
                 "tables_parsed": len(builder_state.get("tables", [])),
                 "tables_completed": len(builder_state.get("completed_tables", [])),
-                "parent_chunks": len(builder_state.get("parent_chunks", [])),
-                "child_chunks": len(builder_state.get("chunks", [])),
+                "parent_chunks": len(builder_state.get("parent_chunks") or []),
+                "child_chunks": len(builder_state.get("chunks") or []),
                 "skipped_files": builder_state.get("skipped_files", []),
             }
         }
@@ -218,13 +255,14 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
                 use_lazy_extraction=req.lazy_extraction if req.lazy_extraction else None,
                 study_id=req.study_id,
             )
+            # AUDIT-020 (ORANGE): Same mapping as _run_build_task — see comment there.
             builder_summary = {
                 "triplets_extracted": len(builder_state.get("triplets", [])),
                 "entities_resolved": len(builder_state.get("entities", [])),
                 "tables_parsed": len(builder_state.get("tables", [])),
                 "tables_completed": len(builder_state.get("completed_tables", [])),
-                "parent_chunks": len(builder_state.get("parent_chunks", [])),
-                "child_chunks": len(builder_state.get("chunks", [])),
+                "parent_chunks": len(builder_state.get("parent_chunks") or []),
+                "child_chunks": len(builder_state.get("chunks") or []),
                 "skipped_files": builder_state.get("skipped_files", []),
             }
 
@@ -271,6 +309,14 @@ def _run_pipeline_task(job_id: str, req: PipelineRequest) -> None:
     ),
 )
 def post_build(req: BuildRequest) -> BuildResultResponse:
+    # AUDIT-053 (YELLOW): Validate paths synchronously BEFORE spawning the background
+    # thread, so invalid paths return 400 immediately instead of a 200 "queued" that
+    # silently fails later.
+    try:
+        [_to_abs(p) for p in req.doc_paths]
+        [_to_abs(p) for p in req.ddl_paths]
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     job_id = create_job(meta={"type": "build", "study_id": req.study_id})
     threading.Thread(target=_run_build_task, args=(job_id, req), daemon=True).start()
     return BuildResultResponse(job_id=job_id, status="queued")  # type: ignore[arg-type]
@@ -435,6 +481,12 @@ def post_query(req: QueryRequest) -> QueryResponse:
     ),
 )
 def post_pipeline(req: PipelineRequest) -> PipelineJobResponse:
+    # AUDIT-053 (YELLOW): Validate paths synchronously before spawning background thread.
+    try:
+        [_to_abs(p) for p in req.doc_paths]
+        [_to_abs(p) for p in req.ddl_paths]
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     job_id = create_job(
         meta={"type": "pipeline", "study_id": req.study_id, "num_questions": len(req.questions)},
     )
@@ -456,14 +508,11 @@ async def post_pipeline_upload(
     doc_files: list[UploadFile] = File(
         ..., description="Business documentation files (PDF, MD, TXT)."
     ),
-    ddl_files: list[UploadFile] = File(
-        ..., description="DDL SQL files to map onto the ontology."
-    ),
+    ddl_files: list[UploadFile] = File(..., description="DDL SQL files to map onto the ontology."),
     questions: list[str] = Form(
         ...,
         description=(
-            "One or more natural-language questions "
-            "(send multiple 'questions' fields for a list)."
+            "One or more natural-language questions (send multiple 'questions' fields for a list)."
         ),
     ),
     clear_graph: bool = True,
@@ -561,13 +610,18 @@ def get_demo_jobs() -> list[dict]:
     ),
 )
 def delete_graph(confirm: bool = False) -> dict[str, int]:
-    # Extra safety: always require API_KEY for destructive operations
-    import os
+    # AUDIT-004 (RED): Removed redundant os.environ.get("API_KEY") check.
+    # The router-level require_api_key dependency already handles authentication.
+    # Additionally block destructive operations when auth is disabled (no API_KEY set).
+    from src.api.auth import _get_configured_key
 
-    if not os.environ.get("API_KEY", "").strip():
+    if _get_configured_key() is None:
         raise HTTPException(
             status_code=403,
-            detail="Destructive operations require API_KEY to be configured. Set API_KEY env var.",
+            detail=(
+                "Destructive operations require API_KEY to be configured. "
+                "Set API_KEY env var and authenticate via X-API-Key header."
+            ),
         )
     if not confirm:
         raise HTTPException(
@@ -645,16 +699,22 @@ def get_graph_stats() -> GraphStatsResponse:
         raise HTTPException(status_code=503, detail="Neo4j unavailable.") from exc
 
 
-def _sanitize_neo4j_value(v: Any) -> Any:
-    """Convert Neo4j-native types to JSON-serializable Python primitives."""
+def _sanitize_neo4j_value(v: Any, _depth: int = 0) -> Any:
+    """Convert Neo4j-native types to JSON-serializable Python primitives.
+
+    AUDIT-041 (YELLOW): Recursion depth limited to 20 to prevent RecursionError
+    on deeply nested dicts/lists from malicious or corrupted graph data.
+    """
+    if _depth > 20:
+        return repr(v)
     # neo4j.time types: DateTime, Date, Time, Duration
     type_name = type(v).__module__ + "." + type(v).__qualname__
     if "neo4j" in type_name:
         return str(v)
     if isinstance(v, list):
-        return [_sanitize_neo4j_value(i) for i in v]
+        return [_sanitize_neo4j_value(i, _depth + 1) for i in v]
     if isinstance(v, dict):
-        return {k2: _sanitize_neo4j_value(v2) for k2, v2 in v.items()}
+        return {k2: _sanitize_neo4j_value(v2, _depth + 1) for k2, v2 in v.items()}
     return v
 
 

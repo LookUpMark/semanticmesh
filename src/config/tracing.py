@@ -32,24 +32,59 @@ from typing import Any
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tracing Configuration
+# AUDIT-015: All truncation limits are now configurable via Settings fields
+# (trace_truncate_length, trace_max_items) or derived named constants below.
 # ─────────────────────────────────────────────────────────────────────────────
 
-TRUNCATE_LENGTH = 500  # Max length for text fields (prevent huge trace files)
-MAX_ITEMS = 100  # Max items to keep per list (prevent memory issues)
+# Named constants for context-specific truncation lengths.
+# These supplement the primary trace_truncate_length setting for shorter
+# fields (entity names, predicates, reasoning previews) and longer fields
+# (final answers, definitions) where the full trace_truncate_length is
+# not appropriate.
+ENTITY_NAME_TRUNCATE_LENGTH = 100  # subject, predicate, object, entity names
+FIELD_PREVIEW_TRUNCATE_LENGTH = 200  # reasoning previews, definitions, descriptions
+FINAL_ANSWER_TRUNCATE_LENGTH = 1000  # final answer text (needs more room)
 
 
-def truncate_text(text: str, max_length: int = TRUNCATE_LENGTH) -> str:
-    """Truncate text to max length, adding indicator if truncated."""
-    if not text or len(text) <= max_length:
+def _get_truncate_length() -> int:
+    """Get the primary truncate length from settings (AUDIT-015)."""
+    from src.config.settings import get_settings
+
+    return get_settings().trace_truncate_length
+
+
+def _get_max_items() -> int:
+    """Get the max items limit from settings (AUDIT-015)."""
+    from src.config.settings import get_settings
+
+    return get_settings().trace_max_items
+
+
+# Module-level aliases for backward compatibility (AUDIT-015: now defer to settings)
+TRUNCATE_LENGTH = 500  # Legacy constant; actual value comes from settings at call time
+MAX_ITEMS = 100  # Legacy constant; actual value comes from settings at call time
+
+
+def truncate_text(text: str, max_length: int | None = None) -> str:
+    """Truncate text to max length, adding indicator if truncated.
+
+    AUDIT-015: When max_length is None, reads from settings.trace_truncate_length.
+    """
+    effective_max = max_length if max_length is not None else _get_truncate_length()
+    if not text or len(text) <= effective_max:
         return text
-    return text[:max_length] + "... [TRUNCATED]"
+    return text[:effective_max] + "... [TRUNCATED]"
 
 
-def truncate_list(items: list[Any], max_items: int = MAX_ITEMS) -> list[Any]:
-    """Truncate list to max items, adding indicator if truncated."""
-    if not items or len(items) <= max_items:
+def truncate_list(items: list[Any], max_items: int | None = None) -> list[Any]:
+    """Truncate list to max items, adding indicator if truncated.
+
+    AUDIT-015: When max_items is None, reads from settings.trace_max_items.
+    """
+    effective_max = max_items if max_items is not None else _get_max_items()
+    if not items or len(items) <= effective_max:
         return items
-    return items[:max_items] + [f"... [{len(items) - max_items} more items TRUNCATED]"]
+    return items[:effective_max] + [f"... [{len(items) - effective_max} more items TRUNCATED]"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -183,9 +218,15 @@ class BuilderTrace:
             truncated_triplets.append(
                 {
                     "chunk_index": t.get("chunk_index", -1),
-                    "subject": truncate_text(t.get("subject", ""), 100),
-                    "predicate": truncate_text(t.get("predicate", ""), 100),
-                    "object": truncate_text(t.get("object", ""), 100),
+                    "subject": truncate_text(
+                        t.get("subject", ""), ENTITY_NAME_TRUNCATE_LENGTH
+                    ),  # AUDIT-015
+                    "predicate": truncate_text(
+                        t.get("predicate", ""), ENTITY_NAME_TRUNCATE_LENGTH
+                    ),  # AUDIT-015
+                    "object": truncate_text(
+                        t.get("object", ""), ENTITY_NAME_TRUNCATE_LENGTH
+                    ),  # AUDIT-015
                     "confidence": t.get("confidence", 0.0),
                 }
             )
@@ -210,7 +251,9 @@ class BuilderTrace:
         self.entities_pre_resolution = truncate_list(
             [
                 {
-                    "name": truncate_text(e.get("name", ""), 100),
+                    "name": truncate_text(
+                        e.get("name", ""), ENTITY_NAME_TRUNCATE_LENGTH
+                    ),  # AUDIT-015
                     "provenance": e.get("provenance", ""),
                 }
                 for e in entities_pre
@@ -235,7 +278,9 @@ class BuilderTrace:
                 {
                     "cluster_id": d.get("cluster_id", ""),
                     "decision": d.get("decision", ""),
-                    "reasoning": truncate_text(d.get("reasoning", ""), 200),
+                    "reasoning": truncate_text(
+                        d.get("reasoning", ""), FIELD_PREVIEW_TRUNCATE_LENGTH
+                    ),  # AUDIT-015
                 }
                 for d in decisions
             ]
@@ -245,8 +290,12 @@ class BuilderTrace:
         self.entities_post_resolution = truncate_list(
             [
                 {
-                    "name": truncate_text(e.get("name", ""), 100),
-                    "definition": truncate_text(e.get("definition", ""), 200),
+                    "name": truncate_text(
+                        e.get("name", ""), ENTITY_NAME_TRUNCATE_LENGTH
+                    ),  # AUDIT-015
+                    "definition": truncate_text(
+                        e.get("definition", ""), FIELD_PREVIEW_TRUNCATE_LENGTH
+                    ),  # AUDIT-015
                     "synonyms": e.get("synonyms", [])[:5],  # Limit synonyms
                 }
                 for e in entities_post
@@ -278,7 +327,9 @@ class BuilderTrace:
                 [
                     {
                         "name": t.get("name", ""),
-                        "description": truncate_text(t.get("description", ""), 200),
+                        "description": truncate_text(
+                            t.get("description", ""), FIELD_PREVIEW_TRUNCATE_LENGTH
+                        ),  # AUDIT-015
                     }
                     for t in enriched_tables
                 ]
@@ -326,7 +377,9 @@ class BuilderTrace:
                     "table": c.get("table", ""),
                     "success": c.get("success", False),
                     "healing_attempts": c.get("healing_attempts", 0),
-                    "cypher_preview": truncate_text(c.get("cypher", ""), 200),
+                    "cypher_preview": truncate_text(
+                        c.get("cypher", ""), FIELD_PREVIEW_TRUNCATE_LENGTH
+                    ),  # AUDIT-015
                 }
                 for c in cypher_results
             ]
@@ -582,7 +635,7 @@ class QueryTrace:
         sources: list[str],
     ) -> None:
         """Record final output."""
-        self.final_answer = truncate_text(answer, 1000)
+        self.final_answer = truncate_text(answer, FINAL_ANSWER_TRUNCATE_LENGTH)  # AUDIT-015
         self.grounded = grounded
         self.verification_score = verification_score
         self.halluncination_grader_decision = grader_decision
@@ -651,7 +704,9 @@ class ComparisonReport:
             self.per_question_analysis.append(
                 {
                     "query_index": i,
-                    "question": truncate_text(gt.get("question", ""), 100),
+                    "question": truncate_text(
+                        gt.get("question", ""), ENTITY_NAME_TRUNCATE_LENGTH
+                    ),  # AUDIT-015
                     "expected_sources": expected_sources,
                     "retrieved_nodes": retrieved_nodes[:10],  # Top 10
                     "covered_sources": covered,
@@ -715,24 +770,20 @@ class ComparisonReport:
                     if self.aggregate_metrics["grounded_rate"] < 0.7
                     else "medium",
                     "description": (
-                        f"Low grounding rate: "
-                        f"{self.aggregate_metrics['grounded_rate']:.2%}"
+                        f"Low grounding rate: {self.aggregate_metrics['grounded_rate']:.2%}"
                     ),
                 }
             )
 
         # Check per-question issues
-        low_coverage_questions = [
-            q for q in self.per_question_analysis if q["coverage_rate"] < 0.5
-        ]
+        low_coverage_questions = [q for q in self.per_question_analysis if q["coverage_rate"] < 0.5]
         if low_coverage_questions:
             bottlenecks.append(
                 {
                     "type": "specific_questions",
                     "severity": "medium",
                     "description": (
-                        f"{len(low_coverage_questions)} questions "
-                        f"with < 50% source coverage"
+                        f"{len(low_coverage_questions)} questions with < 50% source coverage"
                     ),
                     "affected_questions": [q["query_index"] for q in low_coverage_questions],
                 }

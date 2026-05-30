@@ -266,11 +266,32 @@ def _get_not_null_columns(table: EnrichedTableSchema) -> set[str]:
     for col in table.columns:
         if col.is_primary_key:
             not_null.add(col.name)
-        elif f"{col.name.upper()} " in ddl:
-            # Check if NOT NULL follows the column name in DDL
-            idx = ddl.find(col.name.upper())
-            if idx >= 0:
-                segment = ddl[idx : idx + len(col.name) + 50]
+        else:
+            # AUDIT-029: search within per-column region to avoid false-positive
+            # substring matches (e.g. STATUS matching inside STATUS_CODE definition).
+            # Find the column definition region: look for the column name followed by
+            # a comma (next column) or a closing parenthesis (end of CREATE TABLE).
+            col_upper = col.name.upper()
+            idx = ddl.find(col_upper)
+            while idx >= 0:
+                # Verify this is a column definition start: preceded by comma,
+                # open paren, or start of DDL body
+                if idx > 0 and ddl[idx - 1] not in (" ", "\t", "\n", ",", "("):
+                    idx = ddl.find(col_upper, idx + 1)
+                    continue
+                # Find end of this column's definition region
+                comma_pos = ddl.find(",", idx + len(col_upper))
+                paren_pos = ddl.find(")", idx + len(col_upper))
+                # End of column def is the nearer of comma or closing paren
+                if comma_pos < 0:
+                    end_pos = paren_pos if paren_pos >= 0 else len(ddl)
+                elif paren_pos < 0:
+                    end_pos = comma_pos
+                else:
+                    end_pos = min(comma_pos, paren_pos)
+                segment = ddl[idx:end_pos]
                 if "NOT NULL" in segment and "DEFAULT" not in segment.split("NOT NULL")[0][-10:]:
                     not_null.add(col.name)
+                    break
+                idx = ddl.find(col_upper, idx + 1)
     return not_null

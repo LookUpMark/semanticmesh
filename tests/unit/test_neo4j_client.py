@@ -9,6 +9,7 @@ import pytest
 from src.graph.neo4j_client import (
     _SCHEMA_STATEMENTS,
     Neo4jClient,
+    _build_vector_index_statements,
     close_shared_driver,
     setup_schema,
 )
@@ -169,17 +170,22 @@ class TestExecuteBatch:
 
 
 class TestSetupSchema:
+    def _expected_statement_count(self) -> int:
+        """Total schema statements = constraints + vector indexes."""
+        dims = 1024  # default embedding dimension in tests
+        return len(_SCHEMA_STATEMENTS) + len(_build_vector_index_statements(dims))
+
     def test_all_statements_executed(self) -> None:
         client_mock = MagicMock()
         client_mock.execute_cypher.return_value = []
         setup_schema(client_mock)
-        assert client_mock.execute_cypher.call_count == len(_SCHEMA_STATEMENTS)
+        assert client_mock.execute_cypher.call_count == self._expected_statement_count()
 
     def test_failed_statement_does_not_raise(self) -> None:
         client_mock = MagicMock()
         client_mock.execute_cypher.side_effect = Exception("unsupported")
         setup_schema(client_mock)
-        assert client_mock.execute_cypher.call_count == len(_SCHEMA_STATEMENTS)
+        assert client_mock.execute_cypher.call_count == self._expected_statement_count()
 
     def test_continues_after_single_failure(self) -> None:
         call_count = [0]
@@ -194,4 +200,4 @@ class TestSetupSchema:
         client_mock.execute_cypher.side_effect = side_effect
         setup_schema(client_mock)
 
-        assert client_mock.execute_cypher.call_count == len(_SCHEMA_STATEMENTS)
+        assert client_mock.execute_cypher.call_count == self._expected_statement_count()

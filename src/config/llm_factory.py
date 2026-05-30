@@ -352,9 +352,12 @@ def get_extraction_llm() -> LLMProtocol:
     provider = _resolve_provider(s.llm_provider_extraction, s.llm_model_extraction)
     effort = s.llm_effort_extraction
     if not effort:
-        effort = "minimal" if provider in ("openai", "openrouter") and is_openai_reasoning_model(
-            s.llm_model_extraction
-        ) else ""
+        effort = (
+            "minimal"
+            if provider in ("openai", "openrouter")
+            and is_openai_reasoning_model(s.llm_model_extraction)
+            else ""
+        )
     effort_kwargs = _build_effort_kwargs(effort, provider) if effort else None
     return make_llm(
         model=s.llm_model_extraction,
@@ -381,14 +384,13 @@ def get_generation_llm() -> LLMProtocol:
     model = s.llm_model_generation or s.llm_model_reasoning
     provider = _resolve_provider(s.llm_provider_generation, model)
     effort_kwargs = (
-        _build_effort_kwargs(s.llm_effort_generation, provider)
-        if s.llm_effort_generation
-        else None
+        _build_effort_kwargs(s.llm_effort_generation, provider) if s.llm_effort_generation else None
     )
     return make_llm(
         model=model,
         temperature=s.llm_temperature_generation,
-        max_tokens=s.llm_max_tokens_reasoning,
+        max_tokens=s.llm_max_tokens_generation,  # AUDIT-028
+        # was incorrectly using llm_max_tokens_reasoning
         role="generation",
         provider=provider,
         provider_base_url=s.llm_endpoint_generation or None,
@@ -410,9 +412,12 @@ def get_lightweight_llm() -> LLMProtocol:
     provider = _resolve_provider(s.llm_provider_extraction, s.llm_model_extraction)
     effort = s.llm_effort_extraction
     if not effort:
-        effort = "minimal" if provider in ("openai", "openrouter") and is_openai_reasoning_model(
-            s.llm_model_extraction
-        ) else ""
+        effort = (
+            "minimal"
+            if provider in ("openai", "openrouter")
+            and is_openai_reasoning_model(s.llm_model_extraction)
+            else ""
+        )
     effort_kwargs = _build_effort_kwargs(effort, provider) if effort else None
     return make_llm(
         model=s.llm_model_extraction,
@@ -441,7 +446,8 @@ def get_midtier_llm() -> LLMProtocol:
     effort_kwargs = _build_effort_kwargs(effort, provider)
     return make_llm(
         model=s.llm_model_midtier,
-        temperature=s.llm_temperature_reasoning,
+        temperature=s.llm_temperature_midtier,  # AUDIT-014
+        # was incorrectly using llm_temperature_reasoning
         max_tokens=s.llm_max_tokens_reasoning,
         role="midtier",
         provider=provider,

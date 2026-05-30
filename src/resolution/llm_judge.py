@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
-from src.config.logging import NodeTimer, get_logger
+from src.config.logging import NodeTimer, get_logger, log_retry_event
 from src.config.settings import get_settings
 from src.models.schemas import (
     CanonicalEntityDecision,
@@ -172,6 +172,8 @@ def judge_cluster(
             )
             if attempt == max_attempts:
                 return _no_merge
+            # AUDIT-003: log retry event before reflection
+            log_retry_event(logger, "llm_judge", attempt, str(exc))
             raw_json = extract_text_content(
                 llm.invoke(
                     [HumanMessage(content=_reflection_prompt(_fmt, str(exc), raw_json))]
@@ -191,6 +193,8 @@ def judge_cluster(
             )
             if attempt == max_attempts:
                 return _no_merge
+            # AUDIT-003: log retry event before reflection
+            log_retry_event(logger, "llm_judge", attempt, str(exc))
             raw_json = extract_text_content(
                 llm.invoke(
                     [HumanMessage(content=_reflection_prompt(_fmt, str(exc), json.dumps(data)))]
@@ -238,10 +242,12 @@ def cluster_to_entity(
     if not definition and all_provenance:
         definition = next(iter(dict.fromkeys(all_provenance)))
 
+    # AUDIT-049: use settings.provenance_max_chars instead of hardcoded [:1000]
+    settings = get_settings()
     return Entity(
         name=canonical,
         definition=definition,
         synonyms=synonyms,
-        provenance_text=provenance_text[:1000],
+        provenance_text=provenance_text[: settings.provenance_max_chars],
         source_doc="",
     )

@@ -54,9 +54,7 @@ class TestBuildEffortKwargs:
         assert _build_effort_kwargs("high", "openai") == {"reasoning_effort": "high"}
 
     def test_openrouter_effort(self) -> None:
-        assert _build_effort_kwargs("medium", "openrouter") == {
-            "reasoning": {"effort": "medium"}
-        }
+        assert _build_effort_kwargs("medium", "openrouter") == {"reasoning": {"effort": "medium"}}
 
     def test_empty_effort_returns_none(self) -> None:
         assert _build_effort_kwargs("", "openai") is None

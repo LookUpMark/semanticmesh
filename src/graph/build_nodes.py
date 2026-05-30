@@ -221,6 +221,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
         llm_cypher: str | None = state.get("current_cypher")
         cypher_failed: bool = state.get("cypher_failed", False)
         lazy_mode: bool = bool(state.get("use_lazy_extraction", get_settings().use_lazy_extraction))
+        # AUDIT-002: track embedding failures for this node invocation (returned via state)
+        embedding_failures: list[str] | None = None
 
         # Normalize the concept name to Title Case before any graph writes
         concept_name: str = normalize_concept_name(proposal.mapped_concept or "Unknown")
@@ -280,7 +282,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 if kw in upper_cypher:
                     logger.warning(
                         "LLM Cypher contains blocked keyword '%s' — "
-                    "falling back to deterministic builder.",
+                        "falling back to deterministic builder.",
                         kw.strip(),
                     )
                     cypher_failed = True
@@ -299,6 +301,9 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             )
             exec_cypher, exec_params = build_upsert_cypher(proposal, table, entity=entity_for_write)
 
+        # AUDIT-061: Each execute_cypher call below is auto-committed independently.
+        # Intermediate failure may leave partial graph state, but all MERGE-based
+        # operations are idempotent — re-running the pipeline is safe.
         with Neo4jClient() as client:
             try:
                 client.execute_cypher(exec_cypher, exec_params)
@@ -337,6 +342,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                 if existing:
                     # Target concept exists — delete the duplicate created by LLM
                     # Cypher and link PhysicalTable to the existing one.
+                    # AUDIT-022: always re-run SET on the surviving concept to
+                    # normalize properties regardless of whether names matched.
                     client.execute_cypher(
                         "MATCH (dup:BusinessConcept)-[r:MAPPED_TO]->(pt:PhysicalTable) "
                         "WHERE toLower(pt.table_name) = toLower($tbl) AND dup.name <> $target "
@@ -344,6 +351,14 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                         "WITH dup WHERE NOT EXISTS { (dup)-[:MAPPED_TO]->() } "
                         "DETACH DELETE dup",
                         {"tbl": table.table_name, "target": concept_name},
+                    )
+                    # AUDIT-022: normalize properties on the existing concept
+                    client.execute_cypher(
+                        "MATCH (bc:BusinessConcept {name: $target}) "
+                        "SET bc.definition = CASE WHEN bc.definition IS NULL OR bc.definition = '' "
+                        "THEN $def ELSE bc.definition END, "
+                        "bc.updated_at = datetime()",
+                        {"target": concept_name, "def": entity_for_write.definition or ""},
                     )
                 else:
                     # Target concept doesn't exist — safe to rename
@@ -423,7 +438,8 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     model = get_embeddings()
                     attr_texts = [params["description"] for _, params in attr_statements]
                     attr_names = [params["attr_name"] for _, params in attr_statements]
-                    vectors = model.encode(attr_texts, batch_size=len(attr_texts))
+                    # AUDIT-063: fixed batch_size=32 to avoid OOM on tables with 100+ columns
+                    vectors = model.encode(attr_texts, batch_size=32)
                     for attr_name, vec in zip(attr_names, vectors, strict=False):
                         client.execute_cypher(
                             "MATCH (a:Attribute {name: $name}) SET a.embedding = $emb",
@@ -452,7 +468,10 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                                 raise
                 except Exception as exc:
                     logger.warning("Could not set embedding for '%s': %s", concept_name, exc)
-                    state.setdefault("embedding_failures", []).append(concept_name)
+                    # AUDIT-002: build a new list instead of mutating state in-place
+                    failures = list(state.get("embedding_failures") or [])
+                    failures.append(concept_name)
+                    embedding_failures = failures
 
             # ── MENTIONS edges: link Chunk nodes to this BusinessConcept ──
             if proposal.mapped_concept:
@@ -487,6 +506,10 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
 
         completed = list(state.get("completed_tables") or [])
         completed.append(proposal.table_name)
+        result: dict[str, Any] = {"completed_tables": completed}
+        # AUDIT-002: include embedding_failures only if populated this run
+        if embedding_failures is not None:
+            result["embedding_failures"] = embedding_failures
         log_node_event(
             logger,
             "build_graph",
@@ -494,7 +517,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             f"{len(completed)} completed",
             timer.elapsed_ms,
         )
-        return {"completed_tables": completed}
+        return result
 
 
 def _route_after_heal(state: BuilderState) -> str:

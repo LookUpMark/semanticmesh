@@ -23,7 +23,9 @@ logger: logging.Logger = get_logger(__name__)
 # Caches the BM25Okapi object alongside the node corpus to avoid rebuilding
 # the tokenized index on every query. Invalidated together with the node-index.
 _BM25_CACHE: Any = None  # BM25Okapi instance
-_BM25_CORPUS_ID: int = 0  # id() of the all_nodes list used to build cache
+# AUDIT-044: content-based hash instead of id() to avoid false cache hits
+# when old list is GC'd and new list reuses the same memory address.
+_BM25_CORPUS_HASH: int = 0  # hash of corpus texts used to build cache
 _BM25_LOCK = threading.Lock()
 
 
@@ -34,10 +36,10 @@ def invalidate_bm25_cache() -> None:
     This thin wrapper is imported by ``builder_graph`` to avoid a circular import
     (hybrid_retriever imports bm25_retriever; builder_graph imports bm25_retriever).
     """
-    global _BM25_CACHE, _BM25_CORPUS_ID  # noqa: PLW0603
+    global _BM25_CACHE, _BM25_CORPUS_HASH  # noqa: PLW0603
     with _BM25_LOCK:
         _BM25_CACHE = None
-        _BM25_CORPUS_ID = 0
+        _BM25_CORPUS_HASH = 0
     from src.retrieval.hybrid_retriever import (  # local import breaks cycle
         invalidate_bm25_cache as _invalidate,
     )
@@ -98,18 +100,19 @@ def bm25_search(
     if not all_nodes:
         return []
 
-    # Use cached BM25 object if the node list hasn't changed (same id())
-    global _BM25_CACHE, _BM25_CORPUS_ID  # noqa: PLW0603
-    corpus_id = id(all_nodes)
+    # AUDIT-044: use content-based hash instead of id() for cache key
+    # to avoid false cache hits when old list is GC'd at same address
+    global _BM25_CACHE, _BM25_CORPUS_HASH  # noqa: PLW0603
+    corpus_texts: list[str] = [_node_to_text(node) for node in all_nodes]
+    corpus_hash = hash(tuple(corpus_texts))
     with _BM25_LOCK:
-        if _BM25_CACHE is not None and corpus_id == _BM25_CORPUS_ID:
+        if _BM25_CACHE is not None and corpus_hash == _BM25_CORPUS_HASH:
             bm25 = _BM25_CACHE
         else:
-            corpus_texts: list[str] = [_node_to_text(node) for node in all_nodes]
             tokenised_corpus = [text.split() for text in corpus_texts]
             bm25 = BM25Okapi(tokenised_corpus)
             _BM25_CACHE = bm25
-            _BM25_CORPUS_ID = corpus_id
+            _BM25_CORPUS_HASH = corpus_hash
             logger.debug("bm25_search: rebuilt BM25 index (%d docs).", len(all_nodes))
 
     tokenised_query = _expand_query_tokens(query.lower().split())
