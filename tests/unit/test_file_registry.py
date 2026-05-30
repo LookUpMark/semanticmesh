@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -103,11 +102,11 @@ class TestPurgeFileData:
         client = MagicMock()
         # Chunk, ParentChunk, PhysicalTable, BusinessConcept responses
         client.execute_cypher.side_effect = [
-            [{"n": 5}],   # Chunks
-            [{"n": 2}],   # ParentChunks
-            [{"n": 1}],   # PhysicalTables
-            None,          # SourceFile deletion (no RETURN)
-            [{"n": 3}],   # Orphan BusinessConcepts
+            [{"n": 5}],  # Chunks
+            [{"n": 2}],  # ParentChunks
+            [{"n": 1}],  # PhysicalTables
+            None,  # SourceFile deletion (no RETURN)
+            [{"n": 3}],  # Orphan BusinessConcepts
         ]
         total = purge_file_data(client, "tests/fixtures/doc.txt")
         assert total == 5 + 2 + 1 + 3

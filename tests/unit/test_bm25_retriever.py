@@ -21,10 +21,27 @@ def _reset_cache():
 
 def _make_nodes() -> list[dict]:
     return [
-        {"name": "Customer", "definition": "A person who buys products", "node_type": "BusinessConcept"},
-        {"name": "Order", "definition": "A purchase transaction placed by a customer", "node_type": "BusinessConcept"},
-        {"name": "Product", "definition": "An item available for sale in the store", "node_type": "BusinessConcept"},
-        {"text": "Customers place orders for products", "node_type": "ParentChunk", "chunk_index": 0, "source_doc": "doc1"},
+        {
+            "name": "Customer",
+            "definition": "A person who buys products",
+            "node_type": "BusinessConcept",
+        },
+        {
+            "name": "Order",
+            "definition": "A purchase transaction placed by a customer",
+            "node_type": "BusinessConcept",
+        },
+        {
+            "name": "Product",
+            "definition": "An item available for sale in the store",
+            "node_type": "BusinessConcept",
+        },
+        {
+            "text": "Customers place orders for products",
+            "node_type": "ParentChunk",
+            "chunk_index": 0,
+            "source_doc": "doc1",
+        },
     ]
 
 

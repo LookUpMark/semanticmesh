@@ -102,6 +102,7 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
             )
             return {"reflection_prompt": ref_prompt, "reflection_attempts": attempts + 1}
 
+        # AUDIT-047: strict > ensures earlier proposal is kept on equal confidence (tiebreaker)
         if best_proposal is None or (validated.confidence or 0.0) > (
             best_proposal.confidence or 0.0
         ):
@@ -224,6 +225,8 @@ def _route_after_validate(state: BuilderState) -> str:
             return "hitl"
         if state.get("reflection_prompt"):
             return "rag_mapping"
+        # AUDIT-083: In lazy mode, build_graph skips LLM Cypher generation
+        # and falls through to the deterministic builder directly.
         return "build_graph"
 
     if state.get("hitl_flag") and not state.get("skip_hitl"):

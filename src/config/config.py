@@ -56,7 +56,9 @@ class AppConfig:
 
     llm_max_tokens_extraction: int = 8192
     llm_max_tokens_reasoning: int = 4096
+    llm_max_tokens_generation: int = 4096  # AUDIT-028: separate from reasoning
     llm_request_timeout: int = 120
+    llm_temperature_midtier: float = 0.0  # AUDIT-014: dedicated mid-tier temp
 
     # ── Explicit Per-Tier LLM Configuration ────────────────────────────────────
     # Provider: "openai" | "openrouter" | "anthropic" | "lmstudio" | "ollama" |
@@ -129,6 +131,11 @@ class AppConfig:
     retrieval_salvage_min_score: float = 0.07
     retrieval_rrf_constant: int = 60
     retrieval_context_score_gate: float = 0.10
+    # AUDIT-016: configurable baseline scores for graph retrieval channels
+    retrieval_score_graph_neighbor: float = 0.5
+    retrieval_score_all_concepts: float = 0.05
+    retrieval_score_fk_edge: float = 0.1
+    retrieval_score_concept_mapping: float = 0.15
     bm25_cache_ttl_seconds: int = 3600
 
     # ── Few-Shot ───────────────────────────────────────────────────────────────
@@ -154,6 +161,7 @@ class AppConfig:
     enable_retrieval_quality_gate: bool = True
     enable_grader_consistency_validator: bool = True
     grader_timeout_seconds: float = 12.0
+    grader_max_consistency_corrections: int = 2  # AUDIT-046: max consistency fixes
     use_lazy_extraction: bool = False
     enable_spacy_heuristics: bool = True
     spacy_model_name: str = "en_core_web_sm"
@@ -193,6 +201,9 @@ class AppConfig:
     heuristic_fallback_confidence: float = 0.35
     # ── Graph ──────────────────────────────────────────────────────────────────
     provenance_max_chars: int = 400
+    critic_entity_limit: int = 20  # AUDIT-081: max entities in critic review
+    trace_truncate_length: int = 500  # AUDIT-015: trace field truncation
+    trace_max_items: int = 100  # AUDIT-015: max items in trace lists
 
     # ── Performance / Cost Optimisation ───────────────────────────────────────
     # When True, singleton entity definitions are derived directly from their

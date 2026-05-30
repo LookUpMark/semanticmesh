@@ -381,7 +381,9 @@ def _build_google_chat(
             break
 
     return ChatGoogleGenerativeAI(  # type: ignore[no-any-return]
-        model=model, temperature=temperature, max_output_tokens=max_tokens,
+        model=model,
+        temperature=temperature,
+        max_output_tokens=max_tokens,
         **({"base_url": base_url} if base_url else {}),
     )
 
@@ -481,7 +483,9 @@ def _build_mistral_chat(
             break
 
     return ChatMistralAI(  # type: ignore[no-any-return]
-        model=model, temperature=temperature, max_tokens=max_tokens,
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
         **({"endpoint_url": base_url} if base_url else {}),
     )
 
@@ -516,7 +520,9 @@ def _build_huggingface_chat(
             break
 
     endpoint = HuggingFaceEndpoint(
-        repo_id=model, temperature=temperature, max_new_tokens=max_tokens,
+        repo_id=model,
+        temperature=temperature,
+        max_new_tokens=max_tokens,
         **({"endpoint_url": base_url} if base_url else {}),
     )
     return ChatHuggingFace(llm=endpoint)  # type: ignore[no-any-return]

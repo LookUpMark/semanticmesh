@@ -6,6 +6,7 @@ Non-sensitive defaults are defined in config.py and can be overridden via env va
 
 from __future__ import annotations
 
+import threading
 from functools import lru_cache
 
 from pydantic import SecretStr
@@ -55,7 +56,9 @@ class Settings(BaseSettings):
     llm_temperature_generation: float = DEFAULT_CONFIG.llm_temperature_generation
     llm_max_tokens_extraction: int = DEFAULT_CONFIG.llm_max_tokens_extraction
     llm_max_tokens_reasoning: int = DEFAULT_CONFIG.llm_max_tokens_reasoning
+    llm_max_tokens_generation: int = DEFAULT_CONFIG.llm_max_tokens_generation  # AUDIT-028
     llm_request_timeout: int = DEFAULT_CONFIG.llm_request_timeout
+    llm_temperature_midtier: float = DEFAULT_CONFIG.llm_temperature_midtier  # AUDIT-014
 
     # ── Explicit Per-Tier LLM Configuration ────────────────────────────────────
     llm_provider_reasoning: str = DEFAULT_CONFIG.llm_provider_reasoning
@@ -125,6 +128,11 @@ class Settings(BaseSettings):
     retrieval_salvage_min_score: float = DEFAULT_CONFIG.retrieval_salvage_min_score
     retrieval_rrf_constant: int = DEFAULT_CONFIG.retrieval_rrf_constant
     retrieval_context_score_gate: float = DEFAULT_CONFIG.retrieval_context_score_gate
+    # AUDIT-016: configurable baseline scores for graph retrieval channels
+    retrieval_score_graph_neighbor: float = DEFAULT_CONFIG.retrieval_score_graph_neighbor
+    retrieval_score_all_concepts: float = DEFAULT_CONFIG.retrieval_score_all_concepts
+    retrieval_score_fk_edge: float = DEFAULT_CONFIG.retrieval_score_fk_edge
+    retrieval_score_concept_mapping: float = DEFAULT_CONFIG.retrieval_score_concept_mapping
     bm25_cache_ttl_seconds: int = DEFAULT_CONFIG.bm25_cache_ttl_seconds
 
     # ── Few-Shot ───────────────────────────────────────────────────────────────
@@ -140,6 +148,9 @@ class Settings(BaseSettings):
     enable_retrieval_quality_gate: bool = DEFAULT_CONFIG.enable_retrieval_quality_gate
     enable_grader_consistency_validator: bool = DEFAULT_CONFIG.enable_grader_consistency_validator
     grader_timeout_seconds: float = DEFAULT_CONFIG.grader_timeout_seconds
+    grader_max_consistency_corrections: int = (
+        DEFAULT_CONFIG.grader_max_consistency_corrections
+    )  # AUDIT-046
     use_lazy_extraction: bool = DEFAULT_CONFIG.use_lazy_extraction
     enable_spacy_heuristics: bool = DEFAULT_CONFIG.enable_spacy_heuristics
     spacy_model_name: str = DEFAULT_CONFIG.spacy_model_name
@@ -181,6 +192,9 @@ class Settings(BaseSettings):
     heuristic_fallback_confidence: float = DEFAULT_CONFIG.heuristic_fallback_confidence
     # ── Graph ──────────────────────────────────────────────────────────────────
     provenance_max_chars: int = DEFAULT_CONFIG.provenance_max_chars
+    critic_entity_limit: int = DEFAULT_CONFIG.critic_entity_limit  # AUDIT-081
+    trace_truncate_length: int = DEFAULT_CONFIG.trace_truncate_length  # AUDIT-015
+    trace_max_items: int = DEFAULT_CONFIG.trace_max_items  # AUDIT-015
     # ── Performance / Cost Optimisation ────────────────────────────────────────
     enable_singleton_llm_definitions: bool = DEFAULT_CONFIG.enable_singleton_llm_definitions
     critic_confidence_gate: float = DEFAULT_CONFIG.critic_confidence_gate
@@ -217,18 +231,25 @@ def get_settings() -> Settings:
     return Settings()
 
 
+_settings_lock = threading.Lock()  # AUDIT-042: thread-safe settings reload
+
+
 def reload_settings() -> Settings:
     """Clear the settings cache and return a fresh Settings instance.
 
     Call this after changing ``os.environ`` in notebooks or tests.
     Updates the module-level ``settings`` singleton in-place.
-    """
-    get_settings.cache_clear()
-    new = get_settings()
-    import src.config.settings as _self  # noqa: PLC0415
 
-    _self.settings = new
-    return new
+    Thread-safe: concurrent config POSTs serialize through a lock to
+    prevent half-initialized Settings (AUDIT-042).
+    """
+    with _settings_lock:
+        get_settings.cache_clear()
+        new = get_settings()
+        import src.config.settings as _self  # noqa: PLC0415
+
+        _self.settings = new
+        return new
 
 
 # Module-level singleton

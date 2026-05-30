@@ -10,10 +10,10 @@ import pytest
 from src.models.schemas import (
     Chunk,
     Document,
-    Triplet,
-    TripletExtractionResponse,
     GraderDecision,
     RetrievedChunk,
+    Triplet,
+    TripletExtractionResponse,
 )
 
 
@@ -60,7 +60,9 @@ class TestTriplet:
 
     def test_extraction_response(self) -> None:
         t = Triplet(
-            subject="A", predicate="r", object="B",
+            subject="A",
+            predicate="r",
+            object="B",
             provenance_text="A relates to B.",
             confidence=0.8,
         )
@@ -70,13 +72,19 @@ class TestTriplet:
     def test_confidence_bounds(self) -> None:
         with pytest.raises(ValueError):
             Triplet(
-                subject="X", predicate="y", object="Z",
-                provenance_text="text", confidence=1.5,
+                subject="X",
+                predicate="y",
+                object="Z",
+                provenance_text="text",
+                confidence=1.5,
             )
         with pytest.raises(ValueError):
             Triplet(
-                subject="X", predicate="y", object="Z",
-                provenance_text="text", confidence=-0.1,
+                subject="X",
+                predicate="y",
+                object="Z",
+                provenance_text="text",
+                confidence=-0.1,
             )
 
 
@@ -127,8 +135,9 @@ class TestApiModelsValidation:
         from src.api.models import PipelineConfig
 
         cfg = PipelineConfig()
-        assert cfg.chunk_size == 256
-        assert cfg.retrieval_mode == "hybrid"
+        # AUDIT-011: defaults changed to None — verify None when unset
+        assert cfg.chunk_size is None
+        assert cfg.retrieval_mode is None
 
     def test_temperature_upper_bound(self) -> None:
         from src.api.models import PipelineConfig

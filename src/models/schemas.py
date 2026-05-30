@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime  # noqa: TC003
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class Document(BaseModel):
@@ -30,7 +30,8 @@ class Triplet(BaseModel):
     subject: str
     predicate: str
     object: str
-    provenance_text: str
+    # AUDIT-039: Cap provenance text to prevent OOM via unbounded LLM output.
+    provenance_text: str = Field(max_length=10000)
     confidence: float = Field(ge=0.0, le=1.0)
     source_chunk_index: int | None = None
 
@@ -155,7 +156,15 @@ class CypherStatement(BaseModel):
 
     cypher: str
     params: dict[str, Any] = Field(default_factory=dict)
-    mapping_id: str
+    # AUDIT-055: Validate mapping_id to prevent log injection via ANSI escape
+    # codes or control characters.
+    mapping_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
+
+    @field_validator("mapping_id", mode="before")
+    @classmethod
+    def _strip_control_chars(cls, v: str) -> str:
+        """Remove control characters (including ANSI escape sequences) from mapping_id."""
+        return "".join(ch for ch in v if ord(ch) >= 32 and ch != "\x7f")
 
 
 class RetrievedChunk(BaseModel):

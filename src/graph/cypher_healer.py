@@ -70,36 +70,40 @@ def validate_cypher(cypher: str, driver: Driver) -> tuple[bool, str | None]:
         the Reflection Prompt verbatim.
     """
     # Safety: reject Cypher containing destructive or admin operations.
-    blocked_keywords = (
-        "DROP ",
-        "DETACH DELETE",
-        "DELETE ",
-        "REMOVE ",
-        "CALL dbms.",
-        "CALL db.index.fulltext.drop",
-        "CREATE USER",
-        "ALTER USER",
-        "DROP USER",
-        "CREATE ROLE",
-        "ALTER ROLE",
-        "DROP ROLE",
-        "GRANT ",
-        "REVOKE ",
-        "DENY ",
-        "CREATE DATABASE",
-        "DROP DATABASE",
-        "LOAD CSV",
-    )
-    upper = cypher.upper()
-    for kw in blocked_keywords:
-        if kw in upper:
-            msg = f"Cypher contains blocked keyword '{kw.strip()}' — rejecting."
+    # AUDIT-036: use regex word boundaries to avoid substring false positives
+    # and strip Unicode whitespace before validation.
+    blocked_patterns = [
+        r"\bDROP\b",
+        r"\bDETACH\s+DELETE\b",
+        r"\bDELETE\b",
+        r"\bREMOVE\b",
+        r"\bCALL\s+dbms\.",
+        r"\bCALL\s+db\.index\.fulltext\.drop\b",
+        r"\bCREATE\s+USER\b",
+        r"\bALTER\s+USER\b",
+        r"\bDROP\s+USER\b",
+        r"\bCREATE\s+ROLE\b",
+        r"\bALTER\s+ROLE\b",
+        r"\bDROP\s+ROLE\b",
+        r"\bGRANT\b",
+        r"\bREVOKE\b",
+        r"\bDENY\b",
+        r"\bCREATE\s+DATABASE\b",
+        r"\bDROP\s+DATABASE\b",
+        r"\bLOAD\s+CSV\b",
+    ]
+    # AUDIT-036: strip Unicode whitespace before validation
+    upper = re.sub(r"^\s+", "", cypher, flags=re.UNICODE).upper()
+    for pattern in blocked_patterns:
+        if re.search(pattern, upper):
+            msg = f"Cypher contains blocked keyword '{pattern}' — rejecting."
             logger.warning(msg)
             return False, msg
 
     # Positive allowlist: first keyword must be a safe read/write operation
     allowed_first_keywords = ("MERGE", "MATCH", "WITH", "UNWIND", "RETURN", "OPTIONAL", "CALL {")
-    stripped = cypher.strip().upper()
+    # AUDIT-036: strip Unicode whitespace from start before checking allowlist
+    stripped = re.sub(r"^\s+", "", cypher, flags=re.UNICODE).strip().upper()
     if not any(stripped.startswith(kw) for kw in allowed_first_keywords):
         msg = "Cypher does not start with an allowed keyword — rejecting."
         logger.warning(msg)

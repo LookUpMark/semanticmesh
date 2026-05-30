@@ -235,7 +235,9 @@ SET r.mapping_confidence = 0.95
 
             # Verify: new node added, original not deleted
             assert count_after["node_count"] > count_before["node_count"], (
-                f"Expected more nodes after delta update: before={count_before['node_count']}, after={count_after['node_count']}"
+                "Expected more nodes after delta update: "
+                f"before={count_before['node_count']}, "
+                f"after={count_after['node_count']}"
             )
 
             # Verify TABLE_A still exists

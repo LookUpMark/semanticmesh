@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import numpy as np
-import pytest
-
 from src.mapping.retrieval import build_retrieval_query, retrieve_top_entities
 from src.models.schemas import ColumnSchema, EnrichedTableSchema, Entity, TableSchema
 
@@ -29,8 +26,11 @@ def _make_table(name: str, enriched_name: str | None = None) -> EnrichedTableSch
 
 def _make_entity(name: str, definition: str = "") -> Entity:
     return Entity(
-        name=name, definition=definition, synonyms=[],
-        provenance_text="test", source_doc="test.txt",
+        name=name,
+        definition=definition,
+        synonyms=[],
+        provenance_text="test",
+        source_doc="test.txt",
     )
 
 
@@ -61,9 +61,9 @@ class TestRetrieveTopEntities:
         mock_embed_text.return_value = [1.0, 0.0, 0.0]
         # Entity vectors — first is most similar to query
         mock_embed_texts.return_value = [
-            [1.0, 0.0, 0.0],   # identical to query
-            [0.0, 1.0, 0.0],   # orthogonal
-            [0.7, 0.7, 0.0],   # partially similar
+            [1.0, 0.0, 0.0],  # identical to query
+            [0.0, 1.0, 0.0],  # orthogonal
+            [0.7, 0.7, 0.0],  # partially similar
         ]
 
         entities = [

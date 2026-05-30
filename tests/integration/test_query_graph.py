@@ -139,7 +139,8 @@ def _populate_test_graph(client: Neo4jClient) -> None:
         client.execute_cypher("""
             MERGE (ch:Chunk:Entity {
                 node_id: 'chunk_1',
-                text: 'Customer data includes name, email, and region information stored in CUSTOMER_MASTER table.'
+                text: 'Customer data includes name, email, and region '
+                      'information stored in CUSTOMER_MASTER table.'
             })
         """)
 
@@ -153,7 +154,8 @@ def _populate_test_graph(client: Neo4jClient) -> None:
         client.execute_cypher("""
             MERGE (ch:Chunk:Entity {
                 node_id: 'chunk_3',
-                text: 'Sales orders track customer purchases with dates and amounts in SALES_ORDER_HDR.'
+                text: 'Sales orders track customer purchases with dates '
+                      'and amounts in SALES_ORDER_HDR.'
             })
         """)
 
@@ -162,7 +164,12 @@ def _populate_test_graph(client: Neo4jClient) -> None:
             client.execute_cypher("""
                 CREATE VECTOR INDEX chunk_vector_index
                 FOR (c:Chunk) ON (c.embedding)
-                OPTIONS {indexConfig: {`vector.dimensions`: 1024, `vector.similarity_function`: `cosine`}}
+                OPTIONS {
+                    indexConfig: {
+                        `vector.dimensions`: 1024,
+                        `vector.similarity_function`: `cosine`
+                    }
+                }
             """)
         except Exception:
             pass  # Index may already exist
@@ -188,7 +195,10 @@ class TestQueryGraphE2E:
         # Mock LLM responses
         answer_response = json.dumps(
             {
-                "answer": "The CUSTOMER_MASTER table stores customer data including name, email, and region.",
+                "answer": (
+                    "The CUSTOMER_MASTER table stores customer data "
+                    "including name, email, and region."
+                ),
                 "sources": ["CUSTOMER_MASTER"],
             }
         )
@@ -324,7 +334,10 @@ class TestHallucinationGraderLoop:
             else:
                 result.content = json.dumps(
                     {
-                        "answer": "The CUSTOMER_MASTER table stores customer data including name and email.",
+                        "answer": (
+                            "The CUSTOMER_MASTER table stores "
+                            "customer data including name and email."
+                        ),
                     }
                 )
             return result
@@ -339,7 +352,10 @@ class TestHallucinationGraderLoop:
                 result.content = json.dumps(
                     {
                         "grounded": False,
-                        "critique": "The answer mentions ORDERS table which is not in the context. Use CUSTOMER_MASTER.",
+                        "critique": (
+                            "The answer mentions ORDERS table which is "
+                            "not in the context. Use CUSTOMER_MASTER."
+                        ),
                         "action": "regenerate",
                     }
                 )
@@ -478,7 +494,10 @@ class TestHallucinationGraderLoop:
             result.content = json.dumps(
                 {
                     "grounded": False,
-                    "critique": "PRODUCT_XYZ is not mentioned in any retrieved context. Only TB_PRODUCT table is referenced.",
+                    "critique": (
+                        "PRODUCT_XYZ is not mentioned in any retrieved "
+                        "context. Only TB_PRODUCT table is referenced."
+                    ),
                     "action": "regenerate",
                 }
             )

@@ -16,11 +16,9 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import shutil
 import sys
 import tempfile
-import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -30,7 +28,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from src.config.logging import get_logger
-from src.graph.neo4j_client import Neo4jClient, setup_schema
+from src.graph.neo4j_client import Neo4jClient
 
 logger = get_logger(__name__)
 

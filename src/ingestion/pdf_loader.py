@@ -25,8 +25,18 @@ from src.models.schemas import Chunk, Document
 
 logger: logging.Logger = get_logger(__name__)
 
-_settings = get_settings()
-_TOKENIZER = tiktoken.get_encoding("cl100k_base")
+# AUDIT-017: removed module-level _settings = get_settings(); use local get_settings() calls.
+# AUDIT-021: lazy-initialize tokenizer on first use instead of at import time
+# to avoid crashes in offline environments where tiktoken needs to download.
+_TOKENIZER: tiktoken.Encoding | None = None
+
+
+def _get_tokenizer() -> tiktoken.Encoding:
+    """Return the shared cl100k_base tokenizer, initializing lazily on first use."""
+    global _TOKENIZER
+    if _TOKENIZER is None:
+        _TOKENIZER = tiktoken.get_encoding("cl100k_base")
+    return _TOKENIZER
 
 
 class IngestionError(Exception):
@@ -219,11 +229,14 @@ def chunk_documents(docs: list[Document]) -> list[Chunk]:
     Returns:
         List of ``Chunk`` objects preserving source / page metadata.
     """
+    # AUDIT-017: local get_settings() not stale module snapshot
+    settings = get_settings()
+    tokenizer = _get_tokenizer()  # AUDIT-021: lazy tokenizer
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=_settings.chunk_size,
-        chunk_overlap=_settings.chunk_overlap,
+        chunk_size=settings.chunk_size,
+        chunk_overlap=settings.chunk_overlap,
         separators=["\n\n", "\n", ". ", " "],
-        length_function=lambda t: len(_TOKENIZER.encode(t)),
+        length_function=lambda t: len(tokenizer.encode(t)),
     )
 
     chunks: list[Chunk] = []
@@ -232,7 +245,7 @@ def chunk_documents(docs: list[Document]) -> list[Chunk]:
     for doc in docs:
         splits = splitter.split_text(doc.text)
         for split_text in splits:
-            token_count = len(_TOKENIZER.encode(split_text))
+            token_count = len(tokenizer.encode(split_text))
             chunks.append(
                 Chunk(
                     text=split_text,
@@ -249,8 +262,8 @@ def chunk_documents(docs: list[Document]) -> list[Chunk]:
         "Chunked %d documents into %d chunks (chunk_size=%d, overlap=%d)",
         len(docs),
         len(chunks),
-        _settings.chunk_size,
-        _settings.chunk_overlap,
+        settings.chunk_size,
+        settings.chunk_overlap,
     )
     return chunks
 
@@ -293,6 +306,7 @@ def chunk_documents_hierarchical(
         chunks; ``children`` contains sub-chunks with ``parent_chunk_index`` set.
     """
     settings = get_settings()
+    tokenizer = _get_tokenizer()  # AUDIT-021: lazy tokenizer
 
     parent_splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.parent_chunk_size,
@@ -300,13 +314,13 @@ def chunk_documents_hierarchical(
         # Priority: Markdown heading > paragraph > sentence > word.
         # "\n## " keeps each H2 concept section as one parent for business glossary docs.
         separators=["\n## ", "\n\n", "\n", ". ", " "],
-        length_function=lambda t: len(_TOKENIZER.encode(t)),
+        length_function=lambda t: len(tokenizer.encode(t)),
     )
     child_splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.chunk_size,
         chunk_overlap=settings.chunk_overlap,
         separators=["\n\n", "\n", ". ", " "],
-        length_function=lambda t: len(_TOKENIZER.encode(t)),
+        length_function=lambda t: len(tokenizer.encode(t)),
     )
 
     parents: list[Chunk] = []
@@ -317,7 +331,7 @@ def chunk_documents_hierarchical(
     for doc in docs:
         parent_splits = parent_splitter.split_text(doc.text)
         for parent_text in parent_splits:
-            parent_token_count = len(_TOKENIZER.encode(parent_text))
+            parent_token_count = len(tokenizer.encode(parent_text))
             parents.append(
                 Chunk(
                     text=parent_text,
@@ -331,7 +345,7 @@ def chunk_documents_hierarchical(
 
             child_splits = child_splitter.split_text(parent_text)
             for child_text in child_splits:
-                child_token_count = len(_TOKENIZER.encode(child_text))
+                child_token_count = len(tokenizer.encode(child_text))
                 children.append(
                     Chunk(
                         text=child_text,

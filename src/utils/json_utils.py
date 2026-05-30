@@ -79,15 +79,61 @@ def clean_json(raw: str) -> str:
     if len(raw) > max_json_size:
         raise ValueError(f"JSON input too large ({len(raw)} bytes > {max_json_size} limit).")
     cleaned = _FENCE_RE.sub("", raw).strip()
-    # Extract JSON object or array from within larger text
-    obj_start = cleaned.find("{")
-    obj_end = cleaned.rfind("}")
-    if obj_start != -1 and obj_end != -1 and obj_end > obj_start:
-        return cleaned[obj_start : obj_end + 1]
-    arr_start = cleaned.find("[")
-    arr_end = cleaned.rfind("]")
-    if arr_start != -1 and arr_end != -1 and arr_end > arr_start:
-        return cleaned[arr_start : arr_end + 1]
+
+    # AUDIT-037: Use brace-depth counter for matching instead of naive
+    # first-open-brace / last-close-brace, which breaks when the LLM output
+    # contains literal braces inside string values.  Each balanced span is
+    # validated with json.loads; if parsing fails the search advances past it.
+    import json as _json
+
+    def _extract_balanced(text: str, open_ch: str, close_ch: str) -> str | None:
+        """Return the first valid JSON span starting with *open_ch*, or None."""
+        pos = 0
+        while pos < len(text):
+            start = text.find(open_ch, pos)
+            if start == -1:
+                return None
+            depth = 0
+            in_string = False
+            escape = False
+            end = -1
+            for i in range(start, len(text)):
+                ch = text[i]
+                if escape:
+                    escape = False
+                    continue
+                if ch == "\\" and in_string:
+                    escape = True
+                    continue
+                if ch == '"':
+                    in_string = not in_string
+                    continue
+                if in_string:
+                    continue
+                if ch == open_ch:
+                    depth += 1
+                elif ch == close_ch:
+                    depth -= 1
+                    if depth == 0:
+                        end = i
+                        break
+            if end == -1:
+                return None
+            candidate = text[start : end + 1]
+            try:
+                _json.loads(candidate)
+                return candidate
+            except (ValueError, _json.JSONDecodeError):
+                # Not valid JSON — advance past this span and keep searching.
+                pos = end + 1
+        return None
+
+    extracted = _extract_balanced(cleaned, "{", "}")
+    if extracted is not None:
+        return extracted
+    extracted = _extract_balanced(cleaned, "[", "]")
+    if extracted is not None:
+        return extracted
     return cleaned
 
 
@@ -124,7 +170,9 @@ def safe_json_loads(text: str, *, max_depth: int = _MAX_JSON_DEPTH) -> object:
             if depth > max_depth:
                 raise ValueError(f"JSON nesting depth ({depth}) exceeds maximum ({max_depth}).")
         elif ch in "}]":
-            depth -= 1
+            # AUDIT-038: Floor the depth counter so extra closing brackets
+            # cannot drive it deeply negative and bypass the guard.
+            depth = max(0, depth - 1)
     return json.loads(text)
 
 

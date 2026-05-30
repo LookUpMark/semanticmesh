@@ -119,7 +119,8 @@ class TestStripCypherFence:
         # Then strip() removes remaining outer whitespace
         raw = "  ```cypher\nMERGE (n:Test)\n```  "
         result = strip_cypher_fence(raw)
-        # Opening fence not matched (leading spaces), closing fence matched, outer whitespace stripped
+        # Opening fence not matched (leading spaces), closing fence
+        # matched, outer whitespace stripped
         assert result == "```cypher\nMERGE (n:Test)"
 
     def test_fences_at_line_start_are_removed(self) -> None:

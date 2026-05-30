@@ -61,7 +61,7 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
 
     Args:
         table: Parsed ``TableSchema`` from ``ddl_parser``.
-        llm: Any ``LLMProtocol`` instance (use ``get_reasoning_llm()`` from factory).
+        llm: Any ``LLMProtocol`` instance (use ``get_lightweight_llm()`` from factory).  # AUDIT-070
 
     Returns:
         ``EnrichedTableSchema`` with enrichment fields populated (best-effort).
@@ -129,9 +129,14 @@ def enrich_schema(table: TableSchema, llm: LLMProtocol) -> EnrichedTableSchema:
             continue
 
     enriched = EnrichedTableSchema.from_table_schema(table)
-    enriched.enriched_table_name = data.get("enriched_table_name")
-    enriched.table_description = data.get("table_description")
-    enriched.enriched_columns = enriched_columns
+    # AUDIT-062: use model_copy(update={...}) instead of direct mutation
+    enriched = enriched.model_copy(
+        update={
+            "enriched_table_name": data.get("enriched_table_name"),
+            "table_description": data.get("table_description"),
+            "enriched_columns": enriched_columns,
+        }
+    )
 
     logger.info(
         "Enriched table '%s' -> '%s' (%d columns enriched)",

@@ -197,7 +197,10 @@ class TestNodeReranking:
         noisy = RetrievedChunk(
             node_id="Customers",
             node_type="BusinessConcept",
-            text="Customers: Heuristic embedding mapping score=0.506, adjusted_confidence=0.753, best_candidate='Customers'.",
+            text=(
+                "Customers: Heuristic embedding mapping score=0.506, "
+                "adjusted_confidence=0.753, best_candidate='Customers'."
+            ),
             score=0.8,
             source_type="graph",
             metadata={},
@@ -242,6 +245,9 @@ class TestNodeHybridRetrievalLazyExpansion:
             retrieval_graph_depth=1,
             enable_lazy_expansion=True,
             lazy_expansion_confidence_threshold=0.4,
+            lazy_expansion_seed_limit=8,  # AUDIT-050: new settings field
+            retrieval_attribute_top_k=5,  # AUDIT-050: new settings field
+            retrieval_rrf_constant=60,
         )
 
         vec = [self._chunk("A", 0.2)]
@@ -341,7 +347,7 @@ class TestAnswerGenerationContextComposition:
 
         with (
             patch(
-                "src.generation.nodes.generation_nodes.get_reasoning_llm", return_value=MagicMock()
+                "src.generation.nodes.generation_nodes.get_generation_llm", return_value=MagicMock()
             ),
             patch(
                 "src.generation.nodes.generation_nodes.generate_answer", return_value="ok"
@@ -389,13 +395,18 @@ class TestContextDistillationNode:
     def test_distills_noisy_chunk_text(self) -> None:
         noisy = self._chunk(
             "Customers",
-            "Customers: Heuristic embedding mapping score=0.506, adjusted_confidence=0.753, threshold=0.600, best_candidate='Customers'.",
+            "Customers: Heuristic embedding mapping score=0.506, "
+            "adjusted_confidence=0.753, threshold=0.600, "
+            "best_candidate='Customers'.",
             source="graph",
             score=0.5,
         )
         fk = self._chunk(
             "SALES_ORDER_HDR→CUSTOMER_MASTER",
-            "The table SALES_ORDER_HDR references CUSTOMER_MASTER via a foreign key (column CUST_ID → CUSTOMER_MASTER.CUST_ID). This means each record in SALES_ORDER_HDR is linked to a record in CUSTOMER_MASTER.",
+            "The table SALES_ORDER_HDR references CUSTOMER_MASTER via "
+            "a foreign key (column CUST_ID → CUSTOMER_MASTER.CUST_ID). "
+            "This means each record in SALES_ORDER_HDR is linked to "
+            "a record in CUSTOMER_MASTER.",
             source="graph",
             score=0.8,
         )

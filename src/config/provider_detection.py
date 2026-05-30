@@ -61,6 +61,11 @@ __all__ = [
 # At runtime, model_builders.py reads the actual values from get_settings()
 # (which support env var overrides: OPENROUTER_BASE_URL, LMSTUDIO_BASE_URL,
 #  GROQ_BASE_URL, TOGETHER_BASE_URL, etc.)
+#
+# AUDIT-020 (part): _OPENROUTER_BASE_URL and _LMSTUDIO_DEFAULT_URL are
+# intentionally duplicated from src/config/config.py to keep this module
+# self-contained for legacy make_llm() calls.  Any change to one copy must
+# be mirrored in the other.
 _OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 _LMSTUDIO_DEFAULT_URL = "http://localhost:1234/v1"
 

@@ -35,4 +35,8 @@ def _route_after_retrieval_gate(state: QueryState) -> str:
 
 
 def _route_after_consistency_validator(state: QueryState) -> str:
+    # AUDIT-089: When grounded=True but action!="pass", we intentionally route
+    # to regeneration (via _route_after_grader) rather than auto-correcting to
+    # action="pass". This is the safer choice: the grader's inconsistency signals
+    # uncertainty, and regenerating is preferable to accepting a potentially flawed answer.
     return _route_after_grader(state)

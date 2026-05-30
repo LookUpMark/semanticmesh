@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
+import socket
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse
@@ -34,8 +37,41 @@ def _fixtures_dir() -> Path:
     return _ROOT / "tests" / "fixtures"
 
 
+def _validate_base_url(url: str) -> None:
+    """AUDIT-034 (YELLOW): Validate provider_base_url against SSRF attacks.
+
+    Blocks non-http(s) schemes, private/reserved IPs, and cloud metadata endpoints.
+    Mirrors the PipelineConfig._validate_security logic from models.py.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(
+            f"provider_base_url: only http/https schemes allowed (got: {parsed.scheme!r})"
+        )
+    host = parsed.hostname or ""
+    if host in ("169.254.169.254", "metadata.google.internal"):
+        raise ValueError("provider_base_url: cloud metadata endpoints are blocked")
+    try:
+        addr_infos = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        for _family, _type, _proto, _canonname, sockaddr in addr_infos:
+            ip_str = sockaddr[0]
+            ip = ipaddress.ip_address(ip_str)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise ValueError(
+                    f"provider_base_url: private/reserved IP addresses are blocked "
+                    f"(resolved {host} to {ip_str})"
+                )
+    except socket.gaierror:
+        pass  # hostname unresolvable — let it through, will fail at connection time
+
+
 def _build_env_overrides(req: AblationRunRequest) -> dict[str, str]:
     """Translate non-None hyperparameter and LLM fields in the request to env vars."""
+    # AUDIT-034 (YELLOW): Validate provider_base_url if present
+    provider_base_url = getattr(req, "provider_base_url", None)
+    if provider_base_url:
+        _validate_base_url(provider_base_url)
+
     mapping: dict[str, Any] = {
         "RETRIEVAL_MODE": req.retrieval_mode,
         "ENABLE_RERANKER": req.enable_reranker,
@@ -55,7 +91,10 @@ def _build_env_overrides(req: AblationRunRequest) -> dict[str, str]:
         # LLM model overrides — forwarded as env vars read by settings
         "LLM_MODEL_REASONING": getattr(req, "reasoning_model", None),
         "LLM_MODEL_EXTRACTION": getattr(req, "extraction_model", None),
-        "PROVIDER_BASE_URL": getattr(req, "provider_base_url", None),
+        # AUDIT-035 (YELLOW): TODO — PROVIDER_BASE_URL is not a Settings field.
+        # It is forwarded as an env var but Pydantic settings silently ignores it.
+        # Either add it to Settings or remove from request models.
+        "PROVIDER_BASE_URL": provider_base_url,
     }
     # Boolean values must be lowercased for Pydantic settings env parsing
     # (pydantic-settings reads "true"/"false" for bool fields)
@@ -322,6 +361,12 @@ def _run_ablation_task_with_preset(
         dataset_path = Path(req.dataset).resolve()
         if not str(dataset_path).startswith(str(_ROOT.resolve())):
             raise ValueError(f"Dataset path '{req.dataset}' is outside the allowed directory.")
+        # AUDIT-068 (YELLOW): Enforce allowed_dataset_dirs check for preset runs
+        # (previously only applied to custom runs).
+        allowed_dataset_dirs = {"tests/fixtures", "data"}
+        rel = dataset_path.relative_to(_ROOT.resolve())
+        if not any(str(rel).startswith(d) for d in allowed_dataset_dirs):
+            raise ValueError(f"Dataset must reside under tests/fixtures/ or data/. Got: {rel}")
         if not dataset_path.exists():
             raise FileNotFoundError(f"Dataset not found: {dataset_path}")
 

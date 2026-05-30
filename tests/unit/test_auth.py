@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import HTTPException
 
-from src.api.auth import require_api_key, _auth_attempts
+from src.api.auth import _auth_attempts, require_api_key
 
 
 @pytest.fixture(autouse=True)

@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     import logging
 
 logger: logging.Logger = get_logger(__name__)
-_settings = get_settings()
+# AUDIT-017: removed module-level _settings = get_settings(); use local get_settings() calls
 
 
 def extract_unique_entities(triplets: list[Triplet]) -> list[str]:
@@ -186,8 +186,10 @@ def block_entities(
     if not entities:
         return []
 
-    sim_threshold = threshold if threshold is not None else _settings.er_similarity_threshold
-    k = top_k if top_k is not None else _settings.er_blocking_top_k
+    # AUDIT-017: use local get_settings() instead of stale module-level snapshot
+    settings = get_settings()
+    sim_threshold = threshold if threshold is not None else settings.er_similarity_threshold
+    k = top_k if top_k is not None else settings.er_blocking_top_k
 
     logger.info("Embedding %d entities for blocking...", len(entities))
     vectors = np.array(embed_texts(entities, model=embeddings), dtype=np.float32)
@@ -231,7 +233,7 @@ def block_entities(
     for i in range(n):
         groups[find(i)].append(i)
 
-    max_cluster_size: int = _settings.er_max_cluster_size
+    max_cluster_size: int = settings.er_max_cluster_size  # AUDIT-017: use local settings
 
     clusters: list[EntityCluster] = []
     for member_indices in groups.values():

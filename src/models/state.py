@@ -51,6 +51,8 @@ class BuilderState(TypedDict, total=False):
     ingestion_errors: list[str]
     completed_tables: list[str]
     skipped_files: list[str]
+    # AUDIT-002: track concept names whose BusinessConcept embedding write failed
+    embedding_failures: list[str]
     # Pre-computed mapping proposals from parallel mapping phase
     precomputed_proposals: dict[str, MappingProposal]
 

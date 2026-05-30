@@ -8,7 +8,7 @@ Usage:
 """
 from __future__ import annotations
 
-import json
+import os
 import sys
 import time
 import uuid
@@ -16,7 +16,11 @@ from pathlib import Path
 
 import requests
 
-BASE_URL = sys.argv[2] if len(sys.argv) > 2 and sys.argv[1] == "--base-url" else "http://127.0.0.1:8765"
+BASE_URL = (
+    sys.argv[2]
+    if len(sys.argv) > 2 and sys.argv[1] == "--base-url"
+    else os.environ.get("TEST_API_BASE_URL", "http://127.0.0.1:8765")
+)
 API = f"{BASE_URL}/api/v1"
 
 PASS_COUNT = 0

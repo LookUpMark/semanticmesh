@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import ipaddress
 import re
+import socket
 from typing import Any, Literal, TypeAlias
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # Model name must be alphanumeric with /, _, ., -, : (prevents injection)
 _VALID_MODEL_NAME = re.compile(r"^[a-zA-Z0-9/_.\-:]+$")
@@ -67,7 +69,14 @@ class PipelineConfig(BaseModel):
     Ablation studies use their own matrix-driven configuration.
     """
 
+    # AUDIT-056 (YELLOW): Forbid extra fields so users get a clear error
+    # instead of silently ignoring typos or unsupported config keys.
+    model_config = ConfigDict(extra="forbid")
+
     # ── LLM Provider Selection ──────────────────────────────────────────────
+    # AUDIT-011 (ORANGE): All defaults changed to None so an empty config {}
+    # does NOT silently override server settings. Only explicitly provided values
+    # are forwarded as env overrides via to_env_overrides().
     provider: (
         Literal[
             "auto",
@@ -89,24 +98,24 @@ class PipelineConfig(BaseModel):
         ]
         | None
     ) = Field(
-        default="openai",
+        default=None,
         description=_LLM_PROVIDER_DESC,
         examples=["openai", "openrouter", "lmstudio"],
     )
 
     # ── LLM Model Selection ─────────────────────────────────────────────────
     reasoning_model: str | None = Field(
-        default="gpt-5.4-nano-2026-03-17",
+        default=None,
         description=_LLM_REASONING_DESC,
         examples=["gpt-5.4-nano-2026-03-17", "gpt-5.4-2026-03-05", "gpt-5-nano-2025-08-07"],
     )
     extraction_model: str | None = Field(
-        default="gpt-5-nano-2025-08-07",
+        default=None,
         description=_LLM_EXTRACTION_DESC,
         examples=["gpt-5-nano-2025-08-07", "gpt-5.4-nano-2026-03-17"],
     )
     midtier_model: str | None = Field(
-        default="gpt-5-nano-2025-08-07",
+        default=None,
         description=_LLM_MIDTIER_DESC,
         examples=["gpt-5-nano-2025-08-07", "gpt-5.4-nano-2026-03-17"],
     )
@@ -128,6 +137,8 @@ class PipelineConfig(BaseModel):
                     f"(got: {model_name!r})"
                 )
         # Validate lmstudio_base_url (prevent SSRF)
+        # AUDIT-067 (YELLOW): Comprehensive private IP blocking using ipaddress module.
+        # Blocks loopback, link-local, private ranges, and cloud metadata endpoints.
         if self.lmstudio_base_url:
             parsed = urlparse(self.lmstudio_base_url)
             if parsed.scheme not in ("http", "https"):
@@ -135,38 +146,51 @@ class PipelineConfig(BaseModel):
                     f"lmstudio_base_url: only http/https schemes allowed (got: {parsed.scheme!r})"
                 )
             host = parsed.hostname or ""
-            # Block metadata endpoints and non-private destinations
+            # Block cloud metadata endpoints by hostname
             if host in ("169.254.169.254", "metadata.google.internal"):
                 raise ValueError("lmstudio_base_url: cloud metadata endpoints are blocked")
+            # Resolve hostname and check against all private/reserved IP ranges
+            try:
+                addr_infos = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+                for _family, _type, _proto, _canonname, sockaddr in addr_infos:
+                    ip_str = sockaddr[0]
+                    ip = ipaddress.ip_address(ip_str)
+                    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                        raise ValueError(
+                            f"lmstudio_base_url: private/reserved IP addresses are blocked "
+                            f"(resolved {host} to {ip_str})"
+                        )
+            except socket.gaierror:
+                pass  # hostname unresolvable — let it through, will fail at connection time
         return self
 
     # ── LLM Parameters ──────────────────────────────────────────────────────
     temperature_extraction: float | None = Field(
-        default=0.0,
+        default=None,
         ge=0.0,
         le=2.0,
         description="Temperature for extraction LLM (0.0 = deterministic JSON).",
     )
     temperature_reasoning: float | None = Field(
-        default=0.0,
+        default=None,
         ge=0.0,
         le=2.0,
         description="Temperature for reasoning/mapping LLM (0.0 = deterministic).",
     )
     temperature_generation: float | None = Field(
-        default=0.3,
+        default=None,
         ge=0.0,
         le=2.0,
         description="Temperature for answer generation LLM (0.3 for fluency).",
     )
     max_tokens_extraction: int | None = Field(
-        default=8192,
+        default=None,
         ge=256,
         le=32768,
         description="Max output tokens for extraction LLM.",
     )
     max_tokens_reasoning: int | None = Field(
-        default=4096,
+        default=None,
         ge=256,
         le=32768,
         description="Max output tokens for reasoning LLM.",
@@ -174,19 +198,19 @@ class PipelineConfig(BaseModel):
 
     # ── Chunking ────────────────────────────────────────────────────────────
     chunk_size: int | None = Field(
-        default=256,
+        default=None,
         ge=64,
         le=2048,
         description=("Child chunk token size. Must be greater than chunk_overlap."),
     )
     chunk_overlap: int | None = Field(
-        default=32,
+        default=None,
         ge=0,
         le=1024,
         description=("Child chunk overlap in tokens. Must be strictly less than chunk_size."),
     )
     parent_chunk_size: int | None = Field(
-        default=800,
+        default=None,
         ge=128,
         le=4096,
         description=(
@@ -195,7 +219,7 @@ class PipelineConfig(BaseModel):
         ),
     )
     parent_chunk_overlap: int | None = Field(
-        default=96,
+        default=None,
         ge=0,
         le=2048,
         description=(
@@ -237,27 +261,27 @@ class PipelineConfig(BaseModel):
 
     # ── Retrieval ───────────────────────────────────────────────────────────
     retrieval_mode: Literal["hybrid", "vector", "bm25"] | None = Field(
-        default="hybrid",
+        default=None,
         description="Retrieval channel combination.",
     )
     retrieval_vector_top_k: int | None = Field(
-        default=20,
+        default=None,
         ge=1,
         le=100,
         description="Vector search candidates.",
     )
     retrieval_bm25_top_k: int | None = Field(
-        default=10,
+        default=None,
         ge=1,
         le=100,
         description="BM25 keyword candidates.",
     )
     enable_reranker: bool | None = Field(
-        default=True,
+        default=None,
         description="Enable cross-encoder reranking (bge-reranker-v2-m3).",
     )
     reranker_top_k: int | None = Field(
-        default=5,
+        default=None,
         ge=1,
         le=50,
         description="Candidates kept after reranking.",
@@ -265,13 +289,13 @@ class PipelineConfig(BaseModel):
 
     # ── Entity Resolution ───────────────────────────────────────────────────
     er_similarity_threshold: float | None = Field(
-        default=0.75,
+        default=None,
         ge=0.0,
         le=1.0,
         description="Cosine similarity threshold for entity blocking.",
     )
     er_blocking_top_k: int | None = Field(
-        default=10,
+        default=None,
         ge=1,
         le=50,
         description="K-NN candidates per entity in blocking.",
@@ -279,25 +303,25 @@ class PipelineConfig(BaseModel):
 
     # ── Mapping & Validation ────────────────────────────────────────────────
     confidence_threshold: float | None = Field(
-        default=0.90,
+        default=None,
         ge=0.0,
         le=1.0,
         description="Mapping confidence threshold for HITL interrupt.",
     )
     max_reflection_attempts: int | None = Field(
-        default=3,
+        default=None,
         ge=1,
         le=10,
         description="Max Actor-Critic reflection retries.",
     )
     max_cypher_healing_attempts: int | None = Field(
-        default=3,
+        default=None,
         ge=0,
         le=10,
         description="Max Cypher healing retries before deterministic fallback.",
     )
     max_hallucination_retries: int | None = Field(
-        default=3,
+        default=None,
         ge=0,
         le=10,
         description="Max hallucination regeneration retries.",
@@ -305,35 +329,35 @@ class PipelineConfig(BaseModel):
 
     # ── Feature Flags ───────────────────────────────────────────────────────
     enable_schema_enrichment: bool | None = Field(
-        default=True,
+        default=None,
         description="LLM acronym expansion during schema enrichment.",
     )
     enable_cypher_healing: bool | None = Field(
-        default=True,
+        default=None,
         description="Auto-fix Cypher syntax errors via LLM reflection.",
     )
     enable_critic_validation: bool | None = Field(
-        default=True,
+        default=None,
         description="Actor-Critic mapping validation loop.",
     )
     enable_hallucination_grader: bool | None = Field(
-        default=True,
+        default=None,
         description="Self-RAG hallucination grading.",
     )
     enable_retrieval_quality_gate: bool | None = Field(
-        default=True,
+        default=None,
         description="Retrieval quality gate before generation.",
     )
     enable_grader_consistency_validator: bool | None = Field(
-        default=True,
+        default=None,
         description="Grader consistency check across iterations.",
     )
     enable_spacy_heuristics: bool | None = Field(
-        default=True,
+        default=None,
         description="spaCy-based heuristic extraction as fallback.",
     )
     enable_lazy_expansion: bool | None = Field(
-        default=True,
+        default=None,
         description="Lazy context expansion strategy.",
     )
 
@@ -391,14 +415,21 @@ class PipelineConfig(BaseModel):
 class CustomAblationRequest(BaseModel):
     """Launch a fully custom ablation run with any combination of flags/hyperparameters."""
 
+    model_config = ConfigDict(extra="forbid")
+
     dataset: str = Field(
         default="tests/fixtures/01_basics_ecommerce/gold_standard.json",
         description="Path to the gold_standard.json fixture to evaluate against.",
         examples=["tests/fixtures/02_intermediate_finance/gold_standard.json"],
     )
+    # AUDIT-005 (RED): Validate study_id to prevent path traversal (e.g. "../../tmp/evil").
     study_id: str = Field(
         default="custom-run",
-        description="Output directory prefix under outputs/ablation/.",
+        pattern=r"^[a-zA-Z0-9_-]{1,64}$",
+        description=(
+            "Output directory prefix under outputs/ablation/. "
+            "Alphanumeric, dashes, underscores only."
+        ),
     )
     max_samples: int | None = Field(
         default=None,
@@ -535,6 +566,8 @@ class PresetAblationRequest(BaseModel):
     Use ``GET /ablation/matrix`` to browse all 21 predefined studies.
     """
 
+    model_config = ConfigDict(extra="forbid")
+
     study_id: str = Field(
         description="Ablation study ID to run (e.g. 'AB-00', 'AB-03', 'AB-15').",
         examples=["AB-00", "AB-03", "AB-15"],
@@ -636,6 +669,8 @@ class AblationMatrixEntry(BaseModel):
 class BuildRequest(BaseModel):
     """Trigger the Builder pipeline to ingest docs and populate the Knowledge Graph."""
 
+    model_config = ConfigDict(extra="forbid")
+
     doc_paths: list[str] = Field(
         max_length=100,
         description="Paths to business documentation files (PDF, MD, TXT).",
@@ -673,8 +708,7 @@ class BuildRequest(BaseModel):
     config: PipelineConfig | None = Field(
         default=None,
         description=(
-            "Optional per-run configuration overrides "
-            "(models, temperatures, feature flags, etc.)."
+            "Optional per-run configuration overrides (models, temperatures, feature flags, etc.)."
         ),
     )
 
@@ -717,6 +751,8 @@ class KGSnapshotMeta(BaseModel):
 class SaveSnapshotRequest(BaseModel):
     """Request to save the current KG as a named snapshot."""
 
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(
         description="Human-readable name for this snapshot.",
         examples=["E-Commerce v1", "Finance schema — April 2026"],
@@ -729,6 +765,8 @@ class SaveSnapshotRequest(BaseModel):
 
 class RenameSnapshotRequest(BaseModel):
     """Request to rename/update an existing KG snapshot."""
+
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(description="New human-readable name for the snapshot.")
     description: str | None = Field(
@@ -743,7 +781,8 @@ class RenameSnapshotRequest(BaseModel):
 class ConversationMessage(BaseModel):
     """A single chat message stored in a conversation."""
 
-    role: str = Field(description='"user" or "assistant".')
+    # AUDIT-033 (YELLOW): Restrict role to prevent "system" injection via stored history.
+    role: Literal["user", "assistant"] = Field(description='"user" or "assistant".')
     content: str = Field(description="Message text content.")
     metadata: dict[str, Any] | None = Field(
         default=None,
@@ -776,6 +815,8 @@ class ConversationDetail(ConversationMeta):
 class SaveConversationRequest(BaseModel):
     """Request to persist a conversation."""
 
+    model_config = ConfigDict(extra="forbid")
+
     session_id: str = Field(description="Client session UUID (LangGraph thread_id).")
     title: str = Field(
         description="Human-readable title (defaults to first user message if empty).",
@@ -793,13 +834,19 @@ class SaveConversationRequest(BaseModel):
 class RenameConversationRequest(BaseModel):
     """Request to rename a conversation."""
 
+    model_config = ConfigDict(extra="forbid")
+
     title: str = Field(description="New title for the conversation.")
 
 
 class QueryRequest(BaseModel):
     """Query the Knowledge Graph with a natural-language question."""
 
+    model_config = ConfigDict(extra="forbid")
+
+    # AUDIT-040 (YELLOW): Cap question length to prevent excessive LLM token usage.
     question: str = Field(
+        max_length=2000,
         description="Natural language question to answer from the Knowledge Graph.",
         examples=[
             "What information is stored for each customer?",
@@ -809,8 +856,7 @@ class QueryRequest(BaseModel):
     config: PipelineConfig | None = Field(
         default=None,
         description=(
-            "Optional per-run configuration overrides "
-            "(models, temperatures, feature flags, etc.)."
+            "Optional per-run configuration overrides (models, temperatures, feature flags, etc.)."
         ),
     )
     session_id: str | None = Field(
@@ -840,6 +886,8 @@ class QueryResponse(BaseModel):
 class PipelineRequest(BaseModel):
     """Run a complete E2E pipeline: build KG then answer questions."""
 
+    model_config = ConfigDict(extra="forbid")
+
     doc_paths: list[str] = Field(
         max_length=100,
         description="Paths to business documentation files.",
@@ -855,6 +903,7 @@ class PipelineRequest(BaseModel):
         description="Paths to DDL SQL files.",
         examples=[["tests/fixtures/01_basics_ecommerce/schema.sql"]],
     )
+    # AUDIT-040 (YELLOW): Individual question strings capped at 2000 chars.
     questions: list[str] = Field(
         min_length=1,
         max_length=500,
@@ -888,10 +937,17 @@ class PipelineRequest(BaseModel):
     config: PipelineConfig | None = Field(
         default=None,
         description=(
-            "Optional per-run configuration overrides "
-            "(models, temperatures, feature flags, etc.)."
+            "Optional per-run configuration overrides (models, temperatures, feature flags, etc.)."
         ),
     )
+
+    @model_validator(mode="after")
+    def _validate_question_lengths(self) -> PipelineRequest:
+        """AUDIT-040 (YELLOW): Cap each individual question to 2000 characters."""
+        for i, q in enumerate(self.questions):
+            if len(q) > 2000:
+                raise ValueError(f"questions[{i}] exceeds 2000 character limit ({len(q)} chars).")
+        return self
 
 
 class PipelineJobResponse(BaseModel):

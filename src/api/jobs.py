@@ -15,6 +15,13 @@ from typing import Any
 _store: dict[str, dict[str, Any]] = {}
 _lock = Lock()
 
+# AUDIT-006 (RED): Hard cap on total jobs to prevent unbounded memory growth
+# from rapid-fire API calls. When reached, oldest terminal-state jobs are evicted.
+_MAX_JOBS = 1000
+
+# AUDIT-006 (RED): Maximum size of the meta dict per job (~4KB worth of keys).
+_MAX_META_KEYS = 50
+
 
 def _get_max_jobs() -> int:
     from src.config.settings import get_settings
@@ -40,11 +47,31 @@ def _evict_stale_jobs() -> None:
         del _store[jid]
 
 
+def _evict_oldest_terminal() -> None:
+    """AUDIT-006 (RED): Remove oldest terminal-state jobs to make room."""
+    terminal = [
+        (jid, data.get("_created_at", 0.0))
+        for jid, data in _store.items()
+        if data.get("status") in ("done", "failed")
+    ]
+    terminal.sort(key=lambda x: x[1])
+    # Evict oldest 10% of terminal jobs
+    evict_count = max(1, len(terminal) // 10)
+    for jid, _ in terminal[:evict_count]:
+        del _store[jid]
+
+
 def create_job(meta: dict[str, Any]) -> str:
     job_id = uuid.uuid4().hex[:12]
     with _lock:
-        if len(_store) >= _get_max_jobs():
+        if len(_store) >= _MAX_JOBS:
             _evict_stale_jobs()
+        # AUDIT-006 (RED): If still at limit after stale eviction, force-evict oldest
+        if len(_store) >= _MAX_JOBS:
+            _evict_oldest_terminal()
+        # AUDIT-006 (RED): Cap meta dict size to prevent oversized metadata
+        if len(meta) > _MAX_META_KEYS:
+            meta = dict(list(meta.items())[:_MAX_META_KEYS])
         _store[job_id] = {
             "status": "queued",
             "meta": meta,
@@ -87,5 +114,7 @@ def get_job(job_id: str) -> dict[str, Any] | None:
 
 
 def list_jobs() -> list[dict[str, Any]]:
+    # AUDIT-057 (YELLOW): Use deepcopy so callers cannot mutate the internal store
+    # through nested references in the returned dicts.
     with _lock:
-        return [{"job_id": jid, **data} for jid, data in _store.items()]
+        return [{"job_id": jid, **copy.deepcopy(data)} for jid, data in _store.items()]

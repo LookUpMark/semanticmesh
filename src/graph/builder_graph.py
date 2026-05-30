@@ -587,7 +587,8 @@ def run_builder(
         if all_children:
             emb_model = get_embeddings()
             child_texts = [c.text for c in all_children]
-            vectors = emb_model.encode(child_texts, batch_size=32)
+            # AUDIT-050: use configurable embedding_batch_size instead of hardcoded value
+            vectors = emb_model.encode(child_texts, batch_size=settings.embedding_batch_size)
             client.execute_cypher(
                 "UNWIND $rows AS row "
                 "MERGE (c:Chunk {chunk_index: row.idx, source_doc: row.src}) "
@@ -664,7 +665,8 @@ def run_builder(
     initial: BuilderState = {
         "chunks": chunks,
         "ddl_paths": ddl_to_ingest,
-        "source_doc": str(docs_to_ingest[0]) if docs_to_ingest else "unknown",
+        # AUDIT-023: include all document paths instead of just the first
+        "source_doc": ", ".join(docs_to_ingest) if docs_to_ingest else "unknown",
         "use_lazy_extraction": lazy_mode,
         "triplets": [],
         "entities": [],
@@ -702,6 +704,9 @@ def run_builder(
             _set_step(job_id, node_name)
             node_delta = node_output[node_name]
             if node_delta is not None:
+                # AUDIT-064: shallow merge — a node returning key with None
+                # overwrites any previous non-None value for that key. Accepted
+                # trade-off for job step tracking (SSE polling path).
                 final_state = {**final_state, **node_delta}
     else:
         final_state = graph.invoke(initial, config=config)

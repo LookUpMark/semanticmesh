@@ -792,7 +792,10 @@ def main() -> None:
     parser.add_argument("--no-builder", action="store_true", help="Skip builder, query only")
     parser.add_argument("--ragas", action="store_true", help="Enable RAGAS evaluation")
     parser.add_argument(
-        "--ragas-model", type=str, default="gpt-4.1-mini", help="RAGAS evaluator model"
+        "--ragas-model",
+        type=str,
+        default=os.environ.get("RAGAS_MODEL", "gpt-4.1-mini"),
+        help="RAGAS evaluator model (default: RAGAS_MODEL env var or gpt-4.1-mini)",
     )
     parser.add_argument("--lazy", action="store_true", help="Use heuristic extraction")
     parser.add_argument("--max-samples", type=int, default=None, help="Limit QA pairs per dataset")
@@ -800,7 +803,10 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true", help="Use smoke fixtures")
     parser.add_argument("--auto-neo4j", action="store_true", help="Auto-start Neo4j if not running")
     parser.add_argument(
-        "--output-dir", type=Path, default=Path("outputs/ablation"), help="Base output directory"
+        "--output-dir",
+        type=Path,
+        default=Path(os.environ.get("ABLATION_OUTPUT_DIR", "outputs/ablation")),
+        help="Base output directory (default: ABLATION_OUTPUT_DIR env var or outputs/ablation)",
     )
     args = parser.parse_args()
 

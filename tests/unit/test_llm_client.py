@@ -49,7 +49,10 @@ class TestLLMProtocol:
 
 class TestInstrumentedLLMInvoke:
     def test_delegates_to_inner_model(self, mocker) -> None:
-        mocker.patch("src.config.llm_client.InstrumentedLLM._inject_observability_callbacks", side_effect=lambda kwargs: kwargs)
+        mocker.patch(
+            "src.config.llm_client.InstrumentedLLM._inject_observability_callbacks",
+            side_effect=lambda kwargs: kwargs,
+        )
         inner = _make_inner()
         llm = InstrumentedLLM(inner, name="test")
         result = llm.invoke([])
@@ -59,7 +62,10 @@ class TestInstrumentedLLMInvoke:
         assert result.content == "ok"
 
     def test_passes_kwargs_through(self, mocker) -> None:
-        mocker.patch("src.config.llm_client.InstrumentedLLM._inject_observability_callbacks", side_effect=lambda kwargs: kwargs)
+        mocker.patch(
+            "src.config.llm_client.InstrumentedLLM._inject_observability_callbacks",
+            side_effect=lambda kwargs: kwargs,
+        )
         inner = _make_inner()
         llm = InstrumentedLLM(inner, name="test")
         llm.invoke([], temperature=0.5)
@@ -110,7 +116,10 @@ class TestInstrumentedLLMAinvoke:
         assert result.content == "ok"
 
     def test_async_passes_kwargs(self, mocker) -> None:
-        mocker.patch("src.config.llm_client.InstrumentedLLM._inject_observability_callbacks", side_effect=lambda kwargs: kwargs)
+        mocker.patch(
+            "src.config.llm_client.InstrumentedLLM._inject_observability_callbacks",
+            side_effect=lambda kwargs: kwargs,
+        )
         inner = _make_inner()
         llm = InstrumentedLLM(inner, name="test")
         asyncio.run(llm.ainvoke([], stop=["\n"]))

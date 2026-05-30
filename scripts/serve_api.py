@@ -24,7 +24,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Start the GraphRAG Thesis API (uvicorn).",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--host", default="127.0.0.1", help="Bind address.")
+    parser.add_argument(
+        "--host",
+        default=os.environ.get("API_HOST", "127.0.0.1"),
+        help="Bind address (default: API_HOST env var or 127.0.0.1).",
+    )
     parser.add_argument(
         "--port",
         type=int,

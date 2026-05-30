@@ -302,6 +302,9 @@ def graph_traversal(
     """
     settings = get_settings()
     d = depth or settings.retrieval_graph_depth
+    # AUDIT-008: clamp depth to [1, 3] before f-string interpolation
+    # to prevent invalid or resource-exhausting Cypher queries
+    d = max(1, min(3, int(d)))
 
     if not seed_names:
         return []
@@ -333,7 +336,7 @@ def graph_traversal(
                 node_id=name,
                 node_type=rec.get("node_type", "Unknown"),
                 text=text,
-                score=0.5,  # graph neighbours get a neutral baseline score
+                score=settings.retrieval_score_graph_neighbor,  # AUDIT-016: configurable
                 source_type="graph",
                 metadata={"rel_type": rec.get("rel_type")},
             )
@@ -352,7 +355,7 @@ def fetch_all_concepts(client: Neo4jClient) -> list[RetrievedChunk]:
     always have all concepts in the reranker pool, even when vector similarity
     to individual concept names is very low.
 
-    The baseline score (0.05) is intentionally below any real vector or BM25
+    The baseline score is intentionally below any real vector or BM25
     score, so ``merge_results`` will prefer those when they are available.
 
     Args:
@@ -361,6 +364,7 @@ def fetch_all_concepts(client: Neo4jClient) -> list[RetrievedChunk]:
     Returns:
         One ``RetrievedChunk`` per ``BusinessConcept`` node.
     """
+    settings = get_settings()
     records = client.execute_cypher(
         "MATCH (n:BusinessConcept) RETURN n.name AS name, n.definition AS definition"
     )
@@ -376,7 +380,7 @@ def fetch_all_concepts(client: Neo4jClient) -> list[RetrievedChunk]:
                 node_id=name,
                 node_type="BusinessConcept",
                 text=text,
-                score=0.05,
+                score=settings.retrieval_score_all_concepts,  # AUDIT-016: configurable
                 source_type="graph",
                 metadata={},
             )
@@ -395,7 +399,7 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
     a descriptive sentence so the LLM can cite foreign-key relationships when
     answering questions about how tables are related.
 
-    The baseline score (0.1) is above the ``fetch_all_concepts`` baseline but
+    The baseline score is above the ``fetch_all_concepts`` baseline but
     below real retrieval scores, ensuring FK edges appear in the reranker pool
     without dominating it.
 
@@ -405,6 +409,7 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
     Returns:
         One ``RetrievedChunk`` per ``[:REFERENCES]`` edge.
     """
+    settings = get_settings()
     records = client.execute_cypher(
         "MATCH (src:PhysicalTable)-[r:REFERENCES]->(tgt:PhysicalTable) "
         "RETURN src.table_name AS src_table, tgt.table_name AS tgt_table, "
@@ -429,7 +434,7 @@ def fetch_fk_relationships(client: Neo4jClient) -> list[RetrievedChunk]:
                 node_id=node_id,
                 node_type="FKRelationship",
                 text=text,
-                score=0.1,
+                score=settings.retrieval_score_fk_edge,  # AUDIT-016: configurable
                 source_type="graph",
                 metadata={"src_table": src, "tgt_table": tgt, "fk_column": fk_col},
             )
@@ -447,7 +452,7 @@ def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
     physical table even when the concept's vector embedding does not rank highly
     for the query.
 
-    The baseline score (0.15) is above FK edges (0.1) so the reranker sees these
+    The baseline score is above FK edges so the reranker sees these
     as slightly higher-priority hints, while still below real retrieval scores.
 
     Args:
@@ -456,6 +461,7 @@ def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
     Returns:
         One ``RetrievedChunk`` per ``[:MAPPED_TO]`` edge.
     """
+    settings = get_settings()
     records = client.execute_cypher(
         "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
         "RETURN bc.name AS concept_name, bc.definition AS concept_def, "
@@ -502,7 +508,7 @@ def fetch_concept_table_mappings(client: Neo4jClient) -> list[RetrievedChunk]:
                 node_id=f"{concept}→{table}",
                 node_type="ConceptTableMapping",
                 text=text,
-                score=0.15,
+                score=settings.retrieval_score_concept_mapping,  # AUDIT-016: configurable
                 source_type="graph",
                 metadata={"concept_name": concept, "table_name": table},
             )
@@ -518,7 +524,7 @@ def merge_results(
     vector: list[RetrievedChunk],
     bm25: list[RetrievedChunk],
     graph: list[RetrievedChunk],
-    rrf_k: int = 60,
+    rrf_k: int = 60,  # AUDIT-050: callers should pass settings.retrieval_rrf_constant
 ) -> list[RetrievedChunk]:
     """Merge retrieval results via Reciprocal Rank Fusion (RRF).
 
@@ -531,7 +537,8 @@ def merge_results(
         vector: Results from ``vector_search`` (pre-sorted by score desc).
         bm25: Results from ``bm25_search`` (pre-sorted by score desc).
         graph: Results from ``graph_traversal`` (pre-sorted by score desc).
-        rrf_k: RRF constant (default 60). Higher k dampens rank differences.
+        rrf_k: RRF constant. Higher k dampens rank differences.
+              Prefer passing ``settings.retrieval_rrf_constant``.
 
     Returns:
         Deduplicated list sorted by RRF score descending.

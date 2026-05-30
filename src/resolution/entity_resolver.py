@@ -141,7 +141,9 @@ def resolve_entities(
     Args:
         triplets: All triplets from the SLM extraction step.
         embeddings: Embedding model (BGE-M3 recommended).
-        llm: Reasoning LLM for the judge step (temperature=0.0).
+        llm: LLM used for singleton definition synthesis only (lightweight/nano model).
+             The LLM judge in Stage 2 uses ``get_midtier_llm()`` internally and is
+             NOT controlled by this parameter.  # AUDIT-019: clarified param usage.
         source_doc: Source document name (stored on each Entity for provenance).
 
     Returns:

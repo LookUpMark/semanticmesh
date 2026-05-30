@@ -34,6 +34,10 @@ _MAPPING_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 ]
 
 
+# AUDIT-058: lru_cache(maxsize=1) means the spaCy model is cached for the
+# process lifetime. Runtime changes to enable_spacy_heuristics or spacy_model_name
+# will NOT take effect until the process restarts or _get_spacy_nlp.cache_clear()
+# is called explicitly (e.g. via reconfigure_from_env).
 @lru_cache(maxsize=1)
 def _get_spacy_nlp():
     """Return a cached spaCy nlp pipeline or None when unavailable."""

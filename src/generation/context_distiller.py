@@ -27,8 +27,17 @@ _NOISE_MARKERS = (
     "best_candidate=",
 )
 
-# Shared tokenizer — same encoding used throughout the project (cl100k_base)
-_TOKENIZER = tiktoken.get_encoding("cl100k_base")
+# AUDIT-021: lazy-initialize tokenizer on first use instead of at import time
+# to avoid crashes in offline environments where tiktoken needs to download.
+_TOKENIZER: tiktoken.Encoding | None = None
+
+
+def _get_tokenizer() -> tiktoken.Encoding:
+    """Return the shared cl100k_base tokenizer, initializing lazily on first use."""
+    global _TOKENIZER
+    if _TOKENIZER is None:
+        _TOKENIZER = tiktoken.get_encoding("cl100k_base")
+    return _TOKENIZER
 
 
 def _distill_text(chunk: RetrievedChunk) -> str:
@@ -111,7 +120,7 @@ def distill_context_chunks(
         key = distilled_text.lower()
         if key in seen_text:
             continue
-        chunk_tokens = len(_TOKENIZER.encode(distilled_text))
+        chunk_tokens = len(_get_tokenizer().encode(distilled_text))
         if used_tokens + chunk_tokens > effective_token_budget:
             continue  # skip oversized chunks rather than truncating
         seen_text.add(key)

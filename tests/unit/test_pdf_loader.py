@@ -71,7 +71,9 @@ class TestLcDocsToDocuments:
         assert docs[0].metadata["source"] == "my_doc.pdf"
 
     def test_preserves_markdown_structure(self) -> None:
-        markdown_content = "# Heading\n\n## Subheading\n\n| Col1 | Col2 |\n|------|------|\n| A    | B    |"
+        markdown_content = (
+            "# Heading\n\n## Subheading\n\n| Col1 | Col2 |\n|------|------|\n| A    | B    |"
+        )
         lc_docs = [_make_lc_doc(markdown_content, page=1)]
         docs = _lc_docs_to_documents(lc_docs, "table.pdf")
         assert "# Heading" in docs[0].text
@@ -79,7 +81,9 @@ class TestLcDocsToDocuments:
         assert "| Col1 |" in docs[0].text
 
     def test_page_defaults_to_one_when_missing(self) -> None:
-        lc_doc = LCDocument(page_content="Content", metadata={"source": "doc.pdf", "format": "markdown"})
+        lc_doc = LCDocument(
+            page_content="Content", metadata={"source": "doc.pdf", "format": "markdown"}
+        )
         docs = _lc_docs_to_documents([lc_doc], "doc.pdf")
         assert docs[0].metadata["page"] == "1"
 

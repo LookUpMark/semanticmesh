@@ -56,6 +56,8 @@ def test_settings() -> Settings:
         enable_reranker=True,
         enable_hallucination_grader=True,
         retrieval_mode="hybrid",
+        llm_temperature_midtier=0.0,
+        llm_max_tokens_generation=4096,
     )
 
 
@@ -183,9 +185,7 @@ def sample_complex_schema() -> Path:
 @pytest.fixture
 def sample_business_glossary() -> Path:
     """Path to the business glossary text file."""
-    return (
-        Path(__file__).parent / "fixtures" / "01_basics_ecommerce" / "business_glossary.txt"
-    )
+    return Path(__file__).parent / "fixtures" / "01_basics_ecommerce" / "business_glossary.txt"
 
 
 @pytest.fixture

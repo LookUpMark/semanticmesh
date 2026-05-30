@@ -79,8 +79,14 @@ class TestRerank:
         rerank("what is a customer?", chunks, reranker=reranker, top_k=2)
         call_args = reranker.compute_score.call_args[0][0]
         # Short BC chunks are enriched with [node_type | node_id] prefix
-        assert call_args[0] == ("what is a customer?", "[BusinessConcept | Customer] Customer: some definition text")
-        assert call_args[1] == ("what is a customer?", "[BusinessConcept | Product] Product: some definition text")
+        assert call_args[0] == (
+            "what is a customer?",
+            "[BusinessConcept | Customer] Customer: some definition text",
+        )
+        assert call_args[1] == (
+            "what is a customer?",
+            "[BusinessConcept | Product] Product: some definition text",
+        )
 
     def test_invalid_chunks_are_dropped_before_scoring(self) -> None:
         valid = _chunk("Customer")
@@ -99,7 +105,9 @@ class TestRerank:
         assert len(result) == 1
         assert result[0].node_id == "Customer"
         call_args = reranker.compute_score.call_args[0][0]
-        assert call_args == [("query", "[BusinessConcept | Customer] Customer: some definition text")]
+        assert call_args == [
+            ("query", "[BusinessConcept | Customer] Customer: some definition text")
+        ]
 
     def test_floor_large_pool_rank1_gets_055(self) -> None:
         """Pool ≥10 → rank #1 floor is 0.55 (max of linear interpolation)."""

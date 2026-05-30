@@ -75,6 +75,13 @@ def _fix_apostrophes_in_cypher(cypher: str) -> str:
                 i = j
             else:
                 # Unmatched quote — append rest of string unchanged
+                # AUDIT-059: log warning about unmatched apostrophe in Cypher
+                logger.warning(
+                    "Unmatched single quote in Cypher at position %d — "
+                    "remaining text appended unchanged: %.60s...",
+                    i,
+                    cypher[i:],
+                )
                 result.append(cypher[i:])
                 break
         else:
