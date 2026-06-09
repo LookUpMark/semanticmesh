@@ -905,7 +905,7 @@ def main() -> None:
             thesis_dir = args.output_dir / "thesis"
             generate_all_thesis_artifacts(all_scores_path, thesis_dir, ablation_desc=ABLATION_DESC)
         except Exception as tex:
-            print(f"  ⚠ Cross-study thesis export failed (non-fatal): {tex}")
+            print(f"  [WARN] Cross-study thesis export failed (non-fatal): {tex}")
 
     print()
     print("=" * 60)

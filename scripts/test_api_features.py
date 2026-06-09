@@ -677,9 +677,9 @@ def main():
     print(f"  WARN: {WARN_COUNT}")
     print(f"  Total assertions: {PASS_COUNT + FAIL_COUNT + WARN_COUNT}")
     if FAIL_COUNT == 0:
-        print("\n  ✅ ALL TESTS PASSED")
+        print("\n  [PASS] ALL TESTS PASSED")
     else:
-        print(f"\n  ❌ {FAIL_COUNT} FAILURE(S) DETECTED")
+        print(f"\n  [FAIL] {FAIL_COUNT} FAILURE(S) DETECTED")
 
 
 if __name__ == "__main__":

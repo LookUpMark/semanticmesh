@@ -32,7 +32,7 @@ Production readiness audit — 22 issues fixed across security, correctness, and
 - **Cypher apostrophe fixer** (`src/graph/cypher_generator.py`): Guard for unmatched single quotes — appends rest of string unchanged instead of dropping last character.
 - **`azure_openai_api_version` in Settings** (`src/config/settings.py`): Field now overridable via `AZURE_OPENAI_API_VERSION` env var.
 - **`langchain-anthropic` + `langchain-ollama`** (`pyproject.toml`): Added missing dependencies.
-- **Doc consistency** (`CLAUDE.md`, `README.md`, `src/generation/nodes/retrieval_nodes.py`):
+- **Doc consistency** (`project documentation`, `README.md`, `src/generation/nodes/retrieval_nodes.py`):
   - Removed non-existent `safe_json_loads` reference
   - Fixed reranker model name: `bge-reranker-large` → `bge-reranker-v2-m3`
   - Fixed function name: `_clean_json()` → `clean_json()`

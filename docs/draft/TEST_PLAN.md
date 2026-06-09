@@ -76,11 +76,11 @@ test_builder_graph_double_run_graph_state_identical
 All node functions must accept their dependencies as parameters (not import them globally) to enable easy mocking:
 
 ```python
-# ✅ Correct — testable
+# Correct — testable
 def extract_triplets(chunk: Chunk, llm: BaseChatModel) -> list[Triplet]:
     ...
 
-# ❌ Wrong — untestable without monkey-patching
+# Wrong — untestable without monkey-patching
 def extract_triplets(chunk: Chunk) -> list[Triplet]:
     llm = ChatOpenRouter(...)  # hardcoded
     ...

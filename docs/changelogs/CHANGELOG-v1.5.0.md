@@ -9,7 +9,7 @@ Full-scope adversarial security audit (9 agents, RED/BLUE/YELLOW teams) with com
 
 ## Changes
 
-### 🔴 Critical (RED) — 6 fixes
+### Critical (RED) — 6 fixes
 
 - **AUDIT-001: Config override env poisoning** — Replaced blocklist with explicit allowlist (`_ALLOWED_OVERRIDE_KEYS` frozenset). Only boolean ablation flags, numeric thresholds, and model names accepted at runtime. Endpoint URLs, database URIs, and API keys are now immutable without server restart. (`src/api/app.py`)
 - **AUDIT-002: LangGraph state mutation** — Replaced `state.setdefault("embedding_failures", []).append()` with proper return-dict pattern. Added `embedding_failures: list[str]` to `BuilderState` TypedDict. (`src/graph/build_nodes.py`, `src/models/state.py`)
@@ -18,7 +18,7 @@ Full-scope adversarial security audit (9 agents, RED/BLUE/YELLOW teams) with com
 - **AUDIT-005: Path traversal via study_id** — Added `Field(pattern=r'^[a-zA-Z0-9_-]{1,64}$')` validation to `CustomAblationRequest.study_id`. (`src/api/models.py`)
 - **AUDIT-006: Unbounded job store** — Added `_MAX_JOBS = 1000` hard cap with LRU eviction and per-job meta size limit. (`src/api/jobs.py`)
 
-### 🟠 High (ORANGE) — 24 fixes
+### High (ORANGE) — 24 fixes
 
 - **AUDIT-007: Auth disabled without API_KEY** — Added `SEMANTICMESH_DEV_MODE` env var for explicit opt-in. Enhanced warning messages. (`src/api/auth.py`)
 - **AUDIT-008: Cypher depth injection** — Added `d = max(1, min(3, d))` clamping before f-string interpolation. (`src/retrieval/hybrid_retriever.py`)
@@ -45,7 +45,7 @@ Full-scope adversarial security audit (9 agents, RED/BLUE/YELLOW teams) with com
 - **AUDIT-029: NOT NULL heuristic** — Fixed false-positive substring match in `_get_not_null_columns` with per-column region search. (`src/graph/cypher_builder.py`)
 - **AUDIT-030: In-place Pydantic mutation** — Changed `nc.score = ...` to `nc.model_copy(update={"score": ...})`. (`src/generation/nodes/retrieval_nodes.py`)
 
-### 🟡 Medium (YELLOW) — 42 fixes
+### Medium (YELLOW) — 42 fixes
 
 - Path traversal symlink TOCTOU race fix (`demo_router.py`)
 - Prompt injection defenses — XML delimiters around context, ConversationMessage.role → `Literal["user", "assistant"]` (`answer_generator.py`, `models.py`)
@@ -65,12 +65,12 @@ Full-scope adversarial security audit (9 agents, RED/BLUE/YELLOW teams) with com
 - Consistent `provenance_max_chars` across all modules (`rag_mapper.py`, `llm_judge.py`)
 - And 20+ more minor fixes across utilities, scripts, and tests
 
-### 🟢 Low (GREEN) — 18 fixes
+### Low (GREEN) — 18 fixes
 
 - Removed 12 unused imports across tests/scripts/src
 - Fixed docstrings: schema_enricher, hallucination_grader, entity_resolver
 - Read defaults from env vars in neo4j_lifecycle, serve_api, run_pipeline scripts
-- Added missing modules to CLAUDE.md project structure
+- Added missing modules to project documentation project structure
 - Added `critic_entity_limit` and `grader_max_consistency_corrections` to config/settings
 - Explanatory comments throughout
 

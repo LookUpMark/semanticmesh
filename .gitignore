@@ -101,3 +101,10 @@ graphify-out
 .obsidian
 raw
 .github
+
+# AI coding agents
+.copilot/
+.cursorrules
+.aider*
+.codex*
+.aider.conf.yml

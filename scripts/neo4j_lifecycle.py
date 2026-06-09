@@ -99,13 +99,13 @@ def start_neo4j(register_stop_atexit: bool = True) -> None:
     status = _container_status()
 
     if status == "running":
-        print(f"✅ Neo4j already running  (bolt://{_get_neo4j_host()}:{BOLT_PORT})")
+        print(f"[OK] Neo4j already running  (bolt://{_get_neo4j_host()}:{BOLT_PORT})")
     elif status == "exited":
-        print("▶  Resuming stopped Neo4j container …")
+        print("Resuming stopped Neo4j container ...")
         _run(["docker", "start", CONTAINER_NAME])
         _wait_ready()
     else:
-        print("🚀 Creating Neo4j container …")
+        print("Creating Neo4j container ...")
         _run(
             [
                 "docker",
@@ -131,12 +131,12 @@ def start_neo4j(register_stop_atexit: bool = True) -> None:
 
 
 def _wait_ready() -> None:
-    print("⏳ Waiting for Neo4j to be ready …", end="", flush=True)
+    print("Waiting for Neo4j to be ready ...", end="", flush=True)
     if _wait_for_bolt():
-        print(f"  ready ✅  (bolt://{_get_neo4j_host()}:{BOLT_PORT})")
+        print(f"  ready [OK]  (bolt://{_get_neo4j_host()}:{BOLT_PORT})")
     else:
         print(
-            f"\n⚠️  Neo4j did not become ready within {STARTUP_TIMEOUT}s — check `docker logs {CONTAINER_NAME}`"
+            f"\n[WARN] Neo4j did not become ready within {STARTUP_TIMEOUT}s — check `docker logs {CONTAINER_NAME}`"
         )
 
 

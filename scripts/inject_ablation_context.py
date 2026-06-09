@@ -70,7 +70,7 @@ def main() -> None:
             data = json.load(f)
 
         if "ablation_context" in data:
-            print(f"✅ {ds}: ablation_context already present")
+            print(f"[OK] {ds}: ablation_context already present")
             continue
 
         data["ablation_context"] = ABLATION_CONTEXT

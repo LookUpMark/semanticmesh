@@ -254,13 +254,13 @@ for ab in STUDIES:
     abl_str = f"{ablation_avg:.2f}" if ablation_avg else "N/A"
     # Mark the highest/lowest overall
     desc_short = ABLATION_DESC[ab]["title"]
-    star = " ⭐" if ab == "AB-10" else (" ⚠️" if ab == "AB-01" else "")
+    star = " *" if ab == "AB-10" else (" !" if ab == "AB-01" else "")
     w(
         f"| **{ab}** | {desc_short}{star} | **{overall:.2f}** | {builder:.2f} | {retrieval:.2f} | {answer:.2f} | {pipeline:.2f} | {abl_str} |"
     )
 
 w("")
-w("> ⭐ Best performing ablation | ⚠️ Worst performing ablation")
+w(">Best performing ablation | WARN Worst performing ablation")
 w("> ")
 w(
     "> **Note:** AB-01, AB-02, AB-03, AB-04, AB-05, AB-20 did not rebuild the KG — Builder score of 1.00 reflects absent builder metrics in run.json, not actual KG failure. Functionally they inherit the baseline KG quality (5.00)."
@@ -852,4 +852,4 @@ try:
         ablation_desc=ABLATION_DESC,
     )
 except Exception as tex:
-    print(f"⚠ Thesis export failed (non-fatal): {tex}")
+    print(f"[WARN] Thesis export failed (non-fatal): {tex}")
