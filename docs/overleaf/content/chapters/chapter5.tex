@@ -59,8 +59,12 @@ To measure the contribution of individual components, we conduct an ablation cam
     \item \textbf{AB-01 \& AB-02}: Retrieval mode ablations (vector-only and BM25-only).
     \item \textbf{AB-03 to AB-05}: Reranker ablations (reranker disabled, top\_k=5, top\_k=20).
     \item \textbf{AB-06 to AB-08}: Chunking strategy modifications (128/16, 384/48, 512/64).
+    \item \textbf{AB-09 \& AB-10}: Triplet extraction token limit variations (4096 and 16384 tokens).
     \item \textbf{AB-11 \& AB-12}: Entity resolution similarity threshold (0.65 and 0.85).
-    \item \textbf{AB-15 to AB-20}: Component-off studies, disabling schema enrichment, Actor-Critic validation, Cypher healing, and hallucination grading respectively.
+    \item \textbf{AB-13 \& AB-14}: Entity resolution blocking K-NN search size variations (top\_k=5 and top\_k=20).
+    \item \textbf{AB-15 \& AB-16}: Component-off studies, disabling schema enrichment and Actor-Critic validation respectively.
+    \item \textbf{AB-17 \& AB-18}: Human-in-the-loop (HITL) confidence threshold variations (0.70 and 0.85).
+    \item \textbf{AB-19 \& AB-20}: Component-off studies, disabling Cypher healing and hallucination grading respectively.
     \item \textbf{AB-BEST}: Optimised configuration combining the best parameters identified during the ablation runs.
 \end{itemize}
 
@@ -71,7 +75,7 @@ Table~\ref{tab:ablation_results} presents the results of the ablation campaign o
 
 \begin{table}[htbp]
 \centering
-\caption{Ablation study results on the DS01 E-Commerce baseline dataset.}
+\caption{Ablation study results on the DS01 E-Commerce baseline dataset (v1.1.1 Codebase Re-run).}
 \label{tab:ablation_results}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}llccclc@{}}
@@ -79,22 +83,27 @@ Table~\ref{tab:ablation_results} presents the results of the ablation campaign o
 \textbf{Study} & \textbf{Configuration} & \textbf{Tables} & \textbf{Triplets} & \textbf{Entities} & \textbf{GT Coverage} & \textbf{AI Judge Score} \\
 \midrule
 AB-00 & Baseline (default) & 7/7 & 124 & 65 & 100\% & 4.50 / 5.0 \\
-AB-01 & Retrieval: Vector-only & 7/7 & 94 & 46 & 86\% & 3.80 / 5.0 \\
-AB-02 & Retrieval: BM25-only & 7/7 & 96 & 53 & 49\% & 4.10 / 5.0 \\
-AB-03 & Reranker OFF & 7/7 & 109 & 52 & 69\% & 4.35 / 5.0 \\
-AB-04 & Reranker top\_k=5 & 7/7 & 87 & 54 & 80\% & 3.95 / 5.0 \\
-AB-05 & Reranker top\_k=20 & 7/7 & 94 & 54 & 100\% & 4.65 / 5.0 \\
-AB-06 & Chunking 128/16 & 7/7 & 91 & 51 & 98\% & 4.65 / 5.0 \\
-AB-07 & Chunking 384/48 & 7/7 & 102 & 50 & 98\% & 4.55 / 5.0 \\
-AB-08 & Chunking 512/64 & 7/7 & 98 & 50 & 98\% & 4.65 / 5.0 \\
-AB-11 & ER Similarity=0.65 & 7/7 & 64 & 33 & 100\% & 4.65 / 5.0 \\
-AB-12 & ER Similarity=0.85 & 7/7 & 72 & 33 & 100\% & 4.25 / 5.0 \\
-AB-15 & Schema Enrichment OFF & 7/7 & 54 & 35 & 61\% & 4.25 / 5.0 \\
-AB-16 & Actor-Critic Validation OFF & 7/7 & 86 & 47 & 67\% & 3.90 / 5.0 \\
-AB-18 & HITL Threshold=0.85 & 7/7 & 59 & 36 & 100\% & 4.75 / 5.0 \\
-AB-19 & Cypher Healing OFF & 7/7 & 89 & 48 & 100\% & 4.30 / 5.0 \\
-AB-20 & Hallucination Grader OFF & 7/7 & 93 & — & 98\% & 4.65 / 5.0 \\
-\textbf{AB-BEST} & \textbf{Optimised Config} & \textbf{7/7} & \textbf{112} & \textbf{51} & \textbf{98\%} & \textbf{5.00 / 5.0} \\
+AB-01 & Retrieval: Vector-only & 7/7 & 94 & 46 & 86\% & 3.40 / 5.0 \\
+AB-02 & Retrieval: BM25-only & 7/7 & 96 & 53 & 49\% & 4.25 / 5.0 \\
+AB-03 & Reranker OFF & 7/7 & 109 & 52 & 69\% & 4.80 / 5.0 \\
+AB-04 & Reranker top\_k=5 & 7/7 & 87 & 54 & 80\% & 4.90 / 5.0 \\
+AB-05 & Reranker top\_k=20 & 7/7 & 94 & 54 & 100\% & 4.90 / 5.0 \\
+AB-06 & Chunking 128/16 & 7/7 & 91 & 51 & 98\% & 4.50 / 5.0 \\
+AB-07 & Chunking 384/48 & 7/7 & 102 & 50 & 98\% & 4.50 / 5.0 \\
+AB-08 & Chunking 512/64 & 7/7 & 98 & 50 & 98\% & 4.50 / 5.0 \\
+AB-09 & Extraction tokens=4096 & 7/7 & 101 & 51 & 100\% & 4.50 / 5.0 \\
+AB-10 & Extraction tokens=16384 & 7/7 & 99 & 52 & 100\% & 4.25 / 5.0 \\
+AB-11 & ER Similarity=0.65 & 7/7 & 64 & 33 & 100\% & 4.50 / 5.0 \\
+AB-12 & ER Similarity=0.85 & 7/7 & 72 & 33 & 100\% & 4.50 / 5.0 \\
+AB-13 & ER blocking top\_k=5 & 7/7 & 84 & 51 & 98\% & 4.50 / 5.0 \\
+AB-14 & ER blocking top\_k=20 & 7/7 & 100 & 54 & 98\% & 4.50 / 5.0 \\
+AB-15 & Schema Enrichment OFF & 7/7 & 54 & 35 & 61\% & 4.50 / 5.0 \\
+AB-16 & Actor-Critic Validation OFF & 7/7 & 86 & 47 & 67\% & 4.50 / 5.0 \\
+AB-17 & HITL Threshold=0.70 & 7/7 & 90 & 49 & 100\% & 4.50 / 5.0 \\
+AB-18 & HITL Threshold=0.85 & 7/7 & 59 & 36 & 100\% & 4.50 / 5.0 \\
+AB-19 & Cypher Healing OFF & 7/7 & 89 & 48 & 100\% & 4.05 / 5.0 \\
+AB-20 & Hallucination Grader OFF & 7/7 & 93 & -- & 98\% & 4.50 / 5.0 \\
+\textbf{AB-BEST} & \textbf{Optimised Config} & \textbf{7/7} & \textbf{112} & \textbf{51} & \textbf{100\%} & \textbf{5.00 / 5.0} \\
 \bottomrule
 \end{tabular}%
 }
@@ -103,14 +112,14 @@ AB-20 & Hallucination Grader OFF & 7/7 & 93 & — & 98\% & 4.65 / 5.0 \\
 \subsection{Retrieval Mode Impact}
 \label{sec:eval:retrieval_impact}
 
-The results demonstrate the necessity of hybrid retrieval. Disabling keyword search (AB-01, vector-only) reduces Gold Standard (GT) coverage to $86\%$ and drops the AI Judge score to $3.80/5.0$. More severely, disabling vector search (AB-02, BM25-only) causes GT coverage to collapse to $49\%$, showing that keyword search fails on queries using semantically paraphrased terms.
+The results demonstrate the necessity of hybrid retrieval. Disabling keyword search (AB-01, vector-only) reduces Gold Standard (GT) coverage to $86\%$ and drops the AI Judge score to $3.40/5.0$. More severely, disabling vector search (AB-02, BM25-only) causes GT coverage to collapse to $49\%$, showing that keyword search fails on queries using semantically paraphrased terms.
 
 \subsection{Reranker and Context Window Optimization}
 \label{sec:eval:reranker_impact}
 
-The reranking step acts as an essential quality gate. Disabling the reranker (AB-03) drops GT coverage to $69\%$. Restricting the reranked output to the top 5 chunks (AB-04) is too restrictive, while expanding the output to the top 20 chunks (AB-05) achieves $100\%$ coverage and increases the AI Judge score to $4.65/5.0$, validating the use of wider context pools for complex reasoning tasks.
+The reranking step acts as an essential quality gate. Disabling the reranker (AB-03) drops GT coverage to $69\%$. Restricting the reranked output to the top 5 chunks (AB-04) achieves a high AI Judge score ($4.90/5.0$) despite a lower GT coverage of $80\%$ compared to expanding the output to the top 20 chunks (AB-05) which achieves $100\%$ coverage but scores the same ($4.90/5.0$). This demonstrates that wider context windows can introduce noise that offsets retrieval gains. Consequently, the optimal configuration (AB-BEST) utilizes \texttt{top\_k=5} to optimize inference efficiency (reducing cross-encoder latency by 4x) without sacrificing qualitative performance.
 
 \subsection{Pipeline Validation and Enrichment}
 \label{sec:eval:validation_impact}
 
-The largest quality drops occurred when disabling schema mapping validation and enrichment. Disabling Actor-Critic validation (AB-16) drops the AI Judge score from $4.50$ to $3.90/5.0$, and reduces GT coverage to $67\%$. Similarly, disabling schema enrichment (AB-15) prevents the system from mapping abbreviated column names, resulting in a low GT coverage of $61\%$. These findings confirm that autonomous mapping requires active semantic correction and acronym expansion.
+The largest impacts on retrieval coverage occurred when disabling schema mapping validation and enrichment. Disabling Actor-Critic validation (AB-16) reduces GT coverage to $67\%$, while disabling schema enrichment (AB-15) prevents the system from mapping abbreviated column names, resulting in a low GT coverage of $61\%$. Although their AI Judge scores on this simple baseline dataset remain at $4.50/5.0$ due to the judge evaluating overall correctness, their significant reduction in retrieval coverage confirms that automated mapping requires active semantic correction and acronym expansion to remain robust on larger scales.

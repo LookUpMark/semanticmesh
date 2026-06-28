@@ -58,7 +58,7 @@ Database schemas are processed in \texttt{src/ingestion/ddl\_parser.py} using SQ
 \subsection{Schema Enrichment via Acronym Expansion}
 \label{sec:imp:schema_enricher}
 
-Physical schema column and table names are often highly abbreviated (e.g., \texttt{CUST\_CD} for Customer Code). The enrichment module in \texttt{src/ingestion/schema\_enricher.py} invokes the lightweight LLM tier to expand these abbreviations into human-readable business terms. It appends the expanded terms to the column descriptions, ensuring that the vector embeddings of the physical columns match the terms used in the business glossaries.
+Physical schema column and table names are often highly abbreviated (e.g., \texttt{CUST\_CD} for Customer Code). The enrichment module in \texttt{src/ingestion/schema\_enricher.py} invokes the lightweight LLM tier to expand these abbreviations into human-readable business terms. The expanded terms are subsequently appended to the column descriptions in the Cypher query builder (\texttt{src/graph/cypher\_builder.py}) and persisted to Neo4j. The builder graph node (\texttt{src/graph/build\_nodes.py}) then calculates the vector embeddings for these enriched attributes, ensuring that the vector representations of physical columns align semantically with the business glossary terms.
 
 \section{Triplet Extraction and Entity Resolution}
 \label{sec:imp:extraction_resolution}
@@ -141,9 +141,10 @@ All LLM integrations route through \texttt{src/config/llm\_factory.py}. The fact
 \section{REST API Implementation}
 \label{sec:imp:api}
 
-The REST API is implemented in \texttt{src/api/app.py} using FastAPI and exposed via Uvicorn. The API exposes two router groups:
+The REST API is implemented in \texttt{src/api/app.py} using FastAPI and exposed via Uvicorn. The API exposes three router groups:
 \begin{itemize}
     \item \textbf{Demo Router} (\texttt{/api/v1/demo/}): Handles async knowledge graph build jobs, query endpoints, and graph statistics.
     \item \textbf{Ablation Router} (\texttt{/api/v1/ablation/}): Triggers custom configuration runs and executes ablation studies.
+    \item \textbf{Config Router} (\texttt{/api/v1/config}): Exposes GET and POST endpoints to retrieve the current system settings and dynamically apply runtime environment-variable overrides for non-sensitive settings (such as feature flags and thresholds).
 \end{itemize}
 All endpoints support JSON formatting, error logging, and standard authentication headers.
