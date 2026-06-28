@@ -301,7 +301,7 @@ def load_and_chunk_pdf(path: Path) -> list[Chunk]:
 def chunk_documents_hierarchical(
     docs: list[Document],
 ) -> tuple[list[Chunk], list[Chunk]]:
-    """Split documents into parent (512-tok) and child (128-tok) chunk hierarchies.
+    """Split documents into parent (800-tok) and child (256-tok) chunk hierarchies.
 
     Implements the Small-to-Big retrieval pattern:
     - Parents are large context nodes returned verbatim to the LLM.  They are

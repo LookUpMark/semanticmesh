@@ -30,7 +30,7 @@ Despite strong empirical performance, the current implementation exhibits severa
 
 To address these limitations, several directions are proposed for future work:
 \begin{itemize}
-    \item \textbf{Community Detection for Global Reasoning}: Incorporating graph partitioning algorithms (e.g., Louvain community detection) to divide large schemas into localized sub-graphs, enabling hierarchical map-reduce operations.
+    \item \textbf{Community Detection for Global Reasoning}: Incorporating graph partitioning algorithms (e.g., Louvain community detection~\cite{blondel2008fast}) to divide large schemas into localized sub-graphs, enabling hierarchical map-reduce operations.
     \item \textbf{Semantic Intra-Table Chunking}: Clustering columns of wide tables into semantic subgroups before mapping, reducing context window utilization and improving mapping precision.
     \item \textbf{Domain SLM Fine-Tuning}: Fine-tuning Small Language Models (SLMs) using Parameter-Efficient Fine-Tuning (PEFT/LoRA) on corporate document corpuses to eliminate embedding drift.
     \item \textbf{Active Learning from HITL}: Persisting corrections from human-in-the-loop review steps to automatically refine future mapping proposals and system prompts.

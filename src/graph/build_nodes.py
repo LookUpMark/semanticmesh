@@ -308,24 +308,24 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
             try:
                 client.execute_cypher(exec_cypher, exec_params)
             except Exception as cypher_exec_err:
-                # LLM Cypher may use CREATE instead of MERGE, causing constraint
-                # violations when the same BusinessConcept already exists.
-                # Fallback to deterministic builder which always uses MERGE.
-                from neo4j.exceptions import ConstraintError
-
-                if isinstance(cypher_exec_err, ConstraintError):
-                    logger.warning(
-                        "LLM Cypher failed with constraint error for '%s' — "
-                        "retrying with deterministic builder: %s",
-                        proposal.table_name,
-                        cypher_exec_err,
-                    )
-                    fallback_cypher, fallback_params = build_upsert_cypher(
-                        proposal, table, entity=entity_for_write
-                    )
-                    client.execute_cypher(fallback_cypher, fallback_params)
-                else:
-                    raise
+                # Any LLM-Cypher defect recovers via the deterministic builder:
+                # multi-statement `;` (rejected by the AUDIT-069 guard),
+                # CREATE-vs-MERGE ConstraintError, or quoting/syntax errors.
+                # build_upsert_cypher always emits single-statement MERGE Cypher,
+                # immune to LLM quirks — the execute-time counterpart to the
+                # healing-exhaustion fallback. Infra errors (auth/connectivity)
+                # resurface at the fallback execute below, so nothing is masked.
+                logger.warning(
+                    "LLM Cypher failed for '%s' (%s: %s) — retrying with "
+                    "deterministic builder.",
+                    proposal.table_name,
+                    type(cypher_exec_err).__name__,
+                    cypher_exec_err,
+                )
+                fallback_cypher, fallback_params = build_upsert_cypher(
+                    proposal, table, entity=entity_for_write
+                )
+                client.execute_cypher(fallback_cypher, fallback_params)
             logger.info("Graph updated for table '%s'.", proposal.table_name)
 
             # ── Normalize BusinessConcept name created by LLM Cypher ──────────

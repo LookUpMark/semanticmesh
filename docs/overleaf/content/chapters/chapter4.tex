@@ -53,7 +53,7 @@ Only child chunks are embedded and indexed in Neo4j; however, parent chunks are 
 \subsection{DDL Parsing via SQLGlot}
 \label{sec:imp:ddl_parser}
 
-Database schemas are processed in \texttt{src/ingestion/ddl\_parser.py} using SQLGlot, a pythonic SQL parser and transpiler. The parser reads SQL DDL statements and outputs structured \texttt{TableSchema} representations containing the table name, columns, data types, and primary/foreign key relationships. Parsing via SQLGlot avoids the fragile regular expressions typical of baseline data catalogs and ensures compatibility across database dialects (PostgreSQL, MySQL, Oracle).
+Database schemas are processed in \texttt{src/ingestion/ddl\_parser.py} using SQLGlot~\cite{sqlglot}, a pythonic SQL parser and transpiler. The parser reads SQL DDL statements and outputs structured \texttt{TableSchema} representations containing the table name, columns, data types, and primary/foreign key relationships. Parsing via SQLGlot avoids the fragile regular expressions typical of baseline data catalogs and ensures compatibility across database dialects (PostgreSQL, MySQL, Oracle).
 
 \subsection{Schema Enrichment via Acronym Expansion}
 \label{sec:imp:schema_enricher}
@@ -66,7 +66,7 @@ Physical schema column and table names are often highly abbreviated (e.g., \text
 \subsection{Triplet Extraction with Self-Reflection}
 \label{sec:imp:triplet_extractor}
 
-The extraction module in \texttt{src/extraction/triplet\_extractor.py} extracts semantic triplets (Subject-Predicate-Object) from the parent text chunks. The node invokes the extraction LLM using JSON mode. To handle potential truncation or JSON formatting errors, the extractor implements a reflection loop that parses the LLM output, detects incomplete JSON envelopes, and runs a reflection prompt (\texttt{REFLECTION\_TEMPLATE}) to heal the JSON structure. In cases where the LLM hits token limits, the extractor falls back to a rule-based spaCy heuristic extractor to extract noun-phrase relations and ensure complete data capture.
+The extraction module in \texttt{src/extraction/triplet\_extractor.py} extracts semantic triplets (Subject-Predicate-Object) from the parent text chunks. The node invokes the extraction LLM using JSON mode. To handle potential truncation or JSON formatting errors, the extractor implements a reflection loop that parses the LLM output, detects incomplete JSON envelopes, and runs a reflection prompt (\texttt{REFLECTION\_TEMPLATE}) to heal the JSON structure. In settings where a fast, lightweight, and deterministic pipeline is preferred, the system can be configured to run in lazy extraction mode, which bypasses the LLM and runs a rule-based spaCy~\cite{honnibal2020spacy} heuristic extractor (\texttt{src/extraction/heuristic\_extractor.py}) to extract noun-phrase relations.
 
 \subsection{Two-Stage Entity Resolution}
 \label{sec:imp:entity_resolver}

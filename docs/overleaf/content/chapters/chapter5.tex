@@ -21,11 +21,12 @@ To capture the diverse failure modes of RAG and schema mapping, the evaluation f
 \subsection{Standard RAGAS Metrics}
 \label{sec:eval:ragas}
 
-The system integrates three core RAGAS metrics~\cite{es2025ragasautomatedevaluationretrieval}:
+The system integrates four core metrics from the RAGAS framework~\cite{es2025ragasautomatedevaluationretrieval} (including the quality aspects proposed in the original paper alongside library-specific extensions):
 \begin{enumerate}
     \item \textbf{Faithfulness}: Measures the extent to which the generated answer is grounded in the retrieved context, capturing hallucinations.
-    \item \textbf{Context Precision}: Measures the signal-to-noise ratio of retrieved chunks, validating the reranker's ability to rank relevant passages first.
-    \item \textbf{Context Recall}: Evaluates whether the retrieval engine captured all relevant facts needed to answer the question, validating retrieval coverage.
+    \item \textbf{Answer Relevancy}: Evaluates how well the generated answer addresses the user query, penalizing incomplete or off-topic responses.
+    \item \textbf{Context Precision} (extending the paper's original \emph{Context Relevance}): Measures the signal-to-noise ratio of retrieved chunks, validating the reranker's ability to rank relevant passages first.
+    \item \textbf{Context Recall}: Evaluates whether the retrieval engine captured all relevant facts needed to answer the question, validating retrieval coverage against human annotations.
 \end{enumerate}
 
 \subsection{Custom Metrics}
@@ -42,11 +43,11 @@ Two custom metrics evaluate pipeline-specific self-reflection and alignment perf
 
 Standard automated metrics like RAGAS often penalize technical responses containing database identifiers or structured schemas. We therefore implement a custom LLM-as-a-Judge framework powered by \texttt{gpt-5.4-nano-2026-03-17}. The AI Judge evaluates generated answers across five weighted dimensions using a structured rubric:
 \begin{enumerate}
-    \item \textbf{Groundedness} ($30\%$): Is every claim supported by the retrieved documentation?
-    \item \textbf{Completeness} ($25\%$): Does the answer address all parts of the user question?
-    \item \textbf{Schema Accuracy} ($20\%$): Are physical table and column names correct?
-    \item \textbf{Traceability} ($15\%$): Are explicit citations and provenance metadata included?
-    \item \textbf{Formatting} ($10\%$): Is the answer structured and easy to read?
+    \item \textbf{Builder Quality} ($25\%$): Evaluates the correctness of triplet extraction, entity resolution deduplication, and schema mapping validation.
+    \item \textbf{Retrieval Effectiveness} ($25\%$): Evaluates whether the hybrid retrieval (vector, BM25, and graph) correctly captured the required context.
+    \item \textbf{Answer Quality} ($30\%$): Evaluates the factual accuracy, completeness, and clarity of the generated answer.
+    \item \textbf{Pipeline Health} ($10\%$): Evaluates the execution health of self-reflection loops (Cypher healing, mapping validation, and grading).
+    \item \textbf{Ablation Impact} ($10\%$): Evaluates the qualitative impact of the enabled/disabled pipeline components under the active study configuration.
 \end{enumerate}
 
 \section{Ablation Study Design}

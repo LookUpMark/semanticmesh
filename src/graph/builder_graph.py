@@ -527,7 +527,7 @@ def run_builder(
         all_docs = load_pdfs_batch([Path(p) for p in docs_to_ingest])
     all_parents, all_children = chunk_documents_hierarchical(all_docs)
 
-    # Triplet extraction and MENTIONS edges operate on parents (richer 512-tok context).
+    # Triplet extraction and MENTIONS edges operate on parents (richer 800-tok context).
     chunks = all_parents
 
     # Initialize trace if enabled

@@ -109,7 +109,19 @@ def _make_checkpointer():
     try:
         import sqlite3
 
+        # langgraph-checkpoint-sqlite 2.x's put() calls serde.dumps(), removed in
+        # langchain-core 1.x (only dumps_typed survives). When the installed serde
+        # lacks dumps, SqliteSaver crashes at runtime on every query — raise so the
+        # except below falls back to MemorySaver. Proper fix: align
+        # langgraph-checkpoint-sqlite with langgraph-checkpoint.
+        from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer as _Serde
         from langgraph.checkpoint.sqlite import SqliteSaver
+
+        if not hasattr(_Serde(), "dumps"):
+            raise ImportError(
+                "langgraph-checkpoint-sqlite serde incompatible with installed "
+                "langgraph-checkpoint (serde.dumps removed in langchain-core 1.x)"
+            )
 
         _CONVERSATIONS_DB.parent.mkdir(parents=True, exist_ok=True)
         if _QUERY_GRAPH_CHECKPOINT_CONN is None:
@@ -127,8 +139,9 @@ def _make_checkpointer():
         from langgraph.checkpoint.memory import MemorySaver
 
         logger.warning(
-            "langgraph-checkpoint-sqlite not installed — using in-memory checkpointer. "
-            "Run: pip install langgraph-checkpoint-sqlite"
+            "SqliteSaver unavailable (not installed, or serde incompatible with "
+            "langchain-core 1.x) — using in-memory checkpointer. Conversation "
+            "history will not persist across restarts."
         )
         kwargs = {"serde": serde} if serde is not None else {}
         try:
