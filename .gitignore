@@ -15,7 +15,7 @@ env/
 # Environment variables
 .env
 CLAUDE.md
-
+AGENTS.md
 # IDE
 .vscode/
 .idea/
