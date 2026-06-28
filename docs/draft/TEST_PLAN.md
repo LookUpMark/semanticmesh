@@ -29,7 +29,10 @@
    - [UT-15 — Hallucination Grader](#ut-15--hallucination-grader)
    - [UT-16 — Prompt Templates](#ut-16--prompt-templates)
    - [UT-17 — Schema Enrichment](#ut-17--schema-enrichment)
-   - [UT-18 — Web Search Fallback](#ut-18--web-search-fallback)
+   - [UT-18 — API Auth](#ut-18--api-auth)
+   - [UT-19 — Job Registry](#ut-19--job-registry)
+   - [UT-20 — Conversation Registry](#ut-20--conversation-registry)
+   - [UT-21 — Knowledge Graph Registry](#ut-21--knowledge-graph-registry)
 4. [Integration Tests](#4-integration-tests)
    - [IT-01 — Builder Graph End-to-End (Small Schema)](#it-01--builder-graph-end-to-end-small-schema)
    - [IT-02 — Idempotency (Double Run)](#it-02--idempotency-double-run)
@@ -149,7 +152,10 @@ tests/
 │   ├── test_answer_generator.py
 │   ├── test_hallucination_grader.py
 │   ├── test_prompts.py
-│   └── test_web_search_fallback.py
+│   ├── test_auth.py
+│   ├── test_jobs.py
+│   ├── test_conversation_registry.py
+│   └── test_kg_registry.py
 ├── integration/
 │   ├── test_builder_graph.py
 │   ├── test_query_graph.py
@@ -159,26 +165,13 @@ tests/
 │   ├── test_ragas.py
 │   └── test_ablation.py
 └── fixtures/
-    ├── sample_docs/
-    │   ├── business_glossary.txt    # Plain text fixture (see DATASET.md §2.3)
-    │   └── data_dictionary.txt
-    ├── sample_ddl/
-    │   ├── simple_schema.sql        # 3 tables, 1 FK
-    │   ├── complex_schema.sql       # 9 tables (8 business + 1 system), multi-FK
-    │   └── system_tables.sql        # 3 system tables, no business concept mappings
-    ├── mock_responses/
-    │   ├── extraction_response.json
-    │   ├── er_judge_merge.json
-    │   ├── er_judge_separate.json
-    │   ├── mapping_high_confidence.json
-    │   ├── mapping_null.json
-    │   ├── critic_approved.json
-    │   ├── critic_rejected.json
-    │   ├── enrichment_response.json
-    │   ├── grader_faithful.json
-    │   ├── grader_hallucinated.json
-    │   └── grader_web_search.json
-    └── gold_standard.json           # See DATASET.md for full spec
+    ├── 01_basics_ecommerce/
+    ├── 02_intermediate_finance/
+    ├── 03_advanced_healthcare/
+    ├── 04_complex_manufacturing/
+    ├── 05_edgecases_incomplete/
+    ├── 06_edgecases_legacy/
+    └── 07_stress_large_scale/
 ```
 
 ### 2.4 Core Fixtures (`tests/conftest.py`)
@@ -592,7 +585,6 @@ def test_cypher_healing_max_retries(mock_llm, mock_neo4j):
 | UT-14-01 | First attempt (no critique) | Uses `ANSWER_USER` template |
 | UT-14-02 | Retry with critique | Uses `ANSWER_WITH_CRITIQUE_USER` template; critique text in prompt |
 | UT-14-03 | Called with `temperature=0.3` | Verified via mock |
-| UT-14-04 | `web_search_fallback` called | Returns string with `"[Source: Web Search]"` prefix |
 
 ---
 
@@ -690,28 +682,27 @@ def test_enrichment_invalid_json_falls_through(mock_llm):
 
 ---
 
-### UT-18 — Web Search Fallback
+### UT-18 — API Auth
 
-**File:** `tests/unit/test_web_search_fallback.py`
+**File:** `tests/unit/test_auth.py`
 
-| Test ID | Scenario | Expected |
-|---|---|---|
-| UT-18-01 | Web search returns result | Output string starts with `"[Source: Web Search]"` |
-| UT-18-02 | Web search raises exception | Falls back to `"I cannot answer this question."` message |
-| UT-18-03 | Web search tool is injectable | Function accepts search tool as dependency parameter |
+---
 
-```python
-def test_web_search_fallback_prefix(mock_search_tool):
-    mock_search_tool.invoke.return_value = "Neo4j is a graph database."
-    result = web_search_fallback("What is Neo4j?", search_tool=mock_search_tool)
-    assert result.startswith("[Source: Web Search]")
+### UT-19 — Job Registry
 
-def test_web_search_fallback_error_handling(mock_search_tool):
-    mock_search_tool.invoke.side_effect = Exception("API unavailable")
-    result = web_search_fallback("What is Neo4j?", search_tool=mock_search_tool)
-    assert "cannot answer" in result.lower()
-```
+**File:** `tests/unit/test_jobs.py`
 
+---
+
+### UT-20 — Conversation Registry
+
+**File:** `tests/unit/test_conversation_registry.py`
+
+---
+
+### UT-21 — Knowledge Graph Registry
+
+**File:** `tests/unit/test_kg_registry.py`
 ---
 
 ## 4. Integration Tests

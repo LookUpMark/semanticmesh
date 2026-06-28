@@ -1,0 +1,115 @@
+\chapter{Evaluation}
+\label{ch:evaluation}
+
+This chapter details the experimental evaluation of SemanticMesh. We describe the datasets used for evaluation, explain the evaluation metrics and methodology (including both standard RAGAS metrics and a custom AI-as-a-Judge framework), outline the design of the 21 ablation experiments, and analyze the empirical results to quantify the impact of each architectural component.
+
+\section{Experimental Setup and Datasets}
+\label{sec:eval:datasets}
+
+The framework is evaluated across a suite of synthetic datasets designed to simulate varying levels of schema complexity and documentation styles. The test suite includes:
+\begin{itemize}
+    \item \textbf{E-Commerce Baseline (DS01)}: A standard retail schema containing 7 tables and 15 question-answer pairs, accompanied by a clean business glossary.
+    \item \textbf{Stress Test (DS07)}: A large-scale schema designed to test the limits of context windows, parallel processing, and entity resolution blocking.
+\end{itemize}
+Each dataset includes a DDL file, business documentation, and a human-curated ``Gold Standard'' mapping and Q\&A evaluation bundle.
+
+\section{Evaluation Methodology and Metrics}
+\label{sec:eval:metrics}
+
+To capture the diverse failure modes of RAG and schema mapping, the evaluation framework implements two distinct metric groups.
+
+\subsection{Standard RAGAS Metrics}
+\label{sec:eval:ragas}
+
+The system integrates three core RAGAS metrics~\cite{es2025ragasautomatedevaluationretrieval}:
+\begin{enumerate}
+    \item \textbf{Faithfulness}: Measures the extent to which the generated answer is grounded in the retrieved context, capturing hallucinations.
+    \item \textbf{Context Precision}: Measures the signal-to-noise ratio of retrieved chunks, validating the reranker's ability to rank relevant passages first.
+    \item \textbf{Context Recall}: Evaluates whether the retrieval engine captured all relevant facts needed to answer the question, validating retrieval coverage.
+\end{enumerate}
+
+\subsection{Custom Metrics}
+\label{sec:eval:custom_metrics}
+
+Two custom metrics evaluate pipeline-specific self-reflection and alignment performance:
+\begin{itemize}
+    \item \textbf{Cypher Healing Rate}: Computed as the ratio of successfully healed Cypher queries to the total number of queries that failed initial dry-run syntax verification.
+    \item \textbf{HITL Confidence Agreement}: Measures the correlation between the mapping confidence score computed by the Actor-Critic validator and the actual semantic correctness of the alignment against the gold standard.
+\end{itemize}
+
+\subsection{Custom AI Judge Framework}
+\label{sec:eval:ai_judge}
+
+Standard automated metrics like RAGAS often penalize technical responses containing database identifiers or structured schemas. We therefore implement a custom LLM-as-a-Judge framework powered by \texttt{gpt-5.4-nano-2026-03-17}. The AI Judge evaluates generated answers across five weighted dimensions using a structured rubric:
+\begin{enumerate}
+    \item \textbf{Groundedness} ($30\%$): Is every claim supported by the retrieved documentation?
+    \item \textbf{Completeness} ($25\%$): Does the answer address all parts of the user question?
+    \item \textbf{Schema Accuracy} ($20\%$): Are physical table and column names correct?
+    \item \textbf{Traceability} ($15\%$): Are explicit citations and provenance metadata included?
+    \item \textbf{Formatting} ($10\%$): Is the answer structured and easy to read?
+\end{enumerate}
+
+\section{Ablation Study Design}
+\label{sec:eval:ablation_design}
+
+To measure the contribution of individual components, we conduct an ablation campaign comprising 21 distinct experiments (AB-00 through AB-20) plus an optimized configuration (AB-BEST):
+\begin{itemize}
+    \item \textbf{AB-00 (Baseline)}: Default settings with all modules enabled.
+    \item \textbf{AB-01 \& AB-02}: Retrieval mode ablations (vector-only and BM25-only).
+    \item \textbf{AB-03 to AB-05}: Reranker ablations (reranker disabled, top\_k=5, top\_k=20).
+    \item \textbf{AB-06 to AB-08}: Chunking strategy modifications (128/16, 384/48, 512/64).
+    \item \textbf{AB-11 \& AB-12}: Entity resolution similarity threshold (0.65 and 0.85).
+    \item \textbf{AB-15 to AB-20}: Component-off studies, disabling schema enrichment, Actor-Critic validation, Cypher healing, and hallucination grading respectively.
+    \item \textbf{AB-BEST}: Optimised configuration combining the best parameters identified during the ablation runs.
+\end{itemize}
+
+\section{Empirical Results and Discussion}
+\label{sec:eval:results}
+
+Table~\ref{tab:ablation_results} presents the results of the ablation campaign on the DS01 E-Commerce dataset.
+
+\begin{table}[htbp]
+\centering
+\caption{Ablation study results on the DS01 E-Commerce baseline dataset.}
+\label{tab:ablation_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llccclc@{}}
+\toprule
+\textbf{Study} & \textbf{Configuration} & \textbf{Tables} & \textbf{Triplets} & \textbf{Entities} & \textbf{GT Coverage} & \textbf{AI Judge Score} \\
+\midrule
+AB-00 & Baseline (default) & 7/7 & 124 & 65 & 100\% & 4.50 / 5.0 \\
+AB-01 & Retrieval: Vector-only & 7/7 & 94 & 46 & 86\% & 3.80 / 5.0 \\
+AB-02 & Retrieval: BM25-only & 7/7 & 96 & 53 & 49\% & 4.10 / 5.0 \\
+AB-03 & Reranker OFF & 7/7 & 109 & 52 & 69\% & 4.35 / 5.0 \\
+AB-04 & Reranker top\_k=5 & 7/7 & 87 & 54 & 80\% & 3.95 / 5.0 \\
+AB-05 & Reranker top\_k=20 & 7/7 & 94 & 54 & 100\% & 4.65 / 5.0 \\
+AB-06 & Chunking 128/16 & 7/7 & 91 & 51 & 98\% & 4.65 / 5.0 \\
+AB-07 & Chunking 384/48 & 7/7 & 102 & 50 & 98\% & 4.55 / 5.0 \\
+AB-08 & Chunking 512/64 & 7/7 & 98 & 50 & 98\% & 4.65 / 5.0 \\
+AB-11 & ER Similarity=0.65 & 7/7 & 64 & 33 & 100\% & 4.65 / 5.0 \\
+AB-12 & ER Similarity=0.85 & 7/7 & 72 & 33 & 100\% & 4.25 / 5.0 \\
+AB-15 & Schema Enrichment OFF & 7/7 & 54 & 35 & 61\% & 4.25 / 5.0 \\
+AB-16 & Actor-Critic Validation OFF & 7/7 & 86 & 47 & 67\% & 3.90 / 5.0 \\
+AB-18 & HITL Threshold=0.85 & 7/7 & 59 & 36 & 100\% & 4.75 / 5.0 \\
+AB-19 & Cypher Healing OFF & 7/7 & 89 & 48 & 100\% & 4.30 / 5.0 \\
+AB-20 & Hallucination Grader OFF & 7/7 & 93 & — & 98\% & 4.65 / 5.0 \\
+\textbf{AB-BEST} & \textbf{Optimised Config} & \textbf{7/7} & \textbf{112} & \textbf{51} & \textbf{98\%} & \textbf{5.00 / 5.0} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Retrieval Mode Impact}
+\label{sec:eval:retrieval_impact}
+
+The results demonstrate the necessity of hybrid retrieval. Disabling keyword search (AB-01, vector-only) reduces Gold Standard (GT) coverage to $86\%$ and drops the AI Judge score to $3.80/5.0$. More severely, disabling vector search (AB-02, BM25-only) causes GT coverage to collapse to $49\%$, showing that keyword search fails on queries using semantically paraphrased terms.
+
+\subsection{Reranker and Context Window Optimization}
+\label{sec:eval:reranker_impact}
+
+The reranking step acts as an essential quality gate. Disabling the reranker (AB-03) drops GT coverage to $69\%$. Restricting the reranked output to the top 5 chunks (AB-04) is too restrictive, while expanding the output to the top 20 chunks (AB-05) achieves $100\%$ coverage and increases the AI Judge score to $4.65/5.0$, validating the use of wider context pools for complex reasoning tasks.
+
+\subsection{Pipeline Validation and Enrichment}
+\label{sec:eval:validation_impact}
+
+The largest quality drops occurred when disabling schema mapping validation and enrichment. Disabling Actor-Critic validation (AB-16) drops the AI Judge score from $4.50$ to $3.90/5.0$, and reduces GT coverage to $67\%$. Similarly, disabling schema enrichment (AB-15) prevents the system from mapping abbreviated column names, resulting in a low GT coverage of $61\%$. These findings confirm that autonomous mapping requires active semantic correction and acronym expansion.

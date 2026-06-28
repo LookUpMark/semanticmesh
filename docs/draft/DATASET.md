@@ -35,14 +35,14 @@ graph TD
     end
 
     subgraph EVAL["Evaluation Dataset (used by RAGAS pipeline)"]
-        GOLD["Gold Standard Dataset\ntests/fixtures/gold_standard.json\n(question, ground_truth, gold_context)"]
+        GOLD["Gold Standard Dataset\ntests/fixtures/01_basics_ecommerce/gold_standard.json\n(question, ground_truth, gold_context)"]
     end
 
     subgraph FIXTURES["Test Fixtures (used by unit + integration tests)"]
-        SIMPLE["simple_schema.sql — 3 tables"]
-        COMPLEX["complex_schema.sql — 9 tables\n(8 business + 1 system)"]
-        SYSTEM["system_tables.sql — 3 system tables\n(no mappable concepts)"]
-        MOCK["mock_responses/ — fixed LLM JSON outputs"]
+        SIMPLE["01_basics_ecommerce/schema.sql — 3 tables"]
+        COMPLEX["02_intermediate_finance/schema.sql — 9 tables"]
+        SYSTEM["06_edgecases_legacy/schema.sql — 3 system tables"]
+        MOCK["00_legacy/mock_responses/ — fixed LLM JSON outputs"]
     end
 
     PDF --> INPUTS
@@ -77,7 +77,7 @@ The system is designed to ingest these types of business documents. Test fixture
 
 ### 2.3 Fixture Document Content
 
-**`tests/fixtures/sample_docs/business_glossary.txt`** — use this exact content as the test fixture:
+**`tests/fixtures/01_basics_ecommerce/business_glossary.pdf`** — use this exact content as the test fixture:
 
 ```
 BUSINESS GLOSSARY — E-COMMERCE DOMAIN
@@ -112,7 +112,7 @@ KEY RELATIONSHIPS:
 - Inventory tracks the available stock for each Product.
 ```
 
-**`tests/fixtures/sample_docs/data_dictionary.txt`** — use this exact content:
+**`tests/fixtures/01_basics_ecommerce/data_dictionary.pdf`** — use this exact content:
 
 ```
 DATA DICTIONARY — E-COMMERCE DATABASE
@@ -200,7 +200,7 @@ Key Columns:
 
 ## 3. Input Dataset — DDL Schemas
 
-### 3.1 `tests/fixtures/sample_ddl/simple_schema.sql`
+### 3.1 `tests/fixtures/01_basics_ecommerce/schema.sql`
 
 ```sql
 -- Simple E-Commerce Schema — 3 tables, 1 FK
@@ -233,7 +233,7 @@ CREATE TABLE SALES_ORDER_HDR (
 );
 ```
 
-### 3.2 `tests/fixtures/sample_ddl/complex_schema.sql`
+### 3.2 `tests/fixtures/02_intermediate_finance/schema.sql`
 
 ```sql
 -- Complex E-Commerce Schema — 8 tables + 1 system table, multi-FK
@@ -320,7 +320,7 @@ CREATE TABLE SYS_AUDIT_LOG (
 -- NOTE: SYS_AUDIT_LOG is a system table. Expected mapping: null (confidence: 0.0)
 ```
 
-### 3.3 `tests/fixtures/sample_ddl/system_tables.sql`
+### 3.3 `tests/fixtures/06_edgecases_legacy/schema.sql`
 
 ```sql
 -- Schema containing ONLY system/technical tables with NO business concept mapping.

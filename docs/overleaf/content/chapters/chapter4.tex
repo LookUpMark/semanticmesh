@@ -1,0 +1,149 @@
+\chapter{Implementation}
+\label{ch:implementation}
+
+This chapter describes the implementation details of SemanticMesh, focusing on the engineering details of the orchestration layer, data models, pipeline nodes, and self-reflection loops. We detail the LangGraph-based state machine, trace the ingestion and parsing mechanisms, explain the entity extraction and blocking-based resolution, and present the schema mapping and Cypher generation frameworks. Finally, we describe the provider-agnostic LLM factory and the FastAPI-based REST API that exposes the system's capabilities.
+
+\section{Orchestration Layer and State Management}
+\label{sec:imp:orchestration}
+
+The core orchestration of the Builder and Query pipelines is implemented using LangGraph~\cite{langgraphdocs2025}. LangGraph provides a stateful graph-based programming framework that supports cyclic patterns (e.g., self-reflection retries) and explicit execution checkpoints. The states are defined as Python TypedDict schemas in \texttt{src/models/state.py}, which track execution data as it flows through the nodes.
+
+\subsection{BuilderState Schema}
+\label{sec:imp:builder_state}
+
+The \texttt{BuilderState} TypedDict schema captures the full context of the ontology construction process. Since LangGraph merges node outputs into the state dynamically, all fields are defined as optional to allow partial updates. The key fields are:
+\begin{itemize}
+    \item \texttt{ddl\_paths} and \texttt{source\_doc}: Input paths for DDL files and business documentation.
+    \item \texttt{documents} and \texttt{chunks}: Internal list representation of parsed documents and their chunk segments.
+    \item \texttt{triplets} and \texttt{entities}: Parsed business concepts and resolved entities.
+    \item \texttt{tables} and \texttt{enriched\_tables}: Extracted table schemas from DDL, before and after schema enrichment.
+    \item \texttt{pending\_tables}: A queue containing tables that are currently waiting to be mapped.
+    \item \texttt{current\_table} and \texttt{current\_entities}: The active schema and candidate entities for the current mapping step.
+    \item \texttt{mapping\_proposal} and \texttt{best\_proposal}: The current proposed mapping and the highest-confidence valid proposal tracked during reflection loops.
+    \item \texttt{current\_cypher}: The Cypher query candidate generated for the current table mapping.
+    \item \texttt{healing\_attempts}: An integer tracking the number of reflection retries used for Cypher syntax correction.
+\end{itemize}
+
+\subsection{QueryState Schema}
+\label{sec:imp:query_state}
+
+The \texttt{QueryState} schema represents the context of a single Q\&A execution. It maintains the user's query and intermediate retrieval and generation steps:
+\begin{itemize}
+    \item \texttt{user\_query}: The natural language query submitted by the user.
+    \item \texttt{retrieved\_chunks} and \texttt{reranked\_chunks}: The retrieved passages from the Neo4j database and their scores after reranking.
+    \item \texttt{generation\_chunks}: The compressed or expanded chunks passed as context to the generator.
+    \item \texttt{context\_sufficiency}: A status indicating whether the retrieved context is classified as \emph{adequate}, \emph{sparse}, or \emph{insufficient}.
+    \item \texttt{current\_answer} and \texttt{final\_answer}: The candidate answer undergoing grading and the finalized response.
+    \item \texttt{grader\_decision}: A structured object tracking whether the answer passes or requires regeneration due to hallucination.
+\end{itemize}
+
+\section{Document Ingestion and Schema Parsing}
+\label{sec:imp:ingestion}
+
+\subsection{PDF Loader and SHA-256 Change Detection}
+\label{sec:imp:pdf_loader}
+
+Unstructured documents are loaded in \texttt{src/ingestion/pdf\_loader.py}. To support incremental updates, the loader implements an ingestion manager that computes the SHA-256 hash of each document. During subsequent runs, unchanged files are skipped, and only modified files are processed. Documents are split using a two-level hierarchical chunking strategy:
+\begin{enumerate}
+    \item \textbf{Parent Chunks}: Large text segments (800 tokens, 96-token overlap) that capture structural context.
+    \item \textbf{Child Chunks}: Smaller sub-segments (256 tokens, 32-token overlap) nested inside each parent chunk.
+\end{enumerate}
+Only child chunks are embedded and indexed in Neo4j; however, parent chunks are linked in the graph to allow context expansion during answer generation.
+
+\subsection{DDL Parsing via SQLGlot}
+\label{sec:imp:ddl_parser}
+
+Database schemas are processed in \texttt{src/ingestion/ddl\_parser.py} using SQLGlot, a pythonic SQL parser and transpiler. The parser reads SQL DDL statements and outputs structured \texttt{TableSchema} representations containing the table name, columns, data types, and primary/foreign key relationships. Parsing via SQLGlot avoids the fragile regular expressions typical of baseline data catalogs and ensures compatibility across database dialects (PostgreSQL, MySQL, Oracle).
+
+\subsection{Schema Enrichment via Acronym Expansion}
+\label{sec:imp:schema_enricher}
+
+Physical schema column and table names are often highly abbreviated (e.g., \texttt{CUST\_CD} for Customer Code). The enrichment module in \texttt{src/ingestion/schema\_enricher.py} invokes the lightweight LLM tier to expand these abbreviations into human-readable business terms. It appends the expanded terms to the column descriptions, ensuring that the vector embeddings of the physical columns match the terms used in the business glossaries.
+
+\section{Triplet Extraction and Entity Resolution}
+\label{sec:imp:extraction_resolution}
+
+\subsection{Triplet Extraction with Self-Reflection}
+\label{sec:imp:triplet_extractor}
+
+The extraction module in \texttt{src/extraction/triplet\_extractor.py} extracts semantic triplets (Subject-Predicate-Object) from the parent text chunks. The node invokes the extraction LLM using JSON mode. To handle potential truncation or JSON formatting errors, the extractor implements a reflection loop that parses the LLM output, detects incomplete JSON envelopes, and runs a reflection prompt (\texttt{REFLECTION\_TEMPLATE}) to heal the JSON structure. In cases where the LLM hits token limits, the extractor falls back to a rule-based spaCy heuristic extractor to extract noun-phrase relations and ensure complete data capture.
+
+\subsection{Two-Stage Entity Resolution}
+\label{sec:imp:entity_resolver}
+
+Once triplets are extracted, the system runs entity resolution in \texttt{src/resolution/entity\_resolver.py} to deduplicate entities across documents:
+\begin{enumerate}
+    \item \textbf{Vector Blocking}: Extracted entities are embedded using BGE-M3. Candidates are grouped into clusters using cosine similarity thresholding ($0.75$ by default) to filter down the candidate pairs.
+    \item \textbf{LLM Judge}: For each candidate cluster, the system invokes the lightweight LLM tier as a judge (\texttt{ER\_JUDGE\_SYSTEM} prompt) to make the final determination of whether the entities refer to the same concept or should remain separate.
+\end{enumerate}
+
+\section{Schema Mapping and Validation Nodes}
+\label{sec:imp:mapping_validation}
+
+\subsection{RAG-Augmented Mapping}
+\label{sec:imp:rag_mapper}
+
+The mapping stage aligns the physical database schema to the resolved business concepts. For each table, the system queries the vector database for business concepts related to the table's columns. The table schema and retrieved concepts are formatted into a prompt and evaluated using the midtier LLM. This process proposed alignments as a list of \texttt{MappingProposal} objects containing mapped fields and matching confidence scores.
+
+\subsection{Actor-Critic validation}
+\label{sec:imp:validator}
+
+Proposed mappings are validated using a two-phase Actor-Critic pattern implemented in \texttt{src/mapping/validator.py}:
+\begin{itemize}
+    \item \textbf{Actor}: The mapping node acts as the Actor, proposing semantic alignments.
+    \item \textbf{Critic}: A separate LLM instance loaded with the \texttt{CRITIC\_SYSTEM} prompt acts as the Critic, evaluating the correctness of the mappings.
+\end{itemize}
+If the Critic rejects a mapping, a critique is generated and injected back into the Actor's next input block. To prevent infinite loops, the system tracks the highest-confidence proposal seen across all attempts (\texttt{best\_proposal}) and uses it if the maximum reflection limit is reached.
+
+\section{Cypher Generation and the Healing Loop}
+\label{sec:imp:cypher_healing}
+
+\subsection{Few-Shot Cypher Generation}
+\label{sec:imp:cypher_generator}
+
+Once mappings are approved, they are translated into Cypher import scripts in \texttt{src/graph/cypher\_generator.py}. The generator uses a few-shot prompting strategy containing examples of Neo4j import statements (using \texttt{MERGE} and \texttt{UNWIND} for performance).
+
+\subsection{Cypher Healing Loop}
+\label{sec:imp:cypher_healer}
+
+The generated Cypher statements are dry-run against the Neo4j database using \texttt{EXPLAIN} queries in \texttt{src/graph/cypher\_healer.py}. If a syntax error is returned:
+\begin{enumerate}
+    \item The syntax error traceback and the failed Cypher query are captured.
+    \item They are injected into the healer prompt (\texttt{CYPHER\_FIX\_USER}).
+    \item The LLM regenerates the Cypher query.
+\end{enumerate}
+If healing fails after three attempts, the system falls back to a deterministic, parameterized Cypher builder (\texttt{cypher\_builder.py}) that builds the Cypher statements programmatically.
+
+\section{Retrieval and Generation Pipelines}
+\label{sec:imp:retrieval_gen}
+
+\subsection{Hybrid Retrieval with RRF}
+\label{sec:imp:hybrid_retrieval}
+
+The Query pipeline in \texttt{src/retrieval/hybrid\_retriever.py} uses a hybrid retrieval strategy:
+\begin{enumerate}
+    \item \textbf{Vector Search}: Cosine similarity search over the 1024-dimensional BGE-M3 embeddings of child chunks.
+    \item \textbf{BM25 Retrieval}: Fulltext search over exact keyword matches for table identifiers, columns, and codes.
+    \item \textbf{Graph Traversal}: BFS expansion from matched concepts to neighboring table nodes.
+\end{enumerate}
+The results from the three channels are combined using Reciprocal Rank Fusion (RRF) and scored using the cross-encoder reranker (\texttt{bge-reranker-v2-m3}) to yield the top-k chunks.
+
+\subsection{Self-RAG Hallucination Grader}
+\label{sec:imp:hallucination_grader}
+
+The answer generator generates response candidates based on the retrieved context. The output is evaluated by a hallucination grader in \texttt{src/generation/hallucination\_grader.py}. If the grader determines that any claim in the answer is not supported by the context, it generates a critique and routes the state back to the generator for regeneration.
+
+\section{Provider-Agnostic LLM Factory}
+\label{sec:imp:llm_factory}
+
+All LLM integrations route through \texttt{src/config/llm\_factory.py}. The factory supports five distinct LLM tiers configured via tier-specific environment variables (\texttt{LLM\_PROVIDER\_\textless{}TIER\textgreater{}}, \texttt{LLM\_MODEL\_\textless{}TIER\textgreater{}}). It abstracts access behind an \texttt{LLMProtocol} interface and handles paid-model fallbacks automatically when HTTP 429 errors are encountered.
+
+\section{REST API Implementation}
+\label{sec:imp:api}
+
+The REST API is implemented in \texttt{src/api/app.py} using FastAPI and exposed via Uvicorn. The API exposes two router groups:
+\begin{itemize}
+    \item \textbf{Demo Router} (\texttt{/api/v1/demo/}): Handles async knowledge graph build jobs, query endpoints, and graph statistics.
+    \item \textbf{Ablation Router} (\texttt{/api/v1/ablation/}): Triggers custom configuration runs and executes ablation studies.
+\end{itemize}
+All endpoints support JSON formatting, error logging, and standard authentication headers.

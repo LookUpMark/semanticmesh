@@ -53,13 +53,13 @@ The standard RAG pipeline~\cite{gao2024retrievalaugmentedgenerationlargelanguage
 \begin{figure}[htbp]
 \centering
 \borderimage[width=\textwidth]{images/chapter2/rag.png}
-\caption{The baseline RAG pipeline: documents are chunked and embedded during ingestion; at query time, the top-$k$ chunks are retrieved and provided as context to the LLM.}
+\caption{The baseline RAG pipeline: documents are chunked and embedded during ingestion; at query time, the top-k chunks are retrieved and provided as context to the LLM.}
 \label{fig:rag_pipeline}
 \end{figure}
 
 Chunking strategy significantly affects retrieval quality. Fixed-size chunking with overlap is the simplest approach, but fails to respect document structure. Semantic chunking segments text at topic boundaries, while hierarchical segmentation~\cite{nguyen2025enhancingretrievalaugmentedgeneration} constructs multi-level representations by clustering segments into higher-level units. A systematic investigation by Shaukat et al.~\cite{shaukat2026systematicinvestigationdocumentchunking} demonstrates that chunking strategy and embedding model choice interact in non-trivial ways, with no single strategy dominating across all tasks.
 
-Retrieval can be further refined through reranking. A common pattern uses a bi-encoder for efficient candidate generation followed by a cross-encoder for precise relevance scoring. Déjean et al.~\cite{déjean2024thoroughcomparisoncrossencodersllms} provide a thorough comparison showing that cross-encoders remain competitive with LLM-based rerankers for the computational cost. Figure~\ref{fig:cross_encoder} illustrates the bi-encoder vs.\ cross-encoder paradigm. The granularity of retrieval units also matters: Chen et al.~\cite{chen2024densexretrievalretrieval} show that proposition-level retrieval---where the unit is a distinct factual claim---outperforms passage-level and sentence-level retrieval in terms of generalization across diverse tasks, although it faces challenges with multi-hop reasoning over long-range text.
+Retrieval can be further refined through reranking. A common pattern uses a bi-encoder for efficient candidate generation followed by a cross-encoder for precise relevance scoring. Déjean et al.~\cite{dejean2024thoroughcomparisoncrossencodersllms} provide a thorough comparison showing that cross-encoders remain competitive with LLM-based rerankers for the computational cost. Figure~\ref{fig:cross_encoder} illustrates the bi-encoder vs.\ cross-encoder paradigm. The granularity of retrieval units also matters: Chen et al.~\cite{chen2024densexretrievalretrieval} show that proposition-level retrieval---where the unit is a distinct factual claim---outperforms passage-level and sentence-level retrieval in terms of generalization across diverse tasks, although it faces challenges with multi-hop reasoning over long-range text.
 
 \begin{figure}[htbp]
 \centering

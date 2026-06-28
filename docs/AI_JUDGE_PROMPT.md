@@ -24,28 +24,28 @@ Your evaluation must be **holistic, architecture-aware, and grounded in the actu
 ### Two-Graph Architecture
 
 **Builder Graph** (11 nodes) — Knowledge Graph Construction:
-1. `_node_ingest_pdf` → Load PDF/MD/TXT documents
-2. `_node_chunk_documents` → Split into child chunks (256 tok) + parent chunks (600 tok)
-3. `_node_parse_ddl` → Parse DDL/SQL schemas via sqlglot
-4. `_node_extract_triplets` → LLM extracts (subject, predicate, object) triplets from each chunk
-5. `_node_resolve_entities` → K-NN blocking with BGE-M3 embeddings + LLM judge for deduplication
-6. `_node_enrich_schema` → LLM expands acronyms in DDL column names
-7. `_node_map_schema` → RAG-augmented mapping: DDL table → ontology concept (Actor generates MappingProposal)
-8. `_node_validate_mapping` → Actor-Critic: Critic LLM validates proposal, rejects with critique → Actor retries (max 3)
-9. `_node_generate_cypher` → LLM generates MERGE Cypher from mapping
-10. `_node_heal_cypher` → EXPLAIN dry-run; if CypherSyntaxError → inject error → retry (max 3) → fallback to deterministic builder
-11. `_node_build_graph` → Execute Cypher on Neo4j; create FK edges, MENTIONS edges, chunk embeddings
+1. `extract_triplets` → LLM extracts (subject, predicate, object) triplets from each chunk
+2. `entity_resolution` → K-NN blocking with BGE-M3 embeddings + LLM judge for deduplication
+3. `parse_ddl` → Parse DDL/SQL schemas via sqlglot
+4. `enrich_schema` → LLM expands acronyms in DDL column names
+5. `parallel_mapping` → Concurrent mapping of all tables
+6. `rag_mapping` → RAG-augmented mapping: DDL table → ontology concept (Actor generates MappingProposal)
+7. `validate_mapping` → Actor-Critic: Critic LLM validates proposal, rejects with critique → Actor retries (max 3)
+8. `generate_cypher` → LLM generates MERGE Cypher from mapping
+9. `heal_cypher` → EXPLAIN dry-run; if CypherSyntaxError → inject error → retry (max 3) → fallback to deterministic builder
+10. `build_graph` → Execute Cypher on Neo4j; create FK edges, MENTIONS edges, chunk embeddings
+11. `save_trace` → Save builder trace execution state
 
 **Query Graph** (9 nodes) — Retrieval-Augmented Generation:
 1. `_node_retrieve` → Hybrid retrieval: Dense vector (BGE-M3) + BM25 keyword + Graph traversal → RRF fusion
 2. `_node_rerank` → Cross-encoder reranking (bge-reranker-v2-m3) with noise filtering
-3. `_node_quality_gate` → Decision: proceed | proceed_with_warning | abstain_early
-4. `_node_distill_context` → Context compression: per-source caps (vector≤4, bm25≤4, graph≤5)
-5. `_node_generate_answer` → LLM generates answer from distilled context (T=0.3)
+3. `_node_retrieval_quality_gate` → Decision: proceed | proceed_with_warning | abstain_early
+4. `_node_context_distillation` → Context compression: per-source caps (vector≤4, bm25≤4, graph≤5)
+5. `_node_answer_generation` → LLM generates answer from distilled context (T=0.3)
 6. `_node_grade_hallucination` → Self-RAG: grade answer → pass | regenerate (with critique injection)
-7. `_node_verify_semantics` → Semantic overlap check between answer and retrieved contexts
-8. `_node_check_grader_consistency` → Validate grader didn't flip decisions across retries
-9. `_node_finalise` → Assemble final_answer + sources + retrieval_metrics
+7. `_node_grader_consistency_validator` → Validate grader didn't flip decisions across retries
+8. `_node_finalise` → Assemble final_answer + sources + retrieval_metrics
+9. `_node_save_query_trace` → Save query trace execution state
 
 ### Key Self-Reflection Loops
 - **Actor-Critic Mapping:** If Critic rejects → inject critique → Actor retries (max `max_reflection_attempts`). On exhaustion, returns **best_proposal** (highest confidence seen across ALL retries), not the last rejected one.

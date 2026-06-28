@@ -164,7 +164,7 @@ MERGE (child)-[:REFERENCES {fk_column: $fk_col, ref_column: $ref_col}]->(parent)
 | **Graph + Vector DB** | Neo4j 5.x | Graph topology + vector index + fulltext BM25 |
 | **Validation** | Pydantic v2 | Schema enforcement on LLM outputs |
 | **Evaluation** | RAGAS + AI Judge | RAG quality metrics + LLM-as-a-judge |
-| **API** | FastAPI + uvicorn | REST endpoints for demo and ablation |
+| **API** | `src/api/` (FastAPI + uvicorn) | REST endpoints for demo and ablation |
 
 ### 3.2 LLM Factory Tiers
 
@@ -311,6 +311,7 @@ class QueryState(TypedDict, total=False):
 | `_node_parse_ddl` | `ingestion/ddl_parser.py` | — | — | DDL paths | tables | sqlglot deterministic parsing |
 | `_node_enrich_schema` | `ingestion/schema_enricher.py` | Nano | 0.0 | tables | enriched_tables | Zero-Shot acronym expansion |
 | `_node_init_mapping_queue` | `graph/build_nodes.py` | — | — | enriched_tables | pending_tables | Queue initialisation |
+| `_node_parallel_mapping` | `graph/parallel_mapping.py` | Midtier | 0.0 | pending_tables | precomputed_proposals | ThreadPool parallel mapping+validation |
 | `_node_pop_next_table` | `graph/build_nodes.py` | — | — | pending_tables | current_table | Pop from queue |
 | `_node_rag_mapping` | `mapping/rag_mapper.py` | Midtier | 0.0 | current_table + entities | mapping_proposal | Map-Reduce per table + few-shot |
 | `_node_validate_mapping` | `mapping/validator.py` | Midtier | 0.0 | mapping_proposal | approved/rejected | Pydantic + Actor-Critic |

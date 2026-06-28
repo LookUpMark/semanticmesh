@@ -101,7 +101,7 @@ The pipeline has two phases:
 | AB-09 | 4096 | 101 | 100% | 0.4853 | 4.35 |
 | AB-10 | 16384 | 99 | 100% | 0.4045 | 4.25 |
 
-**Finding:** On a simple dataset, token limit has minimal effect on triplet count. AB-09 (4096) slightly outperforms the baseline on avg_score and judge. The generous limit (16384) adds cost without benefit. AB-BEST uses 4096.
+**Finding:** On a simple dataset, token limit has minimal effect on triplet count. AB-09 (4096) slightly outperforms the baseline on avg_score and judge. The generous limit (16384) adds cost without benefit. AB-BEST uses 8192 as a robust default for dense content.
 
 ---
 
@@ -115,7 +115,7 @@ The pipeline has two phases:
 | AB-13 | 0.75 | **5** | 51 | 98% | 4.55 |
 | AB-14 | 0.75 | **20** | 54 | 98% | 4.25 |
 
-**Finding:** Aggressive merging (threshold=0.65) reduces entity count from 47 to 33, but the knowledge graph remains high-quality — the judge scores this highest (4.65). Conservative merging (0.85) produces the same entity count (33) but slightly lower quality. A blocking top_k of 5 performs well (4.55), suggesting the top-5 nearest neighbours already capture most mergeable pairs. AB-BEST uses threshold=0.65 and top_k=5.
+**Finding:** Aggressive merging (threshold=0.65) reduces entity count from 47 to 33, but the knowledge graph remains high-quality — the judge scores this highest (4.65). Conservative merging (0.85) produces the same entity count (33) but slightly lower quality. A blocking top_k of 5 performs well (4.55), suggesting the top-5 nearest neighbours already capture most mergeable pairs. AB-BEST uses threshold=0.75 and top_k=10 to avoid false merges and ensure better recall for larger entity sets.
 
 ---
 
@@ -146,7 +146,7 @@ The pipeline has two phases:
 | AB-17 | 0.70 | 90 | 100% | 0.5238 | 4.25 |
 | AB-18 | 0.85 | 59 | 100% | 0.4104 | **4.75** |
 
-**Finding:** AB-18 (threshold=0.85) achieves the highest single judge score in the entire campaign (4.75/5). With a threshold of 0.85, fewer proposals trigger HITL interrupts — only the genuinely low-confidence ones are flagged. This keeps the pipeline fast while auto-accepting the vast majority of high-confidence mappings. AB-BEST uses 0.85.
+**Finding:** AB-18 (threshold=0.85) achieves the highest single judge score in the entire campaign (4.75/5). With a threshold of 0.85, fewer proposals trigger HITL interrupts — only the genuinely low-confidence ones are flagged. This keeps the pipeline fast while auto-accepting the vast majority of high-confidence mappings. AB-BEST uses 0.80 as a balanced compromise between autonomy and safety.
 
 ---
 

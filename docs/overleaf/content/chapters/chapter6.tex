@@ -1,0 +1,37 @@
+\chapter{Conclusions}
+\label{ch:conclusions}
+
+This chapter concludes the thesis by summarizing the primary contributions of this work, discussing the key limitations of the proposed architecture, and outlining directions for future research in automated data governance.
+
+\section{Summary of Contributions}
+\label{sec:conclusion:contributions}
+
+This thesis presented SemanticMesh, a multi-agent framework designed to automate semantic discovery and data governance. By bridging the semantic gap between unstructured business documentation and physical database schemas, the system constructs a queryable Knowledge Graph in Neo4j. The primary contributions include:
+\begin{enumerate}
+    \item \textbf{Two-Graph Architecture}: Dividing operations into a write-heavy Builder Graph (ontology construction) and a read-heavy Query Graph (agentic RAG), reflecting CQRS principles for LLM orchestration.
+    \item \textbf{Multi-Stage Entity Resolution}: Resolving concept duplicates across documents through a hybrid pipeline combining vector-based blocking and LLM-based verification.
+    \item \textbf{Robust Self-Correction Loops}: Improving system reliability via Actor-Critic mapping validation, Cypher query healing, and answer groundedness grading.
+    \item \textbf{Ablation-Backed Design}: Conducting a systematic campaign of 21 ablation studies that validated the performance impact of each pipeline component.
+\end{enumerate}
+
+\section{System Limitations}
+\label{sec:conclusion:limitations}
+
+Despite strong empirical performance, the current implementation exhibits several limitations:
+\begin{itemize}
+    \item \textbf{Wide Tables}: Tables with more than 100 columns degrade schema mapping performance, as the dense schema representations overwhelm model context windows.
+    \item \textbf{Multi-Hop Reasoning Limits}: Running global queries across large databases (exceeding 1,000 tables) exceeds output token limits and degrades traversal precision.
+    \item \textbf{Self-Correction Ceiling}: While Cypher healing fixes syntax errors, it cannot recover from semantically ambiguous mapping errors where the underlying business intent is poorly defined in the source documentation.
+    \item \textbf{Domain-Specific Embedding Drift}: General-purpose embedding models like BGE-M3 show reduced retrieval precision when applied to highly specialized corporate vocabulary.
+\end{itemize}
+
+\section{Future Research Directions}
+\label{sec:conclusion:future_work}
+
+To address these limitations, several directions are proposed for future work:
+\begin{itemize}
+    \item \textbf{Community Detection for Global Reasoning}: Incorporating graph partitioning algorithms (e.g., Louvain community detection) to divide large schemas into localized sub-graphs, enabling hierarchical map-reduce operations.
+    \item \textbf{Semantic Intra-Table Chunking}: Clustering columns of wide tables into semantic subgroups before mapping, reducing context window utilization and improving mapping precision.
+    \item \textbf{Domain SLM Fine-Tuning}: Fine-tuning Small Language Models (SLMs) using Parameter-Efficient Fine-Tuning (PEFT/LoRA) on corporate document corpuses to eliminate embedding drift.
+    \item \textbf{Active Learning from HITL}: Persisting corrections from human-in-the-loop review steps to automatically refine future mapping proposals and system prompts.
+\end{itemize}

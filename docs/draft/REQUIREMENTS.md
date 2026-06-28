@@ -138,10 +138,23 @@ thesis/
 │       └── ABLATION.md
 ├── src/
 │   ├── __init__.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── app.py                   # Application factory + routers
+│   │   ├── auth.py                  # API key auth
+│   │   ├── demo_router.py           # Demo endpoints
+│   │   ├── ablation_router.py       # Ablation endpoints
+│   │   ├── jobs.py                  # In-memory job store
+│   │   └── models.py                # Pydantic request/response models
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── settings.py              # Pydantic BaseSettings, all env vars
+│   │   ├── config.py                # Configuration defaults
+│   │   ├── llm_client.py            # LLM wrappers
 │   │   ├── llm_factory.py           # 5-tier LLM factory with provider-agnostic routing
+│   │   ├── model_builders.py        # LLM builders
+│   │   ├── provider_detection.py    # Auto-detection
+│   │   ├── tracing.py               # LangSmith/Langfuse tracing
 │   │   └── logging.py               # Structured JSON logging setup
 │   ├── models/
 │   │   ├── __init__.py
@@ -189,7 +202,10 @@ thesis/
 │       ├── __init__.py
 │       ├── ragas_runner.py          # EP-16: RAGAS evaluation pipeline
 │       ├── custom_metrics.py        # EP-16: cypher_healing_rate, hitl_confidence_agreement
-│       └── ablation_runner.py       # Ablation experiment runner (see ABLATION.md)
+│       ├── ablation_runner.py       # Ablation experiment runner (see ABLATION.md)
+│       ├── bundle_writer.py         # JSON bundle for AI-as-Judge
+│       ├── gold_standard_loader.py
+│       └── thesis_export.py
 ├── tests/
 │   ├── conftest.py                  # Shared fixtures (settings, mock LLM, Neo4j)
 │   ├── unit/
@@ -210,7 +226,10 @@ thesis/
 │   │   ├── test_answer_generator.py # UT-14
 │   │   ├── test_hallucination_grader.py # UT-15
 │   │   ├── test_prompts.py          # UT-16
-│   │   └── test_web_search_fallback.py  # UT-18
+│   │   ├── test_auth.py
+│   │   ├── test_jobs.py
+│   │   ├── test_conversation_registry.py
+│   │   └── test_kg_registry.py
 │   ├── integration/
 │   │   ├── __init__.py
 │   │   ├── test_builder_graph.py    # IT-01, IT-02, IT-03, IT-05
@@ -222,27 +241,13 @@ thesis/
 │   │   ├── test_ragas.py
 │   │   └── test_ablation.py
 │   └── fixtures/
-│       ├── sample_docs/
-│       │   ├── business_glossary.txt
-│       │   └── data_dictionary.txt
-│       ├── sample_ddl/
-│       │   ├── simple_schema.sql    # 3 tables, 1 FK
-│       │   ├── complex_schema.sql   # 9 tables (8 business + 1 system)
-│       │   └── system_tables.sql    # 3 system tables
-│       ├── mock_responses/
-│       │   ├── extraction_response.json
-│       │   ├── er_judge_merge.json
-│       │   ├── er_judge_separate.json
-│       │   ├── mapping_high_confidence.json
-│       │   ├── mapping_null.json
-│       │   ├── critic_approved.json
-│       │   ├── critic_rejected.json
-│       │   ├── enrichment_response.json
-│       │   ├── grader_faithful.json
-│       │   ├── grader_hallucinated.json
-│       │   └── grader_web_search.json
-│       ├── few_shot_examples.json
-│       └── gold_standard.json
+│       ├── 01_basics_ecommerce/
+│       ├── 02_intermediate_finance/
+│       ├── 03_advanced_healthcare/
+│       ├── 04_complex_manufacturing/
+│       ├── 05_edgecases_incomplete/
+│       ├── 06_edgecases_legacy/
+│       └── 07_stress_large_scale/
 ├── .env.example
 ├── .gitignore
 ├── pyproject.toml
@@ -1047,19 +1052,9 @@ class GraderDecision(BaseModel):
 ```
 
 - Critique must name specific entities/claims that are unsupported: e.g., `"The table TB_ORDERS is not mentioned in any retrieved context. Reformulate omitting TB_ORDERS."`
-- **Loop guard:** `QueryState.iteration_count` incremented on each regenerate; after `settings.max_hallucination_retries` → force `action="web_search"` regardless of grader output
+- **Loop guard:** `QueryState.iteration_count` incremented on each regenerate; after `settings.max_hallucination_retries` → force `action="pass"` regardless of grader output
 
----
 
-**US-14-03 — Web Search Fallback**
-
-> *As the system, I want a fallback to external web search when the knowledge graph contains no relevant context so that the user still receives a useful answer.*
-
-**Acceptance Criteria:**
-- `web_search_fallback(query: str) -> str` in `answer_generator.py`
-- Uses LangChain's `TavilySearch` or `DuckDuckGoSearch` tool
-- Returns raw search result summary as a string
-- Final answer is labelled with `"[Source: Web Search]"` prefix to distinguish from graph-grounded answers
 
 ---
 
@@ -1084,17 +1079,14 @@ stateDiagram-v2
     answer_generation --> hallucination_grader
 
     hallucination_grader --> answer_generation : action=regenerate AND iteration < max
-    hallucination_grader --> web_search : action=web_search
     hallucination_grader --> [*] : action=pass
-
-    web_search --> [*]
 ```
 
 **Acceptance Criteria:**
 - `src/generation/query_graph.py` — `build_query_graph() -> CompiledGraph`
 - `QueryState` TypedDict in `src/models/schemas.py`
 - Conditional routing on `GraderDecision.action`
-- `iteration_count` checked before routing to `answer_generation`; if `>= max_hallucination_retries` → route to `web_search`
+- `iteration_count` checked before routing to `answer_generation`; if `>= max_hallucination_retries` → force `action="pass"`
 - Entry point: `graph.invoke({"user_query": "..."})`
 - Returns: `{"final_answer": "...", "sources": [...]}`
 

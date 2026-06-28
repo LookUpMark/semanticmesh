@@ -29,13 +29,13 @@ The system is built from many interacting components (enrichment, hybrid retriev
 - *What are the optimal hyperparameters for each component?*
 - *Which components are essential vs nice-to-have?*
 
-The 21 studies in this plan cover binary toggles (ON/OFF) and parametric sweeps across six dimensions: retrieval mode, reranking, chunking, extraction capacity, entity resolution, and validation/grading pipeline stages.
+The 22 studies in this plan cover binary toggles (ON/OFF) and parametric sweeps across six dimensions: retrieval mode, reranking, chunking, extraction capacity, entity resolution, and validation/grading pipeline stages.
 
 ---
 
 ## 2. Ablation Matrix
 
-All 21 experiments are defined in `src/evaluation/ablation_runner.py` as `ABLATION_MATRIX`. Each study varies exactly one dimension from the baseline (AB-00).
+All 22 experiments are defined in `src/evaluation/ablation_runner.py` as `ABLATION_MATRIX`. Each study varies exactly one dimension from the baseline (AB-00).
 
 | ID | Component / Parameter | Description | Primary Metric | RAGAS |
 |---|---|---|---|---|
@@ -60,6 +60,7 @@ All 21 experiments are defined in `src/evaluation/ablation_runner.py` as `ABLATI
 | **AB-18** | Confidence threshold | `confidence_threshold=0.85` — fewer HITL interrupts | faithfulness | No |
 | **AB-19** | Cypher healing | Cypher healing OFF — immediate fail on syntax error | faithfulness | Yes |
 | **AB-20** | Hallucination grader | Hallucination grader OFF — return first answer without grading | faithfulness | No |
+| **AB-BEST-K20** | Reranker pool | `RERANKER_TOP_K=20` variant of the AB-BEST configuration | faithfulness | No |
 
 ---
 
@@ -208,7 +209,7 @@ Studies marked `run_ragas=True` additionally collect automated RAGAS metrics:
 
 ## 6. Results Summary
 
-Campaign results across 147 runs (21 studies × 7 datasets). All scores are AI Judge Overall (1.0–5.0 scale).
+Campaign results across 154 runs (22 studies × 7 datasets). All scores are AI Judge Overall (1.0–5.0 scale).
 
 ### 6.1 Score Summary Table
 
@@ -419,6 +420,6 @@ ABLATION_MATRIX = {
         "primary_metric": "context_precision",
         "run_ragas": True,
     },
-    # ... (21 entries total — see source file for full definitions)
+    # ... (22 entries total — see source file for full definitions)
 }
 ```
