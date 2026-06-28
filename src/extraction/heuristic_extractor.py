@@ -21,14 +21,23 @@ _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 _SPACES_RE = re.compile(r"\s+")
 
 _MAPPING_PATTERNS: list[tuple[re.Pattern[str], str]] = [
-    (re.compile(r"(?P<subj>[A-Za-z0-9_ ]+?)\s+maps\s+to\s+(?P<obj>[A-Za-z0-9_ ]+)"), "maps_to"),
-    (re.compile(r"(?P<subj>[A-Za-z0-9_ ]+?)\s+is\s+(?P<obj>[A-Za-z0-9_ ]+)"), "is"),
+    # AUDIT-078 (F-018): compiled with re.IGNORECASE so spans index the original sentence
+    # directly (str.lower() can change length for U+0130 İ, shifting offsets).
     (
-        re.compile(r"(?P<subj>[A-Za-z0-9_ ]+?)\s+stores?\s+(?P<obj>[A-Za-z0-9_ ]+)"),
+        re.compile(
+            r"(?P<subj>[A-Za-z0-9_ ]+?)\s+maps\s+to\s+(?P<obj>[A-Za-z0-9_ ]+)", re.IGNORECASE
+        ),
+        "maps_to",
+    ),
+    (re.compile(r"(?P<subj>[A-Za-z0-9_ ]+?)\s+is\s+(?P<obj>[A-Za-z0-9_ ]+)", re.IGNORECASE), "is"),
+    (
+        re.compile(r"(?P<subj>[A-Za-z0-9_ ]+?)\s+stores?\s+(?P<obj>[A-Za-z0-9_ ]+)", re.IGNORECASE),
         "stores",
     ),
     (
-        re.compile(r"(?P<subj>[A-Za-z0-9_ ]+?)\s+contains?\s+(?P<obj>[A-Za-z0-9_ ]+)"),
+        re.compile(
+            r"(?P<subj>[A-Za-z0-9_ ]+?)\s+contains?\s+(?P<obj>[A-Za-z0-9_ ]+)", re.IGNORECASE
+        ),
         "contains",
     ),
 ]
@@ -79,10 +88,9 @@ def _split_sentences(text: str) -> list[str]:
 def _extract_from_sentence(sentence: str, chunk_index: int) -> list[Triplet]:
     """Extract zero or more deterministic triplets from one sentence."""
     triplets: list[Triplet] = []
-    lowered = sentence.lower()
 
     for pattern, predicate in _MAPPING_PATTERNS:
-        match = pattern.search(lowered)
+        match = pattern.search(sentence)
         if not match:
             continue
 

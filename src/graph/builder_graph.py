@@ -753,7 +753,7 @@ def run_builder(
                 try:
                     repair_client.execute_cypher(
                         "UNWIND $pairs AS p "
-                        "MATCH (ch:Chunk {chunk_index: p.idx}) "
+                        "MATCH (ch:ParentChunk {parent_chunk_index: p.idx}) "
                         "WHERE ch.source_doc IN p.srcs "
                         "MATCH (bc:BusinessConcept {name: p.concept}) "
                         "MERGE (ch)-[:MENTIONS]->(bc)",

@@ -770,6 +770,9 @@ def _run_study(
 
 
 def main() -> None:
+    from src.config.config import set_global_seed
+
+    set_global_seed()  # AUDIT-080 (F-017): seed RNGs for reproducibility at process start
     parser = argparse.ArgumentParser(
         description="Unified pipeline runner for ablation studies and evaluation",
     )
@@ -867,8 +870,8 @@ def main() -> None:
     run_tag = args.run_tag or f"run-{timestamp_str}"
 
     # Run
-    from src.config.llm_factory import reconfigure_from_env  # noqa: PLC0415
     from src.config.llm_client import reset_llm_usage  # noqa: PLC0415
+    from src.config.llm_factory import reconfigure_from_env  # noqa: PLC0415
     from src.config.logging import setup_notebook_logging  # noqa: PLC0415
 
     reconfigure_from_env()

@@ -131,8 +131,13 @@ def critic_review(
 
     try:
         data = json.loads(raw_json)
+        # AUDIT-071 (F-009): a non-dict JSON body (e.g. a bare array) makes
+        # CriticDecision(**data) raise TypeError, which would escape the approve-by-default
+        # safety net. Treat it the same as any other parse failure.
+        if not isinstance(data, dict):
+            raise TypeError("critic response is not a JSON object")
         decision = CriticDecision(**data)
-    except (json.JSONDecodeError, ValidationError) as exc:
+    except (json.JSONDecodeError, ValidationError, TypeError) as exc:
         logger.warning("Critic response parse error: %s — approving by default.", exc)
         return CriticDecision(approved=True)
 

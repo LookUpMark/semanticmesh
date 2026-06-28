@@ -225,8 +225,12 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
                 is_fk = True
                 ref_table = kind.find(exp.Table)
                 ref_col = kind.find(exp.Column)
-                if ref_table and ref_col:
-                    references = f"{ref_table.name.upper()}.{ref_col.name.upper()}"
+                if ref_table:
+                    # AUDIT-070 (F-008): REFERENCES table without an explicit referenced
+                    # column (implicit PK) — fall back to the FK column name, the SQL
+                    # convention, so the edge is not dropped from the KG.
+                    ref_name = ref_col.name.upper() if ref_col else col_name
+                    references = f"{ref_table.name.upper()}.{ref_name}"
 
         columns.append(
             ColumnSchema(
@@ -261,8 +265,11 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
                 for column_schema in columns:
                     if column_schema.name == fk_col_name:
                         column_schema.is_foreign_key = True
-                        if ref_table and i < len(ref_cols):
-                            column_schema.references = f"{ref_table.name.upper()}.{ref_cols[i]}"
+                        if ref_table:
+                            # AUDIT-070 (F-008): implicit-PK reference (no explicit
+                            # referenced column list) — fall back to the FK column name.
+                            ref_col_name = ref_cols[i] if i < len(ref_cols) else fk_col_name
+                            column_schema.references = f"{ref_table.name.upper()}.{ref_col_name}"
 
     if not columns:
         logger.warning("Table '%s' has no parseable columns — skipping.", table_name)

@@ -37,6 +37,51 @@ def _fixtures_dir() -> Path:
     return _ROOT / "tests" / "fixtures"
 
 
+def _query_fields(qr: dict[str, Any]) -> dict[str, Any]:
+    """Canonical extraction of ``run_query()`` result fields.
+
+    AUDIT-067 (F-001): single source of truth for the run_query() return contract so the
+    custom and preset ablation paths cannot diverge on key names. The preset path previously
+    read non-existent keys (``answer``/``contexts``/``rerank_scores``/``is_grounded``), which
+    silently produced empty answers, 0.0 scores and always-grounded verdicts.
+    """
+    gate = qr.get("retrieval_gate_decision", "proceed")
+    return {
+        "answer": qr.get("final_answer", ""),
+        "sources": list(qr.get("sources", [])),
+        "contexts": list(qr.get("retrieved_contexts", [])),
+        "gate": gate,
+        "top_score": qr.get("retrieval_quality_score", 0.0),
+        "chunk_count": qr.get("retrieval_chunk_count", 0),
+        "grounded": bool(qr.get("grader_grounded", True) and gate != "abstain_early"),
+        "grader_rejection_count": qr.get("grader_rejection_count", 0),
+        "grader_consistency_valid": qr.get("grader_consistency_valid", True),
+        "context_sufficiency": qr.get("context_sufficiency", ""),
+    }
+
+
+def _builder_summary(builder_state: Any, elapsed: float) -> dict[str, Any]:
+    """Canonical ``BuilderState`` -> builder summary.
+
+    AUDIT-067 (F-002): single source of truth for BuilderState keys (``entities``/``tables``)
+    so the custom and preset ablation paths cannot drift from the state contract.
+    """
+    parent_chunks = builder_state.get("parent_chunks") or []
+    chunks = builder_state.get("chunks") or []
+    return {
+        "triplets_extracted": len(builder_state.get("triplets") or []),
+        "entities_resolved": len(builder_state.get("entities") or []),
+        "tables_parsed": len(builder_state.get("tables") or []),
+        "tables_completed": len(builder_state.get("completed_tables") or []),
+        "cypher_failed": bool(builder_state.get("cypher_failed", False)),
+        "failed_mappings": list(builder_state.get("failed_mappings") or []),
+        "ingestion_errors": list(builder_state.get("ingestion_errors") or []),
+        "parent_chunks": len(parent_chunks) if isinstance(parent_chunks, list) else 0,
+        "child_chunks": len(chunks) if isinstance(chunks, list) else 0,
+        "elapsed_s": round(elapsed, 1),
+    }
+
+
 def _validate_base_url(url: str) -> None:
     """AUDIT-034 (YELLOW): Validate provider_base_url against SSRF attacks.
 
@@ -182,28 +227,7 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
                 )
                 builder_elapsed = time.time() - t0
 
-                triplets = builder_state.get("triplets", [])
-                entities = builder_state.get("entities", [])
-                tables = builder_state.get("tables", [])
-                completed = builder_state.get("completed_tables", [])
-
-                parent_chunks_raw = builder_state.get("parent_chunks") or []
-                chunks_raw = builder_state.get("chunks") or []
-
-                n_parent = len(parent_chunks_raw) if isinstance(parent_chunks_raw, list) else 0
-
-                builder_info = {
-                    "triplets_extracted": len(triplets),
-                    "entities_resolved": len(entities),
-                    "tables_parsed": len(tables),
-                    "tables_completed": len(completed),
-                    "cypher_failed": bool(builder_state.get("cypher_failed", False)),
-                    "failed_mappings": list(builder_state.get("failed_mappings", [])),
-                    "ingestion_errors": list(builder_state.get("ingestion_errors", [])),
-                    "parent_chunks": n_parent,
-                    "child_chunks": len(chunks_raw),
-                    "elapsed_s": round(builder_elapsed, 1),
-                }
+                builder_info = _builder_summary(builder_state, builder_elapsed)
                 result["builder"] = builder_info
 
             # ── Stage 2: Query Evaluation ─────────────────────────────────
@@ -224,13 +248,13 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
                     study_id=req.study_id,
                 )
 
-                answer = qr.get("final_answer", "")
-                sources = list(qr.get("sources", []))
-                gate = qr.get("retrieval_gate_decision", "proceed")
-                top_score = qr.get("retrieval_quality_score", 0.0)
-                chunk_count = qr.get("retrieval_chunk_count", 0)
-                grader_grounded = qr.get("grader_grounded", True)
-                grounded = bool(grader_grounded and gate != "abstain_early")
+                qf = _query_fields(qr)
+                answer = qf["answer"]
+                sources = qf["sources"]
+                gate = qf["gate"]
+                top_score = qf["top_score"]
+                chunk_count = qf["chunk_count"]
+                grounded = qf["grounded"]
 
                 if grounded:
                     grounded_count += 1
@@ -243,7 +267,7 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
                     for s in expected_sources
                     if any(_normalize_source(s) in _normalize_source(src) for src in sources)
                 ]
-                gt_coverage = len(covered) / len(expected_sources) if expected_sources else 1.0
+                gt_coverage = len(covered) / len(expected_sources) if expected_sources else None
 
                 per_question.append(
                     {
@@ -270,7 +294,10 @@ def _run_ablation_task(job_id: str, req: AblationRunRequest) -> None:
 
             query_elapsed = time.time() - t1
             total_q = len(per_question)
-            avg_gt = sum(pq["gt_coverage"] for pq in per_question) / total_q if total_q else 0.0
+            # AUDIT-075 (F-014): exclude unmeasured coverage (None) so empty-source pairs
+            # don't inflate the average — mirrors run_pipeline.py's canonical handling.
+            _gt_cov = [pq["gt_coverage"] for pq in per_question if pq["gt_coverage"] is not None]
+            avg_gt = sum(_gt_cov) / len(_gt_cov) if _gt_cov else 0.0
             avg_score = (
                 sum(pq["retrieval_quality_score"] for pq in per_question) / total_q
                 if total_q
@@ -417,14 +444,7 @@ def _run_ablation_task_with_preset(
                     study_id=req.study_id,
                 )
                 elapsed = time.time() - t0
-                builder_info = {
-                    "triplets_extracted": len(builder_state.get("triplets") or []),
-                    "entities_resolved": len(builder_state.get("resolved_entities") or []),
-                    "tables_parsed": len(builder_state.get("table_schemas") or []),
-                    "tables_completed": len(builder_state.get("completed_tables") or []),
-                    "cypher_failed": builder_state.get("cypher_failed", False),
-                    "elapsed_s": round(elapsed, 1),
-                }
+                builder_info = _builder_summary(builder_state, elapsed)
             result["builder"] = builder_info
 
             # ── Stage 2: Query Evaluation ──────────────────────────────────
@@ -436,14 +456,11 @@ def _run_ablation_task_with_preset(
                 metadata = item.get("metadata", {})
                 try:
                     query_state = run_query(user_query=question)
-                    answer = query_state.get("answer", "")
-                    contexts = query_state.get("contexts") or []
-                    score = (
-                        query_state.get("rerank_scores", [0.0])[0]
-                        if query_state.get("rerank_scores")
-                        else 0.0
-                    )
-                    is_grounded = bool(query_state.get("is_grounded", True))
+                    qf = _query_fields(query_state)
+                    answer = qf["answer"]
+                    contexts = qf["contexts"]
+                    score = qf["top_score"]
+                    is_grounded = qf["grounded"]
                     abstained = "cannot" in answer.lower() or "don't have" in answer.lower()
                     exp_lower = expected.lower()
                     ans_lower = answer.lower()
@@ -486,7 +503,10 @@ def _run_ablation_task_with_preset(
             total_q = len(per_question)
             grounded_count = sum(1 for pq in per_question if pq.get("is_grounded"))
             abstained_count = sum(1 for pq in per_question if pq.get("abstained"))
-            avg_gt = sum(pq["gt_coverage"] for pq in per_question) / total_q if total_q else 0.0
+            # AUDIT-075 (F-014): exclude unmeasured coverage (None) so empty-source pairs
+            # don't inflate the average — mirrors run_pipeline.py's canonical handling.
+            _gt_cov = [pq["gt_coverage"] for pq in per_question if pq["gt_coverage"] is not None]
+            avg_gt = sum(_gt_cov) / len(_gt_cov) if _gt_cov else 0.0
             avg_score = (
                 sum(pq["top_rerank_score"] for pq in per_question) / total_q if total_q else 0.0
             )

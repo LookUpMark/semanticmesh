@@ -310,6 +310,23 @@ def reconfigure_from_env() -> None:
     get_generation_llm.cache_clear()
     get_lightweight_llm.cache_clear()
     get_midtier_llm.cache_clear()
+    # AUDIT-077 (F-007/F-011): also clear the cached embedding/reranker singletons and the
+    # Langfuse handler, so runtime config changes take effect everywhere. Imported lazily to
+    # avoid a config -> retrieval import cycle.
+    try:
+        from src.retrieval.embeddings import get_embeddings
+        from src.retrieval.reranker import get_reranker
+
+        get_embeddings.cache_clear()
+        get_reranker.cache_clear()
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from src.config.observability import reset_observability
+
+        reset_observability()
+    except Exception:  # noqa: BLE001
+        pass
 
 
 @lru_cache(maxsize=1)

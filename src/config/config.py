@@ -13,6 +13,36 @@ from dataclasses import dataclass
 LMSTUDIO_PLACEHOLDER_KEY = "lm-studio"
 
 
+def set_global_seed(seed: int | None = None) -> None:
+    """Seed Python/NumPy/PyTorch RNGs for reproducibility (best-effort).
+
+    ``seed`` defaults to the ``RANDOM_SEED`` env var (42). This governs Python/NumPy
+    RNGs and (on CPU) PyTorch RNGs. On GPU, fp16 matmuls remain non-deterministic
+    regardless of seeding — CPU is the deterministic path. No-ops for any backend
+    that is not installed. Call once at process start (CLI ``main``, API startup).
+    """
+    import os
+    import random as _random
+
+    if seed is None:
+        seed = int(os.environ.get("RANDOM_SEED", "42"))
+    _random.seed(seed)
+    try:
+        import numpy as _np
+
+        _np.random.seed(seed)
+    except ImportError:  # pragma: no cover
+        pass
+    try:
+        import torch as _torch
+
+        _torch.manual_seed(seed)
+        if _torch.cuda.is_available():
+            _torch.cuda.manual_seed_all(seed)
+    except ImportError:  # pragma: no cover
+        pass
+
+
 @dataclass(frozen=True)
 class AppConfig:
     """Default application configuration.
@@ -49,7 +79,10 @@ class AppConfig:
     llm_model_generation: str = "gpt-5.4-nano-2026-03-17"
     azure_openai_api_version: str = "2024-11-01-preview"
 
-    # Temperature: extraction/reasoning at 0.0 for deterministic JSON, generation at 0.3 for fluency
+    # Temperature: extraction/reasoning at 0.0 (deterministic LLM decoding),
+    # generation at 0.3 (fluency). NOTE: T=0.0 governs LLM SAMPLING only — it does
+    # NOT make embedding/reranker numerics deterministic on GPU (fp16 matmuls are
+    # non-deterministic). See set_global_seed() for RNG seeding.
     llm_temperature_extraction: float = 0.0
     llm_temperature_reasoning: float = 0.0
     llm_temperature_generation: float = 0.3

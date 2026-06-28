@@ -179,34 +179,48 @@ def load_pdfs_batch(paths: list[Path]) -> list[Document]:
 
     # Batch all PDFs into one loader call (single JVM invocation).
     if pdf_paths:
-        loader = OpenDataLoaderPDFLoader(
-            file_path=[str(p) for p in pdf_paths],
-            format="markdown",
-            split_pages=True,
-            include_header_footer=False,
-            quiet=True,
-        )
-        lc_docs = loader.load()
+        # AUDIT-069 (F-006): the upstream loader derives per-page ``source`` from the
+        # basename only, so two same-basename PDFs would collide (merge into one bucket)
+        # and distinct documents would be conflated. Detect duplicate basenames and fall
+        # back to per-path loads when any exist.
+        from collections import Counter, defaultdict
 
-        # Group by source filename so we can log per-file counts.
-        from collections import defaultdict
+        basename_counts = Counter(p.name for p in pdf_paths)
+        if any(count > 1 for count in basename_counts.values()):
+            dupes = sorted({p.name for p in pdf_paths if basename_counts[p.name] > 1})
+            logger.warning(
+                "Duplicate PDF basenames %s — loading individually to avoid merging.",
+                dupes,
+            )
+            for pdf_path in pdf_paths:
+                all_docs.extend(_load_pdf_via_opendataloader(pdf_path))
+        else:
+            loader = OpenDataLoaderPDFLoader(
+                file_path=[str(p) for p in pdf_paths],
+                format="markdown",
+                split_pages=True,
+                include_header_footer=False,
+                quiet=True,
+            )
+            lc_docs = loader.load()
 
-        per_file: dict[str, list] = defaultdict(list)
-        for lc_doc in lc_docs:
-            src = Path(lc_doc.metadata.get("source", "")).name
-            per_file[src].append(lc_doc)
+            # Group by source filename so we can log per-file counts.
+            per_file: dict[str, list] = defaultdict(list)
+            for lc_doc in lc_docs:
+                src = Path(lc_doc.metadata.get("source", "")).name
+                per_file[src].append(lc_doc)
 
-        for pdf_path in pdf_paths:
-            file_lc_docs = per_file.get(pdf_path.name, [])
-            if not file_lc_docs:
-                logger.warning("No output for '%s' — skipping", pdf_path.name)
-                continue
-            docs = _lc_docs_to_documents(file_lc_docs, pdf_path.name)
-            if docs:
-                logger.info("Loaded %d pages from '%s'", len(docs), pdf_path.name)
-                all_docs.extend(docs)
-            else:
-                logger.debug("All pages empty in %s — skipping", pdf_path.name)
+            for pdf_path in pdf_paths:
+                file_lc_docs = per_file.get(pdf_path.name, [])
+                if not file_lc_docs:
+                    logger.warning("No output for '%s' — skipping", pdf_path.name)
+                    continue
+                docs = _lc_docs_to_documents(file_lc_docs, pdf_path.name)
+                if docs:
+                    logger.info("Loaded %d pages from '%s'", len(docs), pdf_path.name)
+                    all_docs.extend(docs)
+                else:
+                    logger.debug("All pages empty in %s — skipping", pdf_path.name)
 
     return all_docs
 

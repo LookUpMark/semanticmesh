@@ -713,7 +713,7 @@ class ComparisonReport:
                     "missing_sources": missing,
                     "coverage_rate": len(covered) / len(expected_sources)
                     if expected_sources
-                    else 1.0,
+                    else None,
                     "grounded": trace.grounded,
                     "verification_score": trace.verification_score,
                 }
@@ -724,7 +724,13 @@ class ComparisonReport:
         if not self.per_question_analysis:
             return
 
-        coverage_rates = [q["coverage_rate"] for q in self.per_question_analysis]
+        # AUDIT-075 (F-014): exclude unmeasured coverage (None) so empty-source pairs
+        # don't inflate the average — mirrors run_pipeline.py's canonical handling.
+        coverage_rates = [
+            q["coverage_rate"]
+            for q in self.per_question_analysis
+            if q["coverage_rate"] is not None
+        ]
         grounded_count = sum(1 for q in self.per_question_analysis if q["grounded"])
         verification_scores = [q["verification_score"] for q in self.per_question_analysis]
 

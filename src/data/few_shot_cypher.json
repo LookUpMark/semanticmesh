@@ -1,68 +1,68 @@
 [
   {
     "id": "ex-001",
-    "description": "Customer master table mapping",
-    "ddl_snippet": "CREATE TABLE CUSTOMER_MASTER (CUST_ID INT PRIMARY KEY, FULL_NAME VARCHAR(200), EMAIL VARCHAR(150), REGION_CODE VARCHAR(10))",
-    "concept_name": "Customer",
-    "concept_definition": "An individual or organisation that has registered and made at least one purchase.",
+    "description": "Passenger identity table mapping",
+    "ddl_snippet": "CREATE TABLE FLT_PASSENGER (PAX_ID INT PRIMARY KEY, FULL_NAME VARCHAR(200), EMAIL VARCHAR(150), LOYALTY_TIER VARCHAR(10))",
+    "concept_name": "Passenger",
+    "concept_definition": "An individual who holds a booking to travel on one or more scheduled flights.",
     "mapping_confidence": 0.97,
-    "cypher": "MERGE (bc:BusinessConcept {name: 'Customer'})\nON CREATE SET bc.definition = 'An individual or organisation that has registered and made at least one purchase.',\n              bc.provenance_text = 'Business glossary entry: Customer',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Client', 'Buyer'],\n              bc.confidence_score = 0.97\nON MATCH SET bc.confidence_score = 0.97\n\nMERGE (pt:PhysicalTable {table_name: 'CUSTOMER_MASTER'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['CUST_ID', 'FULL_NAME', 'EMAIL', 'REGION_CODE'],\n              pt.column_types = '{\"CUST_ID\": \"INT\", \"FULL_NAME\": \"VARCHAR(200)\", \"EMAIL\": \"VARCHAR(150)\", \"REGION_CODE\": \"VARCHAR(10)\"}',\n              pt.ddl_source = 'CREATE TABLE CUSTOMER_MASTER (CUST_ID INT PRIMARY KEY, FULL_NAME VARCHAR(200), EMAIL VARCHAR(150), REGION_CODE VARCHAR(10))'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.97, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.97, r.validated_by = 'llm_judge', r.updated_at = datetime()",
+    "cypher": "MERGE (bc:BusinessConcept {name: 'Passenger'})\nON CREATE SET bc.definition = 'An individual who holds a booking to travel on one or more scheduled flights.',\n              bc.provenance_text = 'Business glossary entry: Passenger',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Traveller', 'Pax'],\n              bc.confidence_score = 0.97\nON MATCH SET bc.confidence_score = 0.97\n\nMERGE (pt:PhysicalTable {table_name: 'FLT_PASSENGER'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['PAX_ID', 'FULL_NAME', 'EMAIL', 'LOYALTY_TIER'],\n              pt.column_types = '{\"PAX_ID\": \"INT\", \"FULL_NAME\": \"VARCHAR(200)\", \"EMAIL\": \"VARCHAR(150)\", \"LOYALTY_TIER\": \"VARCHAR(10)\"}',\n              pt.ddl_source = 'CREATE TABLE FLT_PASSENGER (PAX_ID INT PRIMARY KEY, FULL_NAME VARCHAR(200), EMAIL VARCHAR(150), LOYALTY_TIER VARCHAR(10))'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.97, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.97, r.validated_by = 'llm_judge', r.updated_at = datetime()",
     "validated_by": "human_hitl",
-    "tags": ["customer", "master_table", "identity"]
+    "tags": ["passenger", "identity", "master_table"]
   },
   {
     "id": "ex-002",
-    "description": "Product catalogue table mapping",
-    "ddl_snippet": "CREATE TABLE TB_PRODUCT (PRODUCT_ID INT PRIMARY KEY, SKU VARCHAR(50) UNIQUE, PRODUCT_NAME VARCHAR(300), UNIT_PRICE DECIMAL(10,2))",
-    "concept_name": "Product",
-    "concept_definition": "A tangible or digital item offered for sale, uniquely identified by SKU.",
+    "description": "Aircraft fleet register mapping",
+    "ddl_snippet": "CREATE TABLE FLT_AIRCRAFT (TAIL_NUMBER VARCHAR(10) PRIMARY KEY, MODEL_CODE VARCHAR(50) UNIQUE, SEAT_CAPACITY INT, RANGE_NM INT)",
+    "concept_name": "Aircraft",
+    "concept_definition": "A physical vehicle operated on scheduled routes, uniquely identified by its tail number.",
     "mapping_confidence": 0.95,
-    "cypher": "MERGE (bc:BusinessConcept {name: 'Product'})\nON CREATE SET bc.definition = 'A tangible or digital item offered for sale, uniquely identified by SKU.',\n              bc.provenance_text = 'Business glossary entry: Product',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Item', 'Article'],\n              bc.confidence_score = 0.95\nON MATCH SET bc.confidence_score = 0.95\n\nMERGE (pt:PhysicalTable {table_name: 'TB_PRODUCT'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['PRODUCT_ID', 'SKU', 'PRODUCT_NAME', 'UNIT_PRICE'],\n              pt.column_types = '{\"PRODUCT_ID\": \"INT\", \"SKU\": \"VARCHAR(50)\", \"PRODUCT_NAME\": \"VARCHAR(300)\", \"UNIT_PRICE\": \"DECIMAL(10,2)\"}',\n              pt.ddl_source = 'CREATE TABLE TB_PRODUCT (PRODUCT_ID INT PRIMARY KEY, SKU VARCHAR(50) UNIQUE, PRODUCT_NAME VARCHAR(300), UNIT_PRICE DECIMAL(10,2))'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.95, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.95, r.validated_by = 'llm_judge', r.updated_at = datetime()",
+    "cypher": "MERGE (bc:BusinessConcept {name: 'Aircraft'})\nON CREATE SET bc.definition = 'A physical vehicle operated on scheduled routes, uniquely identified by its tail number.',\n              bc.provenance_text = 'Business glossary entry: Aircraft',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Plane', 'Airframe'],\n              bc.confidence_score = 0.95\nON MATCH SET bc.confidence_score = 0.95\n\nMERGE (pt:PhysicalTable {table_name: 'FLT_AIRCRAFT'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['TAIL_NUMBER', 'MODEL_CODE', 'SEAT_CAPACITY', 'RANGE_NM'],\n              pt.column_types = '{\"TAIL_NUMBER\": \"VARCHAR(10)\", \"MODEL_CODE\": \"VARCHAR(50)\", \"SEAT_CAPACITY\": \"INT\", \"RANGE_NM\": \"INT\"}',\n              pt.ddl_source = 'CREATE TABLE FLT_AIRCRAFT (TAIL_NUMBER VARCHAR(10) PRIMARY KEY, MODEL_CODE VARCHAR(50) UNIQUE, SEAT_CAPACITY INT, RANGE_NM INT)'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.95, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.95, r.validated_by = 'llm_judge', r.updated_at = datetime()",
     "validated_by": "auto_high_confidence",
-    "tags": ["product", "catalogue", "sku"]
+    "tags": ["aircraft", "fleet", "tail_number"]
   },
   {
     "id": "ex-003",
-    "description": "Sales order header mapping with STATUS constraint",
-    "ddl_snippet": "CREATE TABLE SALES_ORDER_HDR (ORDER_ID BIGINT PRIMARY KEY, CUST_ID INT NOT NULL, ORDER_DATE DATE, STATUS_CODE VARCHAR(20))",
-    "concept_name": "SalesOrder",
-    "concept_definition": "A formal transactional document recording an agreement to supply Products to a Customer.",
+    "description": "Flight booking header mapping with STATUS constraint",
+    "ddl_snippet": "CREATE TABLE FLT_BOOKING (BOOKING_REF VARCHAR(8) PRIMARY KEY, PAX_ID INT NOT NULL, DEPART_DATE DATE, STATUS_CODE VARCHAR(20))",
+    "concept_name": "FlightBooking",
+    "concept_definition": "A formal agreement to carry a Passenger on one or more flights.",
     "mapping_confidence": 0.93,
-    "cypher": "MERGE (bc:BusinessConcept {name: 'SalesOrder'})\nON CREATE SET bc.definition = 'A formal transactional document recording an agreement to supply Products to a Customer.',\n              bc.provenance_text = 'Business glossary entry: Sales Order',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Purchase Order', 'Order'],\n              bc.confidence_score = 0.93\nON MATCH SET bc.confidence_score = 0.93\n\nMERGE (pt:PhysicalTable {table_name: 'SALES_ORDER_HDR'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['ORDER_ID', 'CUST_ID', 'ORDER_DATE', 'STATUS_CODE'],\n              pt.column_types = '{\"ORDER_ID\": \"BIGINT\", \"CUST_ID\": \"INT\", \"ORDER_DATE\": \"DATE\", \"STATUS_CODE\": \"VARCHAR(20)\"}',\n              pt.ddl_source = 'CREATE TABLE SALES_ORDER_HDR (ORDER_ID BIGINT PRIMARY KEY, CUST_ID INT NOT NULL, ORDER_DATE DATE, STATUS_CODE VARCHAR(20))'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.93, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.93, r.validated_by = 'llm_judge', r.updated_at = datetime()",
+    "cypher": "MERGE (bc:BusinessConcept {name: 'FlightBooking'})\nON CREATE SET bc.definition = 'A formal agreement to carry a Passenger on one or more flights.',\n              bc.provenance_text = 'Business glossary entry: Flight Booking',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Reservation', 'PNR'],\n              bc.confidence_score = 0.93\nON MATCH SET bc.confidence_score = 0.93\n\nMERGE (pt:PhysicalTable {table_name: 'FLT_BOOKING'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['BOOKING_REF', 'PAX_ID', 'DEPART_DATE', 'STATUS_CODE'],\n              pt.column_types = '{\"BOOKING_REF\": \"VARCHAR(8)\", \"PAX_ID\": \"INT\", \"DEPART_DATE\": \"DATE\", \"STATUS_CODE\": \"VARCHAR(20)\"}',\n              pt.ddl_source = 'CREATE TABLE FLT_BOOKING (BOOKING_REF VARCHAR(8) PRIMARY KEY, PAX_ID INT NOT NULL, DEPART_DATE DATE, STATUS_CODE VARCHAR(20))'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.93, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.93, r.validated_by = 'llm_judge', r.updated_at = datetime()",
     "validated_by": "auto_high_confidence",
-    "tags": ["order", "transaction", "fk_customer"]
+    "tags": ["booking", "transaction", "fk_passenger"]
   },
   {
     "id": "ex-004",
-    "description": "Junction/line item table with two FK parents",
-    "ddl_snippet": "CREATE TABLE ORDER_LINE_ITEM (LINE_ID INT PRIMARY KEY, ORDER_ID BIGINT NOT NULL, PRODUCT_ID INT NOT NULL, QUANTITY INT, UNIT_PRICE DECIMAL(10,2))",
-    "concept_name": "OrderLineItem",
-    "concept_definition": "A single line within a SalesOrder specifying a Product, quantity, and agreed unit price.",
+    "description": "Junction/leg table with two FK parents",
+    "ddl_snippet": "CREATE TABLE FLT_BOOKING_LEG (LEG_ID INT PRIMARY KEY, BOOKING_REF VARCHAR(8) NOT NULL, TAIL_NUMBER VARCHAR(10) NOT NULL, SEAT_NUM VARCHAR(4), FARE_PAID DECIMAL(10,2))",
+    "concept_name": "BookingLeg",
+    "concept_definition": "A single flight segment within a FlightBooking assigning an Aircraft and a seat to the Passenger.",
     "mapping_confidence": 0.91,
-    "cypher": "MERGE (bc:BusinessConcept {name: 'OrderLineItem'})\nON CREATE SET bc.definition = 'A single line within a SalesOrder specifying a Product, quantity, and agreed unit price.',\n              bc.provenance_text = 'Business glossary entry: Order Line Item',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Line Item', 'Order Detail'],\n              bc.confidence_score = 0.91\nON MATCH SET bc.confidence_score = 0.91\n\nMERGE (pt:PhysicalTable {table_name: 'ORDER_LINE_ITEM'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['LINE_ID', 'ORDER_ID', 'PRODUCT_ID', 'QUANTITY', 'UNIT_PRICE'],\n              pt.column_types = '{\"LINE_ID\": \"INT\", \"ORDER_ID\": \"BIGINT\", \"PRODUCT_ID\": \"INT\", \"QUANTITY\": \"INT\", \"UNIT_PRICE\": \"DECIMAL(10,2)\"}',\n              pt.ddl_source = 'CREATE TABLE ORDER_LINE_ITEM (LINE_ID INT PRIMARY KEY, ORDER_ID BIGINT NOT NULL, PRODUCT_ID INT NOT NULL, QUANTITY INT, UNIT_PRICE DECIMAL(10,2))'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.91, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.91, r.validated_by = 'llm_judge', r.updated_at = datetime()",
+    "cypher": "MERGE (bc:BusinessConcept {name: 'BookingLeg'})\nON CREATE SET bc.definition = 'A single flight segment within a FlightBooking assigning an Aircraft and a seat to the Passenger.',\n              bc.provenance_text = 'Business glossary entry: Booking Leg',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Flight Segment', 'Leg'],\n              bc.confidence_score = 0.91\nON MATCH SET bc.confidence_score = 0.91\n\nMERGE (pt:PhysicalTable {table_name: 'FLT_BOOKING_LEG'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['LEG_ID', 'BOOKING_REF', 'TAIL_NUMBER', 'SEAT_NUM', 'FARE_PAID'],\n              pt.column_types = '{\"LEG_ID\": \"INT\", \"BOOKING_REF\": \"VARCHAR(8)\", \"TAIL_NUMBER\": \"VARCHAR(10)\", \"SEAT_NUM\": \"VARCHAR(4)\", \"FARE_PAID\": \"DECIMAL(10,2)\"}',\n              pt.ddl_source = 'CREATE TABLE FLT_BOOKING_LEG (LEG_ID INT PRIMARY KEY, BOOKING_REF VARCHAR(8) NOT NULL, TAIL_NUMBER VARCHAR(10) NOT NULL, SEAT_NUM VARCHAR(4), FARE_PAID DECIMAL(10,2))'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.91, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.91, r.validated_by = 'llm_judge', r.updated_at = datetime()",
     "validated_by": "human_hitl",
-    "tags": ["line_item", "junction_table", "two_fk"]
+    "tags": ["leg", "junction_table", "two_fk"]
   },
   {
     "id": "ex-005",
     "description": "System table — no mapping (null concept)",
-    "ddl_snippet": "CREATE TABLE SYS_AUDIT_LOG (LOG_ID BIGINT PRIMARY KEY AUTO_INCREMENT, ACTION_TYPE VARCHAR(50), TABLE_NAME VARCHAR(100), CHANGED_BY VARCHAR(100), CHANGED_AT DATETIME)",
+    "ddl_snippet": "CREATE TABLE SYS_JOB_QUEUE (JOB_ID BIGINT PRIMARY KEY AUTO_INCREMENT, ACTION_TYPE VARCHAR(50), TARGET VARCHAR(100), RUN_BY VARCHAR(100), QUEUED_AT DATETIME)",
     "concept_name": null,
     "concept_definition": null,
     "mapping_confidence": 0.0,
-    "cypher": "-- No business concept mapping for system table SYS_AUDIT_LOG\nMERGE (pt:PhysicalTable {table_name: 'SYS_AUDIT_LOG'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['LOG_ID', 'ACTION_TYPE', 'TABLE_NAME', 'CHANGED_BY', 'CHANGED_AT'],\n              pt.column_types = '{\"LOG_ID\": \"BIGINT\", \"ACTION_TYPE\": \"VARCHAR(50)\", \"TABLE_NAME\": \"VARCHAR(100)\", \"CHANGED_BY\": \"VARCHAR(100)\", \"CHANGED_AT\": \"DATETIME\"}',\n              pt.ddl_source = 'CREATE TABLE SYS_AUDIT_LOG (LOG_ID BIGINT PRIMARY KEY AUTO_INCREMENT, ACTION_TYPE VARCHAR(50), TABLE_NAME VARCHAR(100), CHANGED_BY VARCHAR(100), CHANGED_AT DATETIME)',\n              pt.unmapped = true,\n              pt.unmapped_reason = 'System/technical table with no business concept counterpart'",
+    "cypher": "-- No business concept mapping for system table SYS_JOB_QUEUE\nMERGE (pt:PhysicalTable {table_name: 'SYS_JOB_QUEUE'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['JOB_ID', 'ACTION_TYPE', 'TARGET', 'RUN_BY', 'QUEUED_AT'],\n              pt.column_types = '{\"JOB_ID\": \"BIGINT\", \"ACTION_TYPE\": \"VARCHAR(50)\", \"TARGET\": \"VARCHAR(100)\", \"RUN_BY\": \"VARCHAR(100)\", \"QUEUED_AT\": \"DATETIME\"}',\n              pt.ddl_source = 'CREATE TABLE SYS_JOB_QUEUE (JOB_ID BIGINT PRIMARY KEY AUTO_INCREMENT, ACTION_TYPE VARCHAR(50), TARGET VARCHAR(100), RUN_BY VARCHAR(100), QUEUED_AT DATETIME)',\n              pt.unmapped = true,\n              pt.unmapped_reason = 'System/technical table with no business concept counterpart'",
     "validated_by": "auto_high_confidence",
-    "tags": ["system_table", "audit", "no_mapping"]
+    "tags": ["system_table", "job_queue", "no_mapping"]
   },
   {
     "id": "ex-006",
-    "description": "Self-referential table (category hierarchy)",
-    "ddl_snippet": "CREATE TABLE TB_CATEGORY (CATEGORY_ID INT PRIMARY KEY, CATEGORY_NAME VARCHAR(200), PARENT_CATEGORY_ID INT REFERENCES TB_CATEGORY(CATEGORY_ID))",
-    "concept_name": "Category",
-    "concept_definition": "A hierarchical classification grouping related Products. Categories can have parent Categories.",
+    "description": "Self-referential table (territory hierarchy)",
+    "ddl_snippet": "CREATE TABLE FLT_TERRITORY (TERRITORY_ID INT PRIMARY KEY, TERRITORY_NAME VARCHAR(200), PARENT_TERRITORY_ID INT REFERENCES FLT_TERRITORY(TERRITORY_ID))",
+    "concept_name": "Territory",
+    "concept_definition": "A hierarchical sales/operating region grouping related Airports. Territories can have parent Territories.",
     "mapping_confidence": 0.88,
-    "cypher": "MERGE (bc:BusinessConcept {name: 'Category'})\nON CREATE SET bc.definition = 'A hierarchical classification grouping related Products. Categories can have parent Categories.',\n              bc.provenance_text = 'Business glossary entry: Category',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Product Group', 'Classification'],\n              bc.confidence_score = 0.88\nON MATCH SET bc.confidence_score = 0.88\n\nMERGE (pt:PhysicalTable {table_name: 'TB_CATEGORY'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['CATEGORY_ID', 'CATEGORY_NAME', 'PARENT_CATEGORY_ID'],\n              pt.column_types = '{\"CATEGORY_ID\": \"INT\", \"CATEGORY_NAME\": \"VARCHAR(200)\", \"PARENT_CATEGORY_ID\": \"INT\"}',\n              pt.ddl_source = 'CREATE TABLE TB_CATEGORY (CATEGORY_ID INT PRIMARY KEY, CATEGORY_NAME VARCHAR(200), PARENT_CATEGORY_ID INT REFERENCES TB_CATEGORY(CATEGORY_ID))'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.88, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.88, r.validated_by = 'llm_judge', r.updated_at = datetime()\n\nWITH pt\nMERGE (pt)-[:JOINS_WITH {join_column: 'PARENT_CATEGORY_ID', type: 'SELF_REF_FK'}]->(pt)",
+    "cypher": "MERGE (bc:BusinessConcept {name: 'Territory'})\nON CREATE SET bc.definition = 'A hierarchical sales/operating region grouping related Airports. Territories can have parent Territories.',\n              bc.provenance_text = 'Business glossary entry: Territory',\n              bc.source_doc = 'business_glossary.txt',\n              bc.synonyms = ['Region', 'Sales Area'],\n              bc.confidence_score = 0.88\nON MATCH SET bc.confidence_score = 0.88\n\nMERGE (pt:PhysicalTable {table_name: 'FLT_TERRITORY'})\nON CREATE SET pt.schema_name = 'public',\n              pt.column_names = ['TERRITORY_ID', 'TERRITORY_NAME', 'PARENT_TERRITORY_ID'],\n              pt.column_types = '{\"TERRITORY_ID\": \"INT\", \"TERRITORY_NAME\": \"VARCHAR(200)\", \"PARENT_TERRITORY_ID\": \"INT\"}',\n              pt.ddl_source = 'CREATE TABLE FLT_TERRITORY (TERRITORY_ID INT PRIMARY KEY, TERRITORY_NAME VARCHAR(200), PARENT_TERRITORY_ID INT REFERENCES FLT_TERRITORY(TERRITORY_ID))'\n\nMERGE (bc)-[r:MAPPED_TO]->(pt)\nON CREATE SET r.confidence = 0.88, r.validated_by = 'llm_judge', r.created_at = datetime()\nON MATCH SET r.confidence = 0.88, r.validated_by = 'llm_judge', r.updated_at = datetime()\n\nWITH pt\nMERGE (pt)-[:JOINS_WITH {join_column: 'PARENT_TERRITORY_ID', type: 'SELF_REF_FK'}]->(pt)",
     "validated_by": "auto_high_confidence",
-    "tags": ["category", "hierarchy", "self_referential"]
+    "tags": ["territory", "hierarchy", "self_referential"]
   }
 ]

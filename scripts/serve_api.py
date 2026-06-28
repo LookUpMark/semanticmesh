@@ -56,6 +56,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> None:
+    from src.config.config import set_global_seed
+
+    set_global_seed()  # AUDIT-080 (F-017): seed RNGs for reproducibility at process start
     args = _parse_args(argv)
 
     try:

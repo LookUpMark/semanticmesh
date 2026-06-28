@@ -1,37 +1,37 @@
 [
   {
     "id": "map-001",
-    "table_ddl": "CUSTOMER_MASTER: CUST_ID (INT, PK), FULL_NAME (VARCHAR), EMAIL (VARCHAR), REGION_CODE (VARCHAR), CREATED_AT (DATETIME)",
-    "concept_name": "Customer",
+    "table_ddl": "FLT_PASSENGER: PAX_ID (INT, PK), FULL_NAME (VARCHAR), EMAIL (VARCHAR), LOYALTY_TIER (VARCHAR), ENROLLED_AT (DATETIME)",
+    "concept_name": "Passenger",
     "confidence": 0.97,
-    "reasoning": "CUSTOMER_MASTER stores individual customer identity data — name, email, and region — which directly maps to the Customer concept defined as any entity that has purchased goods or services. The CUST_ID serves as the system identifier matching the concept's unique ID requirement."
+    "reasoning": "FLT_PASSENGER stores individual traveller identity data — name, email, and loyalty tier — which directly maps to the Passenger concept defined as any person who holds a booking to travel on a flight. The PAX_ID serves as the system identifier matching the concept's unique ID requirement."
   },
   {
     "id": "map-002",
-    "table_ddl": "TB_PRODUCT: PRODUCT_ID (INT, PK), SKU (VARCHAR, UNIQUE), PRODUCT_NAME (VARCHAR), CATEGORY_ID (INT, FK), UNIT_PRICE (DECIMAL)",
-    "concept_name": "Product",
+    "table_ddl": "FLT_AIRCRAFT: TAIL_NUMBER (VARCHAR, PK), MODEL_CODE (VARCHAR, UNIQUE), SEAT_CAPACITY (INT), RANGE_NM (INT)",
+    "concept_name": "Aircraft",
     "confidence": 0.95,
-    "reasoning": "TB_PRODUCT holds the full product catalogue with SKU identification and pricing, exactly matching the Product concept which defines a tangible or digital item for sale with a unique SKU code."
+    "reasoning": "FLT_AIRCRAFT holds the fleet register with tail-number identification and capacity/range specs, exactly matching the Aircraft concept which defines a physical vehicle operated on scheduled routes, uniquely identified by its tail number."
   },
   {
     "id": "map-003",
-    "table_ddl": "SALES_ORDER_HDR: ORDER_ID (BIGINT, PK), CUST_ID (INT, FK), ORDER_DATE (DATE), TOTAL_AMT (DECIMAL), STATUS_CODE (VARCHAR)",
-    "concept_name": "SalesOrder",
+    "table_ddl": "FLT_BOOKING: BOOKING_REF (VARCHAR, PK), PAX_ID (INT, FK), DEPART_DATE (DATE), TOTAL_FARE (DECIMAL), STATUS_CODE (VARCHAR)",
+    "concept_name": "FlightBooking",
     "confidence": 0.93,
-    "reasoning": "SALES_ORDER_HDR captures the header of each customer transaction including date, total amount, and status — all defining attributes of the SalesOrder concept which describes formal transactional documents."
+    "reasoning": "FLT_BOOKING captures the header of each passenger reservation including depart date, total fare, and status — all defining attributes of the FlightBooking concept which describes a formal agreement to carry a Passenger on one or more flights."
   },
   {
     "id": "map-004",
-    "table_ddl": "SYS_AUDIT_LOG: LOG_ID (BIGINT, PK), ACTION_TYPE (VARCHAR), TABLE_NAME (VARCHAR), CHANGED_BY (VARCHAR), CHANGED_AT (DATETIME)",
+    "table_ddl": "SYS_JOB_QUEUE: JOB_ID (BIGINT, PK), ACTION_TYPE (VARCHAR), TARGET (VARCHAR), RUN_BY (VARCHAR), QUEUED_AT (DATETIME)",
     "concept_name": null,
     "confidence": 0.0,
-    "reasoning": "SYS_AUDIT_LOG is a system-level technical table recording database change events. It has no business concept equivalent in the glossary. All columns reference system metadata rather than business entities."
+    "reasoning": "SYS_JOB_QUEUE is a system-level technical table recording background job execution events. It has no business concept equivalent in the glossary. All columns reference system metadata rather than business entities."
   },
   {
     "id": "map-005",
-    "table_ddl": "CUST_ADDRESS: ADDRESS_ID (INT, PK), CUST_ID (INT, FK), ADDRESS_TYPE (VARCHAR), STREET (VARCHAR), CITY (VARCHAR), POSTAL_CODE (VARCHAR), COUNTRY_CODE (CHAR)",
-    "concept_name": "CustomerAddress",
+    "table_ddl": "FLT_AIRPORT: IATA_CODE (CHAR, PK), AIRPORT_NAME (VARCHAR), CITY (VARCHAR), TIMEZONE (VARCHAR), COUNTRY_CODE (CHAR)",
+    "concept_name": "Airport",
     "confidence": 0.92,
-    "reasoning": "CUST_ADDRESS stores postal delivery and billing addresses linked to customers, matching the CustomerAddress concept which defines geographic addresses associated with a Customer. The ADDRESS_TYPE column (DELIVERY/BILLING) aligns with the concept's multi-address capability."
+    "reasoning": "FLT_AIRPORT stores reference data for airports of departure and arrival linked to routes, matching the Airport concept which defines a physical aviation facility identified by its IATA code. The TIMEZONE column supports scheduling across regions."
   }
 ]

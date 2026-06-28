@@ -362,12 +362,26 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     )
                 else:
                     # Target concept doesn't exist — safe to rename
-                    client.execute_cypher(
-                        "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
-                        "WHERE toLower(pt.table_name) = toLower($tbl) AND bc.name <> $target "
-                        "SET bc.name = $target",
-                        {"tbl": table.table_name, "target": concept_name},
-                    )
+                    from neo4j.exceptions import ConstraintError
+
+                    try:
+                        client.execute_cypher(
+                            "MATCH (bc:BusinessConcept)-[:MAPPED_TO]->(pt:PhysicalTable) "
+                            "WHERE toLower(pt.table_name) = toLower($tbl) AND bc.name <> $target "
+                            "SET bc.name = $target",
+                            {"tbl": table.table_name, "target": concept_name},
+                        )
+                    except ConstraintError as exc:
+                        # AUDIT-073 (F-012): two distinct BusinessConcept nodes both
+                        # MAPPED_TO this table would both match the SET and collide on the
+                        # unique-name constraint. Log and continue — the main MERGE upsert
+                        # already committed the concept+table; this rename is best-effort.
+                        logger.warning(
+                            "Concept rename for '%s' hit a unique-constraint conflict — "
+                            "leaving LLM-assigned concept name(s) in place: %s",
+                            table.table_name,
+                            exc,
+                        )
                 # ── Ensure MAPPED_TO edge exists (LLM Cypher may omit it) ─────
                 client.execute_cypher(
                     "MATCH (bc:BusinessConcept {name: $bc_name}) "
@@ -438,8 +452,11 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     model = get_embeddings()
                     attr_texts = [params["description"] for _, params in attr_statements]
                     attr_names = [params["attr_name"] for _, params in attr_statements]
-                    # AUDIT-063: fixed batch_size=32 to avoid OOM on tables with 100+ columns
-                    vectors = model.encode(attr_texts, batch_size=32)
+                    # AUDIT-074 (F-013): honor settings.embedding_batch_size (the concept path
+                    # below already does via embed_texts) instead of a hardcoded 32.
+                    vectors = model.encode(
+                        attr_texts, batch_size=get_settings().embedding_batch_size
+                    )
                     for attr_name, vec in zip(attr_names, vectors, strict=False):
                         client.execute_cypher(
                             "MATCH (a:Attribute {name: $name}) SET a.embedding = $emb",
@@ -487,7 +504,7 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     try:
                         client.execute_cypher(
                             "UNWIND $idxs AS idx "
-                            "MATCH (ch:Chunk {chunk_index: idx}) "
+                            "MATCH (ch:ParentChunk {parent_chunk_index: idx}) "
                             "MATCH (bc:BusinessConcept {name: $concept}) "
                             "MERGE (ch)-[:MENTIONS]->(bc)",
                             {"idxs": list(chunk_indexes), "concept": concept_name},

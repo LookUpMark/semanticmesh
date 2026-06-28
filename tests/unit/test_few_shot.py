@@ -47,9 +47,11 @@ class TestLoadMappingExamples:
         examples = load_mapping_examples(n=1)
         assert len(examples) == 1
 
-    def test_first_example_is_customer(self) -> None:
+    def test_first_example_is_passenger(self) -> None:
+        # AUDIT-081 (F-003): examples were de-contaminated to an off-domain (aviation)
+        # set so they no longer leak DS01 gold mappings. First concept is now Passenger.
         examples = load_mapping_examples(n=1)
-        assert examples[0].concept_name == "Customer"
+        assert examples[0].concept_name == "Passenger"
 
 
 class TestFormatCypherExamples:
@@ -81,7 +83,8 @@ class TestFormatMappingExamples:
         examples = load_mapping_examples(n=1)
         result = format_mapping_examples(examples)
         assert "Example 1:" in result
-        assert "Customer" in result
+        assert "Passenger" in result
+        assert "FLT_PASSENGER" in result
 
     def test_multiple_examples_numbered(self) -> None:
         examples = load_mapping_examples(n=3)

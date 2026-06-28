@@ -341,7 +341,7 @@ async def _score_single_sample(
         )
     except TimeoutError:
         logger.warning("Faithfulness scoring timed out for: %s", q[:60])
-        faithfulness = 0.0
+        faithfulness = None
 
     try:
         answer_relevancy = float(
@@ -351,7 +351,7 @@ async def _score_single_sample(
         )
     except TimeoutError:
         logger.warning("Answer relevancy scoring timed out for: %s", q[:60])
-        answer_relevancy = 0.0
+        answer_relevancy = None
 
     try:
         context_precision = float(
@@ -362,7 +362,7 @@ async def _score_single_sample(
         )
     except TimeoutError:
         logger.warning("Context precision scoring timed out for: %s", q[:60])
-        context_precision = 0.0
+        context_precision = None
 
     try:
         context_recall = float(
@@ -373,7 +373,7 @@ async def _score_single_sample(
         )
     except TimeoutError:
         logger.warning("Context recall scoring timed out for: %s", q[:60])
-        context_recall = 0.0
+        context_recall = None
 
     return {
         "faithfulness": faithfulness,
@@ -445,14 +445,18 @@ async def _compute_ragas_metrics_async(
             scores["answer_relevancy"].append(sample_scores["answer_relevancy"])
             scores["context_precision"].append(sample_scores["context_precision"])
             scores["context_recall"].append(sample_scores["context_recall"])
+            _f = sample_scores["faithfulness"]
+            _ar = sample_scores["answer_relevancy"]
+            _cp = sample_scores["context_precision"]
+            _cr = sample_scores["context_recall"]
             logger.info(
-                "RAGAS sample %d/%d done | f=%.4f ar=%.4f cp=%.4f cr=%.4f",
+                "RAGAS sample %d/%d done | f=%s ar=%s cp=%s cr=%s",
                 i + 1,
                 len(results),
-                sample_scores["faithfulness"],
-                sample_scores["answer_relevancy"],
-                sample_scores["context_precision"],
-                sample_scores["context_recall"],
+                f"{_f:.4f}" if _f is not None else "timeout",
+                f"{_ar:.4f}" if _ar is not None else "timeout",
+                f"{_cp:.4f}" if _cp is not None else "timeout",
+                f"{_cr:.4f}" if _cr is not None else "timeout",
             )
             if trace_rows is not None:
                 trace_rows.append(
@@ -476,7 +480,11 @@ async def _compute_ragas_metrics_async(
                         ),
                         "context_sufficiency": str(r.get("context_sufficiency", "insufficient")),
                         "ragas_scores": sample_scores,
-                        "ragas_error": None,
+                        # AUDIT-079 (F-015): flag per-sample timeouts so they are
+                        # distinguishable from genuine zero scores in the trace.
+                        "ragas_error": "timeout"
+                        if any(v is None for v in sample_scores.values())
+                        else None,
                     }
                 )
         except Exception:  # noqa: BLE001
@@ -507,8 +515,11 @@ async def _compute_ragas_metrics_async(
                     }
                 )
 
-    def _mean(vals: list[float]) -> float:
-        return sum(vals) / len(vals) if vals else 0.0
+    def _mean(vals: list[float | None]) -> float:
+        # AUDIT-079 (F-015): drop timed-out (None) scores from the denominator so
+        # evaluator slowness can't masquerade as low faithfulness/answer quality.
+        clean = [v for v in vals if v is not None]
+        return sum(clean) / len(clean) if clean else 0.0
 
     return {
         "faithfulness": _mean(scores["faithfulness"]),

@@ -19,6 +19,16 @@ from src.models.state import BuilderState
 logger: logging.Logger = get_logger(__name__)
 
 
+def _record_failed_table(state: BuilderState, table_name: str) -> list[str]:
+    """AUDIT-068 (F-005): append a table that exhausted mapping retries with no valid
+    proposal, so it is neither silently dropped nor absent from the Pipeline-Health metric.
+    """
+    failed = list(state.get("failed_mappings") or [])
+    if table_name not in failed:
+        failed.append(table_name)
+    return failed
+
+
 def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
     """Two-layer validation: Pydantic schema + LLM Critic."""
     with NodeTimer() as timer:
@@ -80,13 +90,16 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
                     "best proposal accepted",
                     timer.elapsed_ms,
                 )
-                return {
+                result = {
                     "mapping_proposal": best_proposal,
                     "best_proposal": None,
                     "validation_error": error,
                     "reflection_attempts": 0,
                     "hitl_flag": False,
                 }
+                if best_proposal is None:
+                    result["failed_mappings"] = _record_failed_table(state, proposal.table_name)
+                return result
             ref_prompt = build_reflection_prompt(
                 role="data governance expert",
                 output_format="JSON mapping proposal",
@@ -169,13 +182,16 @@ def _node_validate_mapping(state: BuilderState) -> dict[str, Any]:
                     "best proposal accepted",
                     timer.elapsed_ms,
                 )
-                return {
+                result = {
                     "mapping_proposal": best_proposal,
                     "best_proposal": None,
                     "validation_error": None,
                     "reflection_attempts": 0,
                     "hitl_flag": False,
                 }
+                if best_proposal is None:
+                    result["failed_mappings"] = _record_failed_table(state, proposal.table_name)
+                return result
             ref_prompt = build_reflection_prompt(
                 role="data governance expert",
                 output_format="JSON mapping proposal",

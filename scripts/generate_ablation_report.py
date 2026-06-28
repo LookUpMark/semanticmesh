@@ -234,6 +234,16 @@ w("")
 w("| Study | Description | Overall↓ | Builder | Retrieval | Answer | Pipeline | Ablation |")
 w("|:-----:|-------------|:--------:|:-------:|:---------:|:------:|:--------:|:--------:|")
 
+# AUDIT-076 (F-016): derive best/worst from the data instead of hardcoding AB-10/AB-01,
+# so the markers stay consistent if all_scores_full.json is regenerated.
+_overall_by_study: dict[str, float] = {}
+for _ab in STUDIES:
+    _vals = list(DATA.get(_ab, {}).values())
+    if _vals:
+        _overall_by_study[_ab] = sum((v.get("overall") or 0) for v in _vals) / len(_vals)
+_best_ab = max(_overall_by_study, key=_overall_by_study.get) if _overall_by_study else None
+_worst_ab = min(_overall_by_study, key=_overall_by_study.get) if _overall_by_study else None
+
 for ab in STUDIES:
     d_ab = DATA.get(ab, {})
     vals = list(d_ab.values())
@@ -254,7 +264,7 @@ for ab in STUDIES:
     abl_str = f"{ablation_avg:.2f}" if ablation_avg else "N/A"
     # Mark the highest/lowest overall
     desc_short = ABLATION_DESC[ab]["title"]
-    star = " *" if ab == "AB-10" else (" !" if ab == "AB-01" else "")
+    star = " *" if ab == _best_ab else (" !" if ab == _worst_ab else "")
     w(
         f"| **{ab}** | {desc_short}{star} | **{overall:.2f}** | {builder:.2f} | {retrieval:.2f} | {answer:.2f} | {pipeline:.2f} | {abl_str} |"
     )

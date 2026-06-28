@@ -132,6 +132,16 @@ def extract_triplets(chunk: Chunk, llm: LLMProtocol) -> list[Triplet]:
     if data is None:
         return []
 
+    # AUDIT-072 (F-010): a non-dict JSON body (e.g. a bare array) would make
+    # TripletExtractionResponse(**data) raise TypeError, bypassing the reflection retry
+    # budget. Fail this chunk explicitly instead of swallowing it via a TypeError.
+    if not isinstance(data, dict):
+        logger.warning(
+            "Triplet response for chunk %d was not a JSON object — skipping.",
+            chunk.chunk_index,
+        )
+        return []
+
     parsed: TripletExtractionResponse | None = None
     for attempt in range(1, max_attempts + 1):
         try:
