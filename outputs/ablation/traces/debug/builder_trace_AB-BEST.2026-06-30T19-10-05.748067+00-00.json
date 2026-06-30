@@ -1,0 +1,1801 @@
+{
+  "study_id": "AB-BEST",
+  "timestamp": "2026-06-30T19:10:05.748067+00:00",
+  "trace_id": "AB-BEST.2026-06-30T19-10-05.748067+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md",
+    "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+  ],
+  "ddl_files": [
+    "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Manufacturing Business Glossary\n\nThis glossary defines the core business concepts and terminology used in the manufacturing supply chain domain. It covers product structures, materials management, production workflows, and quality assurance processes.\n\n## Product\n\nA Product represents any manufactured item in the system, including finished goods ready for sale, sub-assemblies used in production, and individual components. Products are organized in a hierarchical structure where complex product... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "713"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Warehouse\n\nA Warehouse represents a physical storage location where materials, components, and finished goods are stored. Warehouses have defined capacity limits, geographic location information, and are managed by designated managers. Warehouses serve as nodes in the supply chain network where inventory is held, shipments are received, and products are staged for production or distribution.\n\n**Key Attributes:**\n- Unique warehouse identifier\n- Warehouse name and location\n- Address, city, and ... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "670"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## QualityControl\n\nQuality Control (QC) represents inspection and testing activities performed on materials, in-process production, or finished goods. QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes. QC activities are associated with specific production batches and may reference technical specifications being tested.\n\n**Key Attributes:**\n- Unique QC identifier\n- Batch reference (pr... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "649"
+    },
+    {
+      "chunk_id": 3,
+      "text": "# Manufacturing Data Dictionary\n\nThis data dictionary documents the database schema for the manufacturing supply chain system. It includes all tables, columns, data types, constraints, and relationships. Special attention is given to self-referential relationships that support hierarchical product structures.\n\n## product\n\nStores all manufactured items including finished goods, assemblies, and components. Supports hierarchical product relationships via self-referencing foreign key.\n\n| Column | Da... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "519"
+    },
+    {
+      "chunk_id": 4,
+      "text": "## bom\n\nBill of Materials defining product composition and hierarchical structure. Supports recursive relationships for multi-level assemblies.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier |\n| parent_product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Parent product (what is being built) |\n| component_product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 produc... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "721"
+    },
+    {
+      "chunk_id": 5,
+      "text": "## warehouse\n\nStores physical storage location information for inventory management.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| warehouse_id | VARCHAR(20) | PRIMARY KEY | Unique warehouse identifier |\n| warehouse_name | VARCHAR(100) | NOT NULL | Warehouse name |\n| address | VARCHAR(200) | | Street address |\n| city | VARCHAR(50) | | City location |\n| state | VARCHAR(50) | | State or province |\n| capacity | INT | NOT NULL, DEFAULT 0, CH... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "460"
+    },
+    {
+      "chunk_id": 6,
+      "text": "## work_order\n\nRepresents production jobs for manufacturing products with hierarchical work order support.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| work_order_id | VARCHAR(20) | PRIMARY KEY | Unique work order identifier |\n| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product to manufacture |\n| parent_work_order | VARCHAR(20) | FOREIGN KEY \u2192 work_order(work_order_id) | Parent work order for decomposition... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "613"
+    },
+    {
+      "chunk_id": 7,
+      "text": "## specification\n\nDefines technical requirements and acceptance criteria for materials and products.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| specification_id | VARCHAR(20) | PRIMARY KEY | Unique specification identifier |\n| specification_name | VARCHAR(100) | NOT NULL | Specification name |\n| version | VARCHAR(10) | NOT NULL | Specification version |\n| effective_date | DATE | NOT NULL | Effective date |\n| spec_type | spec_type_t | ... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "723"
+    },
+    {
+      "chunk_id": 8,
+      "text": "## shipment\n\nTracks material transfers between warehouses, suppliers, and customers.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| shipment_id | VARCHAR(20) | PRIMARY KEY | Unique shipment identifier |\n| shipment_type | shipment_type_t | NOT NULL | INBOUND, OUTBOUND, INTERNAL |\n| warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Warehouse reference |\n| supplier_id | VARCHAR(20) | FOREIGN KEY \u2192 supplier(supplier_id) | S... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "710"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 9,
+    "total_tokens": 5778,
+    "avg_tokens": 642.0
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "represents",
+      "object": "any manufactured item in the system",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "unique identifier",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "lead time",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "base cost",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "type classification",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "is",
+      "object": "active",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "hierarchical relationship",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "child Products",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "references",
+      "object": "parent Product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "used in",
+      "object": "Work Orders",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "appear in",
+      "object": "Shipments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "stored in",
+      "object": "Inventory records",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "represents",
+      "object": "atomic raw materials or purchased parts",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "procured from",
+      "object": "external suppliers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "has",
+      "object": "standard cost",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "has",
+      "object": "unit of measure",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "references",
+      "object": "Technical specifications",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "supplied by",
+      "object": "multiple Suppliers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "has",
+      "object": "Inventory records",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Component",
+      "predicate": "references",
+      "object": "Specifications",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "defines",
+      "object": "composition of products",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "specifies",
+      "object": "parent product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "specifies",
+      "object": "component product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "has",
+      "object": "required quantity",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "has",
+      "object": "unit of measure",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "has",
+      "object": "BOM level",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "BOM",
+      "predicate": "connects",
+      "object": "Products",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "provides",
+      "object": "Components",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "linked to",
+      "object": "Inbound Shipments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "has",
+      "object": "pricing",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "represents",
+      "object": "a physical storage location",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has",
+      "object": "defined capacity limits",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "is managed by",
+      "object": "designated managers",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "held in",
+      "object": "inventory",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "receives",
+      "object": "Shipments",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "stages for",
+      "object": "production or distribution",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "tracks",
+      "object": "quantity on hand",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "tracks",
+      "object": "quantity reserved",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "has",
+      "object": "reorder thresholds",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "belongs to",
+      "object": "Warehouse",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "tracks",
+      "object": "Component OR Product",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory",
+      "predicate": "has",
+      "object": "Last restock date",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Work Order",
+      "predicate": "represents",
+      "object": "production job",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Work Order",
+      "predicate": "tracks",
+      "object": "planned versus completed quantities",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Work Order",
+      "predicate": "has",
+      "object": "Parent work order reference",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Work Order",
+      "predicate": "consumes",
+      "object": "Inventory",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Work Order",
+      "predicate": "produces",
+      "object": "Products",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Work Order",
+      "predicate": "associated with",
+      "object": "Warehouses",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "represents",
+      "object": "physical transfer of materials",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "has",
+      "object": "Type",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "links to",
+      "object": "Warehouses",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "inbound references",
+      "object": "Suppliers",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "updates",
+      "object": "Inventory levels",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "fulfills",
+      "object": "Work Order outputs",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC",
+      "predicate": "represents",
+      "object": "inspection and testing activities",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "type of inspection",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "inspection date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "inspector",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "test results",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC records",
+      "predicate": "track",
+      "object": "defect counts",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "QC activities",
+      "predicate": "are associated with",
+      "object": "production batches",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batch",
+      "predicate": "records",
+      "object": "product produced",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batch",
+      "predicate": "has",
+      "object": "QC status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Specification",
+      "predicate": "defines",
+      "object": "requirements",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Specification",
+      "predicate": "includes",
+      "object": "version numbers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Specification",
+      "predicate": "has",
+      "object": "type",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Specification",
+      "predicate": "relates to",
+      "object": "Components",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Specification",
+      "predicate": "used in",
+      "object": "Quality Control inspections",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Specification",
+      "predicate": "has",
+      "object": "version control",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batch",
+      "predicate": "produces",
+      "object": "Product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batch",
+      "predicate": "stored in",
+      "object": "Warehouses",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batch",
+      "predicate": "undergoes",
+      "object": "Quality Control inspections",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batch",
+      "predicate": "may have",
+      "object": "expiry dates",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Batch",
+      "predicate": "enable",
+      "object": "traceability",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Route",
+      "predicate": "defines",
+      "object": "manufacturing steps",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Route",
+      "predicate": "has",
+      "object": "sequence number",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Route",
+      "predicate": "used for",
+      "object": "production scheduling",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Route",
+      "predicate": "used for",
+      "object": "capacity planning",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Route",
+      "predicate": "used for",
+      "object": "cost calculation",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product",
+      "predicate": "Stores",
+      "object": "all manufactured items",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product",
+      "predicate": "Supports",
+      "object": "hierarchical product relationships",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product",
+      "predicate": "references",
+      "object": "product_id",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "parent_product_id",
+      "predicate": "references",
+      "object": "product_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "A product",
+      "predicate": "can contain",
+      "object": "other products as components",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 3,
+      "subject": "product",
+      "predicate": "supports",
+      "object": "unlimited nesting depth",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 3,
+      "subject": "component",
+      "predicate": "Stores",
+      "object": "atomic raw materials and purchased parts",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "component",
+      "predicate": "Many-to-many with",
+      "object": "supplier via component_supplier junction table",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 3,
+      "subject": "component",
+      "predicate": "One-to-many with",
+      "object": "inventory",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 3,
+      "subject": "component",
+      "predicate": "Optional relationship with",
+      "object": "specification",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 4,
+      "subject": "BOM",
+      "predicate": "defines",
+      "object": "product composition",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "BOM",
+      "predicate": "supports",
+      "object": "recursive relationships",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "bom_id",
+      "predicate": "is",
+      "object": "VARCHAR(20)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "bom_id",
+      "predicate": "primary_key",
+      "object": "true",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "parent_product_id",
+      "predicate": "foreign_key_to",
+      "object": "product(product_id)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "parent_product_id",
+      "predicate": "not_null",
+      "object": "true",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "component_product_id",
+      "predicate": "foreign_key_to",
+      "object": "product(product_id)",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "component_product_id",
+      "predicate": "not_null",
+      "object": "true",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "quantity",
+      "predicate": "required",
+      "object": "true",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "unit_of_measure",
+      "predicate": "default",
+      "object": "'EA'",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "bom_level",
+      "predicate": "default",
+      "object": "0",
+      "confidence": 1.0
+    },
+    "... [113 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 213,
+    "avg_confidence": 0.8976525821596251,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "`Idx Specification Effective`",
+      "definition": "A date field representing the shipment departure date used in scheduling and shipment validation; this set includes other date-related fields (actual/estimated arrival, expiry, effective dates) that refer to different concepts.",
+      "synonyms": [
+        "(ship_date, estimated_arrival)",
+        "actual_arrival",
+        "actual_arrival >= ship_date",
+        "effective_date",
+        "estimated_arrival",
+        "expiry dates",
+        "expiry_date",
+        "ship_date"
+      ],
+      "provenance_text": "**Indexes:**\n- `idx_specification_effective` on effective_date | - `idx_shipment_dates` on (ship_date, estimated_arrival) | | actual_arrival | DATE | | Actual arrival date | | - `chk_shipment_dates` \u2014 ensures actual_arrival >= ship_date | | effective_date | DATE | NOT NULL | Effective date | | | estimated_arrival | DATE | | Estimated arrival date | | Batches may have expiry dates for perishable go",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Product",
+      "definition": "Product is the core manufacturing item entity representing any item produced or assembled in the system, including finished goods, sub-assemblies, and components, with attributes such as identifier, name, type, base cost, and lead time, and is linked in BOM and production workflows.",
+      "synonyms": [
+        "A product",
+        "Products",
+        "product",
+        "product produced"
+      ],
+      "provenance_text": "A Product represents any manufactured item in the system, including finished goods ready for sale, sub-assemblies used in production, and individual components. | Each product has a unique identifier, name, type classification, base cost, and lead time for procurement or production. | Products can be active or inactive based on current manufacturing requirements. | Products are organized in a hier",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Component(Component Id)",
+      "definition": "A primary key field for the junction table that links components to their approved suppliers, containing pricing and lead time information.",
+      "synonyms": [
+        "Component",
+        "Components",
+        "component",
+        "component product",
+        "component_id",
+        "component_product_id",
+        "component_supplier",
+        "component_supplier_id"
+      ],
+      "provenance_text": "| component_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 component(component_id) | Component reference | | | component_id | VARCHAR(20) | FOREIGN KEY \u2192 component(component_id) | Component reference (exclusive with product_id) | | A Component represents atomic raw materials or purchased parts that cannot be further broken down into simpler manufactured items. | Components are the building blocks used",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Inventory Record",
+      "definition": "An Inventory record is a data entity representing a specific item\u2019s stock in a warehouse, tracking quantity on hand, quantity reserved, and reorder thresholds, and identified by a unique inventory_id.",
+      "synonyms": [
+        "Inventory",
+        "Inventory records",
+        "inventory",
+        "inventory_id"
+      ],
+      "provenance_text": "Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement. | Inventory belongs to a Warehouse | Inventory records support either components or products (but not both in the same record) | Last restock date | Work Orders consume Inventory (components) | Products are stored in Inventory records | Components have Inventory r",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Quantity Completed",
+      "definition": "The non-negative decimal quantity of items that have been completed or fulfilled against an order, constrained to be no greater than the ordered quantity.",
+      "synonyms": [
+        "Quantity completed"
+      ],
+      "provenance_text": "| quantity_completed | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0, <= ordered | Quantity completed |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Technical Specifications",
+      "definition": "A technical specification is a formal document or set of requirements that defines the technical criteria, standards, parameters, and quality expectations for materials, components, or products.",
+      "synonyms": [
+        "Specification",
+        "Specifications",
+        "specification"
+      ],
+      "provenance_text": "Each component has a standard cost, unit of measure, and may be associated with technical specifications that define quality requirements. | A Specification defines technical requirements, standards, and acceptance criteria for materials or products. | Specifications include version numbers, effective dates, specification types (dimensional, material, performance), critical parameters to test, and",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Supplier",
+      "definition": "A supplier is a business partner that provides components to the organization and is referenced by inbound shipments in procurement/logistics.",
+      "synonyms": [
+        "Suppliers"
+      ],
+      "provenance_text": "Suppliers provide multiple Components (many-to-many via component_supplier) | Suppliers are linked to Inbound Shipments | Suppliers have negotiated pricing and lead times per component | Inbound Shipments reference Suppliers",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Warehouse",
+      "definition": "A warehouse is a physical storage location for materials, components, and finished goods, identified by a unique warehouse_id and described by attributes such as warehouse_name, capacity, and geographic location.",
+      "synonyms": [
+        "Warehouse",
+        "Warehouses",
+        "on warehouse_id",
+        "warehouse(warehouse_id)",
+        "warehouse_id",
+        "warehouse_name"
+      ],
+      "provenance_text": "Stores physical storage location information for inventory management. | One-to-many with inventory\n- One-to-many with shipment\n- One-to-many with work_order\n- One-to-many with batch | A Warehouse represents a physical storage location where materials, components, and finished goods are stored. | Warehouses have defined capacity limits, geographic location information, and are managed by designate",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "`Idx Batch Warehouse`",
+      "definition": "A database index named idx_shipment_warehouse on the warehouse_id column, intended to speed queries related to shipments in the warehouse management context.",
+      "synonyms": [
+        "idx_inventory_warehouse",
+        "idx_shipment_warehouse"
+      ],
+      "provenance_text": "**Indexes:**\n- `idx_batch_warehouse` on warehouse_id | - `idx_inventory_warehouse` on warehouse_id | - `idx_shipment_warehouse` on warehouse_id",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "`Idx Route Sequence`",
+      "definition": "A database index named idx_route_sequence on the (product_id, sequence_number) columns used to optimize lookups that involve both product_id and sequence_number.",
+      "synonyms": [
+        "`idx_route_product` on product_id"
+      ],
+      "provenance_text": "**Indexes:**\n- `idx_route_sequence` on (product_id, sequence_number) | **Indexes:**\n- `idx_route_product` on product_id",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Product Composition",
+      "definition": "The set of components and sub-assemblies and their hierarchical structure that constitute a product, as defined by the Bill of Materials in manufacturing.",
+      "synonyms": [
+        "composition of products",
+        "product composition"
+      ],
+      "provenance_text": "The Bill of Materials (BOM) defines the composition of products by specifying which components and sub-assemblies are required to manufacture a parent product. | Bill of Materials defining product composition and hierarchical structure.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Idx Inventory Component",
+      "definition": "An index named idx_inventory_component on the component_id column (WHERE NOT NULL) in the inventory context.",
+      "synonyms": [
+        "idx_inventory_product"
+      ],
+      "provenance_text": "Indexes:\n- `idx_inventory_component` on component_id (WHERE NOT NULL) | - `idx_inventory_product` on product_id (WHERE NOT NULL)",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Idx Shipment Status",
+      "definition": "An index on the shipments table for the combined fields ship_date and estimated_arrival to optimize queries involving shipment dates.",
+      "synonyms": [
+        "idx_shipment_dates"
+      ],
+      "provenance_text": "- `idx_shipment_status` on status | - `idx_shipment_dates` on (ship_date, estimated_arrival)",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Where Not Null",
+      "definition": "A database index on the inventory table's component_id column with a WHERE NOT NULL predicate to index only non-null component references.",
+      "synonyms": [
+        "on product_id (WHERE NOT NULL)"
+      ],
+      "provenance_text": "Indexes:\n- `idx_inventory_component` on component_id (WHERE NOT NULL) | - `idx_inventory_product` on product_id (WHERE NOT NULL)",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Parent Product Id",
+      "definition": "A self-referential foreign key that identifies the parent (container) product in a multi-level product assembly, i.e., the product that contains other components in the BOM.",
+      "synonyms": [
+        "parent Product",
+        "parent product",
+        "product(product_id)",
+        "product_id"
+      ],
+      "provenance_text": "**Self-Referential Relationship:**\n- `parent_product_id` references `product_id` \u2014 enables multi-level product assemblies | | parent_product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Parent product (what is being built) | | Self-Referential Structure:\n- Both `parent_product_id` and `component_product_id` reference the product table | A Product can reference a parent Product ",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Quantity On Hand",
+      "definition": "The quantity of inventory currently on hand that is available to fulfill orders (stock not reserved for pending orders).",
+      "synonyms": [
+        "quantity on hand"
+      ],
+      "provenance_text": "| quantity_on_hand | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Available quantity | | Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Quantity Reserved",
+      "definition": "Reserved quantity is the portion of on-hand inventory that has been set aside for pending orders and is not available for general use.",
+      "synonyms": [
+        "quantity reserved"
+      ],
+      "provenance_text": "| quantity_reserved | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Reserved quantity | | Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Specification",
+      "definition": "A Specification is a business entity representing a tested item, identified by a unique specification_id and described by a specification_name.",
+      "synonyms": [
+        "specification_id",
+        "specification_name"
+      ],
+      "provenance_text": "A Specification defines technical requirements, standards, and acceptance criteria for materials or products. | Specifications include version numbers, effective dates, specification types (dimensional, material, performance), critical parameters to test, and acceptable value ranges with units of measure. | - Specifications define requirements for Components | Specifications are used in Quality Co",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Supplier",
+      "definition": "Supplier is an external vendor from whom components or goods are procured, identified by a unique supplier_id and described by supplier_name.",
+      "synonyms": [
+        "supplier(supplier_id)",
+        "supplier_id",
+        "supplier_name"
+      ],
+      "provenance_text": "Stores external vendor information for component procurement. | | supplier_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 supplier(supplier_id) | Supplier reference | | | supplier_id | VARCHAR(20) | PRIMARY KEY | Unique supplier identifier | | | supplier_id | VARCHAR(20) | FOREIGN KEY \u2192 supplier(supplier_id) | Supplier (inbound only) | | - `idx_shipment_supplier` on supplier_id (WHERE NOT NULL) | | su",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Bill Of Materials (Bom)",
+      "definition": "Bill of Materials (BOM) is a structured listing of all components and sub-assemblies required to manufacture a parent product, including quantities, units of measure, and the hierarchical level within the product structure.",
+      "synonyms": [
+        "BOM",
+        "BOM level",
+        "BOM structure",
+        "bom_id",
+        "bom_level"
+      ],
+      "provenance_text": "The Bill of Materials (BOM) defines the composition of products by specifying which components and sub-assemblies are required to manufacture a parent product. | Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the required quantity, unit of measure, and hierarchical level in the product structure. | BOM connects Products to other Pr",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Batch Id",
+      "definition": "batch_id is the unique identifier (primary key) for a production batch, used to reference a specific batch in records.",
+      "synonyms": [
+        "Batch"
+      ],
+      "provenance_text": "| batch_id | VARCHAR(20) | | Production batch reference | | | batch_id | VARCHAR(20) | PRIMARY KEY | Unique batch identifier | | Batches record the product produced, production date, quantity produced, warehouse location, expiry date (if applicable), and quality control status. | Batches produce a specific Product | Batches are stored in Warehouses | Batches undergo Quality Control inspections | B",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Not Null Default",
+      "definition": "A decimal numeric attribute with precision 10 and scale 3 (three fractional digits) used for measured or threshold values.",
+      "synonyms": [
+        "DECIMAL(10,2)",
+        "DECIMAL(10,2) NOT NULL, DEFAULT 0.00",
+        "DECIMAL(10,3)",
+        "DECIMAL(8,2)",
+        "INT NOT NULL, DEFAULT 0, CHECK > 0"
+      ],
+      "provenance_text": "| quantity_on_hand | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Available quantity | | | quantity_reserved | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Reserved quantity | | | quantity_produced | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK > 0 | Quantity produced | | | reorder_threshold | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00 | Reorder trigger level | | | min_value | DECIMAL",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Shipment",
+      "definition": "Shipment is the record of the physical transfer of materials between supply chain locations (inbound, outbound, or internal), linking suppliers, warehouses, and customers.",
+      "synonyms": [
+        "Inbound Shipments",
+        "Shipments",
+        "shipment"
+      ],
+      "provenance_text": "A Shipment represents the physical transfer of materials between warehouses, from suppliers to warehouses (inbound), or from warehouses to customers (outbound). | Key Attributes: - Type: INBOUND, OUTBOUND, INTERNAL | Shipments connect Warehouses, Suppliers, and Customers | Inbound Shipments reference Suppliers | Shipments update Inventory levels | Shipments fulfill Work Order outputs | Suppliers a",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Type Of Inspection",
+      "definition": "The date on which a quality-control inspection was performed.",
+      "synonyms": [
+        "Inspection date",
+        "inspection date"
+      ],
+      "provenance_text": "QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes. | | qc_date | DATE | NOT NULL | Inspection date |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Inspection Notes",
+      "definition": "A textual field for recording observations, findings, and remarks captured during an inspection.",
+      "synonyms": [
+        "notes"
+      ],
+      "provenance_text": "| notes | TEXT | | Inspection notes |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Last Restock Date",
+      "definition": "The date on which inventory was last restocked.",
+      "synonyms": [
+        "Last restock date"
+      ],
+      "provenance_text": "| last_restock_date | DATE | | Last restock timestamp | | Last restock date",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Defect Count",
+      "definition": "The numeric, non-negative count of defects identified in a unit during quality-control inspections, typically stored in a field named defect_count.",
+      "synonyms": [
+        "Number of defects found",
+        "defect counts"
+      ],
+      "provenance_text": "| defect_count | INT | NOT NULL, DEFAULT 0, CHECK >= 0 | Number of defects found | | QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Work Order",
+      "definition": "A Work Order is a manufacturing job or production run created to produce a specified quantity of a product, tracked through its lifecycle with details such as status, priority, planned dates, and, where applicable, parent relationships and outputs.",
+      "synonyms": [
+        "Parent work order for decomposition",
+        "Parent work order reference",
+        "Work Order outputs",
+        "Work Orders",
+        "parent_work_order",
+        "work_order",
+        "work_order_id"
+      ],
+      "provenance_text": "A Work Order represents a production job or manufacturing run to produce a specified quantity of a product. | Work Orders track planned versus completed quantities, status through the production lifecycle, priority levels, and planned dates. | Work Order represents ... Parent work order reference (for decomposition) | Work Orders consume Inventory (components) | Work Orders produce Products | Work",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Planned Start Date",
+      "definition": "Planned start date: the scheduled date on which a project or task is intended to begin.",
+      "synonyms": [
+        "Planned end date",
+        "planned_end_date",
+        "planned_start_date"
+      ],
+      "provenance_text": "| planned_start_date | DATE | | Planned start date | | | planned_end_date | DATE | | Planned end date |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Production Batch Reference",
+      "definition": "The identifier used to reference a specific production batch in manufacturing data.",
+      "synonyms": [
+        "production batches",
+        "production scheduling"
+      ],
+      "provenance_text": "| batch_id | VARCHAR(20) | | Production batch reference | | QC activities are associated with specific production batches and may reference technical specifications being tested. | Routes collectively define the manufacturing workflow and are used for production scheduling, capacity planning, and cost calculation.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Quality Control (Qc)",
+      "definition": "Quality Control (QC) is the overall process of inspection and testing activities, records, and status-tracking attributes used to verify and document the quality of materials, in-process production, and finished goods across batches.",
+      "synonyms": [
+        "QC",
+        "QC activities",
+        "QC records",
+        "QC status",
+        "`idx_batch_qc_status` on qc_status",
+        "qc_date",
+        "qc_id",
+        "qc_status",
+        "qc_status_t",
+        "qc_type"
+      ],
+      "provenance_text": "Quality Control (QC) represents inspection and testing activities performed on materials, in-process production, or finished goods. | QC activities are associated with specific production batches and may reference technical specifications being tested. | QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Route",
+      "definition": "A manufacturing route that defines the sequence of operations required to produce a product, including per-step details such as operation name, work center, cycle time, setup time, and sequence number.",
+      "synonyms": [
+        "route_id",
+        "route_name"
+      ],
+      "provenance_text": "A Route defines the sequence of manufacturing operations or steps required to produce a product. | Each route step specifies the operation name, work center where the operation is performed, cycle time for the operation, setup time required, and sequence number. | Routes collectively define the manufacturing workflow and are used for production scheduling, capacity planning, and cost calculation. ",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Unique Work Order Identifier",
+      "definition": "A unique identifier for quality control records (qc_id), used as the primary key in the quality_control dataset.",
+      "synonyms": [
+        "Unique QC identifier",
+        "unique identifier"
+      ],
+      "provenance_text": "| work_order_id | VARCHAR(20) | PRIMARY KEY | Unique work order identifier | | ## quality_control\n\nStores inspection and testing records for quality assurance.\n\n| Column | Data Type | Constraints | Description |\n|--------|-----------|-------------|-------------|\n| qc_id | VARCHAR(20) | PRIMARY KEY | Unique QC identifier | | Each product has a unique identifier, name, type classification, base cost",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Varchar(100) Not Null",
+      "definition": "A database text column with a maximum length of 100 characters that is required (NOT NULL).",
+      "synonyms": [
+        "VARCHAR(10)",
+        "VARCHAR(100)",
+        "VARCHAR(20)",
+        "VARCHAR(200)",
+        "VARCHAR(50)"
+      ],
+      "provenance_text": "| warehouse_name | VARCHAR(100) | NOT NULL | Warehouse name | | | unit_of_measure | VARCHAR(10) | | Test unit of measure | | | critical_parameter | VARCHAR(100) | | Parameter being tested | | | bom_id | VARCHAR(20) | PRIMARY KEY | Unique BOM identifier | | | manager_id | VARCHAR(20) | | Warehouse manager reference | | | address | VARCHAR(200) | | Street address | | | city | VARCHAR(50) | | City lo",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Spec Type",
+      "definition": "A column representing the specification type (spec_type) for an item, defined by the spec_type_t enumeration with possible values such as DIMENSIONAL, MATERIAL, and PERFORMANCE.",
+      "synonyms": [
+        "`idx_specification_type` on spec_type"
+      ],
+      "provenance_text": "| spec_type | spec_type_t | NOT NULL | DIMENSIONAL, MATERIAL, PERFORMANCE | | **Indexes:**\n- `idx_specification_type` on spec_type",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Physical Storage Location Information",
+      "definition": "An information record that stores details about a physical storage location (such as a warehouse) used for inventory management.",
+      "synonyms": [
+        "a physical storage location"
+      ],
+      "provenance_text": "Stores physical storage location information for inventory management. | A Warehouse represents a physical storage location where materials, components, and finished goods are stored.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Atomic Raw Materials",
+      "definition": "A Component comprising atomic raw materials and purchased parts sourced from external suppliers that cannot be further reduced into simpler manufactured items.",
+      "synonyms": [
+        "atomic raw materials or purchased parts"
+      ],
+      "provenance_text": "## component\n\nStores atomic raw materials and purchased parts that are procured from external suppliers. | A Component represents atomic raw materials or purchased parts that cannot be further broken down into simpler manufactured items.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Capacity Planning",
+      "definition": "Capacity planning is the manufacturing process of forecasting and allocating production capacity to support scheduling and cost calculation.",
+      "synonyms": [
+        "capacity"
+      ],
+      "provenance_text": "Routes collectively define the manufacturing workflow and are used for production scheduling, capacity planning, and cost calculation. | | capacity | INT | NOT NULL, DEFAULT 0, CHECK > 0 | Storage capacity |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Cycle Time Minutes",
+      "definition": "Per-unit processing time in minutes, representing the time required to process a single unit.",
+      "synonyms": [
+        "setup_time_minutes"
+      ],
+      "provenance_text": "| cycle_time_minutes | DECIMAL(8,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Per-unit processing time | | | setup_time_minutes | DECIMAL(8,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Fixed setup time |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Hierarchical Product Relationships",
+      "definition": "Hierarchical product relationships are a data model concept representing parent\u2013child (assembly\u2013component) relationships among products, typically implemented via a self-referencing foreign key.",
+      "synonyms": [
+        "hierarchical relationship"
+      ],
+      "provenance_text": "## product\n\nStores all manufactured items including finished goods, assemblies, and components. Supports hierarchical product relationships via self-referencing foreign key. | Products are organized in a hierarchical structure where complex products can contain simpler products as parts.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Lead Time Days",
+      "definition": "The time duration, measured in days, required to procure or manufacture an item.",
+      "synonyms": [
+        "lead time"
+      ],
+      "provenance_text": "| lead_time_days | INT | NOT NULL, DEFAULT 0 | Procurement lead time | | Each product has a unique identifier, name, type classification, base cost, and lead time for procurement or production.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Manufacturing Workflow Steps",
+      "definition": "The sequence of manufacturing workflow steps and operations required to produce a product, i.e., the production route.",
+      "synonyms": [
+        "manufacturing steps"
+      ],
+      "provenance_text": "## route\n\nDefines manufacturing workflow steps and operations for product production. | A Route defines the sequence of manufacturing operations or steps required to produce a product.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Max Value",
+      "definition": "The upper bound or ceiling for a decimal-measured value, i.e., the maximum acceptable value.",
+      "synonyms": [
+        "min_value"
+      ],
+      "provenance_text": "| max_value | DECIMAL(10,3) | | Maximum acceptable value | | | min_value | DECIMAL(10,3) | | Minimum acceptable value |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Unit Price",
+      "definition": "The negotiated price for a single unit of a component or item, used in procurement to determine cost per unit.",
+      "synonyms": [
+        "pricing"
+      ],
+      "provenance_text": "| unit_price | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK >= 0 | Negotiated unit price | | Suppliers have negotiated pricing and lead times per component",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Reorder Threshold",
+      "definition": "A numeric quantity in inventory that indicates the level at which a replenishment order should be placed to restore stock.",
+      "synonyms": [
+        "reorder thresholds"
+      ],
+      "provenance_text": "| reorder_threshold | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00 | Reorder trigger level | | Each inventory record tracks the quantity on hand, quantity reserved for pending orders, and reorder thresholds to trigger procurement.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Test Results",
+      "definition": "The entity denotes the outcome of a quality control test/inspection, typically recorded as PASS, FAIL, or CONDITIONAL for a given inspection.",
+      "synonyms": [
+        "result"
+      ],
+      "provenance_text": "QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes. | | result | qc_result_t | NOT NULL | PASS, FAIL, CONDITIONAL |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Unit Of Measure",
+      "definition": "The unit of measure (UoM) used to quantify quantities for components and BOM entries within a product structure.",
+      "synonyms": [
+        "unit of measure"
+      ],
+      "provenance_text": "| unit_of_measure | VARCHAR(10) | NOT NULL, DEFAULT 'EA' | Unit of measure | | | unit_of_measure | VARCHAR(10) | | Test unit of measure | | Each component has a standard cost, unit of measure, and may be associated with technical specifications that define quality requirements. | Each BOM entry indicates a parent product, a component product (which can be either a component or sub-assembly), the r",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Specification Version",
+      "definition": "The version identifier of a specification, indicating its revision level and the set of requirements, tests, or parameters that are in effect.",
+      "synonyms": [
+        "version",
+        "version numbers"
+      ],
+      "provenance_text": "| version | VARCHAR(10) | NOT NULL | Specification version | | Specifications include version numbers, effective dates, specification types (dimensional, material, performance), critical parameters to test, and acceptable value ranges with units of measure.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Ea",
+      "definition": "| unit_of_measure | VARCHAR(10) | NOT NULL, DEFAULT 'EA' | Unit of measure |",
+      "synonyms": [],
+      "provenance_text": "| unit_of_measure | VARCHAR(10) | NOT NULL, DEFAULT 'EA' | Unit of measure |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "N",
+      "definition": "| is_optional | yes_no_t | NOT NULL, DEFAULT 'N' | Whether component is optional | | | is_preferred | yes_no_t | NOT NULL, DEFAULT 'N' | Preferred supplier for this component |",
+      "synonyms": [],
+      "provenance_text": "| is_optional | yes_no_t | NOT NULL, DEFAULT 'N' | Whether component is optional | | | is_preferred | yes_no_t | NOT NULL, DEFAULT 'N' | Preferred supplier for this component |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Bicycle",
+      "definition": "Enables representation of multi-level assemblies (e.g., Bicycle \u2192 Wheel \u2192 Spoke)",
+      "synonyms": [],
+      "provenance_text": "Enables representation of multi-level assemblies (e.g., Bicycle \u2192 Wheel \u2192 Spoke)",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Column",
+      "definition": "| Column | Data Type | Constraints | Description |",
+      "synonyms": [],
+      "provenance_text": "| Column | Data Type | Constraints | Description |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Component Or Product",
+      "definition": "Inventory records support either components or products (but not both in the same record)",
+      "synonyms": [],
+      "provenance_text": "Inventory records support either components or products (but not both in the same record)",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Constraints",
+      "definition": "**Constraints:**\n- `chk_min_max` \u2014 ensures max_value >= min_value | **Constraints:**\n- `chk_expiry_after_production` \u2014 ensures expiry_date >= production_date | **Constraints:**\n- `uq_route_sequence` UNIQUE (product_id, sequence_number) \u2014 prevents duplicate sequences",
+      "synonyms": [],
+      "provenance_text": "**Constraints:**\n- `chk_min_max` \u2014 ensures max_value >= min_value | **Constraints:**\n- `chk_expiry_after_production` \u2014 ensures expiry_date >= production_date | **Constraints:**\n- `uq_route_sequence` UNIQUE (product_id, sequence_number) \u2014 prevents duplicate sequences",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Date",
+      "definition": "| last_restock_date | DATE | | Last restock timestamp | | | expiry_date | DATE | | Expiry date (if applicable) |",
+      "synonyms": [],
+      "provenance_text": "| last_restock_date | DATE | | Last restock timestamp | | | expiry_date | DATE | | Expiry date (if applicable) |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Key",
+      "definition": "| warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Storage location |",
+      "synonyms": [],
+      "provenance_text": "| warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Storage location |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Incoming, In Process, Final",
+      "definition": "| qc_type | qc_type_t | NOT NULL | INCOMING, IN_PROCESS, FINAL |",
+      "synonyms": [],
+      "provenance_text": "| qc_type | qc_type_t | NOT NULL | INCOMING, IN_PROCESS, FINAL |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Int",
+      "definition": "| sequence_number | INT | NOT NULL, CHECK > 0 | Operation sequence |",
+      "synonyms": [],
+      "provenance_text": "| sequence_number | INT | NOT NULL, CHECK > 0 | Operation sequence |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Indexes",
+      "definition": "**Indexes:**\n- `idx_specification_type` on spec_type | **Indexes:**\n- `idx_specification_effective` on effective_date | **Indexes:**\n- `idx_batch_product` on product_id",
+      "synonyms": [],
+      "provenance_text": "**Indexes:**\n- `idx_specification_type` on spec_type | **Indexes:**\n- `idx_specification_effective` on effective_date | **Indexes:**\n- `idx_batch_product` on product_id",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Inspector Reference",
+      "definition": "| inspector_id | VARCHAR(20) | | Inspector reference |",
+      "synonyms": [],
+      "provenance_text": "| inspector_id | VARCHAR(20) | | Inspector reference |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Inventory Levels",
+      "definition": "Shipments update Inventory levels",
+      "synonyms": [],
+      "provenance_text": "Shipments update Inventory levels",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Medium",
+      "definition": "| priority | priority_t | NOT NULL, DEFAULT 'MEDIUM' | LOW, MEDIUM, HIGH, URGENT |",
+      "synonyms": [],
+      "provenance_text": "| priority | priority_t | NOT NULL, DEFAULT 'MEDIUM' | LOW, MEDIUM, HIGH, URGENT |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Not Null",
+      "definition": "| specification_name | VARCHAR(100) | NOT NULL | Specification name | | | version | VARCHAR(10) | NOT NULL | Specification version | | | effective_date | DATE | NOT NULL | Effective date |",
+      "synonyms": [],
+      "provenance_text": "| specification_name | VARCHAR(100) | NOT NULL | Specification name | | | version | VARCHAR(10) | NOT NULL | Specification version | | | effective_date | DATE | NOT NULL | Effective date |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Null Foreign Key",
+      "definition": "| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product produced | | | product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product reference |",
+      "synonyms": [],
+      "provenance_text": "| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product produced | | | product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product reference |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "One To Many",
+      "definition": "One-to-many with inventory\n- One-to-many with shipment\n- One-to-many with work_order\n- One-to-many with batch",
+      "synonyms": [],
+      "provenance_text": "One-to-many with inventory\n- One-to-many with shipment\n- One-to-many with work_order\n- One-to-many with batch",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Pass, Fail, Conditional",
+      "definition": "| result | qc_result_t | NOT NULL | PASS, FAIL, CONDITIONAL |",
+      "synonyms": [],
+      "provenance_text": "| result | qc_result_t | NOT NULL | PASS, FAIL, CONDITIONAL |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Pending",
+      "definition": "| status | status_t | NOT NULL, DEFAULT 'PENDING' | PENDING, IN_PROGRESS, COMPLETED, CLOSED |",
+      "synonyms": [],
+      "provenance_text": "| status | status_t | NOT NULL, DEFAULT 'PENDING' | PENDING, IN_PROGRESS, COMPLETED, CLOSED |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Product To Manufacture",
+      "definition": "| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product to manufacture |",
+      "synonyms": [],
+      "provenance_text": "| product_id | VARCHAR(20) | NOT NULL, FOREIGN KEY \u2192 product(product_id) | Product to manufacture |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Production Location",
+      "definition": "| warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Production location |",
+      "synonyms": [],
+      "provenance_text": "| warehouse_id | VARCHAR(20) | FOREIGN KEY \u2192 warehouse(warehouse_id) | Production location |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Quality Control Inspections",
+      "definition": "Specifications are used in Quality Control inspections | Batches undergo Quality Control inspections",
+      "synonyms": [],
+      "provenance_text": "Specifications are used in Quality Control inspections | Batches undergo Quality Control inspections",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Quantity To Produce",
+      "definition": "| quantity_ordered | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK > 0 | Quantity to produce |",
+      "synonyms": [],
+      "provenance_text": "| quantity_ordered | DECIMAL(10,2) | NOT NULL, DEFAULT 0.00, CHECK > 0 | Quantity to produce |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "`Chk Expiry After Production`",
+      "definition": "**Constraints:**\n- `chk_expiry_after_production` \u2014 ensures expiry_date >= production_date",
+      "synonyms": [],
+      "provenance_text": "**Constraints:**\n- `chk_expiry_after_production` \u2014 ensures expiry_date >= production_date",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "`Chk Min Max`",
+      "definition": "**Constraints:**\n- `chk_min_max` \u2014 ensures max_value >= min_value",
+      "synonyms": [],
+      "provenance_text": "**Constraints:**\n- `chk_min_max` \u2014 ensures max_value >= min_value",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "`Chk Times Nonnegative`",
+      "definition": "**Constraints:**\n- `chk_times_nonnegative` \u2014 ensures times are non-negative",
+      "synonyms": [],
+      "provenance_text": "**Constraints:**\n- `chk_times_nonnegative` \u2014 ensures times are non-negative",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "`Idx Batch Date`",
+      "definition": "**Indexes:**\n- `idx_batch_date` on production_date",
+      "synonyms": [],
+      "provenance_text": "**Indexes:**\n- `idx_batch_date` on production_date",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "`Idx Batch Product`",
+      "definition": "**Indexes:**\n- `idx_batch_product` on product_id",
+      "synonyms": [],
+      "provenance_text": "**Indexes:**\n- `idx_batch_product` on product_id",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "`Uq Route Sequence`",
+      "definition": "**Constraints:**\n- `uq_route_sequence` UNIQUE (product_id, sequence_number) \u2014 prevents duplicate sequences",
+      "synonyms": [],
+      "provenance_text": "**Constraints:**\n- `uq_route_sequence` UNIQUE (product_id, sequence_number) \u2014 prevents duplicate sequences",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Active",
+      "definition": "Products can be active or inactive based on current manufacturing requirements.",
+      "synonyms": [],
+      "provenance_text": "Products can be active or inactive based on current manufacturing requirements.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Address",
+      "definition": "| address | VARCHAR(200) | | Street address |",
+      "synonyms": [],
+      "provenance_text": "| address | VARCHAR(200) | | Street address |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "All Manufactured Items",
+      "definition": "## product\n\nStores all manufactured items including finished goods, assemblies, and components. Supports hierarchical product relationships via self-referencing foreign key.",
+      "synonyms": [],
+      "provenance_text": "## product\n\nStores all manufactured items including finished goods, assemblies, and components. Supports hierarchical product relationships via self-referencing foreign key.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Manufactured Item In",
+      "definition": "A Product represents any manufactured item in the system, including finished goods ready for sale, sub-assemblies used in production, and individual components.",
+      "synonyms": [],
+      "provenance_text": "A Product represents any manufactured item in the system, including finished goods ready for sale, sub-assemblies used in production, and individual components.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Base Cost",
+      "definition": "Each product has a unique identifier, name, type classification, base cost, and lead time for procurement or production.",
+      "synonyms": [],
+      "provenance_text": "Each product has a unique identifier, name, type classification, base cost, and lead time for procurement or production.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Child Products",
+      "definition": "A Product can have multiple child Products (via BOM hierarchy)",
+      "synonyms": [],
+      "provenance_text": "A Product can have multiple child Products (via BOM hierarchy)",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Chk Inventory Item",
+      "definition": "- `chk_inventory_item` EXCLUDE \u2014 ensures either component_id OR product_id is set, not both",
+      "synonyms": [],
+      "provenance_text": "- `chk_inventory_item` EXCLUDE \u2014 ensures either component_id OR product_id is set, not both",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Chk Shipment Dates",
+      "definition": "- `chk_shipment_dates` \u2014 ensures actual_arrival >= ship_date",
+      "synonyms": [],
+      "provenance_text": "- `chk_shipment_dates` \u2014 ensures actual_arrival >= ship_date",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Chk Supplier Inbound",
+      "definition": "- `chk_supplier_inbound` \u2014 ensures supplier_id is only set for INBOUND shipments",
+      "synonyms": [],
+      "provenance_text": "- `chk_supplier_inbound` \u2014 ensures supplier_id is only set for INBOUND shipments",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "City",
+      "definition": "| city | VARCHAR(50) | | City location |",
+      "synonyms": [],
+      "provenance_text": "| city | VARCHAR(50) | | City location |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Cost Calculation",
+      "definition": "Routes collectively define the manufacturing workflow and are used for production scheduling, capacity planning, and cost calculation.",
+      "synonyms": [],
+      "provenance_text": "Routes collectively define the manufacturing workflow and are used for production scheduling, capacity planning, and cost calculation.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Critical Parameter",
+      "definition": "| critical_parameter | VARCHAR(100) | | Parameter being tested |",
+      "synonyms": [],
+      "provenance_text": "| critical_parameter | VARCHAR(100) | | Parameter being tested |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Customer Id",
+      "definition": "| customer_id | VARCHAR(20) | | Customer reference (outbound) |",
+      "synonyms": [],
+      "provenance_text": "| customer_id | VARCHAR(20) | | Customer reference (outbound) |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Defined Capacity Limits",
+      "definition": "Warehouses have defined capacity limits, geographic location information, and are managed by designated managers.",
+      "synonyms": [],
+      "provenance_text": "Warehouses have defined capacity limits, geographic location information, and are managed by designated managers.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Depth",
+      "definition": "`bom_level` tracks depth for performance optimization",
+      "synonyms": [],
+      "provenance_text": "`bom_level` tracks depth for performance optimization",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Designated Managers",
+      "definition": "Warehouses have defined capacity limits, geographic location information, and are managed by designated managers.",
+      "synonyms": [],
+      "provenance_text": "Warehouses have defined capacity limits, geographic location information, and are managed by designated managers.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "External Suppliers",
+      "definition": "Components are the building blocks used in manufacturing and are procured from external suppliers.",
+      "synonyms": [],
+      "provenance_text": "Components are the building blocks used in manufacturing and are procured from external suppliers.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "External Vendor Information",
+      "definition": "Stores external vendor information for component procurement.",
+      "synonyms": [],
+      "provenance_text": "Stores external vendor information for component procurement.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Idx Shipment Supplier",
+      "definition": "- `idx_shipment_supplier` on supplier_id (WHERE NOT NULL)",
+      "synonyms": [],
+      "provenance_text": "- `idx_shipment_supplier` on supplier_id (WHERE NOT NULL)",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Inspection And Testing Activities",
+      "definition": "Quality Control (QC) represents inspection and testing activities performed on materials, in-process production, or finished goods.",
+      "synonyms": [],
+      "provenance_text": "Quality Control (QC) represents inspection and testing activities performed on materials, in-process production, or finished goods.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Inspector",
+      "definition": "QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes.",
+      "synonyms": [],
+      "provenance_text": "QC records track the type of inspection (incoming, in-process, final), inspection date, inspector, test results (pass, fail, conditional), defect counts, and notes.",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Inspector Id",
+      "definition": "| inspector_id | VARCHAR(20) | | Inspector reference |",
+      "synonyms": [],
+      "provenance_text": "| inspector_id | VARCHAR(20) | | Inspector reference |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    },
+    {
+      "name": "Is Optional",
+      "definition": "| is_optional | yes_no_t | NOT NULL, DEFAULT 'N' | Whether component is optional |",
+      "synonyms": [],
+      "provenance_text": "| is_optional | yes_no_t | NOT NULL, DEFAULT 'N' | Whether component is optional |",
+      "source_doc": "/Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/business_glossary.md, /Users/marcantoniolopez/Documents/github/semanticmesh/tests/fixtures/04_complex_manufacturing/data_dictionary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 135
+  },
+  "tables_parsed": [
+    {
+      "name": "PRODUCT",
+      "columns": 7
+    },
+    {
+      "name": "COMPONENT",
+      "columns": 6
+    },
+    {
+      "name": "BOM",
+      "columns": 7
+    },
+    {
+      "name": "SUPPLIER",
+      "columns": 6
+    },
+    {
+      "name": "WAREHOUSE",
+      "columns": 7
+    },
+    {
+      "name": "INVENTORY",
+      "columns": 8
+    },
+    {
+      "name": "WORK_ORDER",
+      "columns": 10
+    },
+    {
+      "name": "SHIPMENT",
+      "columns": 9
+    },
+    {
+      "name": "QUALITY_CONTROL",
+      "columns": 9
+    },
+    {
+      "name": "SPECIFICATION",
+      "columns": 9
+    },
+    {
+      "name": "BATCH",
+      "columns": 7
+    },
+    {
+      "name": "ROUTE",
+      "columns": 8
+    },
+    {
+      "name": "COMPONENT_SUPPLIER",
+      "columns": 6
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Product",
+      "description": "Stores information about products, including identifiers, names, type, hierarchical parent product relationships, base cost, lead time to fulfill, and whether the product is active."
+    },
+    {
+      "name": "COMPONENT",
+      "description": "Stores data about components used in products, including identifiers, names, categories, units of measure, standard cost, and associated specifications."
+    },
+    {
+      "name": "Bill of Materials",
+      "description": "Stores the bill of materials relationships, detailing which components (products) comprise a parent product, along with quantities and units of measure required at each BOM level."
+    },
+    {
+      "name": "Supplier",
+      "description": "Stores information about suppliers including contact details, rating, and whether they are a preferred supplier."
+    },
+    {
+      "name": "WAREHOUSE",
+      "description": "Stores information about each warehouse, including its identifying information, location, capacity, and the manager responsible for the facility."
+    },
+    {
+      "name": "Inventory",
+      "description": "Stores inventory levels and restocking information for components and products across warehouses, including current on-hand quantity, reserved quantity, and the threshold to trigger reorders."
+    },
+    {
+      "name": "WORK_ORDER",
+      "description": "Stores data about manufacturing or service work orders, including product details, quantities, status and scheduling, and the warehouse responsible for fulfillment."
+    },
+    {
+      "name": "Shipment",
+      "description": "Stores records of shipments, including identifiers, involved warehouses, suppliers, and customers, as well as scheduled and actual arrival dates and current shipment status."
+    },
+    {
+      "name": "Quality Control",
+      "description": "Stores records of quality control checks performed on production batches, including the date, type of check, inspector, results, and any defects or notes for traceability."
+    },
+    {
+      "name": "Specification",
+      "description": "Stores specifications for products or processes, including identifiers, names, types, validity dates, and acceptable ranges for parameters."
+    },
+    {
+      "name": "Batch",
+      "description": "Stores records of production batches, including which product was produced, quantities, dates, storage location, expiry, and quality control status."
+    },
+    {
+      "name": "Route",
+      "description": "Stores the sequence of manufacturing routes for each product, including operation details, order, and timing. It captures the steps, associated work centers, and the time required to cycle through and... [TRUNCATED]"
+    },
+    {
+      "name": "Component Supplier",
+      "description": "Stores the relationship between components and suppliers, including whether a supplier is preferred, typical lead time in days, and the unit price for each component-supplier pairing."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 13,
+    "tables_enriched": 13,
+    "total_columns": 99
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 168,
+    "total_relationships": 203,
+    "completed_tables": 13
+  },
+  "stage_timings": {}
+}

@@ -1,0 +1,1763 @@
+{
+  "study_id": "AB-BEST",
+  "timestamp": "2026-06-30T20:07:31.350501+00:00",
+  "trace_id": "AB-BEST.2026-06-30T20-07-31.350501+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "tests/fixtures/03_advanced_healthcare/business_glossary.md",
+    "tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+  ],
+  "ddl_files": [
+    "tests/fixtures/03_advanced_healthcare/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Business Glossary - Advanced Healthcare Management System\n\n## Patient Management\n\n**Patient**\nAn individual receiving medical care, treatment, or services from the healthcare organization. Each patient has a unique medical record number and may have multiple episodes of care across different time periods. Patients can be identified by their medical record number (MRN), which is distinct from any external insurance identifiers.\n\n**Patient Registration**\nThe process of capturing essential demogr... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "664"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Financial & Administrative\n\n**Insurance**\nA third-party payer contract that provides coverage for medical services. Insurance types include private commercial plans, Medicare (federal), Medicaid (state), and TRICARE (military). Each insurance plan has specific coverage policies, prior authorization requirements, and cost-sharing structures.\n\n**Prior Authorization**\nThe process of obtaining advance approval from an insurance payer before certain services, treatments, or medications can be prov... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "793"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Billing & Revenue Cycle\n\n**Charge Capture**\nThe process of recording services and procedures for billing purposes. Charges must be captured at the time of service and linked to appropriate billing codes.\n\n**Claim Scrubbing**\nAutomated validation of claims against payer-specific rules, coding guidelines, and regulatory requirements before submission. Scrubbing reduces claim rejections and denials.\n\n**Denial Management**\nThe systematic process of tracking, analyzing, and appealing claim denials... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "267"
+    },
+    {
+      "chunk_id": 3,
+      "text": "# Data Dictionary - Advanced Healthcare Management System\n\n## Database Overview\n**Database Name**: `advanced_healthcare_db`\n**Schema Version**: `3.2.1`\n**Environment**: Production\n**Last Updated**: 2025-03-15\n\n---\n\n## PATIENTS Table\n**Purpose**: Store current and historical patient demographic and administrative information.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| patient_id | INTEGER | PRIMARY KEY | Surrogate key for patie... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "498"
+    },
+    {
+      "chunk_id": 4,
+      "text": "## DIAGNOSES Table\n**Purpose**: Store patient diagnosis records with ICD-10 coding and temporal tracking.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| diagnosis_id | INTEGER | PRIMARY KEY | Surrogate key for diagnosis records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving the diagnosis |\n| icd_10_code | VARCHAR(10) | NOT NULL | ICD-10-CM diagnosis code (e.g., I10, E11.9) |\n| diagnosis_name | VA... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "426"
+    },
+    {
+      "chunk_id": 5,
+      "text": "## TREATMENTS Table\n**Purpose**: Store medical treatments and procedures performed on patients.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| treatment_id | INTEGER | PRIMARY KEY | Surrogate key for treatment records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving treatment |\n| diagnosis_id | INTEGER | FK \u2192 diagnoses.diagnosis_id | Primary diagnosis indication for treatment |\n| treatment_name | V... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "450"
+    },
+    {
+      "chunk_id": 6,
+      "text": "## MEDICATIONS Table\n**Purpose**: Store patient medication prescriptions and administrations.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| medication_id | INTEGER | PRIMARY KEY | Surrogate key for medication records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving medication |\n| medication_name | VARCHAR(255) | NOT NULL | Generic or brand medication name |\n| ndc_code | VARCHAR(11) | National Drug... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "463"
+    },
+    {
+      "chunk_id": 7,
+      "text": "## LAB_RESULTS Table\n**Purpose**: Store diagnostic laboratory test results for patients.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| lab_result_id | INTEGER | PRIMARY KEY | Surrogate key for lab result records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient associated with result |\n| test_name | VARCHAR(255) | NOT NULL | Name of laboratory test performed |\n| loinc_code | VARCHAR(10) | Logical Observation... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "440"
+    },
+    {
+      "chunk_id": 8,
+      "text": "## PROVIDERS Table\n**Purpose**: Store healthcare provider information and credentials.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| provider_id | INTEGER | PRIMARY KEY | Surrogate key for provider records |\n| npi | VARCHAR(10) | UNIQUE NOT NULL | National Provider Identifier |\n| first_name | VARCHAR(50) | NOT NULL | Provider's first name |\n| last_name | VARCHAR(50) | NOT NULL | Provider's last name |\n| provider_type | VARCHAR(50... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "747"
+    },
+    {
+      "chunk_id": 9,
+      "text": "## APPOINTMENTS Table\n**Purpose**: Store patient appointment scheduling and encounter information.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| appointment_id | INTEGER | PRIMARY KEY | Surrogate key for appointment records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient scheduled for appointment |\n| provider_id | INTEGER | FK \u2192 providers.provider_id, NOT NULL | Provider conducting appointment |\n| departme... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "788"
+    },
+    {
+      "chunk_id": 10,
+      "text": "## CLAIMS Table\n**Purpose**: Store insurance claims and billing information for services rendered.\n\n| Column Name | Data Type | Constraint | Description |\n|-------------|-----------|------------|-------------|\n| claim_id | INTEGER | PRIMARY KEY | Surrogate key for claim records |\n| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient associated with claim |\n| insurance_plan_id | INTEGER | FK \u2192 insurance_plans.plan_id, NOT NULL | Insurance plan billed |\n| claim_number | VARCHAR(50)... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "788"
+    },
+    {
+      "chunk_id": 11,
+      "text": "## General Conventions\n\n### Temporal Validity Pattern\nAll major tables use `valid_from` and `valid_to` timestamps for historization:\n- Current records have `valid_to = NULL`\n- Historical records have non-NULL `valid_to`\n- Queries must include `WHERE valid_to IS NULL` to retrieve current data\n- Historical analysis possible by querying all records\n\n### Soft Delete Pattern\nAll tables include `is_deleted` flag:\n- `is_deleted = FALSE` for active records\n- `is_deleted = TRUE` for logically deleted rec... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "236"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 12,
+    "total_tokens": 6560,
+    "avg_tokens": 546.6666666666666
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Patient",
+      "predicate": "has unique medical record number",
+      "object": "medical record number",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Patient",
+      "predicate": "identified by",
+      "object": "medical record number",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Patient Registration",
+      "predicate": "process of capturing",
+      "object": "demographic and administrative information",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Diagnosis",
+      "predicate": "coded using",
+      "object": "ICD-10-CM",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Principal Diagnosis",
+      "predicate": "determines",
+      "object": "primary diagnosis-related group",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Comorbidity",
+      "predicate": "exists with",
+      "object": "principal diagnosis",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Treatment",
+      "predicate": "addressed by",
+      "object": "diagnosed condition",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Medication",
+      "predicate": "administered to",
+      "object": "patient",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Medication Reconciliation",
+      "predicate": "process of comparing",
+      "object": "medication orders",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "LabResult",
+      "predicate": "results include",
+      "object": "quantitative values",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Provider",
+      "predicate": "has",
+      "object": "NPI numbers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Attending Physician",
+      "predicate": "is",
+      "object": "primary physician",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Consulting Physician",
+      "predicate": "is",
+      "object": "specialist",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Department",
+      "predicate": "organized unit within",
+      "object": "healthcare facility",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Service Line",
+      "predicate": "grouping of",
+      "object": "related departments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Insurance",
+      "predicate": "has type",
+      "object": "private commercial plans, Medicare, Medicaid, TRICARE",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Insurance",
+      "predicate": "provides coverage for",
+      "object": "medical services",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Prior Authorization",
+      "predicate": "requires",
+      "object": "authorization",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Claim",
+      "predicate": "is",
+      "object": "formal request for payment",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Claim",
+      "predicate": "includes",
+      "object": "procedure codes, diagnosis codes, modifiers, charges",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "EOB",
+      "predicate": "explains",
+      "object": "what services were covered, what portion was paid to the provider, and what financial responsibility... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "COB",
+      "predicate": "determines",
+      "object": "which insurance plan pays first",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Appointment",
+      "predicate": "is",
+      "object": "scheduled encounter",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Appointment",
+      "predicate": "types include",
+      "object": "scheduled, confirmed, checked-in, in-progress, completed, canceled, no-show",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Appointment Type",
+      "predicate": "classifies",
+      "object": "appointment based on purpose, duration, and resource requirements",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Patient Access",
+      "predicate": "is",
+      "object": "functional area responsible for scheduling, registration, insurance verification, pre-certification,... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Clinical Documentation",
+      "predicate": "involves",
+      "object": "creation and maintenance of electronic health record entries",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Care Coordination",
+      "predicate": "involves",
+      "object": "transitions of care, specialist referrals, and post-acute planning",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transitions of Care",
+      "predicate": "involves",
+      "object": "admission, transfer between units, discharge to post-acute facilities, and home health referral",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Data Governance",
+      "predicate": "is",
+      "object": "policies, processes, and standards",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Historization",
+      "predicate": "involves",
+      "object": "time-bounded versions of data records",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Soft Delete",
+      "predicate": "is",
+      "object": "a logical deletion mechanism",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "HIPAA",
+      "predicate": "regulates",
+      "object": "use and disclosure of PHI",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "PHI",
+      "predicate": "includes",
+      "object": "demographic data, medical histories, test results, and insurance information",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Minimum Necessary Standard",
+      "predicate": "is",
+      "object": "the HIPAA principle that only the minimum amount of PHI necessary to accomplish the intended purpose... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Patient Privacy Rights",
+      "predicate": "gives",
+      "object": "patients rights to access their medical records, request amendments, obtain an accounting of disclos... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Charge Capture",
+      "predicate": "is the process of",
+      "object": "recording services and procedures for billing purposes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Charge Capture",
+      "predicate": "must be captured at",
+      "object": "the time of service",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Charge Capture",
+      "predicate": "linked to",
+      "object": "appropriate billing codes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Claim Scrubbing",
+      "predicate": "is",
+      "object": "Automated validation of claims against payer-specific rules, coding guidelines, and regulatory requi... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Claim Scrubbing",
+      "predicate": "reduces",
+      "object": "claim rejections and denials",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Denial Management",
+      "predicate": "is the",
+      "object": "systematic process of tracking, analyzing, and appealing claim denials from payers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Denial Management",
+      "predicate": "identifies",
+      "object": "root causes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Denial Management",
+      "predicate": "implements",
+      "object": "corrective actions",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Revenue Cycle Management",
+      "predicate": "contribute to",
+      "object": "capture, management, and collection of patient service revenue",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Revenue Cycle Management",
+      "predicate": "spans from",
+      "object": "patient scheduling through final payment collection",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Clinical Quality Measures",
+      "predicate": "are",
+      "object": "Standardized metrics",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Clinical Quality Measures",
+      "predicate": "examples include",
+      "object": "readmission rates, mortality rates, complication rates, and adherence to evidence-based guidelines",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Value-Based Care",
+      "predicate": "is",
+      "object": "Payment models that reward healthcare providers for delivering high-quality, cost-efficient care rat... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Value-Based Care",
+      "predicate": "models include",
+      "object": "Accountable Care Organizations (ACOs) and bundled payments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Population Health",
+      "predicate": "is",
+      "object": "The health outcomes of a group of individuals",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Population Health",
+      "predicate": "focuses on",
+      "object": "improving outcomes for defined patient panels through preventive care and chronic disease management",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Database",
+      "predicate": "Name",
+      "object": "advanced_healthcare_db",
+      "confidence": 0.4
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Schema",
+      "predicate": "Version",
+      "object": "3.2.1",
+      "confidence": 0.4
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "stores",
+      "object": "patient diagnosis records",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "diagnosis_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "patient_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "icd_10_code",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "diagnosis_name",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "diagnosis_type",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "provider_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "diagnosis_date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "resolution_date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "is_deleted",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "valid_from",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "valid_to",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "created_at",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis table",
+      "predicate": "has column",
+      "object": "updated_at",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "idx_diagnoses_patient",
+      "predicate": "indexes",
+      "object": "(patient_id) WHERE is_deleted = FALSE",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 4,
+      "subject": "idx_diagnoses_code",
+      "predicate": "indexes",
+      "object": "(icd_10_code) WHERE is_deleted = FALSE",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 4,
+      "subject": "idx_diagnoses_date",
+      "predicate": "indexes",
+      "object": "(diagnosis_date) WHERE is_deleted = FALSE",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 4,
+      "subject": "idx_diagnoses_provider",
+      "predicate": "indexes",
+      "object": "(provider_id) WHERE is_deleted = FALSE",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 4,
+      "subject": "idx_diagnoses_validity",
+      "predicate": "indexes",
+      "object": "(valid_from, valid_to)",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Patient",
+      "predicate": "can have",
+      "object": "multiple diagnoses on the same date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnosis",
+      "predicate": "principal per encounter",
+      "object": "Only one diagnosis can be marked as 'principal' per encounter",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Diagnoses",
+      "predicate": "preserved for",
+      "object": "longitudinal care tracking",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "Treatment",
+      "predicate": "has purpose",
+      "object": "Store medical treatments and procedures performed on patients",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 5,
+      "subject": "treatment_id",
+      "predicate": "is",
+      "object": "PRIMARY KEY",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "patient_id",
+      "predicate": "FK to",
+      "object": "patients.patient_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "diagnosis_id",
+      "predicate": "FK to",
+      "object": "diagnoses.diagnosis_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "treatment_name",
+      "predicate": "describes",
+      "object": "Description of treatment or procedure",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "cpt_code",
+      "predicate": "codes for",
+      "object": "billing",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "provider_id",
+      "predicate": "FK to",
+      "object": "providers.provider_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "department_id",
+      "predicate": "FK to",
+      "object": "departments.department_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "treatment_date",
+      "predicate": "is",
+      "object": "Date treatment was performed",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "treatment_status",
+      "predicate": "has",
+      "object": "Current status of treatment",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "notes",
+      "predicate": "contains",
+      "object": "Clinical notes or observations",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "is_deleted",
+      "predicate": "default",
+      "object": "FALSE",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "valid_from",
+      "predicate": "has",
+      "object": "Record validity start date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "valid_to",
+      "predicate": "has",
+      "object": "Record validity end date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "created_at",
+      "predicate": "has",
+      "object": "Record creation timestamp",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "updated_at",
+      "predicate": "has",
+      "object": "Record last update timestamp",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 5,
+      "subject": "idx_treatments_patient",
+      "predicate": "indexes",
+      "object": "(patient_id) WHERE is_deleted = FALSE",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 5,
+      "subject": "idx_treatments_diagnosis",
+      "predicate": "indexes",
+      "object": "(diagnosis_id) WHERE is_deleted = FALSE",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 5,
+      "subject": "idx_treatments_provider",
+      "predicate": "indexes",
+      "object": "(provider_id) WHERE is_deleted = FALSE",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 5,
+      "subject": "idx_treatments_department",
+      "predicate": "indexes",
+      "object": "(department_id) WHERE is_deleted = FALSE",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 5,
+      "subject": "idx_treatments_date",
+      "predicate": "indexes",
+      "object": "(treatment_date) WHERE is_deleted = FALSE",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 5,
+      "subject": "idx_treatments_validity",
+      "predicate": "indexes",
+      "object": "(valid_from, valid_to)",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 5,
+      "subject": "Treatments",
+      "predicate": "link to",
+      "object": "diagnosis for clinical justification",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 5,
+      "subject": "CPT codes",
+      "predicate": "required for",
+      "object": "billable procedures",
+      "confidence": 0.6
+    },
+    "... [149 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 249,
+    "avg_confidence": 0.8204819277108427,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Deleted Logical Deletion",
+      "definition": "A boolean indicator on a data record that specifies whether the record has been logically deleted (soft delete) rather than physically removed.",
+      "synonyms": [
+        "`is_deleted` = FALSE",
+        "`is_deleted` = TRUE"
+      ],
+      "provenance_text": "- `is_deleted = FALSE` for active records | - `is_deleted = TRUE` for logically deleted records",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Valid From And",
+      "definition": "A pair of timestamp fields (valid_from, valid_to) that define a record's validity interval for historization; valid_to NULL indicates a current (open-ended) record.",
+      "synonyms": [
+        "(valid_from, valid_to)",
+        "NOT NULL",
+        "WHERE valid_to IS NULL to retrieve current data",
+        "`valid_to` = NULL",
+        "non-NULL `valid_to`",
+        "valid_from",
+        "valid_from, valid_to",
+        "valid_to"
+      ],
+      "provenance_text": "All major tables use `valid_from` and `valid_to` timestamps for historization: | - `idx_diagnoses_validity` on (valid_from, valid_to) | - `idx_treatments_validity` on (valid_from, valid_to) | - `idx_medications_validity` on (valid_from, valid_to) | | medication_name | VARCHAR(255) | NOT NULL | Generic or brand medication name | | - Queries must include `WHERE valid_to IS NULL` to retrieve current ",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Appointment Type",
+      "definition": "A data attribute that classifies an appointment by its purpose, duration, and resource requirements, used to categorize scheduled appointments (e.g., new_patient, established, consultation, follow_up, procedure, telehealth).",
+      "synonyms": [
+        "Appointment Type"
+      ],
+      "provenance_text": "| appointment_type | VARCHAR(50) | CHECK IN ('new_patient', 'established', 'consultation', 'follow_up', 'procedure', 'telehealth') | Type of appointment | | The classification of an appointment based on purpose, duration, and resource requirements.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Diagnosis",
+      "definition": "Diagnosis is the set of medical conditions (disease, condition, or injury) identified for a patient during an encounter, typically coded (e.g., ICD-10-CM) for billing and epidemiology, and may include multiple concurrent diagnoses with a principal diagnosis designation.",
+      "synonyms": [
+        "Diagnoses"
+      ],
+      "provenance_text": "**Diagnosis**\nThe identification of a disease, condition, or injury based on clinical evaluation, laboratory results, and diagnostic imaging. Diagnoses are coded using ICD-10-CM (International Classification of Diseases, 10th Revision, Clinical Modification) for billing and epidemiological purposes. A patient may have multiple concurrent diagnoses with varying levels of clinical priority. | **Busi",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Patient",
+      "definition": "An individual who receives medical care or services from a healthcare organization and is identified by a unique patient record number (MRN), potentially across multiple episodes of care.",
+      "synonyms": [
+        "patient"
+      ],
+      "provenance_text": "**Patient**\nAn individual receiving medical care, treatment, or services from the healthcare organization. Each patient has a unique medical record number and may have multiple episodes of care across different time periods. Patients can be identified by their medical record number (MRN), which is distinct from any external insurance identifiers. | **Business Rules**:\n- A patient can have multiple",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Principal Diagnosis",
+      "definition": "The principal diagnosis is the primary medical condition chiefly responsible for the patient's admission, used to determine the diagnosis-related group (DRG) for billing.",
+      "synonyms": [
+        "principal diagnosis"
+      ],
+      "provenance_text": "**Principal Diagnosis**\nThe primary condition identified after study as chiefly responsible for admission of the patient to the healthcare facility. This diagnosis determines the primary diagnosis-related group (DRG) for billing purposes. | **Comorbidity**\nAny additional diagnosis that exists simultaneously with the principal diagnosis. Comorbidities affect patient complexity scores and reimbursem",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Service Line",
+      "definition": "A service line is a strategic grouping of related departments focused on a specific patient population or disease continuum, used for operational and financial reporting.",
+      "synonyms": [
+        "service_line"
+      ],
+      "provenance_text": "**Service Line**\nA strategic grouping of related departments focused on a specific patient population or disease continuum (e.g., Heart & Vascular, Neuroscience, Orthopedics). Service lines are used for operational and financial reporting. | | service_line | VARCHAR(100) | | Strategic service line affiliation | | - `idx_departments_service_line` on (service_line) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Treatment",
+      "definition": "A medical intervention, procedure, or clinical action performed to treat a diagnosed condition, typically linked to a diagnosis for justification and stored as records of treatments performed on patients.",
+      "synonyms": [
+        "Treatments"
+      ],
+      "provenance_text": "**Treatment**\nAny medical intervention, therapeutic procedure, or clinical action taken to address a diagnosed condition. Treatments range from medication administration to surgical procedures and behavioral therapies. Each treatment is linked to specific diagnoses through clinical justification. | ## TREATMENTS Table\n**Purpose**: Store medical treatments and procedures performed on patients. | - ",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Appointment Date",
+      "definition": "appointment_id is a surrogate key that uniquely identifies an appointment record in the database.",
+      "synonyms": [
+        "appointment_id",
+        "appointment_time"
+      ],
+      "provenance_text": "| appointment_date | DATE | NOT NULL | Scheduled date of appointment | | | appointment_id | INTEGER | PRIMARY KEY | Surrogate key for appointment records | | | appointment_time | TIME | NOT NULL | Scheduled time of appointment |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Claim Id",
+      "definition": "A unique identifier used to distinguish and reference a claim record within the system (surrogate primary key).",
+      "synonyms": [
+        "claim_number"
+      ],
+      "provenance_text": "claim_id | INTEGER | PRIMARY KEY | Surrogate key for claim records | claim_number | VARCHAR(50) | UNIQUE NOT NULL | Unique claim identifier for tracking",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Departments.Department Id",
+      "definition": "The department entity in the organization, identified by its department_id, with attributes such as department_code and department_name, used to classify where treatment occurred.",
+      "synonyms": [
+        "department_code",
+        "department_id",
+        "department_name"
+      ],
+      "provenance_text": "| department_id | INTEGER | FK \u2192 departments.department_id | Department where treatment occurred | | | department_code | VARCHAR(20) | UNIQUE NOT NULL | Standard department abbreviation | | - `idx_departments_code` on (department_code) WHERE is_deleted = FALSE | | department_id | INTEGER | FK \u2192 departments.department_id | Primary department affiliation | | - `idx_providers_department` on (departme",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Diagnosis",
+      "definition": "A diagnosis represents a specific medical condition assigned to a patient, identified by a unique diagnosis_id and described by a diagnosis_name.",
+      "synonyms": [
+        "diagnoses.diagnosis_id",
+        "diagnosis_id",
+        "diagnosis_name"
+      ],
+      "provenance_text": "| diagnosis_id | INTEGER | FK \u2192 diagnoses.diagnosis_id | Primary diagnosis indication for treatment | | | diagnosis_id | INTEGER | PRIMARY KEY | Surrogate key for diagnosis records | | | diagnosis_name | VARCHAR(255) | NOT NULL | Full diagnosis description |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Idx Medications Dates",
+      "definition": "A database index on the medications date range columns (start_date, end_date) for non-deleted records.",
+      "synonyms": [
+        "idx_diagnoses_date",
+        "idx_treatments_date"
+      ],
+      "provenance_text": "- `idx_medications_dates` on (start_date, end_date) WHERE is_deleted = FALSE | - `idx_diagnoses_date` on (diagnosis_date) WHERE is_deleted = FALSE | - `idx_treatments_date` on (treatment_date) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Idx Medications Provider",
+      "definition": "An index for active medication records keyed by National Drug Code (NDC).",
+      "synonyms": [
+        "idx_diagnoses_patient",
+        "idx_diagnoses_provider",
+        "idx_medications_ndc",
+        "idx_medications_patient",
+        "idx_treatments_diagnosis",
+        "idx_treatments_patient",
+        "idx_treatments_provider"
+      ],
+      "provenance_text": "- `idx_medications_provider` on (prescribing_provider_id) WHERE is_deleted = FALSE | - `idx_diagnoses_patient` on (patient_id) WHERE is_deleted = FALSE | - `idx_diagnoses_provider` on (provider_id) WHERE is_deleted = FALSE | - `idx_medications_ndc` on (ndc_code) WHERE is_deleted = FALSE | - `idx_medications_patient` on (patient_id) WHERE is_deleted = FALSE | - `idx_treatments_diagnosis` on (diagno",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Idx Medications Validity",
+      "definition": "An index that records the validity period (valid_from to valid_to) for diagnostic data.",
+      "synonyms": [
+        "idx_diagnoses_validity",
+        "idx_insurance_validity",
+        "idx_treatments_validity"
+      ],
+      "provenance_text": "- `idx_medications_validity` on (valid_from, valid_to) | - `idx_diagnoses_validity` on (valid_from, valid_to) | - `idx_insurance_validity` on (valid_from, valid_to) | - `idx_treatments_validity` on (valid_from, valid_to)",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Insurance Plans.Plan Id",
+      "definition": "The surrogate primary key that uniquely identifies an insurance plan record in the insurance_plans table.",
+      "synonyms": [
+        "insurance_plan_id",
+        "plan_id"
+      ],
+      "provenance_text": "insurance_plan_id | INTEGER | FK \u2192 insurance_plans.plan_id, NOT NULL | Insurance plan billed | | plan_id | INTEGER | PRIMARY KEY | Surrogate key for insurance plan records |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Medication Name",
+      "definition": "The medication_name is the human-readable name of a drug (generic or brand) as used in medication records.",
+      "synonyms": [
+        "medication_id",
+        "treatment_name"
+      ],
+      "provenance_text": "| medication_name | VARCHAR(255) | NOT NULL | Generic or brand medication name | | | medication_id | INTEGER | PRIMARY KEY | Surrogate key for medication records | | | treatment_name | VARCHAR(255) | NOT NULL | Description of treatment or procedure |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Patients.Patient Id",
+      "definition": "The unique identifier for a patient from the patients table, used to link clinical records such as diagnosis, treatment, and medication.",
+      "synonyms": [
+        "patient_id"
+      ],
+      "provenance_text": "| patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving treatment | | | patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving medication | | | patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient associated with result | | patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient associated with claim | | patient_id | INTEGER",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Plan Name",
+      "definition": "The label used to identify a specific insurance plan.",
+      "synonyms": [
+        "plan_type"
+      ],
+      "provenance_text": "| plan_name | VARCHAR(100) | NOT NULL | Insurance plan name | | | plan_type | VARCHAR(20) | CHECK IN ('commercial', 'medicare', 'medicaid', 'tricare', 'self_pay') | Type of insurance coverage |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Providers.Provider Id",
+      "definition": "A foreign key referencing the unique identifier of a provider in the providers table, representing the clinician who performed treatment or made a diagnosis in a clinical record.",
+      "synonyms": [
+        "provider_id",
+        "provider_type"
+      ],
+      "provenance_text": "| provider_id | INTEGER | FK \u2192 providers.provider_id, NOT NULL | Provider performing treatment | | | prescribing_provider_id | INTEGER | FK \u2192 providers.provider_id, NOT NULL | Provider who prescribed medication | | | ordering_provider_id | INTEGER | FK \u2192 providers.provider_id | Provider who ordered the test | | | provider_id | INTEGER | FK \u2192 providers.provider_id | Provider who made the diagnosis ",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Consulting Physician",
+      "definition": "The Attending Physician is the primary physician responsible for a patient's care during an admission or encounter, with ultimate authority over treatment decisions and discharge planning.",
+      "synonyms": [
+        "Attending Physician"
+      ],
+      "provenance_text": "**Consulting Physician**\nA specialist called upon to provide expert opinion or manage specific aspects of a patient's condition beyond the attending physician's expertise. | **Attending Physician**\nThe primary physician responsible for a patient's care during an admission or encounter. This physician has ultimate authority over treatment decisions and discharge planning.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Cpt/Hcpcs Procedure Codes",
+      "definition": "CPT/HCPCS procedure codes are standardized codes used to describe medical procedures and services for billing and reimbursement.",
+      "synonyms": [
+        "CPT codes",
+        "cpt_code"
+      ],
+      "provenance_text": "- CPT codes required for billable procedures | | cpt_code | VARCHAR(10) | CPT/HCPCS procedure code for billing | | cpt_code | VARCHAR(10) | NOT NULL | Procedure code billed",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Timestamp",
+      "definition": "A database schema concept representing a point in time used for record-keeping, typically stored as a TIMESTAMP data type and often defaulting to the current time via CURRENT_TIMESTAMP for fields like valid_from or created_at.",
+      "synonyms": [
+        "CURRENT_TIMESTAMP"
+      ],
+      "provenance_text": "| valid_to | TIMESTAMP | | Record validity end date | | valid_from | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record validity start date | valid_to | TIMESTAMP | | Record validity end date | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp | | valid_from | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record validity start date | | | created_at | TIMESTAMP | DEFAULT CURRENT_",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Clinical Notes Or Observations",
+      "definition": "A medical notes concept representing free-text documentation created by clinicians, pathologists, or technicians that records patient findings, assessments, and observations.",
+      "synonyms": [
+        "notes"
+      ],
+      "provenance_text": "| notes | TEXT | | Clinical notes or observations | | | notes | TEXT | | Pathologist or technician notes |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Date Medication Therapy Started",
+      "definition": "The start date of a medication therapy, indicating when the therapy begins for a patient.",
+      "synonyms": [
+        "Date medication therapy ended"
+      ],
+      "provenance_text": "| start_date | DATE | NOT NULL | Date medication therapy started | | | end_date | DATE | | Date medication therapy ended (NULL if ongoing) |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Dosage Amount",
+      "definition": "The numerical quantity and unit of a drug to be administered in a single dose.",
+      "synonyms": [
+        "dosage"
+      ],
+      "provenance_text": "| dosage | VARCHAR(50) | NOT NULL | Dosage amount (e.g., '10mg', '500mg') |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Cm",
+      "definition": "ICD-10-CM diagnosis codes are alphanumeric identifiers from the International Classification of Diseases, 10th Revision, Clinical Modification used to classify diseases and other health problems for clinical, billing, and epidemiological purposes.",
+      "synonyms": [
+        "ICD-10-CM",
+        "icd_10_code"
+      ],
+      "provenance_text": "**Diagnosis**\nThe identification of a disease, condition, or injury based on clinical evaluation, laboratory results, and diagnostic imaging. Diagnoses are coded using ICD-10-CM (International Classification of Diseases, 10th Revision, Clinical Modification) for billing and epidemiological purposes. A patient may have multiple concurrent diagnoses with varying levels of clinical priority. | | icd_",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Index",
+      "definition": "A database object that accelerates query performance by creating an index on one or more table columns, optionally with a filter condition.",
+      "synonyms": [
+        "Indexes"
+      ],
+      "provenance_text": "- `idx_providers_npi` on (npi) WHERE is_deleted = FALSE | - `idx_providers_name` on (last_name, first_name) WHERE is_deleted = FALSE | - `idx_providers_department` on (department_id) WHERE is_deleted = FALSE | - `idx_providers_active` on (is_active) WHERE is_active = TRUE AND is_deleted = FALSE | - `idx_providers_validity` on (valid_from, valid_to) | - `idx_departments_code` on (department_code) W",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Name Of Laboratory",
+      "definition": "A database table that stores diagnostic laboratory test results for patients.",
+      "synonyms": [
+        "LAB_RESULTS Table",
+        "lab results",
+        "lab_result_id"
+      ],
+      "provenance_text": "| test_name | VARCHAR(255) | NOT NULL | Name of laboratory test performed | | ## LAB_RESULTS Table\n**Purpose**: Store diagnostic laboratory test results for patients. | | lab_result_id | INTEGER | PRIMARY KEY | Surrogate key for lab result records |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Medication Reconciliation",
+      "definition": "Medication Reconciliation is the process of comparing a patient's medication orders to all medications the patient has been taking to avoid errors, omissions, duplications, and drug interactions.",
+      "synonyms": [
+        "Medication",
+        "Medication reconciliation"
+      ],
+      "provenance_text": "**Medication Reconciliation**\nThe process of comparing a patient's medication orders to all medications the patient has been taking to avoid errors, omissions, duplications, and drug interactions. | **Medication**\nAny pharmaceutical substance administered to a patient for therapeutic purposes. Medications include prescription drugs, over-the-counter medications, and controlled substances. Each med",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "National Provider Identifier",
+      "definition": "A National Provider Identifier is a unique federal identifier assigned to healthcare providers in the United States for identifying them in administrative, billing, and credentialing processes.",
+      "synonyms": [
+        "NPI",
+        "NPI numbers",
+        "npi"
+      ],
+      "provenance_text": "- NPI is a unique federal identifier assigned for life | **Provider**\nA licensed healthcare professional authorized to deliver medical services within their scope of practice. Provider types include physicians (MD/DO), nurse practitioners (NP), physician assistants (PA), registered nurses (RN), and clinical specialists. Each provider has unique National Provider Identifier (NPI) numbers and hospit",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Patient Privacy Rights",
+      "definition": "The process of capturing essential demographic and administrative information when a patient first presents to the healthcare system, including personal details, emergency contacts, insurance information, and consent forms.",
+      "synonyms": [
+        "Patient Registration"
+      ],
+      "provenance_text": "Under HIPAA, patients have rights to access their medical records, request amendments, obtain an accounting of disclosures, and request restrictions on certain uses and disclosures of their information. | **Patient Registration**\nThe process of capturing essential demographic and administrative information when a patient first presents to the healthcare system. This includes personal details, emer",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Prior Authorization",
+      "definition": "The process by which a healthcare payer requires and grants advance approval before providing certain services, treatments, or medications, with approval requirements varying by payer, procedure, and medical necessity.",
+      "synonyms": [
+        "authorization",
+        "prior_auth_required"
+      ],
+      "provenance_text": "The process of obtaining advance approval from an insurance payer before certain services, treatments, or medications can be provided. Authorization requirements vary by payer, procedure, and medical necessity criteria. | | prior_auth_required | BOOLEAN | DEFAULT FALSE | Whether plan requires prior authorization |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Record Last Update Timestamp",
+      "definition": "The creation timestamp represents the moment a record was first created in the data store.",
+      "synonyms": [
+        "Record creation timestamp"
+      ],
+      "provenance_text": "| updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record last update timestamp | | | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record creation timestamp |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Record Validity Period",
+      "definition": "Record validity period is the time interval during which a data record is considered valid, defined by a start date (valid_from) and an end date (valid_to).",
+      "synonyms": [
+        "Record validity end date",
+        "Record validity start date"
+      ],
+      "provenance_text": "| valid_to | TIMESTAMP | | Record validity end date | | | valid_from | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record validity start date |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Soft Delete",
+      "definition": "A logical deletion mechanism that marks records as inactive rather than physically removing them, preserving an audit trail.",
+      "synonyms": [
+        "Soft deletes"
+      ],
+      "provenance_text": "A logical deletion mechanism where records are marked as inactive rather than physically removed. | - Soft deletes preserve audit trail",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Store Medical Treatments",
+      "definition": "A data object representing the storage of diagnostic laboratory test results for patients.",
+      "synonyms": [
+        "Store diagnostic laboratory test results for patients"
+      ],
+      "provenance_text": "## TREATMENTS Table\n**Purpose**: Store medical treatments and procedures performed on patients. | ## LAB_RESULTS Table\n**Purpose**: Store diagnostic laboratory test results for patients.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Database Table",
+      "definition": "A database table in a relational data model used to store structured records, named (e.g., insurance_plans, lab_results) and typically equipped with historization columns (valid_from, valid_to) and an is_deleted flag for soft deletion.",
+      "synonyms": [
+        "Table",
+        "Table names",
+        "tables"
+      ],
+      "provenance_text": "## PROVIDERS Table | ## DEPARTMENTS Table | - Table names: plural_snake_case (e.g., `insurance_plans`, `lab_results`) | All major tables use `valid_from` and `valid_to` timestamps for historization: | - All tables include `is_deleted` flag: | - All tables include:",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Varchar(100)",
+      "definition": "A SQL variable-length string data type with a maximum length of 255 characters, used for text fields in the database.",
+      "synonyms": [
+        "VARCHAR(10)",
+        "VARCHAR(20)",
+        "VARCHAR(255)"
+      ],
+      "provenance_text": "| test_value | VARCHAR(100) | | Numeric or categorical result value | | | reference_range | VARCHAR(100) | | Expected normal range for patient population | | cpt_code | VARCHAR(10) | NOT NULL | Procedure code billed | icd_10_code | VARCHAR(10) | NOT NULL | Diagnosis code supporting medical necessity | | unit | VARCHAR(20) | | Unit of measurement (e.g., 'mg/dL', 'cells/\u03bcL') | | claim_status | VARCH",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Historized Records",
+      "definition": "Historized records are data records that maintain multiple time-stamped versions to preserve historical states, with current versions representing active validity and historical versions representing past states, created through historization on updates.",
+      "synonyms": [
+        "active records",
+        "current records",
+        "historical records",
+        "new records"
+      ],
+      "provenance_text": "- `is_deleted = FALSE` for active records | - Current records have `valid_to = NULL` | - Historical records have non-NULL `valid_to` | - Prescription changes create new records (historization)",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Amount Allowed",
+      "definition": "payer_name: the name of the insurance company or payer associated with a claim.",
+      "synonyms": [
+        "amount_charged",
+        "amount_paid",
+        "payer_name"
+      ],
+      "provenance_text": "amount_allowed | DECIMAL(10,2) | | Payer's allowed amount | amount_charged | DECIMAL(10,2) | NOT NULL | Amount billed to insurance | amount_paid | DECIMAL(10,2) | DEFAULT 0.00 | Amount actually paid by payer | | payer_name | VARCHAR(100) | NOT NULL | Insurance company or payer name |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Patient Medication Prescriptions",
+      "definition": "Represents the patient-level record of medications prescribed and actually administered, typically stored in a MEDICATIONS data structure.",
+      "synonyms": [
+        "medication orders"
+      ],
+      "provenance_text": "## MEDICATIONS Table\n**Purpose**: Store patient medication prescriptions and administrations. | **Medication Reconciliation**\nThe process of comparing a patient's medication orders to all medications the patient has been taking to avoid errors, omissions, duplications, and drug interactions.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Updated At",
+      "definition": "A timestamp field that records the time of the most recent update to a record (often automatically set on each modification).",
+      "synonyms": [
+        "on each UPDATE"
+      ],
+      "provenance_text": "| updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Record last update timestamp | | - All tables include: | - `updated_at` - updated on each UPDATE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Plural Snake Case",
+      "definition": "Plural_snake_case is a naming convention for database table identifiers that uses pluralized table names in snake_case (e.g., insurance_plans, lab_results).",
+      "synonyms": [
+        "snake_case"
+      ],
+      "provenance_text": "- Table names: plural_snake_case (e.g., `insurance_plans`, `lab_results`) | - Column names: snake_case",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Specialist",
+      "definition": "A medical professional who provides expert opinion or manages specific aspects of a patient\u2019s condition as a consulting physician.",
+      "synonyms": [
+        "specialty"
+      ],
+      "provenance_text": "**Consulting Physician**\nA specialist called upon to provide expert opinion or manage specific aspects of a patient's condition beyond the attending physician's expertise. | | specialty | VARCHAR(100) | | Medical specialty (e.g., 'Cardiology', 'Internal Medicine') |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_treatments_department` on (department_id) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_treatments_department` on (department_id) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_diagnoses_date` on (diagnosis_date) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_diagnoses_date` on (diagnosis_date) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_treatments_diagnosis` on (diagnosis_id) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_treatments_diagnosis` on (diagnosis_id) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_diagnoses_code` on (icd_10_code) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_diagnoses_code` on (icd_10_code) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_medications_ndc` on (ndc_code) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_medications_ndc` on (ndc_code) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "(Not In This Table)",
+      "definition": "- Credentialing status managed externally (not in this table)",
+      "synonyms": [],
+      "provenance_text": "- Credentialing status managed externally (not in this table)",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_diagnoses_patient` on (patient_id) WHERE is_deleted = FALSE | - `idx_treatments_patient` on (patient_id) WHERE is_deleted = FALSE | - `idx_medications_patient` on (patient_id) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_diagnoses_patient` on (patient_id) WHERE is_deleted = FALSE | - `idx_treatments_patient` on (patient_id) WHERE is_deleted = FALSE | - `idx_medications_patient` on (patient_id) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_medications_provider` on (prescribing_provider_id) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_medications_provider` on (prescribing_provider_id) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_diagnoses_provider` on (provider_id) WHERE is_deleted = FALSE | - `idx_treatments_provider` on (provider_id) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_diagnoses_provider` on (provider_id) WHERE is_deleted = FALSE | - `idx_treatments_provider` on (provider_id) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_medications_dates` on (start_date, end_date) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_medications_dates` on (start_date, end_date) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Where",
+      "definition": "- `idx_treatments_date` on (treatment_date) WHERE is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- `idx_treatments_date` on (treatment_date) WHERE is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Appointments Table",
+      "definition": "## APPOINTMENTS Table\n**Purpose**: Store patient appointment scheduling and encounter information.",
+      "synonyms": [],
+      "provenance_text": "## APPOINTMENTS Table\n**Purpose**: Store patient appointment scheduling and encounter information.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Care Organizations Acos",
+      "definition": "Models include Accountable Care Organizations (ACOs) and bundled payments.",
+      "synonyms": [],
+      "provenance_text": "Models include Accountable Care Organizations (ACOs) and bundled payments.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Active Medications",
+      "definition": "- Active medications have NULL end_date and is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- Active medications have NULL end_date and is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Administration Frequency",
+      "definition": "| frequency | VARCHAR(50) | NOT NULL | Administration frequency (e.g., 'BID', 'TID', 'PRN') |",
+      "synonyms": [],
+      "provenance_text": "| frequency | VARCHAR(50) | NOT NULL | Administration frequency (e.g., 'BID', 'TID', 'PRN') |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Appointment",
+      "definition": "A scheduled encounter between a patient and a provider for clinical services. | Status types include scheduled, confirmed, checked-in, in-progress, completed, canceled, and no-show. | ## APPOINTMENTS Table\n**Purpose**: Store patient appointment scheduling and encounter information.",
+      "synonyms": [],
+      "provenance_text": "A scheduled encounter between a patient and a provider for clinical services. | Status types include scheduled, confirmed, checked-in, in-progress, completed, canceled, and no-show. | ## APPOINTMENTS Table\n**Purpose**: Store patient appointment scheduling and encounter information.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Boolean",
+      "definition": "is_deleted | BOOLEAN | DEFAULT FALSE | Soft delete flag",
+      "synonyms": [],
+      "provenance_text": "is_deleted | BOOLEAN | DEFAULT FALSE | Soft delete flag",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Cob",
+      "definition": "The process of determining which insurance plan pays first when a patient is covered by multiple payers.",
+      "synonyms": [],
+      "provenance_text": "The process of determining which insurance plan pays first when a patient is covered by multiple payers.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Care Coordination",
+      "definition": "Coordination includes transitions of care, specialist referrals, and post-acute planning.",
+      "synonyms": [],
+      "provenance_text": "Coordination includes transitions of care, specialist referrals, and post-acute planning.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Charge Capture",
+      "definition": "The process of recording services and procedures for billing purposes. | Charges must be captured at the time of service and linked to appropriate billing codes. | Charges must be captured at the time of service and linked to appropriate billing codes.",
+      "synonyms": [],
+      "provenance_text": "The process of recording services and procedures for billing purposes. | Charges must be captured at the time of service and linked to appropriate billing codes. | Charges must be captured at the time of service and linked to appropriate billing codes.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Claim",
+      "definition": "A formal request for payment submitted to an insurance payer for services rendered to an insured patient. | Claims include procedure codes (CPT/HCPCS), diagnosis codes (ICD-10), modifiers, and charges.",
+      "synonyms": [],
+      "provenance_text": "A formal request for payment submitted to an insurance payer for services rendered to an insured patient. | Claims include procedure codes (CPT/HCPCS), diagnosis codes (ICD-10), modifiers, and charges.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Claim Scrubbing",
+      "definition": "Automated validation of claims against payer-specific rules, coding guidelines, and regulatory requirements before submission. | Scrubbing reduces claim rejections and denials.",
+      "synonyms": [],
+      "provenance_text": "Automated validation of claims against payer-specific rules, coding guidelines, and regulatory requirements before submission. | Scrubbing reduces claim rejections and denials.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Clinical Documentation",
+      "definition": "The creation and maintenance of electronic health record entries reflecting patient care, clinical decision-making, and treatment plans.",
+      "synonyms": [],
+      "provenance_text": "The creation and maintenance of electronic health record entries reflecting patient care, clinical decision-making, and treatment plans.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Clinical Quality Measures",
+      "definition": "Standardized metrics assessing the quality of care delivered across specific conditions and procedures. | Examples include readmission rates, mortality rates, complication rates, and adherence to evidence-based guidelines.",
+      "synonyms": [],
+      "provenance_text": "Standardized metrics assessing the quality of care delivered across specific conditions and procedures. | Examples include readmission rates, mortality rates, complication rates, and adherence to evidence-based guidelines.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Column Names",
+      "definition": "- Column names: snake_case",
+      "synonyms": [],
+      "provenance_text": "- Column names: snake_case",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Comorbidity",
+      "definition": "**Comorbidity**\nAny additional diagnosis that exists simultaneously with the principal diagnosis. Comorbidities affect patient complexity scores and reimbursement levels under risk-adjusted payment models.",
+      "synonyms": [],
+      "provenance_text": "**Comorbidity**\nAny additional diagnosis that exists simultaneously with the principal diagnosis. Comorbidities affect patient complexity scores and reimbursement levels under risk-adjusted payment models.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Credentialing Status",
+      "definition": "- Credentialing status managed externally (not in this table)",
+      "synonyms": [],
+      "provenance_text": "- Credentialing status managed externally (not in this table)",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Current Status Of Treatment",
+      "definition": "| treatment_status | VARCHAR(20) | CHECK IN ('scheduled', 'completed', 'canceled', 'in_progress') | Current status of treatment |",
+      "synonyms": [],
+      "provenance_text": "| treatment_status | VARCHAR(20) | CHECK IN ('scheduled', 'completed', 'canceled', 'in_progress') | Current status of treatment |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Date",
+      "definition": "service_date | DATE | NOT NULL | Date of service | submission_date | DATE | NOT NULL | Date claim submitted to payer",
+      "synonyms": [],
+      "provenance_text": "service_date | DATE | NOT NULL | Date of service | submission_date | DATE | NOT NULL | Date claim submitted to payer",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Decimal(10,2)",
+      "definition": "amount_charged | DECIMAL(10,2) | NOT NULL | Amount billed to insurance | amount_allowed | DECIMAL(10,2) | | Payer's allowed amount | amount_paid | DECIMAL(10,2) | DEFAULT 0.00 | Amount actually paid by payer",
+      "synonyms": [],
+      "provenance_text": "amount_charged | DECIMAL(10,2) | NOT NULL | Amount billed to insurance | amount_allowed | DECIMAL(10,2) | | Payer's allowed amount | amount_paid | DECIMAL(10,2) | DEFAULT 0.00 | Amount actually paid by payer",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Data Governance",
+      "definition": "The policies, processes, and standards ensuring high-quality data throughout its lifecycle.",
+      "synonyms": [],
+      "provenance_text": "The policies, processes, and standards ensuring high-quality data throughout its lifecycle.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Database",
+      "definition": "# Data Dictionary - Advanced Healthcare Management System\n\n## Database Overview\n**Database Name**: `advanced_healthcare_db`",
+      "synonyms": [],
+      "provenance_text": "# Data Dictionary - Advanced Healthcare Management System\n\n## Database Overview\n**Database Name**: `advanced_healthcare_db`",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Denial Management",
+      "definition": "The systematic process of tracking, analyzing, and appealing claim denials from payers. | Effective denial management identifies root causes and implements corrective actions. | Effective denial management identifies root causes and implements corrective actions.",
+      "synonyms": [],
+      "provenance_text": "The systematic process of tracking, analyzing, and appealing claim denials from payers. | Effective denial management identifies root causes and implements corrective actions. | Effective denial management identifies root causes and implements corrective actions.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Department",
+      "definition": "**Department**\nAn organizational unit within the healthcare facility dedicated to specific medical specialties or services (e.g., Emergency Department, Cardiology, Oncology, Radiology). Departments have hierarchical relationships and may be subdivided into sub-specialties. | ## DEPARTMENTS Table | | department_id | INTEGER | PRIMARY KEY | Surrogate key for department records |",
+      "synonyms": [],
+      "provenance_text": "**Department**\nAn organizational unit within the healthcare facility dedicated to specific medical specialties or services (e.g., Emergency Department, Cardiology, Oncology, Radiology). Departments have hierarchical relationships and may be subdivided into sub-specialties. | ## DEPARTMENTS Table | | department_id | INTEGER | PRIMARY KEY | Surrogate key for department records |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Department Codes Are",
+      "definition": "- Department codes are used for scheduling and billing",
+      "synonyms": [],
+      "provenance_text": "- Department codes are used for scheduling and billing",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Description Of Treatment",
+      "definition": "| treatment_name | VARCHAR(255) | NOT NULL | Description of treatment or procedure |",
+      "synonyms": [],
+      "provenance_text": "| treatment_name | VARCHAR(255) | NOT NULL | Description of treatment or procedure |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Diagnosis Table",
+      "definition": "## DIAGNOSES Table\n**Purpose**: Store patient diagnosis records with ICD-10 coding and temporal tracking. | | diagnosis_id | INTEGER | PRIMARY KEY | Surrogate key for diagnosis records | | | patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving the diagnosis |",
+      "synonyms": [],
+      "provenance_text": "## DIAGNOSES Table\n**Purpose**: Store patient diagnosis records with ICD-10 coding and temporal tracking. | | diagnosis_id | INTEGER | PRIMARY KEY | Surrogate key for diagnosis records | | | patient_id | INTEGER | FK \u2192 patients.patient_id, NOT NULL | Patient receiving the diagnosis |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Eob",
+      "definition": "A document from the insurance payer explaining what services were covered, what portion was paid to the provider, and what financial responsibility remains for the patient (deductibles, copayments, coinsurance).",
+      "synonyms": [],
+      "provenance_text": "A document from the insurance payer explaining what services were covered, what portion was paid to the provider, and what financial responsibility remains for the patient (deductibles, copayments, coinsurance).",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Foreign Keys",
+      "definition": "- Foreign keys: `{table}_{column}` (e.g., `patient_id`, `provider_id`)",
+      "synonyms": [],
+      "provenance_text": "- Foreign keys: `{table}_{column}` (e.g., `patient_id`, `provider_id`)",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Hipaa",
+      "definition": "Federal legislation regulating the use and disclosure of Protected Health Information (PHI).",
+      "synonyms": [],
+      "provenance_text": "Federal legislation regulating the use and disclosure of Protected Health Information (PHI).",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Historization",
+      "definition": "The practice of maintaining time-bounded versions of data records to capture state changes over time.",
+      "synonyms": [],
+      "provenance_text": "The practice of maintaining time-bounded versions of data records to capture state changes over time.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Insurance",
+      "definition": "Insurance types include private commercial plans, Medicare (federal), Medicaid (state), and TRICARE (military). | A third-party payer contract that provides coverage for medical services.",
+      "synonyms": [],
+      "provenance_text": "Insurance types include private commercial plans, Medicare (federal), Medicaid (state), and TRICARE (military). | A third-party payer contract that provides coverage for medical services.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Insurance Plan",
+      "definition": "| plan_id | INTEGER | PRIMARY KEY | Surrogate key for insurance plan records | | | plan_name | VARCHAR(100) | NOT NULL | Insurance plan name | | | payer_name | VARCHAR(100) | NOT NULL | Insurance company or payer name |",
+      "synonyms": [],
+      "provenance_text": "| plan_id | INTEGER | PRIMARY KEY | Surrogate key for insurance plan records | | | plan_name | VARCHAR(100) | NOT NULL | Insurance plan name | | | payer_name | VARCHAR(100) | NOT NULL | Insurance company or payer name |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Lab Result",
+      "definition": "**LabResult**\nThe outcome of diagnostic laboratory tests performed on patient specimens (blood, urine, tissue, etc.). Results include quantitative values, reference ranges, abnormality flags, and interpreting pathologist notes. Results are timestamped and linked to specific test orders.",
+      "synonyms": [],
+      "provenance_text": "**LabResult**\nThe outcome of diagnostic laboratory tests performed on patient specimens (blood, urine, tissue, etc.). Results include quantitative values, reference ranges, abnormality flags, and interpreting pathologist notes. Results are timestamped and linked to specific test orders.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Observation Identifiers Names",
+      "definition": "| loinc_code | VARCHAR(10) | Logical Observation Identifiers Names and Codes |",
+      "synonyms": [],
+      "provenance_text": "| loinc_code | VARCHAR(10) | Logical Observation Identifiers Names and Codes |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Minimum Necessary Standard",
+      "definition": "The HIPAA principle that only the minimum amount of PHI necessary to accomplish the intended purpose should be used, disclosed, or requested.",
+      "synonyms": [],
+      "provenance_text": "The HIPAA principle that only the minimum amount of PHI necessary to accomplish the intended purpose should be used, disclosed, or requested.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "False",
+      "definition": "- Active medications have NULL end_date and is_deleted = FALSE",
+      "synonyms": [],
+      "provenance_text": "- Active medications have NULL end_date and is_deleted = FALSE",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Phi",
+      "definition": "PHI includes demographic data, medical histories, test results, and insurance information.",
+      "synonyms": [],
+      "provenance_text": "PHI includes demographic data, medical histories, test results, and insurance information.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Patient Access",
+      "definition": "The functional area responsible for scheduling, registration, insurance verification, pre-certification, and financial counseling.",
+      "synonyms": [],
+      "provenance_text": "The functional area responsible for scheduling, registration, insurance verification, pre-certification, and financial counseling.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Population Health",
+      "definition": "The health outcomes of a group of individuals, including the distribution of such outcomes within the group. | Population health management focuses on improving outcomes for defined patient panels through preventive care and chronic disease management.",
+      "synonyms": [],
+      "provenance_text": "The health outcomes of a group of individuals, including the distribution of such outcomes within the group. | Population health management focuses on improving outcomes for defined patient panels through preventive care and chronic disease management.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Prescription Changes",
+      "definition": "- Prescription changes create new records (historization)",
+      "synonyms": [],
+      "provenance_text": "- Prescription changes create new records (historization)",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Provider",
+      "definition": "**Provider**\nA licensed healthcare professional authorized to deliver medical services within their scope of practice. Provider types include physicians (MD/DO), nurse practitioners (NP), physician assistants (PA), registered nurses (RN), and clinical specialists. Each provider has unique National Provider Identifier (NPI) numbers and hospital credentialing status. | ## PROVIDERS Table | | provider_id | INTEGER | PRIMARY KEY | Surrogate key for provider records |",
+      "synonyms": [],
+      "provenance_text": "**Provider**\nA licensed healthcare professional authorized to deliver medical services within their scope of practice. Provider types include physicians (MD/DO), nurse practitioners (NP), physician assistants (PA), registered nurses (RN), and clinical specialists. Each provider has unique National Provider Identifier (NPI) numbers and hospital credentialing status. | ## PROVIDERS Table | | provider_id | INTEGER | PRIMARY KEY | Surrogate key for provider records |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Revenue Cycle Management",
+      "definition": "The administrative and clinical functions that contribute to the capture, management, and collection of patient service revenue. | The cycle spans from patient scheduling through final payment collection.",
+      "synonyms": [],
+      "provenance_text": "The administrative and clinical functions that contribute to the capture, management, and collection of patient service revenue. | The cycle spans from patient scheduling through final payment collection.",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Route Of Administration",
+      "definition": "| route | VARCHAR(20) | CHECK IN ('oral', 'IV', 'IM', 'topical', 'inhaled', 'subcutaneous') | Route of administration |",
+      "synonyms": [],
+      "provenance_text": "| route | VARCHAR(20) | CHECK IN ('oral', 'IV', 'IM', 'topical', 'inhaled', 'subcutaneous') | Route of administration |",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    },
+    {
+      "name": "Schema",
+      "definition": "**Schema Version**: `3.2.1`",
+      "synonyms": [],
+      "provenance_text": "**Schema Version**: `3.2.1`",
+      "source_doc": "tests/fixtures/03_advanced_healthcare/business_glossary.md, tests/fixtures/03_advanced_healthcare/data_dictionary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 193
+  },
+  "tables_parsed": [
+    {
+      "name": "PATIENTS",
+      "columns": 16
+    },
+    {
+      "name": "INSURANCE_PLANS",
+      "columns": 11
+    },
+    {
+      "name": "DEPARTMENTS",
+      "columns": 12
+    },
+    {
+      "name": "PROVIDERS",
+      "columns": 13
+    },
+    {
+      "name": "DIAGNOSES",
+      "columns": 13
+    },
+    {
+      "name": "TREATMENTS",
+      "columns": 15
+    },
+    {
+      "name": "MEDICATIONS",
+      "columns": 15
+    },
+    {
+      "name": "LAB_RESULTS",
+      "columns": 16
+    },
+    {
+      "name": "APPOINTMENTS",
+      "columns": 15
+    },
+    {
+      "name": "CLAIMS",
+      "columns": 18
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "PATIENTS",
+      "description": "Stores core patient demographics and contact information, insurance linkage, and audit timestamps used for patient identity, contact, eligibility, and record lifecycle."
+    },
+    {
+      "name": "Insurance Plans",
+      "description": "Stores information about insurance plans, including identifiers, plan details, payer, validity periods, and lifecycle timestamps."
+    },
+    {
+      "name": "Departments",
+      "description": "Stores organizational department data including identifiers, hierarchy, status flags, service scope, location, and validity timestamps for governing and reporting department-level information."
+    },
+    {
+      "name": "Providers",
+      "description": "Stores information about healthcare providers, including identifying details, professional attributes, current status, and validity period for their records."
+    },
+    {
+      "name": "Diagnoses",
+      "description": "Stores clinical diagnosis records for patients, including ICD-10 codes, names, types, associated providers, and timeline information such as when the diagnosis is valid and any resolution dates."
+    },
+    {
+      "name": "Treatments",
+      "description": "Stores records of medical treatments associated with patients, including diagnosis references, provider and department details, scheduling dates, status, notes, and validity timestamps."
+    },
+    {
+      "name": "Medications",
+      "description": "Stores records of medications prescribed to patients, including medication identity, dosing, administration route and schedule, prescribing provider, effective dates, and audit timestamps."
+    },
+    {
+      "name": "LAB_RESULTS",
+      "description": "Stores laboratory test results for patients, including test identifiers, values, units, reference ranges, health status indicators, the provider who ordered the test, result date, and audit timestamps... [TRUNCATED]"
+    },
+    {
+      "name": "Appointments",
+      "description": "Stores information about patient appointments including who the patient and provider are, where it occurs, when it is scheduled, the duration, status, and any cancellation reasons, along with audit an... [TRUNCATED]"
+    },
+    {
+      "name": "Claims",
+      "description": "Stores health insurance claims data, including patient and insurance plan references, service and submission dates, billing codes, charges and payment amounts, and the claim lifecycle metadata."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 10,
+    "tables_enriched": 10,
+    "total_columns": 144
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 226,
+    "total_relationships": 255,
+    "completed_tables": 10
+  },
+  "stage_timings": {}
+}

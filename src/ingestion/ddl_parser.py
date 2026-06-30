@@ -283,6 +283,29 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
     )
 
 
+def _extract_tables(ddl_text: str, dialect: str) -> list[TableSchema]:
+    """Parse ``ddl_text`` under ``dialect`` and return extracted tables.
+
+    Returns an empty list (never raises) when no CREATE TABLE statements are
+    found, so callers can retry under a different dialect before giving up.
+    """
+    try:
+        statements = sqlglot.parse(ddl_text, dialect=dialect, error_level=sqlglot.ErrorLevel.WARN)
+    except Exception:
+        return []
+
+    tables: list[TableSchema] = []
+    for stmt in statements:
+        if stmt is None or not isinstance(stmt, exp.Create):
+            continue
+        table_ddl_source = _strip_check_constraints(stmt.sql(dialect=dialect))
+        schema = _extract_table(stmt, ddl_source=table_ddl_source)
+        if schema is not None:
+            tables.append(schema)
+            logger.debug("Parsed table '%s' (%d columns)", schema.table_name, len(schema.columns))
+    return tables
+
+
 def parse_ddl(ddl_text: str, dialect: str = "mysql") -> list[TableSchema]:
     """Parse all CREATE TABLE statements in a DDL text block.
 
@@ -306,22 +329,12 @@ def parse_ddl(ddl_text: str, dialect: str = "mysql") -> list[TableSchema]:
         )
 
     ddl_text = _strip_non_table_ddl(ddl_text)
-    try:
-        statements = sqlglot.parse(ddl_text, dialect=dialect, error_level=sqlglot.ErrorLevel.WARN)
-    except Exception as exc:
-        raise DDLParseError(f"sqlglot failed to tokenise DDL: {exc}") from exc
-
-    tables: list[TableSchema] = []
-    for stmt in statements:
-        if stmt is None:
-            continue
-        if not isinstance(stmt, exp.Create):
-            continue
-        table_ddl_source = _strip_check_constraints(stmt.sql(dialect=dialect))
-        schema = _extract_table(stmt, ddl_source=table_ddl_source)
-        if schema is not None:
-            tables.append(schema)
-            logger.debug("Parsed table '%s' (%d columns)", schema.table_name, len(schema.columns))
+    tables = _extract_tables(ddl_text, dialect)
+    # Fallback: PostgreSQL-only syntax (e.g. SERIAL) parses as nothing under the
+    # permissive mysql default. Retry with postgres before declaring failure.
+    if not tables and dialect != "postgres":
+        logger.info("No tables parsed with dialect '%s'; retrying with 'postgres'.", dialect)
+        tables = _extract_tables(ddl_text, "postgres")
 
     if not tables:
         raise DDLParseError("No CREATE TABLE statements could be parsed from the input DDL.")
