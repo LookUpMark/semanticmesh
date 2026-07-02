@@ -6,6 +6,7 @@ No LLM involved. Supports mysql, postgres, tsql, oracle dialects.
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import TYPE_CHECKING
 
@@ -289,10 +290,19 @@ def _extract_tables(ddl_text: str, dialect: str) -> list[TableSchema]:
     Returns an empty list (never raises) when no CREATE TABLE statements are
     found, so callers can retry under a different dialect before giving up.
     """
+    # Probe: silence sqlglot's per-dialect diagnostics. We deliberately try
+    # multiple dialects and tolerate failures; their warnings/errors would only
+    # flood the run log (e.g. PostgreSQL SERIAL/EXCLUDE under the mysql probe).
+    # Total failure is caught by the caller's "no tables" guard.
+    sqlglot_log = logging.getLogger("sqlglot")
+    prev_level = sqlglot_log.level
+    sqlglot_log.setLevel(logging.CRITICAL)
     try:
-        statements = sqlglot.parse(ddl_text, dialect=dialect, error_level=sqlglot.ErrorLevel.WARN)
+        statements = sqlglot.parse(ddl_text, dialect=dialect, error_level=sqlglot.ErrorLevel.IGNORE)
     except Exception:
+        sqlglot_log.setLevel(prev_level)
         return []
+    sqlglot_log.setLevel(prev_level)
 
     tables: list[TableSchema] = []
     for stmt in statements:
