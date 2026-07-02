@@ -82,7 +82,11 @@ class QueryState(TypedDict, total=False):
     entity_names: list[str]
     retrieved_contexts: list[str]
     retrieval_quality_score: float
+    retrieval_quality_score_raw: float
+    retrieval_quality_score_adjusted: float
     retrieval_chunk_count: int
+    pool_size: int
+    pool_confidence_applied: bool
     retrieval_filtered_by_threshold: bool
     context_sufficiency: str
     retrieval_gate_decision: str

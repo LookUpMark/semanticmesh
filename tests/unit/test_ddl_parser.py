@@ -50,7 +50,7 @@ class TestParseDdlBasic:
     def test_parses_single_table(self) -> None:
         tables = parse_ddl(SIMPLE_DDL)
         assert len(tables) == 1
-        assert tables[0].table_name == "CUSTOMER_MASTER"
+        assert tables[0].table_name == "customer_master"
 
     def test_returns_correct_column_count(self) -> None:
         tables = parse_ddl(SIMPLE_DDL)
@@ -60,11 +60,11 @@ class TestParseDdlBasic:
         tables = parse_ddl(SIMPLE_DDL)
         pk_cols = [c for c in tables[0].columns if c.is_primary_key]
         assert len(pk_cols) == 1
-        assert pk_cols[0].name == "CUST_ID"
+        assert pk_cols[0].name == "cust_id"
 
     def test_data_type_normalised(self) -> None:
         tables = parse_ddl(SIMPLE_DDL)
-        full_name_col = next(c for c in tables[0].columns if c.name == "FULL_NAME")
+        full_name_col = next(c for c in tables[0].columns if c.name == "full_name")
         assert full_name_col.data_type == "VARCHAR"
 
     def test_ddl_source_preserved(self) -> None:
@@ -79,17 +79,17 @@ class TestParseDdlMultipleTables:
 
     def test_foreign_key_detected(self) -> None:
         tables = parse_ddl(FK_DDL)
-        order_table = next(t for t in tables if "ORDER" in t.table_name)
+        order_table = next(t for t in tables if "order" in t.table_name)
         fk_cols = [c for c in order_table.columns if c.is_foreign_key]
         assert len(fk_cols) >= 1
-        assert fk_cols[0].name == "CUST_ID"
+        assert fk_cols[0].name == "cust_id"
 
     def test_fk_references_correct_table(self) -> None:
         tables = parse_ddl(FK_DDL)
-        order_table = next(t for t in tables if "ORDER" in t.table_name)
-        cust_id_col = next(c for c in order_table.columns if c.name == "CUST_ID")
+        order_table = next(t for t in tables if "order" in t.table_name)
+        cust_id_col = next(c for c in order_table.columns if c.name == "cust_id")
         assert cust_id_col.references is not None
-        assert "CUSTOMER_MASTER" in cust_id_col.references
+        assert "customer_master" in cust_id_col.references
 
 
 class TestParseDdlDialects:
@@ -128,7 +128,7 @@ class TestParseDdlFile:
         tables = parse_ddl_file(path)
         assert len(tables) >= 1
         table_names = {t.table_name for t in tables}
-        assert "CUSTOMER_MASTER" in table_names
+        assert "customer_master" in table_names
 
     def test_raises_on_missing_file(self, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError):

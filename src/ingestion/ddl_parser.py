@@ -196,8 +196,8 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
     if table_ref is None:
         return None
 
-    table_name: str = table_ref.name.upper()
-    schema_name: str | None = table_ref.db.upper() if table_ref.db else None
+    table_name: str = table_ref.name.lower()
+    schema_name: str | None = table_ref.db.lower() if table_ref.db else None
 
     pk_columns: set[str] = set()
     schema_def = create_expr.find(exp.Schema)
@@ -206,11 +206,11 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
 
     for constraint in schema_def.find_all(exp.PrimaryKey):
         for col in constraint.find_all(exp.Column):
-            pk_columns.add(col.name.upper())
+            pk_columns.add(col.name.lower())
 
     columns: list[ColumnSchema] = []
     for col_def in schema_def.find_all(exp.ColumnDef):
-        col_name = col_def.name.upper()
+        col_name = col_def.name.lower()
         data_type_expr = col_def.find(exp.DataType)
         data_type = _normalise_type(str(data_type_expr)) if data_type_expr else "UNKNOWN"
 
@@ -230,8 +230,8 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
                     # AUDIT-070 (F-008): REFERENCES table without an explicit referenced
                     # column (implicit PK) — fall back to the FK column name, the SQL
                     # convention, so the edge is not dropped from the KG.
-                    ref_name = ref_col.name.upper() if ref_col else col_name
-                    references = f"{ref_table.name.upper()}.{ref_name}"
+                    ref_name = ref_col.name.lower() if ref_col else col_name
+                    references = f"{ref_table.name.lower()}.{ref_name}"
 
         columns.append(
             ColumnSchema(
@@ -246,7 +246,7 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
     for fk_constraint in schema_def.find_all(exp.ForeignKey):
         # FK columns are Identifiers in fk_constraint.expressions
         fk_cols = [
-            e.name.upper() if hasattr(e, "name") else str(e.this).upper()
+            e.name.lower() if hasattr(e, "name") else str(e.this).lower()
             for e in fk_constraint.expressions
         ]
         reference = fk_constraint.find(exp.Reference)
@@ -256,7 +256,7 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
             # Referenced columns are Identifiers in the Schema's expressions
             ref_cols = (
                 [
-                    e.name.upper() if hasattr(e, "name") else str(e.this).upper()
+                    e.name.lower() if hasattr(e, "name") else str(e.this).lower()
                     for e in ref_schema.expressions
                 ]
                 if ref_schema
@@ -270,7 +270,7 @@ def _extract_table(create_expr: exp.Create, ddl_source: str) -> TableSchema | No
                             # AUDIT-070 (F-008): implicit-PK reference (no explicit
                             # referenced column list) — fall back to the FK column name.
                             ref_col_name = ref_cols[i] if i < len(ref_cols) else fk_col_name
-                            column_schema.references = f"{ref_table.name.upper()}.{ref_col_name}"
+                            column_schema.references = f"{ref_table.name.lower()}.{ref_col_name}"
 
     if not columns:
         logger.warning("Table '%s' has no parseable columns — skipping.", table_name)

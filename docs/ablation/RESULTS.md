@@ -429,3 +429,21 @@ The AI Judge scored K20 Answer Quality at **3/5** despite 92% GT coverage. Root 
 3. **Noise dilution:** Chunks ranked 6–20 on a 58-table schema often contain related-but-wrong tables (e.g., `PURCHASE_ORDER_HEADER` chunks when the question asks about `SALES_ORDER_HEADER`)
 
 K5 forces the generator to work with only the 5 most relevant chunks, producing more focused answers even if some expected sources are missed. The precision trade-off is favourable: better to answer 78% of the question precisely than 92% vaguely.
+
+---
+
+### 8.7 Retrieval Quality Score Floor Issue
+
+#### The Problem
+During the v1.5.1 ablation campaign, we observed that cross-encoder (CE) absolute scores tend to be artificially low on highly technical, multi-section content (like DDL and data dictionaries). For example, a chunk that is undeniably the best match for a query might receive a raw CE score of `0.15`. 
+
+Because of this "floor issue", the retrieval quality gate would inappropriately flag these results as poor quality, potentially rejecting them or inappropriately affecting downstream confidence heuristics.
+
+#### The Solution (Dual Metrics)
+We implemented a **pool-aware retrieval confidence adjustment** (Dual Metrics) in the `_node_rerank` phase. The rationale is that being ranked #1 in a large, competitive pool of candidates is much stronger evidence of relevance than the raw absolute CE score implies.
+
+The node now exports two metrics:
+- `retrieval_quality_score_raw`: The pure, unmodified cross-encoder score of the top chunk.
+- `retrieval_quality_score_adjusted`: The heuristically adjusted score. If the candidate pool size exceeds a minimum threshold (`pool_confidence_min_size`) and the raw score is below a ceiling (`pool_confidence_ceiling`), the score is floored to a minimum acceptable value (`pool_confidence_floor`).
+
+This allows the quality gate to use the adjusted score (avoiding false rejections on technical documents) while still preserving the raw score in the evaluation bundle for later analysis.

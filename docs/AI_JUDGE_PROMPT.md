@@ -101,7 +101,7 @@ The `evaluation_bundle.json` you receive contains:
       "generated_answer", "sources_retrieved", "contexts_retrieved",
       "covered_sources", "gt_coverage",
       "grounded", "gate_decision",
-      "retrieval_quality_score", "chunk_count",
+      "retrieval_quality_score", "retrieval_quality_score_raw", "pool_size", "pool_confidence_applied", "chunk_count",
       "semantic_verification_passed", "semantic_verification_overlap",
       "grader_rejection_count", "grader_consistency_valid", "context_sufficiency"
     }
@@ -150,7 +150,7 @@ Evaluate each dimension on a scale of **1–5** with the following criteria:
 
 **Key signals to check:**
 - `query_report.avg_gt_coverage` — Are the ground-truth sources being retrieved?
-- `query_report.avg_top_score` — How confident is the reranker in top results?
+- `per_question.retrieval_quality_score_raw` — How confident is the reranker in top results, BEFORE the 0.7 pool confidence floor is applied? Use this raw score to detect true retrieval quality issues that the adjusted `retrieval_quality_score` might mask.
 - `pipeline_health.gate_abstentions` — Did the quality gate correctly abstain on unanswerable questions?
 - Per-question: look for questions where `gt_coverage=0` — complete retrieval miss
 - Per-question: `gate_decision="abstain_early"` should correlate with negative/unanswerable questions with query_type="negative"

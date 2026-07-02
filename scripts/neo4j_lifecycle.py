@@ -74,6 +74,7 @@ def _wait_for_bolt(timeout: int = STARTUP_TIMEOUT) -> bool:
     while time.time() < deadline:
         try:
             with socket.create_connection((host, BOLT_PORT), timeout=1):
+                time.sleep(5)
                 return True
         except OSError:
             time.sleep(2)

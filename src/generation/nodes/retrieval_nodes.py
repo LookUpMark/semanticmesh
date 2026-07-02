@@ -381,8 +381,12 @@ def _node_rerank(state: QueryState) -> dict[str, Any]:
 
         return {
             "reranked_chunks": valid,
+            "retrieval_quality_score_raw": top_score,
+            "retrieval_quality_score_adjusted": quality_score,
             "retrieval_quality_score": quality_score,
             "retrieval_chunk_count": len(valid),
+            "pool_size": len(pool),
+            "pool_confidence_applied": top_score < quality_score,
             "retrieval_filtered_by_threshold": False,
             "context_sufficiency": sufficiency,
         }
