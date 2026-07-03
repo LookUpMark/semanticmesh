@@ -1,0 +1,1796 @@
+{
+  "study_id": "AB-BEST-K20",
+  "timestamp": "2026-07-03T11:00:17.573609+00:00",
+  "trace_id": "AB-BEST-K20.2026-07-03T11-00-17.573609+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md",
+    "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+  ],
+  "ddl_files": [
+    "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Retail Banking Business Glossary\n\nThis document defines the core business concepts and terminology used in the retail banking domain.\n\n---\n\n## Account\n\n**Definition:** A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds.\n\n**Business Context:** Accounts are the primary vehicle for customer banking relationships. They can be individual or jointly held, and may be organized into hierarchical portfolio structures for relationship managem... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "637"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Transaction\n\n**Definition:** Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees.\n\n**Business Context:** Transactions represent the operational heartbeat of banking. They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service.\n\n**Key Attributes:**\n- Transaction ID (unique identifier)\n- Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fe... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "717"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate.\n\n**Business Context:** Interest is the fundamental profit mechanism in banking. Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.\n\n**Key Attributes:**\n- Interest Rate (annual percentage)\n- APR (Annual Percentage Rate) - for loans\n- APY (Annual Percentage Yield) - for d... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "686"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## ATM\n\n**Definition:** Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance.\n\n**Business Context:** ATMs extend banking access beyond branch hours and locations. They can be physically attached to branches or deployed as standalone units in high-traffic areas like malls and grocery stores.\n\n**Key Attributes:**\n- ATM ID and Code\n- Location (address and GPS coordinates)\n- ATM Type (Standalone, Branch, DriveThrough... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "761"
+    },
+    {
+      "chunk_id": 4,
+      "text": "# Retail Banking Data Dictionary\n\nThis document provides comprehensive schema documentation for the retail banking database, including table structures, column definitions, constraints, and business concept mappings.\n\n---\n\n## customers\n\n**Description:** Core customer dimension table containing master data for all individual and corporate banking customers. Includes KYC (Know Your Customer) compliance status, risk profiling for investment suitability, and preferred customer flags for VIP treatmen... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "538"
+    },
+    {
+      "chunk_id": 5,
+      "text": "## branches\n\n**Description:** Physical bank locations including full-service branches, satellite offices, and ATM-only locations. Tracks staffing levels, operating hours, ATM counts, and branch status for operational management.\n\n**Primary Key:** `branch_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| branch_id | INTEGER | Unique branch identifier (primary key) | NO |\n| branch_code | VARCHAR(4) | 4-digit ... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "489"
+    },
+    {
+      "chunk_id": 6,
+      "text": "## atms\n\n**Description:** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location services, and operational status for availability management.\n\n**Primary Key:** `atm_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| atm_id | INTEGER | Unique ATM identifier (primary key) | NO |\n| atm_code | VA... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "464"
+    },
+    {
+      "chunk_id": 7,
+      "text": "## accounts\n\n**Description:** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implements parent-child hierarchy for portfolio aggregation (investment accounts contain child accounts). Tracks balances, interest accrual, fees, and account lifecycle status.\n\n**Primary Key:** `account_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| account_id |... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "668"
+    },
+    {
+      "chunk_id": 8,
+      "text": "## customer_account\n\n**Description:** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes.\n\n**Primary Key:** Composite (`customer_id`, `account_id`)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| customer_id | INTEGER | Foreign key to cus... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "392"
+    },
+    {
+      "chunk_id": 9,
+      "text": "## transactions\n\n**Description:** Transaction fact table recording all account activity. Supports multiple transaction types including debits, credits, transfers, and withdrawals. Tracks calculated fields (balance_after) and includes location data for POS and ATM transactions for fraud detection.\n\n**Primary Key:** `transaction_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Uniq... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "480"
+    },
+    {
+      "chunk_id": 10,
+      "text": "## loans\n\n**Description:** Loan portfolio table tracking all lending products including mortgages, personal loans, auto loans, HELOCs, and credit cards. Records original terms, amortization schedules, current balances, and maturity dates for loan servicing and portfolio management.\n\n**Primary Key:** `loan_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| loan_id | INTEGER | Unique loan identifier (primary k... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "497"
+    },
+    {
+      "chunk_id": 11,
+      "text": "## cards\n\n**Description:** Payment card issuance table for debit, credit, and ATM cards. Links cards to both customer and account. Tracks security features (chip, contactless, PIN), spending limits, and card status. Supports multiple networks (Visa, Mastercard, Discover, American Express).\n\n**Primary Key:** `card_id` (INTEGER, auto-increment)\n\n**Column Details:**\n\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| card_id | INTEGER | Unique card identifier (p... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "658"
+    },
+    {
+      "chunk_id": 12,
+      "text": "## Entity Relationship Summary\n\n**Key Relationships:**\n- customers \u2190\u2192 accounts (many-to-many via customer_account)\n- accounts \u2192 accounts (self-reference for parent-child hierarchy)\n- accounts \u2192 transactions (one-to-many)\n- customers \u2192 loans (one-to-many)\n- accounts \u2192 cards (one-to-many)\n- branches \u2192 accounts (one-to-many)\n- branches \u2192 atms (one-to-many)\n\n**Cascade Rules:**\n- All foreign keys have NO CASCADE by default (manual integrity management)\n- customer_account junction table requires both ... [TRUNCATED]",
+      "source": "data_dictionary.md",
+      "page": "1",
+      "token_count": "246"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 13,
+    "total_tokens": 7233,
+    "avg_tokens": 556.3846153846154
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "is defined as",
+      "object": "a financial arrangement between a customer and the bank",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account",
+      "predicate": "allows",
+      "object": "deposit, withdrawal, and management of funds",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Accounts",
+      "predicate": "are",
+      "object": "the primary vehicle for customer banking relationships",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is",
+      "object": "an individual or corporate entity",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "undergoes",
+      "object": "KYC screening",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is assigned",
+      "object": "a risk profile",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Customer ID",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Tax ID",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "KYC Status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "defines",
+      "object": "Any financial activity that affects the balance of an account",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "flow through states",
+      "object": "Pending \u2192 Posted",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction",
+      "predicate": "create",
+      "object": "audit trails",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction ID",
+      "predicate": "is",
+      "object": "unique identifier",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction Type",
+      "predicate": "includes",
+      "object": "Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Amount",
+      "predicate": "and currency are",
+      "object": "Amount and Currency",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transaction Date/Time",
+      "predicate": "is",
+      "object": "Transaction Date/Time",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Status",
+      "predicate": "has values",
+      "object": "Pending, Posted, Failed, Cancelled, OnHold",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Balance After Transaction",
+      "predicate": "is",
+      "object": "Balance After Transaction",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Description and Reference Number",
+      "predicate": "are",
+      "object": "Description and Reference Number",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Location",
+      "predicate": "applies to",
+      "object": "POS and ATM transactions",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Debit transactions",
+      "predicate": "reduce",
+      "object": "account balance",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Credit transactions",
+      "predicate": "increase",
+      "object": "account balance",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Transactions",
+      "predicate": "must maintain",
+      "object": "sufficient funds",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Posted transactions",
+      "predicate": "are",
+      "object": "final",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Failed transactions",
+      "predicate": "are",
+      "object": "logged for audit but do not affect balance",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "POS transactions",
+      "predicate": "include",
+      "object": "merchant location data for fraud detection",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Synonyms",
+      "predicate": "list",
+      "object": "Financial Transaction, Account Activity, Bank Transaction",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "POS Debit",
+      "predicate": "example of",
+      "object": "Whole Foods Market",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ACH Credit",
+      "predicate": "example of",
+      "object": "Payroll Direct Deposit",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Online Bill Pay",
+      "predicate": "example of",
+      "object": "Con Edison",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ATM Withdrawal",
+      "predicate": "example of",
+      "object": "ATM-0003",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Monthly Maintenance Fee",
+      "predicate": "example of",
+      "object": "monthly fee",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan",
+      "predicate": "definition",
+      "object": "A financial arrangement where the bank lends a principal amount to a customer, who repays with inter... [TRUNCATED]",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loans",
+      "predicate": "range from",
+      "object": "secured mortgages to unsecured personal loans and revolving credit facilities",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan ID",
+      "predicate": "is",
+      "object": "unique identifier",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan Type",
+      "predicate": "includes",
+      "object": "Mortgage, Personal, Auto, HELOC, CreditCard",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Principal Amount",
+      "predicate": "is",
+      "object": "Principal Amount",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Interest Rate",
+      "predicate": "is",
+      "object": "APR",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Term",
+      "predicate": "is",
+      "object": "months",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Monthly Payment Amount",
+      "predicate": "is",
+      "object": "Monthly Payment Amount",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Balance Due",
+      "predicate": "is",
+      "object": "Balance Due",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Origination Date and Maturity Date",
+      "predicate": "are",
+      "object": "Origination Date and Maturity Date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Loan Status",
+      "predicate": "has states",
+      "object": "Pending, Approved, Active, PaidOff, Defaulted",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Interest rates",
+      "predicate": "vary by",
+      "object": "loan type and customer creditworthiness",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Mortgages",
+      "predicate": "require",
+      "object": "collateral (real estate) and higher KYC levels",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "HELOC",
+      "predicate": "allows",
+      "object": "revolving access to equity",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Credit card loans",
+      "predicate": "have",
+      "object": "no fixed term (revolving credit)",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Defaulted loans",
+      "predicate": "trigger",
+      "object": "collections and credit reporting",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Early payoff",
+      "predicate": "may incur",
+      "object": "prepayment penalties",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Mortgage",
+      "predicate": "example of",
+      "object": "$350,000 at 5.50% APR for 360 months ($1,987.57/month)",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Personal Loan",
+      "predicate": "example of",
+      "object": "$15,000 at 8.50% APR for 48 months ($368.22/month)",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Auto Loan",
+      "predicate": "example of",
+      "object": "$35,000 at 6.50% APR for 60 months ($684.57/month)",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "HELOC",
+      "predicate": "example of",
+      "object": "$50,000 credit line at 8.50% APR, $450/month minimum payment",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Credit Card",
+      "predicate": "example of",
+      "object": "$10,000 limit at 18.50% APR, $250 minimum monthly payment",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest",
+      "predicate": "is defined as",
+      "object": "The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), exp... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest",
+      "predicate": "in banking",
+      "object": "fundamental profit mechanism",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Banks",
+      "predicate": "pay",
+      "object": "interest on deposits",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Banks",
+      "predicate": "charge",
+      "object": "interest on loans",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest Rate",
+      "predicate": "is",
+      "object": "annual percentage",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "APR",
+      "predicate": "stands for",
+      "object": "Annual Percentage Rate",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "APY",
+      "predicate": "stands for",
+      "object": "Annual Percentage Yield",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Compounding Frequency",
+      "predicate": "options",
+      "object": "daily, monthly, annually",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "APY accounts for",
+      "predicate": "is higher than",
+      "object": "stated rate",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Promotional rates",
+      "predicate": "may be",
+      "object": "temporary",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Penalty rates",
+      "predicate": "may apply for",
+      "object": "rule violations",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Finance Charge",
+      "predicate": "is synonym for",
+      "object": "Yield",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Yield",
+      "predicate": "is synonym for",
+      "object": "Return",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Standard Savings",
+      "predicate": "has",
+      "object": "APY 0.25%",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Standard Savings",
+      "predicate": "has",
+      "object": "stated rate 0.10%",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Premium Savings",
+      "predicate": "has",
+      "object": "APY 0.50%",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Premium Savings",
+      "predicate": "has",
+      "object": "stated rate 0.495%",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Money Market",
+      "predicate": "has",
+      "object": "APY tiered by balance",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "12-Month CD",
+      "predicate": "has",
+      "object": "APR 4.50%",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "12-Month CD",
+      "predicate": "has",
+      "object": "APY 4.60%",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Mortgage",
+      "predicate": "has",
+      "object": "APR 5.50% fixed",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Mortgage",
+      "predicate": "has",
+      "object": "360-month term",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Credit Card",
+      "predicate": "has",
+      "object": "APR 18.50% variable",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Credit Card",
+      "predicate": "has",
+      "object": "variable APR",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Interest",
+      "predicate": "is identified as",
+      "object": "Definition",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Branch",
+      "predicate": "is defined as",
+      "object": "A physical banking location where customers can access in-person services including teller transacti... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM",
+      "predicate": "is a self-service banking terminal",
+      "object": "Automated Teller Machine",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATMs",
+      "predicate": "extend",
+      "object": "banking access beyond branch hours and locations",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM",
+      "predicate": "can be",
+      "object": "physically attached to branches or deployed as standalone units",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM ID and Code",
+      "predicate": "belong to",
+      "object": "ATM",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM",
+      "predicate": "has",
+      "object": "Location (address and GPS coordinates)",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM Type",
+      "predicate": "can be",
+      "object": "Standalone, Branch, DriveThrough",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Status",
+      "predicate": "can be",
+      "object": "Operational, OutOfService, OutOfCash",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cash Balance",
+      "predicate": "has",
+      "object": "Last Replenished Date",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Supported Features",
+      "predicate": "include",
+      "object": "Deposit, Cardless Withdrawal",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Installation Date",
+      "predicate": "specifies",
+      "object": "when installed",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Standalone ATMs",
+      "predicate": "are",
+      "object": "not affiliated with a branch",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Branch ATMs",
+      "predicate": "are located on",
+      "object": "branch premises",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "DriveThrough ATMs",
+      "predicate": "serve",
+      "object": "vehicles only",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cash replenishment",
+      "predicate": "is triggered when",
+      "object": "balance falls below threshold",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 3,
+      "subject": "OutOfCash status",
+      "predicate": "prevents",
+      "object": "withdrawal attempts",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Cardless transactions",
+      "predicate": "require",
+      "object": "mobile app authentication",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM",
+      "predicate": "is synonyms with",
+      "object": "Cash Machine",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM-0001",
+      "predicate": "is",
+      "object": "Branch ATM at 123 Main Street, $85,000 cash balance, supports deposits",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "ATM-0003",
+      "predicate": "is",
+      "object": "Branch ATM at 456 Oak Avenue, $62,000 cash balance, cardless enabled",
+      "confidence": 0.8
+    },
+    {
+      "chunk_index": 3,
+      "subject": "STANDALONE-001",
+      "predicate": "is",
+      "object": "Shopping Mall ATM, $25,000 cash balance, deposit not supported",
+      "confidence": 0.8
+    },
+    "... [140 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 240,
+    "avg_confidence": 0.8914583333333334,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Apr",
+      "definition": "Represents a personal loan of $15,000 at 8.50% APR to be repaid over 48 months with a monthly payment of $368.22.",
+      "synonyms": [
+        "$15,000 at 8.50% APR for 48 months ($368.22/month)",
+        "$35,000 at 6.50% APR for 60 months ($684.57/month)"
+      ],
+      "provenance_text": "- Mortgage: $350,000 at 5.50% APR for 360 months ($1,987.57/month) | - Personal Loan: $15,000 at 8.50% APR for 48 months ($368.22/month) | - Auto Loan: $35,000 at 6.50% APR for 60 months ($684.57/month)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Boolean Flag Value",
+      "definition": "A binary boolean flag value used as a default in configuration settings to indicate enabled (true/1) or disabled (false/0) state.",
+      "synonyms": [
+        "0 (false)",
+        "1 (true)"
+      ],
+      "provenance_text": "**Default Values:**\n- is_primary: 0 (false) | **Default Values:**\n- pin_set: 0 (false) | **Default Values:**\n- has_chip: 1 (true) | **Default Values:**\n- contactless_enabled: 1 (true)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Apr 18.50% Variable",
+      "definition": "APR 18.50% variable refers to the annual percentage rate charged on loans or credit products, with a variable rate that can change based on an index such as the prime rate.",
+      "synonyms": [
+        "APR",
+        "APR 4.50%",
+        "APR 5.50% fixed",
+        "APY 0.25%",
+        "APY 0.50%",
+        "APY 4.60%",
+        "variable APR"
+      ],
+      "provenance_text": "- Credit Card: 18.50% variable APR based on prime rate | - Interest Rate (APR) | - APR (Annual Percentage Rate) - for loans | - 12-Month CD: 4.50% APR (4.60% APY with monthly compounding) | - Mortgage: 5.50% fixed APR for 360-month term | - Standard Savings: 0.25% APY (0.10% stated rate with monthly compounding) | - Premium Savings: 0.50% APY (0.495% stated rate with daily compounding)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Atm Locations",
+      "definition": "ATM card: a bank card that provides access to automated teller machine transactions, used at ATMs (not POS terminals).",
+      "synonyms": [
+        "ATM",
+        "ATM cards",
+        "ATMs",
+        "at ATMs"
+      ],
+      "provenance_text": "## atms\n\n**Description:** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location services, and operational status for availability management. | Definition: Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller ",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Bank Account",
+      "definition": "Bank account: a customer\u2019s financial account used to deposit, withdraw, and manage funds, represented in the data model as a core entity with identifiers (account_id, account_number) and attributes like balance, types, and lifecycle, potentially supporting a hierarchy of sub-accounts.",
+      "synonyms": [
+        "Account",
+        "Account numbers",
+        "Accounts",
+        "account",
+        "account_id",
+        "account_number",
+        "accounts",
+        "accounts(account_id)"
+      ],
+      "provenance_text": "Definition: A financial arrangement between a customer and the bank that allows deposit, withdrawal, and management of funds. | Account numbers must be unique | Business Context: Accounts are the primary vehicle for customer banking relationships. | ## accounts\n\n**Description:** Deposit account master table supporting multiple account types (checking, savings, money market, CD, investment). Implem",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Annual Percentage Yield",
+      "definition": "Annual Percentage Rate (APR) represents the annualized cost of borrowing expressed as a percentage of the loan principal.",
+      "synonyms": [
+        "Annual Percentage Rate"
+      ],
+      "provenance_text": "- APY (Annual Percentage Yield) - for deposits | - APR (Annual Percentage Rate) - for loans",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Current Timestamp",
+      "definition": "CURRENT_TIMESTAMP represents the current date and time value used as a default for timestamp/datetime columns.",
+      "synonyms": [
+        "CURRENT_DATE"
+      ],
+      "provenance_text": "Default Values:\n- created_at: CURRENT_TIMESTAMP | - created_at: CURRENT_TIMESTAMP | - updated_at: CURRENT_TIMESTAMP | **Default Values:**\n- created_at: CURRENT_TIMESTAMP | **Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Unique transaction identifier (primary key) | NO |\n| account_id | INTEGER | Foreign key to ac",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Payment Card",
+      "definition": "A payment card issued to a customer, linked to their bank account or credit line, enabling electronic transactions at POS terminals, ATMs, and online merchants.",
+      "synonyms": [
+        "Card",
+        "cards"
+      ],
+      "provenance_text": "Definition: A payment card issued to a customer, linked to their bank account or credit line, enabling electronic transactions at POS terminals, ATMs, and online merchants. | accounts \u2192 cards (one-to-many)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Payment Card",
+      "definition": "A Payment Card record representing a card issued to a customer, with a unique identifier (card_id), a PAN (card_number), and a card_type indicating Debit, Credit, or ATM.",
+      "synonyms": [
+        "Card Type",
+        "Card numbers",
+        "card_id",
+        "card_number",
+        "card_type"
+      ],
+      "provenance_text": "- Card Type (Debit, Credit, ATM) | Card numbers must be unique | Column | Type | Description | Nullable |\n| card_id | INTEGER | Unique card identifier (primary key) | NO | | Primary Key: `card_id` (INTEGER, auto-increment) | Column | Type | Description | Nullable |\n| card_number | VARCHAR(20) | Primary Account Number (PAN), must be unique | NO | | **Constraints:**\n- CHECK (card_type IN ('Debit', '",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Credit Card",
+      "definition": "Credit Card: a revolving line of credit issued by a financial institution that allows ongoing purchases up to a set limit, with interest charged at an APR and required minimum monthly payments.",
+      "synonyms": [
+        "Credit card loans",
+        "Credit cards"
+      ],
+      "provenance_text": "- Credit Card: $10,000 limit at 18.50% APR, $250 minimum monthly payment | - Credit Card: 18.50% variable APR based on prime rate | - Credit card loans have no fixed term (revolving credit) | - Credit cards access revolving credit line requiring monthly payments",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Credit Transactions",
+      "definition": "Credit transactions are the subset of financial transactions that increase an account balance.",
+      "synonyms": [
+        "transactions"
+      ],
+      "provenance_text": "- Credit transactions increase account balance | accounts \u2192 transactions (one-to-many)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Customer",
+      "definition": "A banking customer: an individual or corporate entity whose KYC is verified and whose master data is stored in the customer dimension to support banking relationships, risk profiling, and regulatory compliance.",
+      "synonyms": [
+        "customer",
+        "customers"
+      ],
+      "provenance_text": "Definition: An individual or corporate entity that maintains a banking relationship with the institution, having completed Know Your Customer (KYC) verification. | Each customer undergoes KYC screening to comply with regulatory requirements and is assigned a risk profile to guide product recommendations and investment strategies. | Key Attributes: - Customer ID (primary key) | Key Attributes: - Ta",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Atm Daily Limit",
+      "definition": "The daily cap on cash withdrawals from ATMs.",
+      "synonyms": [
+        "Daily limits",
+        "daily_limit"
+      ],
+      "provenance_text": "**Default Values:**\n- atm_daily_limit: 500.00 | - Daily limits prevent fraud and control exposure | **Default Values:**\n- daily_limit: 3000.00",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Debit Transactions",
+      "definition": "A debit card is a payment card linked to a bank account that enables direct debits from the account for purchases and cash withdrawals.",
+      "synonyms": [
+        "Debit Card",
+        "Debit cards"
+      ],
+      "provenance_text": "- Debit transactions reduce account balance | - Debit Card: ****-****-****-0366 (Visa), $3,000 daily limit, $500 ATM limit | - Debit cards deduct directly from linked checking account",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Debit, Credit, Atm",
+      "definition": "The set of allowed card type values for payment instruments (Debit, Credit, ATM) used to classify card transactions.",
+      "synonyms": [
+        "Debit/Credit/ATM"
+      ],
+      "provenance_text": "- Card Type (Debit, Credit, ATM) | **Constraints:**\n- CHECK (card_type IN ('Debit', 'Credit', 'ATM'))",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Type Debit Credit Transfer",
+      "definition": "A categorical attribute that classifies a financial transaction by type, restricted to Debit, Credit, Transfer, Payment, Withdrawal, Deposit, or Fee.",
+      "synonyms": [
+        "Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee",
+        "Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee"
+      ],
+      "provenance_text": "- Transaction Type (Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee) | **Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Unique transaction identifier (primary key) | NO |\n| account_id | INTEGER | Foreign key to accounts | NO |\n| transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withd",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Annual Interest Rate (Apr)",
+      "definition": "The annual percentage rate charged or earned on a financial instrument, expressed as a yearly percentage of the principal.",
+      "synonyms": [
+        "Interest Rate",
+        "Interest rates",
+        "interest_rate"
+      ],
+      "provenance_text": "- Interest Rate (APR) | - Interest Rate (annual percentage) | - Interest rates vary by loan type and customer creditworthiness | interest_rate | DECIMAL(5,4) | Annual interest rate (APR) | NO",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Loan",
+      "definition": "A financial arrangement in which a lender provides funds to a borrower and the borrower repays the principal plus interest over a specified term.",
+      "synonyms": [
+        "Loans",
+        "loans"
+      ],
+      "provenance_text": "Definition: A financial arrangement where the bank lends a principal amount to a customer, who repays with interest over a specified term according to a fixed schedule. | They range from secured mortgages to unsecured personal loans and revolving credit facilities. | customers \u2192 loans (one-to-many)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Loan Type",
+      "definition": "An attribute representing the category of a loan, indicating whether the loan is a Mortgage, Personal, Auto, HELOC, or CreditCard.",
+      "synonyms": [
+        "Loan Type"
+      ],
+      "provenance_text": "loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Mortgage",
+      "definition": "A mortgage is a real estate-secured loan extended to a borrower, repaid over a fixed term with interest (e.g., 360 months at a fixed APR), typically requiring collateral and due diligence such as KYC.",
+      "synonyms": [
+        "Mortgages"
+      ],
+      "provenance_text": "- Mortgage: $350,000 at 5.50% APR for 360 months ($1,987.57/month) | - Mortgage: 5.50% fixed APR for 360-month term | - Mortgages require collateral (real estate) and higher KYC levels",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Pos And Atm Transactions",
+      "definition": "POS and ATM transactions refer to financial transactions processed at point-of-sale terminals and ATMs, with accompanying location data used for fraud detection.",
+      "synonyms": [
+        "POS transactions"
+      ],
+      "provenance_text": "- Location (for POS and ATM transactions) | - POS transactions include merchant location data for fraud detection",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Status",
+      "definition": "A status attribute that represents the current state of an entity or process (e.g., Pending, Posted, Failed, OnHold, Active, TemporarilyClosed, PermanentlyClosed).",
+      "synonyms": [
+        "status"
+      ],
+      "provenance_text": "- Status (Pending, Posted, Failed, Cancelled, OnHold) | - Status (Operational, OutOfService, OutOfCash) | status | VARCHAR(20) | Current status: Active/TemporarilyClosed/PermanentlyClosed | NO | Default Values:\n- status: 'Active' | - CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed')) | **Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Transaction",
+      "definition": "A financial activity that affects an account balance (debits, credits, transfers, withdrawals, and fees) that progresses through states (e.g., Pending to Posted) and is recorded for audit trails and regulatory compliance.",
+      "synonyms": [
+        "Transactions"
+      ],
+      "provenance_text": "Definition: Any financial activity that affects the balance of an account, including debits, credits, transfers, withdrawals, and fees. | They flow through multiple states (Pending \u2192 Posted) and create audit trails for regulatory compliance and customer service. | - Transactions must maintain sufficient funds (except for overdraft-protected accounts)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Transaction Date",
+      "definition": "The timestamp indicating when a financial or ledger transaction occurred, stored as a date-time value.",
+      "synonyms": [
+        "Transaction Date/Time"
+      ],
+      "provenance_text": "**Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Unique transaction identifier (primary key) | NO |\n| account_id | INTEGER | Foreign key to accounts | NO |\n| transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO |\n| amount | DECIMAL(15,2) | Transaction amount (always pos",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Transaction Type",
+      "definition": "A field that indicates the type or category of a financial transaction (e.g., Debit, Credit, Transfer, Payment, Withdrawal, Deposit, Fee).",
+      "synonyms": [
+        "Transaction Type"
+      ],
+      "provenance_text": "**Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Unique transaction identifier (primary key) | NO |\n| account_id | INTEGER | Foreign key to accounts | NO |\n| transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO |\n| amount | DECIMAL(15,2) | Transaction amount (always pos",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Automated Teller Machine (Atm)",
+      "definition": "A physical Automated Teller Machine (ATM) in the banking network, represented as a single entity identified by a unique internal identifier (atm_id) and also assigned a unique external code (atm_code).",
+      "synonyms": [
+        "atm_code",
+        "atm_id"
+      ],
+      "provenance_text": "**Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| atm_id | INTEGER | Unique ATM identifier (primary key) | NO |\n| atm_code | VARCHAR(10) | Unique ATM code | NO | | **Primary Key:** `atm_id` (INTEGER, auto-increment)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Customer Account",
+      "definition": "A junction/entity that models the association between a customer and an account (a many-to-many relationship) used to track joint ownership, authorized signers, custodial relationships, ownership percentages, and primary ownership designation for billing and legal purposes.",
+      "synonyms": [
+        "customer and account"
+      ],
+      "provenance_text": "## customer_account\n\n**Description:** Junction table implementing many-to-many relationship between customers and accounts. Supports joint ownership, authorized signers, and custodial relationships. Tracks ownership percentages and primary owner designation for billing and legal purposes. | **Primary Key:** Composite (`customer_id`, `account_id`) | customer_account junction table requires both cus",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Temporarily Closed",
+      "definition": "A predefined set of loan lifecycle statuses (Pending, Approved, Active, PaidOff, Defaulted) used to track the progression of a loan.",
+      "synonyms": [
+        "Active, Frozen, Blocked, Expired",
+        "Active/Frozen/Blocked/Expired",
+        "Pending, Approved, Active, PaidOff, Defaulted",
+        "Pending, Posted, Failed, Cancelled, OnHold",
+        "Pending/Approved/Active/PaidOff/Defaulted"
+      ],
+      "provenance_text": "status | VARCHAR(20) | Current status: Active/TemporarilyClosed/PermanentlyClosed | NO | - Card Status (Active, Frozen, Blocked, Expired) | **Constraints:**\n- CHECK (status IN ('Active', 'Frozen', 'Blocked', 'Expired')) | - Loan Status (Pending, Approved, Active, PaidOff, Defaulted) | - Status (Pending, Posted, Failed, Cancelled, OnHold) | status | VARCHAR(20) | Status: Pending/Approved/Active/Pai",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Amount",
+      "definition": "The monetary value of a financial transaction, represented as a positive decimal amount in the transaction record.",
+      "synonyms": [
+        "Amount"
+      ],
+      "provenance_text": "**Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Unique transaction identifier (primary key) | NO |\n| account_id | INTEGER | Foreign key to accounts | NO |\n| transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO |\n| amount | DECIMAL(15,2) | Transaction amount (always pos",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Principal Amount",
+      "definition": "The original amount borrowed on a loan, i.e., the loan's principal.",
+      "synonyms": [
+        "Principal Amount"
+      ],
+      "provenance_text": "principal_amount | DECIMAL(15,2) | Original loan principal | NO | - Principal Amount",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Monthly Payment",
+      "definition": "A monetary value representing the required amount to be paid on a monthly basis, typically recorded as a monthly payment obligation in financial data.",
+      "synonyms": [
+        "monthly fee",
+        "monthly_fee"
+      ],
+      "provenance_text": "monthly_payment | DECIMAL(10,2) | Required monthly payment | NO | - Monthly Maintenance Fee: $12.00 automatically assessed | - monthly_fee: 0.00",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Available Balance",
+      "definition": "The current outstanding balance owed on an account or invoice.",
+      "synonyms": [
+        "Balance Due",
+        "balance_after",
+        "balance_due",
+        "current_balance",
+        "minimum_balance"
+      ],
+      "provenance_text": "- available_balance: 0.00 | - Balance Due | **Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Unique transaction identifier (primary key) | NO |\n| account_id | INTEGER | Foreign key to accounts | NO |\n| transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO |\n| amount | DE",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Bank Branch",
+      "definition": "A Bank Branch is a physical banking location offering in-person services (teller transactions, account opening, loan applications, and financial advisory services) and associated metadata such as branch_id, branch_code, branch_name, and branch_type, along with relationships to accounts and ATMs.",
+      "synonyms": [
+        "Branch",
+        "Branch codes",
+        "Name of branch manager",
+        "branch_code",
+        "branch_id",
+        "branch_name",
+        "branch_type",
+        "branches",
+        "branches(branch_id)"
+      ],
+      "provenance_text": "## Branch\n\n**Definition:** A physical banking location where customers can access in-person services including teller transactions, account opening, loan applications, and financial advisory services. | Branch codes must be unique | manager_name | VARCHAR(100) | Name of branch manager | YES | branch_code | VARCHAR(4) | 4-digit branch code, must be unique | NO | Primary Key: `branch_id` (INTEGER, a",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Account Type",
+      "definition": "The account_type attribute representing the type of bank account, constrained to the values Checking, Savings, MoneyMarket, CD, or Investment.",
+      "synonyms": [
+        "CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment'))",
+        "Checking/Savings/MoneyMarket/CD/Investment"
+      ],
+      "provenance_text": "- CHECK (account_type IN ('Checking', 'Savings', 'MoneyMarket', 'CD', 'Investment')) | - account_type | VARCHAR(20) | Type: Checking/Savings/MoneyMarket/CD/Investment | NO |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Cardless And Contactless Transactions",
+      "definition": "The bank's cardless and contactless payment capabilities, including cardless transactions, cardless withdrawals, and tap-to-pay (contactless) transactions, which may be enabled or disabled via configuration.",
+      "synonyms": [
+        "Cardless transactions",
+        "Contactless",
+        "Deposit, Cardless Withdrawal",
+        "contactless_enabled"
+      ],
+      "provenance_text": "- Cardless transactions require mobile app authentication | - Contactless (tap-to-pay) has transaction amount limits | - Supported Features (Deposit, Cardless Withdrawal) | **Default Values:**\n- contactless_enabled: 1 (true)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Atm Cash Replenishment",
+      "definition": "The process of monitoring cash levels in ATMs and triggering replenishment actions when balances fall below a predefined threshold, including tracking balances for replenishment scheduling.",
+      "synonyms": [
+        "Cash replenishment",
+        "cash balances for replenishment scheduling"
+      ],
+      "provenance_text": "- Cash replenishment is triggered when balance falls below threshold | ## atms\n\n**Description:** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location services, and operational status for availability management.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Decimal(P,S)",
+      "definition": "A fixed-point numeric data type (DECIMAL(p,s)) used in relational databases to store exact decimal values with precision p and scale s, such as monetary amounts and rates.",
+      "synonyms": [
+        "DECIMAL(10,2)",
+        "DECIMAL(15,2)",
+        "DECIMAL(5,4)"
+      ],
+      "provenance_text": "monthly_payment | DECIMAL(10,2) | Required monthly payment | NO | **Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Unique transaction identifier (primary key) | NO |\n| account_id | INTEGER | Foreign key to accounts | NO |\n| transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fe",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Description",
+      "definition": "A descriptive field for ATM asset records documenting location, cash replenishment, GPS coordinates, and operational status.",
+      "synonyms": [
+        "description"
+      ],
+      "provenance_text": "## atms\n\n**Description:** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location services, and operational status for availability management. | **Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Uni",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Gps",
+      "definition": "A data construct representing a physical location, including its address and GPS coordinates, used to identify and locate assets or services in location-based operations.",
+      "synonyms": [
+        "GPS coordinates for location services"
+      ],
+      "provenance_text": "- Location (address and GPS coordinates) | ## atms\n\n**Description:** ATM locations including branch-attached machines, drive-through ATMs, and standalone units. Tracks cash balances for replenishment scheduling, GPS coordinates for location services, and operational status for availability management.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Owner/Joint Owner/Authorized Signer/Custodian",
+      "definition": "An enumerated set of relationship types that can be assigned to an entity, specifically Owner, JointOwner, AuthorizedSigner, or Custodian.",
+      "synonyms": [
+        "IN ('Owner', 'JointOwner', 'AuthorizedSigner', 'Custodian')"
+      ],
+      "provenance_text": "| relationship_type | VARCHAR(20) | Relationship: Owner/JointOwner/AuthorizedSigner/Custodian | NO | | **Constraints:**\n- CHECK (relationship_type IN ('Owner', 'JointOwner', 'AuthorizedSigner', 'Custodian'))",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Your Customer Kyc",
+      "definition": "The KYC screening levels concept denotes the Know Your Customer regulatory screening process where a customer is evaluated and assigned a predefined risk level (e.g., Level1, Level2, Level3) used to guide compliance and business decisions.",
+      "synonyms": [
+        "KYC Status",
+        "KYC levels",
+        "KYC screening"
+      ],
+      "provenance_text": "Key Attributes: - KYC Status (Level1, Level2, Level3) | KYC levels must be Level1, Level2, or Level3 | Each customer undergoes KYC screening to comply with regulatory requirements and is assigned a risk profile to guide product recommendations and investment strategies.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Location",
+      "definition": "The location field in a financial transactions dataset indicating where the transaction occurred (e.g., POS/ATM).",
+      "synonyms": [
+        "Location"
+      ],
+      "provenance_text": "**Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Unique transaction identifier (primary key) | NO |\n| account_id | INTEGER | Foreign key to accounts | NO |\n| transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO |\n| amount | DECIMAL(15,2) | Transaction amount (always pos",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Mortgage/Personal/Auto/Heloc/Credit Card",
+      "definition": "The set of loan-type categories used to classify loans (Mortgage, Personal, Auto, HELOC, CreditCard).",
+      "synonyms": [
+        "Mortgage, Personal, Auto, HELOC, CreditCard"
+      ],
+      "provenance_text": "loan_type | VARCHAR(20) | Type: Mortgage/Personal/Auto/HELOC/CreditCard | NO | - Loan Type (Mortgage, Personal, Auto, HELOC, CreditCard)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Number Of Teller Stations",
+      "definition": "The numeric count of teller stations, i.e., how many teller counters are available in a bank or system.",
+      "synonyms": [
+        "teller_count"
+      ],
+      "provenance_text": "teller_count | INTEGER | Number of teller stations | NO | Default Values:\n- teller_count: 0",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Operating Hours",
+      "definition": "The daily/weekly time window during which a business or facility is open and available to customers.",
+      "synonyms": [
+        "hours"
+      ],
+      "provenance_text": "hours | VARCHAR(100) | Operating hours (e.g., \"Mon-Fri 9AM-5PM\") | YES",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Out Of Cash Status",
+      "definition": "An operational status of a cash-dispensing system (e.g., ATM) indicating that cash is unavailable for withdrawal, while balance inquiries remain possible.",
+      "synonyms": [
+        "Operational, OutOfService, OutOfCash"
+      ],
+      "provenance_text": "- OutOfCash status prevents withdrawal attempts but allows balance inquiries | - Status (Operational, OutOfService, OutOfCash)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Pending (Transaction Status)",
+      "definition": "The Pending status of a financial transaction in the ledger, representing an initial state that may transition to the Posted state.",
+      "synonyms": [
+        "Pending",
+        "Pending \u2192 Posted"
+      ],
+      "provenance_text": "**Column Details:**\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| transaction_id | INTEGER | Unique transaction identifier (primary key) | NO |\n| account_id | INTEGER | Foreign key to accounts | NO |\n| transaction_type | VARCHAR(20) | Type: Debit/Credit/Transfer/Payment/Withdrawal/Deposit/Fee | NO |\n| amount | DECIMAL(15,2) | Transaction amount (always pos",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Percentage Ownership (0.00 100.00)",
+      "definition": "A numeric field representing the share of ownership in a company, expressed as a percentage from 0.00 to 100.00.",
+      "synonyms": [
+        "ownership_percentage"
+      ],
+      "provenance_text": "| ownership_percentage | DECIMAL(5,2) | Percentage ownership (0.00-100.00) | NO | | **Default Values:**\n- ownership_percentage: 100.00",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Risk Profile",
+      "definition": "A risk profile is a customer-specific assessment of risk tolerance used to classify an individual into risk levels and to guide product recommendations and investment strategies.",
+      "synonyms": [
+        "Risk profiles",
+        "a risk profile"
+      ],
+      "provenance_text": "Risk profiles must be Conservative, Moderate, or Aggressive | Each customer undergoes KYC screening to comply with regulatory requirements and is assigned a risk profile to guide product recommendations and investment strategies.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Standalone Atm",
+      "definition": "A standalone automated teller machine located in a retail venue (such as a mall or grocery store) that dispenses cash, may not support deposits, and can be out of service.",
+      "synonyms": [
+        "STANDALONE-001",
+        "STANDALONE-002"
+      ],
+      "provenance_text": "- STANDALONE-001: Shopping Mall ATM, $25,000 cash balance, deposit not supported | - STANDALONE-002: Grocery Store ATM, OutOfService, $15,000 cash balance",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Street Address",
+      "definition": "A street address is the specific location information used to identify where a property is located, typically including street number and street name.",
+      "synonyms": [
+        "address"
+      ],
+      "provenance_text": "address | VARCHAR(200) | Street address | NO",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Mastercard Discover American Express",
+      "definition": "A set of accepted card networks (Visa, Mastercard, Discover, AmericanExpress) used for payment processing.",
+      "synonyms": [
+        "Visa/Mastercard/Discover/AmericanExpress"
+      ],
+      "provenance_text": "- Card Network (Visa, Mastercard, Discover, AmericanExpress) |  **Constraints:**\n- CHECK (card_network IN ('Visa', 'Mastercard', 'Discover', 'AmericanExpress'))",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Unlinked Date",
+      "definition": "Date on which a relationship was established.",
+      "synonyms": [
+        "linked_date"
+      ],
+      "provenance_text": "| unlinked_date | DATE | Date relationship was terminated | YES | | | linked_date | DATE | Date relationship was established | NO | | **Default Values:**\n- linked_date: CURRENT_DATE",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Manager Name",
+      "definition": "The personal name field storing the branch manager's name.",
+      "synonyms": [
+        "name"
+      ],
+      "provenance_text": "manager_name | VARCHAR(100) | Name of branch manager | YES | - Cardholder Name",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Nominal Interest Rate",
+      "definition": "The nominal (stated) interest rate used in a savings/product, before compounding effects are applied (as opposed to APY, which accounts for compounding).",
+      "synonyms": [
+        "stated rate",
+        "stated rate 0.10%",
+        "stated rate 0.495%"
+      ],
+      "provenance_text": "- APY accounts for compounding effects and is higher than stated rate | - Standard Savings: 0.25% APY (0.10% stated rate with monthly compounding) | - Premium Savings: 0.50% APY (0.495% stated rate with daily compounding)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Unique Identifier",
+      "definition": "A unique identifier is an identifier value that uniquely distinguishes a single entity instance within a system (e.g., a Transaction ID or Loan ID).",
+      "synonyms": [
+        "unique"
+      ],
+      "provenance_text": "- Transaction ID (unique identifier) | - Loan ID (unique identifier) | Account numbers must be unique | Tax IDs must be unique | Branch codes must be unique | ATM codes must be unique | Card numbers must be unique",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Active",
+      "definition": "Default Values:\n- status: 'Active'",
+      "synonyms": [],
+      "provenance_text": "Default Values:\n- status: 'Active'",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "12 Month Cd",
+      "definition": "- 12-Month CD: 4.50% APR (4.60% APY with monthly compounding) | - 12-Month CD: 4.50% APR (4.60% APY with monthly compounding)",
+      "synonyms": [],
+      "provenance_text": "- 12-Month CD: 4.50% APR (4.60% APY with monthly compounding) | - 12-Month CD: 4.50% APR (4.60% APY with monthly compounding)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "360 Month Term",
+      "definition": "- Mortgage: 5.50% fixed APR for 360-month term",
+      "synonyms": [],
+      "provenance_text": "- Mortgage: 5.50% fixed APR for 360-month term",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Ach Credit",
+      "definition": "- ACH Credit: $2,500.00 Payroll Direct Deposit (Reference: ACH123456789)",
+      "synonyms": [],
+      "provenance_text": "- ACH Credit: $2,500.00 Payroll Direct Deposit (Reference: ACH123456789)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Apy",
+      "definition": "- APY (Annual Percentage Yield) - for deposits",
+      "synonyms": [],
+      "provenance_text": "- APY (Annual Percentage Yield) - for deposits",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Apy Tiered By Balance",
+      "definition": "- Money Market: 0.75% APY tiered by balance",
+      "synonyms": [],
+      "provenance_text": "- Money Market: 0.75% APY tiered by balance",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Atm Type",
+      "definition": "- ATM Type (Standalone, Branch, DriveThrough)",
+      "synonyms": [],
+      "provenance_text": "- ATM Type (Standalone, Branch, DriveThrough)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Atm Withdrawal",
+      "definition": "- ATM Withdrawal: $100.00 at ATM-0003 (456 Oak Avenue)",
+      "synonyms": [],
+      "provenance_text": "- ATM Withdrawal: $100.00 at ATM-0003 (456 Oak Avenue)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Atm Codes",
+      "definition": "ATM codes must be unique",
+      "synonyms": [],
+      "provenance_text": "ATM codes must be unique",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Atm 0001",
+      "definition": "- ATM-0001: Branch ATM at 123 Main Street, $85,000 cash balance, supports deposits",
+      "synonyms": [],
+      "provenance_text": "- ATM-0001: Branch ATM at 123 Main Street, $85,000 cash balance, supports deposits",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Atm 0003",
+      "definition": "- ATM Withdrawal: $100.00 at ATM-0003 (456 Oak Avenue) | - ATM-0003: Branch ATM at 456 Oak Avenue, $62,000 cash balance, cardless enabled",
+      "synonyms": [],
+      "provenance_text": "- ATM Withdrawal: $100.00 at ATM-0003 (456 Oak Avenue) | - ATM-0003: Branch ATM at 456 Oak Avenue, $62,000 cash balance, cardless enabled",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Account Hierarchy",
+      "definition": "Account hierarchy prevents circular references (parent != child)",
+      "synonyms": [],
+      "provenance_text": "Account hierarchy prevents circular references (parent != child)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Amount And Currency",
+      "definition": "- Amount and Currency",
+      "synonyms": [],
+      "provenance_text": "- Amount and Currency",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Auto Loan",
+      "definition": "- Auto Loan: $35,000 at 6.50% APR for 60 months ($684.57/month)",
+      "synonyms": [],
+      "provenance_text": "- Auto Loan: $35,000 at 6.50% APR for 60 months ($684.57/month)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Automated Teller Machine",
+      "definition": "Definition: Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance.",
+      "synonyms": [],
+      "provenance_text": "Definition: Automated Teller Machine - a self-service banking terminal that allows customers to perform basic transactions without teller assistance.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Banks",
+      "definition": "Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. | Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.",
+      "synonyms": [],
+      "provenance_text": "Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread. | Banks pay interest on deposits (lower rate) and charge interest on loans (higher rate), profiting from the spread.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Branch Atms",
+      "definition": "- Branch ATMs are located on branch premises",
+      "synonyms": [],
+      "provenance_text": "- Branch ATMs are located on branch premises",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "In Active Dormant Frozen",
+      "definition": "- CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed'))",
+      "synonyms": [],
+      "provenance_text": "- CHECK (status IN ('Active', 'Dormant', 'Frozen', 'Closed'))",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Card Network",
+      "definition": "- Card Network (Visa, Mastercard, Discover, AmericanExpress)",
+      "synonyms": [],
+      "provenance_text": "- Card Network (Visa, Mastercard, Discover, AmericanExpress)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Card Status",
+      "definition": "- Card Status (Active, Frozen, Blocked, Expired)",
+      "synonyms": [],
+      "provenance_text": "- Card Status (Active, Frozen, Blocked, Expired)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Cardholder Name",
+      "definition": "- Cardholder Name",
+      "synonyms": [],
+      "provenance_text": "- Cardholder Name",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Cash Balance",
+      "definition": "- Cash Balance and Last Replenished Date",
+      "synonyms": [],
+      "provenance_text": "- Cash Balance and Last Replenished Date",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Cash Machine",
+      "definition": "Synonyms: Cash Machine, Cashpoint, Automated Banking Machine",
+      "synonyms": [],
+      "provenance_text": "Synonyms: Cash Machine, Cashpoint, Automated Banking Machine",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Chip Cards",
+      "definition": "- Chip cards provide EMV security for in-person transactions",
+      "synonyms": [],
+      "provenance_text": "- Chip cards provide EMV security for in-person transactions",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "City Where Branch",
+      "definition": "city | VARCHAR(50) | City where branch is located | NO",
+      "synonyms": [],
+      "provenance_text": "city | VARCHAR(50) | City where branch is located | NO",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Composite Customer Id",
+      "definition": "**Primary Key:** Composite (`customer_id`, `account_id`)",
+      "synonyms": [],
+      "provenance_text": "**Primary Key:** Composite (`customer_id`, `account_id`)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Compounding Frequency",
+      "definition": "- Compounding Frequency (daily, monthly, annually)",
+      "synonyms": [],
+      "provenance_text": "- Compounding Frequency (daily, monthly, annually)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Con Edison",
+      "definition": "- Online Bill Pay: $1,200.00 to Con Edison (Reference: PAY-987654321)",
+      "synonyms": [],
+      "provenance_text": "- Online Bill Pay: $1,200.00 to Con Edison (Reference: PAY-987654321)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Conservative, Moderate, Or Aggressive",
+      "definition": "Risk profiles must be Conservative, Moderate, or Aggressive",
+      "synonyms": [],
+      "provenance_text": "Risk profiles must be Conservative, Moderate, or Aggressive",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Date",
+      "definition": "origination_date | DATE | Date loan was originated | NO | maturity_date | DATE | Date loan is scheduled to be paid off | NO",
+      "synonyms": [],
+      "provenance_text": "origination_date | DATE | Date loan was originated | NO | maturity_date | DATE | Date loan is scheduled to be paid off | NO",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Date Branch Opened",
+      "definition": "opened_date | DATE | Date branch opened | NO",
+      "synonyms": [],
+      "provenance_text": "opened_date | DATE | Date branch opened | NO",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Defaulted Loans",
+      "definition": "- Defaulted loans trigger collections and credit reporting",
+      "synonyms": [],
+      "provenance_text": "- Defaulted loans trigger collections and credit reporting",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Definition",
+      "definition": "## Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate.",
+      "synonyms": [],
+      "provenance_text": "## Interest\n\n**Definition:** The cost of borrowing money (paid by borrower) or the return on depositing money (paid by bank), expressed as an annual percentage rate.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Drive Through Atms",
+      "definition": "- DriveThrough ATMs serve vehicles only",
+      "synonyms": [],
+      "provenance_text": "- DriveThrough ATMs serve vehicles only",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Emv Security For",
+      "definition": "- Chip cards provide EMV security for in-person transactions",
+      "synonyms": [],
+      "provenance_text": "- Chip cards provide EMV security for in-person transactions",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Early Payoff",
+      "definition": "- Early payoff may incur prepayment penalties depending on loan terms",
+      "synonyms": [],
+      "provenance_text": "- Early payoff may incur prepayment penalties depending on loan terms",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Expired Cards",
+      "definition": "- Expired cards are automatically renewed and mailed to customer",
+      "synonyms": [],
+      "provenance_text": "- Expired cards are automatically renewed and mailed to customer",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Failed Transactions",
+      "definition": "- Failed transactions are logged for audit but do not affect balance",
+      "synonyms": [],
+      "provenance_text": "- Failed transactions are logged for audit but do not affect balance",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Finance Charge",
+      "definition": "**Synonyms:** Finance Charge, Yield, Return",
+      "synonyms": [],
+      "provenance_text": "**Synonyms:** Finance Charge, Yield, Return",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Transaction Account Activity Bank",
+      "definition": "**Synonyms:** Financial Transaction, Account Activity, Bank Transaction",
+      "synonyms": [],
+      "provenance_text": "**Synonyms:** Financial Transaction, Account Activity, Bank Transaction",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Service",
+      "definition": "branch_type | VARCHAR(20) | Type: FullService/Satellite/ATMOnly | NO",
+      "synonyms": [],
+      "provenance_text": "branch_type | VARCHAR(20) | Type: FullService/Satellite/ATMOnly | NO",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Store Atm Out Of",
+      "definition": "- STANDALONE-002: Grocery Store ATM, OutOfService, $15,000 cash balance",
+      "synonyms": [],
+      "provenance_text": "- STANDALONE-002: Grocery Store ATM, OutOfService, $15,000 cash balance",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Heloc",
+      "definition": "- HELOC (Home Equity Line of Credit) allows revolving access to equity | - HELOC: $50,000 credit line at 8.50% APR, $450/month minimum payment",
+      "synonyms": [],
+      "provenance_text": "- HELOC (Home Equity Line of Credit) allows revolving access to equity | - HELOC: $50,000 credit line at 8.50% APR, $450/month minimum payment",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    },
+    {
+      "name": "Human Readable Branch Name",
+      "definition": "branch_name | VARCHAR(100) | Human-readable branch name | NO",
+      "synonyms": [],
+      "provenance_text": "branch_name | VARCHAR(100) | Human-readable branch name | NO",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/business_glossary.md, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/02_intermediate_finance/data_dictionary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 207
+  },
+  "tables_parsed": [
+    {
+      "name": "customers",
+      "columns": 16
+    },
+    {
+      "name": "branches",
+      "columns": 16
+    },
+    {
+      "name": "atms",
+      "columns": 14
+    },
+    {
+      "name": "accounts",
+      "columns": 18
+    },
+    {
+      "name": "customer_account",
+      "columns": 8
+    },
+    {
+      "name": "transactions",
+      "columns": 13
+    },
+    {
+      "name": "loans",
+      "columns": 13
+    },
+    {
+      "name": "cards",
+      "columns": 19
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customers",
+      "description": "Stores customer profile and identification information, including contact details, tax identifiers, risk and verification status, and timestamps for record creation and updates."
+    },
+    {
+      "name": "Branches",
+      "description": "Stores information about bank branches, including identification, location, contact details, opening hours, staffing counts, management, and status."
+    },
+    {
+      "name": "ATMs",
+      "description": "Stores data about ATM machines, including location, status, cash balance, capabilities, and maintenance/replenishment information for each ATM."
+    },
+    {
+      "name": "Accounts",
+      "description": "Stores banking accounts and their financial balances, status, and key dates for account lifecycle and relationships to branches and parent accounts."
+    },
+    {
+      "name": "customer_account",
+      "description": "Stores the relationships between customers and accounts, including the type of relationship, whether the account is the primary one for the customer, ownership stake, and the dates when the linkage wa... [TRUNCATED]"
+    },
+    {
+      "name": "transactions",
+      "description": "Stores records of financial transactions, including amounts, currencies, dates, statuses, and references, to track customer or account activity and balances."
+    },
+    {
+      "name": "Loans",
+      "description": "Stores data about customer loans, including loan terms, payment details, balances, and key dates."
+    },
+    {
+      "name": "cards",
+      "description": "Stores information about debit/credit cards associated with customer accounts, including card identifiers, issuer details, limits, features (chip, contactless), status, and historical timestamps."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 8,
+    "tables_enriched": 8,
+    "total_columns": 117
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 193,
+    "total_relationships": 195,
+    "completed_tables": 8
+  },
+  "stage_timings": {}
+}

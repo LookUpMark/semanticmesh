@@ -1,0 +1,1398 @@
+{
+  "study_id": "AB-BEST",
+  "timestamp": "2026-07-03T09:53:16.567030+00:00",
+  "trace_id": "AB-BEST.2026-07-03T09-53-16.567030+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt",
+    "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+  ],
+  "ddl_files": [
+    "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "BUSINESS GLOSSARY - Enterprise System\nLast Updated: 2024-03-15\nStatus: Partial (pending review)\n\n==========================================\nCUSTOMER MANAGEMENT\n==========================================\n\nCustomer\nAn individual or organization that... [definition incomplete]\n\nClient\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts)\n\nAccount Holder\nThe person designated as the primary owner of an account. Similar to Customer bu... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "628"
+    },
+    {
+      "chunk_id": 1,
+      "text": "DATA DICTIONARY - Enterprise Database\nVersion: 2.1 (incomplete documentation)\nLast Updated: 2024-02-28\n\n==========================================\nCUSTOMERS\n==========================================\n\nPrimary Key: customer_id (or is it CustomerID? check with DBA)\n\n| Column Name | Data Type | Constraints | Description |\n|-------------|-----------|-------------|-------------|\n| customer_id | INTEGER | PK | [missing documentation] |\n| CustomerID | INTEGER | ? | Possible duplicate of customer_id |\n|... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "698"
+    },
+    {
+      "chunk_id": 2,
+      "text": "Foreign Keys:\n- customer_id \u2192 CUSTOMERS(customer_id or CustomerID?)\n- [missing other FK definitions]\n\n==========================================\nORDER_ITEMS (or ORDER_DETAILS?)\n==========================================\n\nPrimary Key: [undocumented]\n\n| Column Name | Data Type | Constraints | Description |\n|-------------|-----------|-------------|-------------|\n| order_item_id | INTEGER | PK | [missing documentation] |\n| order_id | INTEGER | FK | References ORDERS |\n| product_id | INTEGER | FK | R... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "601"
+    },
+    {
+      "chunk_id": 3,
+      "text": "==========================================\nPAYMENTS\n==========================================\n\nPrimary Key: payment_id (unverified)\n\n| Column Name | Data Type | Constraints | Description |\n|-------------|-----------|-------------|-------------|\n| payment_id | INTEGER | PK | [missing documentation] |\n| PaymentID | INTEGER | ? | [possible duplicate] |\n| order_id | INTEGER | FK | References ORDERS |\n| customer_id | INTEGER | FK | References CUSTOMERS |\n| payment_date | DATETIME | ? | [missing docu... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "543"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 4,
+    "total_tokens": 2470,
+    "avg_tokens": 617.5
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is a",
+      "object": "An individual or organization",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Client",
+      "predicate": "is a",
+      "object": "A person or company",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Account Holder",
+      "predicate": "is the",
+      "object": "the primary owner of an account",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "End User",
+      "predicate": "is",
+      "object": "the actual user of a product or service",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order",
+      "predicate": "is",
+      "object": "A request to purchase products or services",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Transaction",
+      "predicate": "is",
+      "object": "Similar to Order but more general",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase",
+      "predicate": "is the",
+      "object": "act of buying something",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "is",
+      "object": "an order with confirmed pricing and inventory allocation",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Quote",
+      "predicate": "is",
+      "object": "a preliminary order with estimated pricing",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "is",
+      "object": "A thing",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Item",
+      "predicate": "is",
+      "object": "Synonym for Product",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "SKU",
+      "predicate": "is",
+      "object": "Stock Keeping Unit",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Inventory Item",
+      "predicate": "is",
+      "object": "Physical products held in stock",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Merchandise",
+      "predicate": "is",
+      "object": "Goods available for sale",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Payment",
+      "predicate": "is",
+      "object": "The transfer of money to settle an order",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Invoice",
+      "predicate": "is",
+      "object": "A document requesting payment",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Bill",
+      "predicate": "is",
+      "object": "A statement of money owed",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Receipt",
+      "predicate": "is",
+      "object": "Proof of payment",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Revenue",
+      "predicate": "is",
+      "object": "Income from sales",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales",
+      "predicate": "is",
+      "object": "Revenue from selling products",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Financial Transaction",
+      "predicate": "is",
+      "object": "Any monetary exchange",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Shipment",
+      "predicate": "is",
+      "object": "The process of delivering goods to a customer",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Delivery",
+      "predicate": "is",
+      "object": "The completion of a Shipment when goods reach the customer",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Fulfillment",
+      "predicate": "is",
+      "object": "The process of preparing and delivering orders",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CUSTOMERS",
+      "predicate": "has columns",
+      "object": "customer_id",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "customer_id",
+      "predicate": "is primary key",
+      "object": "CUSTOMERS(customer_id or CustomerID?)",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CustomerID",
+      "predicate": "is column",
+      "object": "INTEGER",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "firstName",
+      "predicate": "is column",
+      "object": "VARCHAR(50)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "first_name",
+      "predicate": "is column",
+      "object": "VARCHAR(50)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "lastName",
+      "predicate": "is column",
+      "object": "VARCHAR(50)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "last_name",
+      "predicate": "is column",
+      "object": "VARCHAR(100)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "email",
+      "predicate": "is column",
+      "object": "VARCHAR(255)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "emailAddress",
+      "predicate": "is column",
+      "object": "VARCHAR(255)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "phone",
+      "predicate": "is column",
+      "object": "VARCHAR(20)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "phoneNumber",
+      "predicate": "is column",
+      "object": "VARCHAR(20)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "created_at",
+      "predicate": "is column",
+      "object": "TIMESTAMP",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CreatedDate",
+      "predicate": "is column",
+      "object": "DATETIME",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "account_status",
+      "predicate": "is column",
+      "object": "VARCHAR(20)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "status",
+      "predicate": "is column",
+      "object": "VARCHAR(20)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "customer_type",
+      "predicate": "is column",
+      "object": "VARCHAR(30)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "customer_region",
+      "predicate": "is column",
+      "object": "VARCHAR(50)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDERS",
+      "predicate": "has columns",
+      "object": "order_id",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "order_id",
+      "predicate": "is primary key",
+      "object": "ORDERS(order_id or OrderID?)",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "OrderID",
+      "predicate": "is column",
+      "object": "INTEGER",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "customer_id",
+      "predicate": "is foreign key",
+      "object": "CUSTOMERS(customer_id or CustomerID?)",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "CustomerID",
+      "predicate": "is foreign key",
+      "object": "FK",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "order_date",
+      "predicate": "is column",
+      "object": "DATE",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "OrderDate",
+      "predicate": "is column",
+      "object": "DATETIME",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "order_status",
+      "predicate": "is column",
+      "object": "VARCHAR(25)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "orderAmount",
+      "predicate": "is column",
+      "object": "DECIMAL(10,2)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "total_amount",
+      "predicate": "is column",
+      "object": "DECIMAL(12,2)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "shippingAmount",
+      "predicate": "is column",
+      "object": "DECIMAL(10,2)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "tax_amount",
+      "predicate": "is column",
+      "object": "DECIMAL(10,2)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "TaxAmount",
+      "predicate": "is column",
+      "object": "DECIMAL(10,2)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "payment_status",
+      "predicate": "is column",
+      "object": "VARCHAR(20)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "payment_method",
+      "predicate": "is column",
+      "object": "VARCHAR(30)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "created_at",
+      "predicate": "is column",
+      "object": "TIMESTAMP",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "updated_at",
+      "predicate": "is column",
+      "object": "TIMESTAMP",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "notes",
+      "predicate": "is column",
+      "object": "TEXT",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Notes",
+      "predicate": "is column",
+      "object": "TEXT",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Foreign Keys",
+      "predicate": "define",
+      "object": "customer_id \u2192 CUSTOMERS(customer_id or CustomerID?)",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 1,
+      "subject": "ORDER_ITEMS",
+      "predicate": "is table",
+      "object": "ORDER_DETAILS",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "customer_id",
+      "predicate": "references",
+      "object": "CUSTOMERS(customer_id or CustomerID?)",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 2,
+      "subject": "order_id",
+      "predicate": "references",
+      "object": "ORDERS",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 2,
+      "subject": "product_id",
+      "predicate": "references",
+      "object": "PRODUCTS (or INVENTORY?)",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 2,
+      "subject": "ProductID",
+      "predicate": "references",
+      "object": "PRODUCTS (or INVENTORY?)",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "quantity",
+      "predicate": "has",
+      "object": "missing validation rules",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "unit_price",
+      "predicate": "describes",
+      "object": "Price per unit",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "UnitPrice",
+      "predicate": "describes",
+      "object": "Price per unit",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 2,
+      "subject": "discount_percent",
+      "predicate": "describes",
+      "object": "Discount percentage",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "discount_amount",
+      "predicate": "describes",
+      "object": "Calculated discount",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "line_total",
+      "predicate": "describes",
+      "object": "Line item total",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "LineTotal",
+      "predicate": "describes",
+      "object": "Line item total",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 2,
+      "subject": "ORDER_ITEMS",
+      "predicate": "ambiguous_with",
+      "object": "ORDER_DETAILS",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 2,
+      "subject": "PRODUCTS",
+      "predicate": "ambiguous_with",
+      "object": "INVENTORY_ITEMS",
+      "confidence": 0.7
+    },
+    {
+      "chunk_index": 2,
+      "subject": "current_price",
+      "predicate": "related_to",
+      "object": "unit_price",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 2,
+      "subject": "cost_price",
+      "predicate": "described_as",
+      "object": "missing documentation",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "stock_quantity",
+      "predicate": "described_as",
+      "object": "missing documentation",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "quantity_in_stock",
+      "predicate": "described_as",
+      "object": "missing documentation",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 2,
+      "subject": "reorder_level",
+      "predicate": "described_as",
+      "object": "missing documentation",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "is_active",
+      "predicate": "described_as",
+      "object": "missing documentation",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "active_flag",
+      "predicate": "described_as",
+      "object": "missing documentation",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 2,
+      "subject": "created_at",
+      "predicate": "described_as",
+      "object": "missing documentation",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "updated_at",
+      "predicate": "described_as",
+      "object": "missing documentation",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "product_description",
+      "predicate": "describes",
+      "object": "Product description",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "payment_id",
+      "predicate": "primary_key",
+      "object": "unverified",
+      "confidence": 0.8
+    }
+  ],
+  "extraction_summary": {
+    "total_triplets": 86,
+    "avg_confidence": 0.694186046511628,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Customers.Customer Id",
+      "definition": "The unique customer identifier column in the CUSTOMERS table that serves as the primary key to uniquely identify each customer record.",
+      "synonyms": [
+        "CUSTOMERS(customer_id or CustomerID?)",
+        "CustomerID",
+        "customer_id",
+        "customer_id \u2192 CUSTOMERS(customer_id or CustomerID?)"
+      ],
+      "provenance_text": "Primary Key: customer_id (or is it CustomerID? check with DBA) | customer_id \u2192 CUSTOMERS(customer_id or CustomerID?) | Foreign Keys:\n- customer_id \u2192 CUSTOMERS(customer_id or CustomerID?) | | CustomerID | INTEGER | ? | Possible duplicate of customer_id | | | CustomerID | INTEGER | FK | [FK reference unclear] | | CUSTOMERS | Foreign Keys:\n- customer_id \u2192 CUSTOMERS(customer_id or CustomerID?)\n- [miss",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Financial Transaction",
+      "definition": "A monetary exchange between parties as part of financial activities.",
+      "synonyms": [
+        "Transaction"
+      ],
+      "provenance_text": "Financial Transaction\nAny monetary exchange. See Payment, Transaction. | Transaction\nSimilar to Order but more general. May refer to any exchange of value.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Order Items",
+      "definition": "An entity representing the line items of an order (individual products or SKUs included in an order, typically including quantity and price).",
+      "synonyms": [
+        "ORDER_DETAILS"
+      ],
+      "provenance_text": "ORDER_ITEMS (or ORDER_DETAILS?) | Notes:\n- Table name ambiguity: ORDER_ITEMS vs ORDER_DETAILS",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Order Date Time",
+      "definition": "The timestamp indicating when an order was created, including both date and time.",
+      "synonyms": [
+        "OrderDate",
+        "order_date"
+      ],
+      "provenance_text": "| OrderDate | DATETIME | ? | [different precision?] | | | order_date | DATE | ? | Date order was created |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Order Id",
+      "definition": "The unique identifier for an order, serving as the primary key in the ORDERS dataset/table.",
+      "synonyms": [
+        "OrderID"
+      ],
+      "provenance_text": "ORDERS | Primary Key: order_id (or OrderID - verify) | | order_id | INTEGER | FK | References ORDERS | | | OrderID | INTEGER | ? | [possible duplicate] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Product Id",
+      "definition": "A foreign key column that holds the unique identifier of a product, referencing the PRODUCTS table (or equivalent product catalog).",
+      "synonyms": [
+        "ProductID"
+      ],
+      "provenance_text": "| product_id | INTEGER | FK | References PRODUCTS (or INVENTORY?) | | | ProductID | INTEGER | FK | [inconsistent naming] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Customer",
+      "definition": "A person or organization that purchases goods or services; the terms Customer and Client are used interchangeably in some contexts.",
+      "synonyms": [
+        "A person or company",
+        "An individual or organization"
+      ],
+      "provenance_text": "Customer\nAn individual or organization that... [definition incomplete] | Client\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Calculated Discount",
+      "definition": "The monetary value of the discount applied to a transaction, i.e., the cash amount deducted from the subtotal as a result of a discount.",
+      "synonyms": [
+        "Discount percentage",
+        "TaxAmount",
+        "discount_amount",
+        "discount_percent",
+        "tax_amount",
+        "total_amount"
+      ],
+      "provenance_text": "| discount_amount | DECIMAL(10,2) | ? | Calculated discount | | | discount_percent | DECIMAL(5,2) | ? | Discount percentage | | | TaxAmount | DECIMAL(10,2) | ? | [duplicate?] | | | tax_amount | DECIMAL(10,2) | ? | Tax amount | | | total_amount | DECIMAL(12,2) | ? | [duplicate?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Created At",
+      "definition": "The timestamp indicating the exact date and time when an order record was created in the system.",
+      "synonyms": [
+        "DATE",
+        "DATETIME",
+        "TIMESTAMP"
+      ],
+      "provenance_text": "| created_at | TIMESTAMP | ? | [missing documentation] | | | order_date | DATE | ? | Date order was created | | | CreatedDate | DATETIME | ? | [unclear if different from created_at] | | | OrderDate | DATETIME | ? | [different precision?] | | | updated_at | TIMESTAMP | ? | [missing documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Decimal(12,2)",
+      "definition": "A currency amount value stored as a DECIMAL with scale 2 (two decimal places), used for monetary fields such as order total and shipping cost.",
+      "synonyms": [
+        "DECIMAL(10,2)"
+      ],
+      "provenance_text": "| total_amount | DECIMAL(12,2) | ? | [duplicate?] | | | orderAmount | DECIMAL(10,2) | ? | Total order amount | | | shippingAmount | DECIMAL(10,2) | ? | Shipping cost | | | tax_amount | DECIMAL(10,2) | ? | Tax amount | | | TaxAmount | DECIMAL(10,2) | ? | [duplicate?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Process Of Preparing",
+      "definition": "Delivery is the completion of a Shipment when goods reach the customer.",
+      "synonyms": [
+        "Delivery",
+        "The process of delivering goods to a customer"
+      ],
+      "provenance_text": "Fulfillment\nThe process of preparing and delivering orders. Encompasses Shipment and Delivery. | Delivery\nThe completion of a Shipment when goods reach the customer. | Shipment\nThe process of delivering goods to a customer.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Product",
+      "definition": "A tangible, sellable good that a business maintains as inventory and offers for sale to customers.",
+      "synonyms": [
+        "Goods available for sale",
+        "Physical products held in stock"
+      ],
+      "provenance_text": "Product\nA thing that is... [definition needs clarification] | Merchandise\nGoods available for sale. Similar to Product. | Inventory Item\nPhysical products held in stock. May be referenced as Product or Item.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Revenue From Selling Products",
+      "definition": "The monetary value earned from selling goods to customers, i.e., revenue generated from product sales.",
+      "synonyms": [
+        "Income from sales",
+        "Revenue",
+        "Sales"
+      ],
+      "provenance_text": "Sales\nRevenue from selling products. See Revenue. | Revenue\nIncome from sales. The same as... [definition circular, see Sales]",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Notes",
+      "definition": "A notes field (text attribute) used to store free-form textual comments or annotations associated with a business object or record.",
+      "synonyms": [
+        "notes"
+      ],
+      "provenance_text": "| Notes | TEXT | ? | [duplicate?] | | | notes | TEXT | ? | [missing documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Price Per Unit",
+      "definition": "The price charged for a single unit of a product or service (price per unit) used for sales pricing.",
+      "synonyms": [
+        "UnitPrice",
+        "cost_price",
+        "current_price",
+        "unit_price"
+      ],
+      "provenance_text": "| unit_price | DECIMAL(10,2) | ? | Price per unit | | | UnitPrice | DECIMAL(10,2) | ? | [duplicate?] | | | cost_price | DECIMAL(10,2) | ? | [missing documentation] | | | current_price | DECIMAL(10,2) | ? | [different from unit_price?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Varchar(100)",
+      "definition": "A VARCHAR(255) column that stores variable-length text data up to 255 characters in a relational database (e.g., an email address).",
+      "synonyms": [
+        "VARCHAR(20)",
+        "VARCHAR(25)",
+        "VARCHAR(255)",
+        "VARCHAR(30)",
+        "VARCHAR(50)"
+      ],
+      "provenance_text": "| last_name | VARCHAR(100) | ? | [appears to be duplicate] | | | phone | VARCHAR(20) | ? | Contact phone number | | | phoneNumber | VARCHAR(20) | ? | [possible duplicate] | | | account_status | VARCHAR(20) | ? | [missing values documentation] | | | status | VARCHAR(20) | ? | [duplicate?] | | | payment_status | VARCHAR(20) | ? | [missing documentation] | | | order_status | VARCHAR(25) | ? | See val",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Order With Confirmed",
+      "definition": "An order in the sales process where pricing is confirmed and inventory is allocated for fulfillment.",
+      "synonyms": [
+        "a preliminary order with estimated pricing"
+      ],
+      "provenance_text": "Sales Order\nAn order with confirmed pricing and inventory allocation. Distinct from Quote. | Quote\nA preliminary order with estimated pricing, not yet confirmed.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Email Address",
+      "definition": "A database field that stores a user's email address.",
+      "synonyms": [
+        "email"
+      ],
+      "provenance_text": "| emailAddress | VARCHAR(255) | ? | [possible duplicate] | | | email | VARCHAR(255) | ? | Email address |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "First Name",
+      "definition": "Represents the customer's first name attribute in a customer record.",
+      "synonyms": [
+        "firstName",
+        "lastName",
+        "last_name"
+      ],
+      "provenance_text": "| first_name | VARCHAR(50) | ? | [appears to be duplicate] | | | firstName | VARCHAR(50) | ? | Customer's first name | | | lastName | VARCHAR(50) | ? | Customer's last name | | | last_name | VARCHAR(100) | ? | [appears to be duplicate] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Phone Number",
+      "definition": "The contact telephone number for an entity, stored as a VARCHAR(20) field.",
+      "synonyms": [
+        "phone"
+      ],
+      "provenance_text": "| phoneNumber | VARCHAR(20) | ? | [possible duplicate] | | | phone | VARCHAR(20) | ? | Contact phone number |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Stock Quantity",
+      "definition": "The stock_quantity field represents the number (integer) of units of a product currently available in inventory (stock level).",
+      "synonyms": [
+        "quantity",
+        "quantity_in_stock"
+      ],
+      "provenance_text": "| stock_quantity | INTEGER | ? | [missing documentation] | | | quantity | INTEGER | ? | [missing validation rules] | | | quantity_in_stock | INTEGER | ? | [duplicate?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Document Requesting Payment",
+      "definition": "Invoice\nA document requesting payment. Related to Bill.",
+      "synonyms": [],
+      "provenance_text": "Invoice\nA document requesting payment. Related to Bill.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Request To Purchase",
+      "definition": "Order\nA request to purchase products or services. Can be in various states.",
+      "synonyms": [],
+      "provenance_text": "Order\nA request to purchase products or services. Can be in various states.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Statement Of Money",
+      "definition": "Bill\nA statement of money owed. Similar to Invoice.",
+      "synonyms": [],
+      "provenance_text": "Bill\nA statement of money owed. Similar to Invoice.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Account Holder",
+      "definition": "Account Holder\nThe person designated as the primary owner of an account. Similar to Customer but with account-specific context.",
+      "synonyms": [],
+      "provenance_text": "Account Holder\nThe person designated as the primary owner of an account. Similar to Customer but with account-specific context.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Any Monetary Exchange",
+      "definition": "Financial Transaction\nAny monetary exchange. See Payment, Transaction.",
+      "synonyms": [],
+      "provenance_text": "Financial Transaction\nAny monetary exchange. See Payment, Transaction.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Bill",
+      "definition": "Bill\nA statement of money owed. Similar to Invoice.",
+      "synonyms": [],
+      "provenance_text": "Bill\nA statement of money owed. Similar to Invoice.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Customers",
+      "definition": "CUSTOMERS",
+      "synonyms": [],
+      "provenance_text": "CUSTOMERS",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Client",
+      "definition": "Client\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts)",
+      "synonyms": [],
+      "provenance_text": "Client\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Created Date",
+      "definition": "| CreatedDate | DATETIME | ? | [unclear if different from created_at] |",
+      "synonyms": [],
+      "provenance_text": "| CreatedDate | DATETIME | ? | [unclear if different from created_at] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Customer",
+      "definition": "Customer\nAn individual or organization that... [definition incomplete] | Client\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) | Customer\nAn individual or organization that... [definition incomplete]",
+      "synonyms": [],
+      "provenance_text": "Customer\nAn individual or organization that... [definition incomplete] | Client\nA person or company that purchases goods or services. (Note: may be used interchangeably with Customer in some contexts) | Customer\nAn individual or organization that... [definition incomplete]",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "End User",
+      "definition": "End User\nThe actual user of a product or service, may differ from the purchaser.",
+      "synonyms": [],
+      "provenance_text": "End User\nThe actual user of a product or service, may differ from the purchaser.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Fk",
+      "definition": "| CustomerID | INTEGER | FK | [FK reference unclear] |",
+      "synonyms": [],
+      "provenance_text": "| CustomerID | INTEGER | FK | [FK reference unclear] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Foreign Keys",
+      "definition": "Foreign Keys:\n- customer_id \u2192 CUSTOMERS(customer_id or CustomerID?)\n- [missing other FK definitions]",
+      "synonyms": [],
+      "provenance_text": "Foreign Keys:\n- customer_id \u2192 CUSTOMERS(customer_id or CustomerID?)\n- [missing other FK definitions]",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Fulfillment",
+      "definition": "Fulfillment\nThe process of preparing and delivering orders. Encompasses Shipment and Delivery.",
+      "synonyms": [],
+      "provenance_text": "Fulfillment\nThe process of preparing and delivering orders. Encompasses Shipment and Delivery.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Integer",
+      "definition": "| CustomerID | INTEGER | ? | Possible duplicate of customer_id | | | OrderID | INTEGER | ? | [possible duplicate] |",
+      "synonyms": [],
+      "provenance_text": "| CustomerID | INTEGER | ? | Possible duplicate of customer_id | | | OrderID | INTEGER | ? | [possible duplicate] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Inventory Items",
+      "definition": "==========================================\nPRODUCTS (or INVENTORY_ITEMS?)\n==========================================",
+      "synonyms": [],
+      "provenance_text": "==========================================\nPRODUCTS (or INVENTORY_ITEMS?)\n==========================================",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Inventory Item",
+      "definition": "Inventory Item\nPhysical products held in stock. May be referenced as Product or Item.",
+      "synonyms": [],
+      "provenance_text": "Inventory Item\nPhysical products held in stock. May be referenced as Product or Item.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Invoice",
+      "definition": "Invoice\nA document requesting payment. Related to Bill.",
+      "synonyms": [],
+      "provenance_text": "Invoice\nA document requesting payment. Related to Bill.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Line Item Total",
+      "definition": "| line_total | DECIMAL(12,2) | ? | Line item total | | | LineTotal | DECIMAL(12,2) | ? | [duplicate?] |",
+      "synonyms": [],
+      "provenance_text": "| line_total | DECIMAL(12,2) | ? | Line item total | | | LineTotal | DECIMAL(12,2) | ? | [duplicate?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Line Total",
+      "definition": "| LineTotal | DECIMAL(12,2) | ? | [duplicate?] |",
+      "synonyms": [],
+      "provenance_text": "| LineTotal | DECIMAL(12,2) | ? | [duplicate?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Merchandise",
+      "definition": "Merchandise\nGoods available for sale. Similar to Product.",
+      "synonyms": [],
+      "provenance_text": "Merchandise\nGoods available for sale. Similar to Product.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Orders",
+      "definition": "ORDERS | | order_id | INTEGER | FK | References ORDERS |",
+      "synonyms": [],
+      "provenance_text": "ORDERS | | order_id | INTEGER | FK | References ORDERS |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Order Id",
+      "definition": "Primary Key: order_id (or OrderID - verify)",
+      "synonyms": [],
+      "provenance_text": "Primary Key: order_id (or OrderID - verify)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Order",
+      "definition": "Order\nA request to purchase products or services. Can be in various states.",
+      "synonyms": [],
+      "provenance_text": "Order\nA request to purchase products or services. Can be in various states.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Products",
+      "definition": "==========================================\nPRODUCTS (or INVENTORY_ITEMS?)\n==========================================",
+      "synonyms": [],
+      "provenance_text": "==========================================\nPRODUCTS (or INVENTORY_ITEMS?)\n==========================================",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Products (Or Inventory?)",
+      "definition": "| product_id | INTEGER | FK | References PRODUCTS (or INVENTORY?) | | | ProductID | INTEGER | FK | [inconsistent naming] |",
+      "synonyms": [],
+      "provenance_text": "| product_id | INTEGER | FK | References PRODUCTS (or INVENTORY?) | | | ProductID | INTEGER | FK | [inconsistent naming] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Payment",
+      "definition": "Payment\nThe transfer of money to settle an order.",
+      "synonyms": [],
+      "provenance_text": "Payment\nThe transfer of money to settle an order.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Product",
+      "definition": "Product\nA thing that is... [definition needs clarification] | Merchandise\nGoods available for sale. Similar to Product. | Inventory Item\nPhysical products held in stock. May be referenced as Product or Item.",
+      "synonyms": [],
+      "provenance_text": "Product\nA thing that is... [definition needs clarification] | Merchandise\nGoods available for sale. Similar to Product. | Inventory Item\nPhysical products held in stock. May be referenced as Product or Item.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Product Description",
+      "definition": "| product_description | TEXT | ? | Product description |",
+      "synonyms": [],
+      "provenance_text": "| product_description | TEXT | ? | Product description |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Proof Of Payment",
+      "definition": "Receipt\nProof of payment. Generated after Payment is processed.",
+      "synonyms": [],
+      "provenance_text": "Receipt\nProof of payment. Generated after Payment is processed.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Purchase",
+      "definition": "Purchase\nThe act of buying something. Related to Order and Transaction.",
+      "synonyms": [],
+      "provenance_text": "Purchase\nThe act of buying something. Related to Order and Transaction.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Quote",
+      "definition": "Quote\nA preliminary order with estimated pricing, not yet confirmed.",
+      "synonyms": [],
+      "provenance_text": "Quote\nA preliminary order with estimated pricing, not yet confirmed.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Receipt",
+      "definition": "Receipt\nProof of payment. Generated after Payment is processed.",
+      "synonyms": [],
+      "provenance_text": "Receipt\nProof of payment. Generated after Payment is processed.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Sku",
+      "definition": "SKU\nStock Keeping Unit - a unique identifier for a product variant.",
+      "synonyms": [],
+      "provenance_text": "SKU\nStock Keeping Unit - a unique identifier for a product variant.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Sales Order",
+      "definition": "Sales Order\nAn order with confirmed pricing and inventory allocation. Distinct from Quote.",
+      "synonyms": [],
+      "provenance_text": "Sales Order\nAn order with confirmed pricing and inventory allocation. Distinct from Quote.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Shipment",
+      "definition": "Shipment\nThe process of delivering goods to a customer.",
+      "synonyms": [],
+      "provenance_text": "Shipment\nThe process of delivering goods to a customer.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Order",
+      "definition": "Transaction\nSimilar to Order but more general. May refer to any exchange of value.",
+      "synonyms": [],
+      "provenance_text": "Transaction\nSimilar to Order but more general. May refer to any exchange of value.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Stock Keeping Unit",
+      "definition": "SKU\nStock Keeping Unit - a unique identifier for a product variant.",
+      "synonyms": [],
+      "provenance_text": "SKU\nStock Keeping Unit - a unique identifier for a product variant.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Synonym For Product",
+      "definition": "Item\nSynonym for Product. Used in inventory context.",
+      "synonyms": [],
+      "provenance_text": "Item\nSynonym for Product. Used in inventory context.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Text",
+      "definition": "| notes | TEXT | ? | [missing documentation] | | | Notes | TEXT | ? | [duplicate?] |",
+      "synonyms": [],
+      "provenance_text": "| notes | TEXT | ? | [missing documentation] | | | Notes | TEXT | ? | [duplicate?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Transfer Of Money",
+      "definition": "Payment\nThe transfer of money to settle an order.",
+      "synonyms": [],
+      "provenance_text": "Payment\nThe transfer of money to settle an order.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Account Status",
+      "definition": "| account_status | VARCHAR(20) | ? | [missing values documentation] |",
+      "synonyms": [],
+      "provenance_text": "| account_status | VARCHAR(20) | ? | [missing values documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Act Of Buying Something",
+      "definition": "Purchase\nThe act of buying something. Related to Order and Transaction.",
+      "synonyms": [],
+      "provenance_text": "Purchase\nThe act of buying something. Related to Order and Transaction.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Active Flag",
+      "definition": "| active_flag | CHAR(1) | ? | [duplicate?] |",
+      "synonyms": [],
+      "provenance_text": "| active_flag | CHAR(1) | ? | [duplicate?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Created At",
+      "definition": "| created_at | TIMESTAMP | ? | [missing documentation] | | | created_at | TIMESTAMP | ? | [missing documentation] | | | created_at | TIMESTAMP | ? | [missing documentation] |",
+      "synonyms": [],
+      "provenance_text": "| created_at | TIMESTAMP | ? | [missing documentation] | | | created_at | TIMESTAMP | ? | [missing documentation] | | | created_at | TIMESTAMP | ? | [missing documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Customer Region",
+      "definition": "| customer_region | VARCHAR(50) | ? | Geographic region |",
+      "synonyms": [],
+      "provenance_text": "| customer_region | VARCHAR(50) | ? | Geographic region |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Customer Type",
+      "definition": "| customer_type | VARCHAR(30) | ? | [missing documentation] |",
+      "synonyms": [],
+      "provenance_text": "| customer_type | VARCHAR(30) | ? | [missing documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Is Active",
+      "definition": "| is_active | BOOLEAN | ? | [missing documentation] |",
+      "synonyms": [],
+      "provenance_text": "| is_active | BOOLEAN | ? | [missing documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Line Total",
+      "definition": "| line_total | DECIMAL(12,2) | ? | Line item total |",
+      "synonyms": [],
+      "provenance_text": "| line_total | DECIMAL(12,2) | ? | Line item total |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Missing Documentation",
+      "definition": "| cost_price | DECIMAL(10,2) | ? | [missing documentation] | | | stock_quantity | INTEGER | ? | [missing documentation] | | | quantity_in_stock | INTEGER | ? | [duplicate?] |",
+      "synonyms": [],
+      "provenance_text": "| cost_price | DECIMAL(10,2) | ? | [missing documentation] | | | stock_quantity | INTEGER | ? | [missing documentation] | | | quantity_in_stock | INTEGER | ? | [duplicate?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Missing Validation Rules",
+      "definition": "| quantity | INTEGER | ? | [missing validation rules] |",
+      "synonyms": [],
+      "provenance_text": "| quantity | INTEGER | ? | [missing validation rules] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Order Amount",
+      "definition": "| orderAmount | DECIMAL(10,2) | ? | Total order amount |",
+      "synonyms": [],
+      "provenance_text": "| orderAmount | DECIMAL(10,2) | ? | Total order amount |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Order Status",
+      "definition": "| order_status | VARCHAR(25) | ? | See valid values in... [missing reference] |",
+      "synonyms": [],
+      "provenance_text": "| order_status | VARCHAR(25) | ? | See valid values in... [missing reference] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Payment Id",
+      "definition": "Primary Key: payment_id (unverified)",
+      "synonyms": [],
+      "provenance_text": "Primary Key: payment_id (unverified)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Payment Method",
+      "definition": "| payment_method | VARCHAR(30) | ? | [missing documentation] |",
+      "synonyms": [],
+      "provenance_text": "| payment_method | VARCHAR(30) | ? | [missing documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Payment Status",
+      "definition": "| payment_status | VARCHAR(20) | ? | [missing documentation] |",
+      "synonyms": [],
+      "provenance_text": "| payment_status | VARCHAR(20) | ? | [missing documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Product Description",
+      "definition": "| product_description | TEXT | ? | Product description |",
+      "synonyms": [],
+      "provenance_text": "| product_description | TEXT | ? | Product description |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Reorder Level",
+      "definition": "| reorder_level | INTEGER | ? | [missing documentation] |",
+      "synonyms": [],
+      "provenance_text": "| reorder_level | INTEGER | ? | [missing documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Shipping Amount",
+      "definition": "| shippingAmount | DECIMAL(10,2) | ? | Shipping cost |",
+      "synonyms": [],
+      "provenance_text": "| shippingAmount | DECIMAL(10,2) | ? | Shipping cost |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Status",
+      "definition": "| status | VARCHAR(20) | ? | [duplicate?] |",
+      "synonyms": [],
+      "provenance_text": "| status | VARCHAR(20) | ? | [duplicate?] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Actual User Of",
+      "definition": "End User\nThe actual user of a product or service, may differ from the purchaser.",
+      "synonyms": [],
+      "provenance_text": "End User\nThe actual user of a product or service, may differ from the purchaser.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Primary Owner Of",
+      "definition": "Account Holder\nThe person designated as the primary owner of an account. Similar to Customer but with account-specific context.",
+      "synonyms": [],
+      "provenance_text": "Account Holder\nThe person designated as the primary owner of an account. Similar to Customer but with account-specific context.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Unverified",
+      "definition": "Primary Key: payment_id (unverified)",
+      "synonyms": [],
+      "provenance_text": "Primary Key: payment_id (unverified)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    },
+    {
+      "name": "Updated At",
+      "definition": "| updated_at | TIMESTAMP | ? | [missing documentation] | | | updated_at | TIMESTAMP | ? | [missing documentation] |",
+      "synonyms": [],
+      "provenance_text": "| updated_at | TIMESTAMP | ? | [missing documentation] | | | updated_at | TIMESTAMP | ? | [missing documentation] |",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/business_glossary.txt, /home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/05_edgecases_incomplete/data_dictionary.txt"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 85
+  },
+  "tables_parsed": [
+    {
+      "name": "customers",
+      "columns": 16
+    },
+    {
+      "name": "orders",
+      "columns": 18
+    },
+    {
+      "name": "order_items",
+      "columns": 11
+    },
+    {
+      "name": "products",
+      "columns": 19
+    },
+    {
+      "name": "payments",
+      "columns": 13
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "customers",
+      "description": "Stores core information about customers, including identifiers, names, contact details, account state, type, and regional information."
+    },
+    {
+      "name": "Orders",
+      "description": "Stores information about customer orders, including identifiers, timestamps, status, amounts, payment details, and notes for each order."
+    },
+    {
+      "name": "order_items",
+      "description": "Stores the items for each order, including product references, quantity, pricing details, discounts, and the computed line total for each order item."
+    },
+    {
+      "name": "products",
+      "description": "Stores information about products including identifiers, names, SKUs, categories, pricing, stock levels, and descriptive text for product catalog management."
+    },
+    {
+      "name": "payments",
+      "description": "Stores payment transactions associated with orders and customers, including amounts, methods, statuses, and external transaction details."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 5,
+    "tables_enriched": 5,
+    "total_columns": 77
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 111,
+    "total_relationships": 106,
+    "completed_tables": 5
+  },
+  "stage_timings": {}
+}

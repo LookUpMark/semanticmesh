@@ -1,0 +1,1878 @@
+{
+  "study_id": "AB-BEST",
+  "timestamp": "2026-07-03T10:11:10.801236+00:00",
+  "trace_id": "AB-BEST.2026-07-03T10-11-10.801236+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+  ],
+  "ddl_files": [
+    "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Enterprise ERP Business Glossary\n\n## Sales & Customer Management\n\n### Customer\n**Definition**: An individual or organization that purchases goods or services from the company. Customers can be classified as retail (B2C) or business (B2B) with different credit terms and pricing structures.\n\n**Attributes**: customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, status\n\n**Related Concepts**: Sales Order, Invoice, Payment, Customer Address, Credit Score\n... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "537"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Inventory & Warehousing\n\n### Warehouse\n**Definition**: A physical location where inventory is stored. Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory.\n\n**Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status\n\n**Related Concepts**: Inventory Transaction, Bin Location, Warehouse Zone, Stock Transfer\n\n### Inventory Transaction\n**Definition**: A record of any movem... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "724"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Human Resources\n\n### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id\n\n**Related Concepts**: Department, Position, Employee Compensation, Time Entry, Performance Review\n\n### Department\n**Definition**: An... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "647"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## Quality & Compliance\n\n### Quality Inspection\n**Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping).\n\n**Attributes**: inspection_id, inspection_type, reference_type, reference_id, product_id, inspection_date, inspector_id, result, defects_found, status\n\n**Related Concepts**: Product, Supplier, Purchase Receipt, Work Order, Quality Standar... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "668"
+    },
+    {
+      "chunk_id": 4,
+      "text": "## Reporting & Analytics\n\n### Key Performance Indicator (KPI)\n**Definition**: A quantifiable metric used to evaluate performance against strategic objectives. KPIs can be financial, operational, customer-facing, or employee-related.\n\n**Common KPIs**: Order fulfillment rate, Inventory turnover, Supplier on-time delivery, Customer satisfaction, Employee productivity, Production yield\n\n### Financial Statement\n**Definition**: Formal reports summarizing financial performance and position. Primary sta... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "494"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 5,
+    "total_tokens": 3070,
+    "avg_tokens": 614.0
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is defined as",
+      "object": "An individual or organization that purchases goods or services from the company",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "order_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "relates to",
+      "object": "Customer",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "product_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "relates to",
+      "object": "Product Category",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "has",
+      "object": "supplier_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase Order",
+      "predicate": "has",
+      "object": "po_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase Order",
+      "predicate": "relates to",
+      "object": "Supplier",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier Contract",
+      "predicate": "has",
+      "object": "contract_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has definition",
+      "object": "A physical location where inventory is stored.",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has attribute",
+      "object": "warehouse_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has attribute",
+      "object": "warehouse_name",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has attribute",
+      "object": "warehouse_type",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has attribute",
+      "object": "location_address",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has attribute",
+      "object": "capacity_cubic_meters",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has attribute",
+      "object": "manager_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "has attribute",
+      "object": "status",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has definition",
+      "object": "A record of any movement or change in inventory quantity.",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attribute",
+      "object": "transaction_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attribute",
+      "object": "product_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attribute",
+      "object": "warehouse_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attribute",
+      "object": "transaction_type",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attribute",
+      "object": "quantity",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attribute",
+      "object": "transaction_date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attribute",
+      "object": "reference_type",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attribute",
+      "object": "reference_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "has attribute",
+      "object": "unit_cost",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has definition",
+      "object": "A specific storage location within a warehouse.",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attribute",
+      "object": "bin_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attribute",
+      "object": "warehouse_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attribute",
+      "object": "zone_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attribute",
+      "object": "aisle",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attribute",
+      "object": "shelf",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attribute",
+      "object": "position",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attribute",
+      "object": "capacity_quantity",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attribute",
+      "object": "current_quantity",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has attribute",
+      "object": "product_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "has relation",
+      "object": "Warehouse",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "has definition",
+      "object": "The movement of inventory between warehouses or locations.",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "has attribute",
+      "object": "transfer_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "has attribute",
+      "object": "from_warehouse_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "has attribute",
+      "object": "to_warehouse_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "has attribute",
+      "object": "transfer_date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "has attribute",
+      "object": "status",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "has attribute",
+      "object": "shipment_method",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "has attribute",
+      "object": "tracking_number",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "has definition",
+      "object": "A chronological record of all financial transactions for a specific account type.",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "has attribute",
+      "object": "account_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "has attribute",
+      "object": "account_number",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "has attribute",
+      "object": "account_name",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "has attribute",
+      "object": "account_type",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "has attribute",
+      "object": "parent_account_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "has attribute",
+      "object": "currency",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "has attribute",
+      "object": "balance_type",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "has definition",
+      "object": "A recording of a financial transaction in double-entry bookkeeping.",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "has attribute",
+      "object": "entry_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has definition",
+      "object": "Money owed to the company by customers for goods or services delivered on credit.",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has attribute",
+      "object": "ar_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has attribute",
+      "object": "customer_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has attribute",
+      "object": "invoice_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has attribute",
+      "object": "amount_due",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has attribute",
+      "object": "due_date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has attribute",
+      "object": "days_overdue",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has attribute",
+      "object": "collection_status",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "has attribute",
+      "object": "last_contact_date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has definition",
+      "object": "Money owed by the company to suppliers for goods or services received on credit.",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attribute",
+      "object": "ap_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attribute",
+      "object": "supplier_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attribute",
+      "object": "invoice_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attribute",
+      "object": "amount_due",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attribute",
+      "object": "due_date",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attribute",
+      "object": "discount_available",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attribute",
+      "object": "discount_until",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attribute",
+      "object": "status",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "has attribute",
+      "object": "payment_priority",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has definition",
+      "object": "A financial plan that allocates resources to departments, projects, or accounts for a specific perio... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attribute",
+      "object": "budget_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attribute",
+      "object": "budget_type",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attribute",
+      "object": "period_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attribute",
+      "object": "department_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attribute",
+      "object": "account_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attribute",
+      "object": "budgeted_amount",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attribute",
+      "object": "actual_amount",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attribute",
+      "object": "variance",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "has attribute",
+      "object": "status",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "is defined as",
+      "object": "An individual who works for the company under an employment contract",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Department",
+      "predicate": "has",
+      "object": "budgets",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Position",
+      "predicate": "defines",
+      "object": "compensation ranges",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "records",
+      "object": "hours worked",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Bill of Materials",
+      "predicate": "is",
+      "object": "a hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finis... [TRUNCATED]",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "documents",
+      "object": "production",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "plans",
+      "object": "production resources",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Line",
+      "predicate": "consists of",
+      "object": "equipment and personnel",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Quality Inspection",
+      "predicate": "is defined as",
+      "object": "A systematic examination of materials or products to verify conformance to specifications",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Quality Standard",
+      "predicate": "has",
+      "object": "Attributes",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Non-Conformance Report",
+      "predicate": "is defined as",
+      "object": "A document describing a quality deviation or defect that does not meet specifications",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Shipment",
+      "predicate": "is",
+      "object": "The physical transportation of goods from one location to another",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Carrier",
+      "predicate": "is",
+      "object": "A company that provides transportation services for shipping goods",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Shipping Route",
+      "predicate": "is defined as",
+      "object": "A predefined path for moving goods between locations with specific transit times, costs, and handlin... [TRUNCATED]",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Project",
+      "predicate": "is",
+      "object": "A temporary endeavor with defined objectives, deliverables, timelines, and resources",
+      "confidence": 0.6
+    },
+    "... [11 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 111,
+    "avg_confidence": 0.8351351351351352,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Movement Of Inventory",
+      "definition": "A bin location is a specific storage location within a warehouse used to store inventory, organized into zones, aisles, shelves, and positions for efficient picking and put-away.",
+      "synonyms": [
+        "A physical location where inventory is stored.",
+        "A specific storage location within a warehouse."
+      ],
+      "provenance_text": "### Stock Transfer\n**Definition**: The movement of inventory between warehouses or locations. Stock transfers can be planned (inter-warehouse transfers) or ad-hoc (emergency replenishment). | ### Warehouse\n**Definition**: A physical location where inventory is stored. Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory. | ### Bin Loca",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Accounts Receivable",
+      "definition": "Accounts Payable is the company\u2019s obligation to pay suppliers for goods or services received on credit, tracked by payment due dates and approval workflows.",
+      "synonyms": [
+        "Accounts Payable"
+      ],
+      "provenance_text": "### Accounts Receivable\n**Definition**: Money owed to the company by customers for goods or services delivered on credit. AR aging tracks overdue payments and supports collections workflows. | **Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date | ### Accounts Payable\n**Definition**: Money owed by the company to suppliers ",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Budgets",
+      "definition": "A financial plan allocating resources to departments, projects, or accounts for a specific period, used to compare budgeted versus actual amounts.",
+      "synonyms": [
+        "Budget"
+      ],
+      "provenance_text": "### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies. | ### Budget\n**Definition**: A financial plan that allocates resources to departments, projects, or accounts for a specific period. Budgets are compared to actual results for variance analysis. | **Attributes**: budget_",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "General Ledger Account",
+      "definition": "A General Ledger Account used in financial accounting to classify and summarize transactions, identified by an internal id, a public account number, and a descriptive name, and linked to related attributes such as type, parent account, currency, balance type, and status.",
+      "synonyms": [
+        "account_id",
+        "account_name",
+        "account_number"
+      ],
+      "provenance_text": "### General Ledger Account\n**Definition**: A chronological record of all financial transactions for a specific account type. Accounts are organized into a chart of accounts with hierarchies for balance sheet and income statement. | **Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status | **Attributes**: budget_id, budget_type, peri",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Cash Flow Statement",
+      "definition": "An income statement (profit and loss statement) is a financial report that summarizes a company's revenues, expenses, and net income over a specific period.",
+      "synonyms": [
+        "Income Statement"
+      ],
+      "provenance_text": "**Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Key Performance Indicator (Kpi)",
+      "definition": "A Key Performance Indicator (KPI) is a quantifiable metric used to evaluate progress toward strategic objectives across financial, operational, customer, and employee domains.",
+      "synonyms": [
+        "KPI",
+        "KPIs"
+      ],
+      "provenance_text": "**Definition**: A quantifiable metric used to evaluate performance against strategic objectives. KPIs can be financial, operational, customer-facing, or employee-related. | **Common KPIs**: Order fulfillment rate, Inventory turnover, Supplier on-time delivery, Customer satisfaction, Employee productivity, Production yield",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Position",
+      "definition": "A discrete storage location within a warehouse used to place and track inventory quantities (identified by bin_id, warehouse_id, zone_id, aisle, shelf, and position).",
+      "synonyms": [
+        "position"
+      ],
+      "provenance_text": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths. | **Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Production Resources",
+      "definition": "A manufacturing resource consisting of equipment and personnel configured to produce products, with defined capacity, changeover, and maintenance characteristics.",
+      "synonyms": [
+        "Production Line",
+        "production"
+      ],
+      "provenance_text": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities. | ### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, a",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Project Task",
+      "definition": "A specific work item within a project that must be completed, with dependencies, assignments, and progress tracking.",
+      "synonyms": [
+        "Project"
+      ],
+      "provenance_text": "### Project Task\n**Definition**: A specific work item within a project that must be completed. Tasks have dependencies, assignments, and progress tracking. | ### Project\n**Definition**: A temporary endeavor with defined objectives, deliverables, timelines, and resources. Projects can be customer-facing (consulting, construction) or internal (R&D, process improvement).",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Purchase Order",
+      "definition": "A Purchase Order is a formal document issued by a buyer to a supplier to authorize the purchase of specified goods or services and to outline terms, dates, and quantities.",
+      "synonyms": [
+        "Sales Order",
+        "Work Order"
+      ],
+      "provenance_text": "### Purchase Order\n**Attributes**: po_id, supplier_id, order_date, required_date, total_amount, status, approved_by, approval_date, warehouse_id | ### Purchase Order\n**Related Concepts**: Supplier, Purchase Order Line, Purchase Receipt, Supplier Invoice, Approval Workflow | ### Sales Order\n**Attributes**: order_id, customer_id, order_date, delivery_date, total_amount, status, sales_rep_id, warehou",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Shipment Method",
+      "definition": "A data attribute within a shipment/transfer record indicating the mode or method of transporting goods (e.g., air, sea, road) between locations.",
+      "synonyms": [
+        "Shipment",
+        "Shipping Route"
+      ],
+      "provenance_text": "**Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number | ### Shipment\n**Definition**: The physical transportation of goods from one location to another. Shipments can be outbound (to customers), inbound (from suppliers), or inter-warehouse transfers. | ### Shipping Route\n**Definition**: A predefined path for moving goods between loc",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Supplier Contract",
+      "definition": "A formal contract document detailing the terms, duration, renewal terms, and payment terms governing the engagement with a supplier (including contract_type, start_date, end_date, and status).",
+      "synonyms": [
+        "Supplier"
+      ],
+      "provenance_text": "### Supplier Contract\n**Attributes**: contract_id, supplier_id, contract_type, start_date, end_date, payment_terms, status, renewal_terms | ### Supplier\n**Attributes**: supplier_id, supplier_name, supplier_type, payment_terms, credit_rating, currency, lead_time_days, status | ### Purchase Order\n**Related Concepts**: Supplier, Purchase Order Line, Purchase Receipt, Supplier Invoice, Approval Workfl",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Warehouse",
+      "definition": "A warehouse is a (physical or virtual) location where inventory is stored or moved in transit, identified by attributes such as warehouse_id, warehouse_name, and warehouse_type.",
+      "synonyms": [
+        "from_warehouse_id",
+        "to_warehouse_id",
+        "warehouse_id",
+        "warehouse_name",
+        "warehouse_type"
+      ],
+      "provenance_text": "### Warehouse\n**Definition**: A physical location where inventory is stored. Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory. | **Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status | ### Bin Location\n**Definition**: A specific storage location within a warehouse.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Kpi Categories Financial",
+      "definition": "A classification scheme for Key Performance Indicators (KPIs) that groups metrics into financial, operational, customer-facing, and employee-related categories.",
+      "synonyms": [
+        "can be financial, operational, customer-facing, or employee-related",
+        "financial, operational, customer-facing, or employee-related"
+      ],
+      "provenance_text": "**Common KPIs**: Order fulfillment rate, Inventory turnover, Supplier on-time delivery, Customer satisfaction, Employee productivity, Production yield",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Capacity Cubic Meters",
+      "definition": "The quantity of a specific product that is presently stored in a particular bin or location within a warehouse.",
+      "synonyms": [
+        "capacity_quantity",
+        "current_quantity",
+        "quantity"
+      ],
+      "provenance_text": "**Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status | **Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id | **Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Collection Status",
+      "definition": "collection_status refers to the current state of the receivables collection process for a specific invoice/customer (e.g., overdue, contacted, in collections).",
+      "synonyms": [
+        "status"
+      ],
+      "provenance_text": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date | **Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status | **Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number | **Attributes**: ap_id,",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Discount Available",
+      "definition": "The deadline date until which a payment discount is available for an invoice.",
+      "synonyms": [
+        "discount_until"
+      ],
+      "provenance_text": "**Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Reference Type",
+      "definition": "The unique identifier of the reference document linked to a transaction.",
+      "synonyms": [
+        "reference_id"
+      ],
+      "provenance_text": "**Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Attributes",
+      "definition": "### Quality Standard\n**Definition**: A documented specification defining acceptance criteria for products or processes. Standards can be internal (company-specific) or external (ISO, ASTM, FDA).\n\n**Attributes**: standard_id, standard_code, standard_name, standard_type, version, issue_date, status",
+      "synonyms": [],
+      "provenance_text": "### Quality Standard\n**Definition**: A documented specification defining acceptance criteria for products or processes. Standards can be internal (company-specific) or external (ISO, ASTM, FDA).\n\n**Attributes**: standard_id, standard_code, standard_name, standard_type, version, issue_date, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Audit Log",
+      "definition": "**Audit Log**\n**Definition**: A chronological record of system events including logins, data changes, approvals, and errors. Audit logs support security monitoring and compliance requirements. | **Attributes**: log_id, event_type, user_id, entity_type, entity_id, timestamp, ip_address, action, old_value, new_value",
+      "synonyms": [],
+      "provenance_text": "**Audit Log**\n**Definition**: A chronological record of system events including logins, data changes, approvals, and errors. Audit logs support security monitoring and compliance requirements. | **Attributes**: log_id, event_type, user_id, entity_type, entity_id, timestamp, ip_address, action, old_value, new_value",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Balance Sheet",
+      "definition": "**Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities)",
+      "synonyms": [],
+      "provenance_text": "**Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bill Of Materials",
+      "definition": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.",
+      "synonyms": [],
+      "provenance_text": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bin Location",
+      "definition": "### Bin Location\n**Definition**: A specific storage location within a warehouse. Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away. | **Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id | **Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "synonyms": [],
+      "provenance_text": "### Bin Location\n**Definition**: A specific storage location within a warehouse. Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away. | **Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id | **Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Carrier",
+      "definition": "### Carrier\n**Definition**: A company that provides transportation services for shipping goods. Carriers are rated on cost, transit time, and delivery performance.",
+      "synonyms": [],
+      "provenance_text": "### Carrier\n**Definition**: A company that provides transportation services for shipping goods. Carriers are rated on cost, transit time, and delivery performance.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Customer",
+      "definition": "### Customer\n**Definition**: An individual or organization that purchases goods or services from the company. Customers can be classified as retail (B2C) or business (B2B) with different credit terms and pricing structures. | ### Sales Order\n**Related Concepts**: Customer, Order Line, Invoice, Shipment, Sales Representative",
+      "synonyms": [],
+      "provenance_text": "### Customer\n**Definition**: An individual or organization that purchases goods or services from the company. Customers can be classified as retail (B2C) or business (B2B) with different credit terms and pricing structures. | ### Sales Order\n**Related Concepts**: Customer, Order Line, Invoice, Shipment, Sales Representative",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Product Supplier",
+      "definition": "**Examples include Customer, Product, Supplier, and Employee records.",
+      "synonyms": [],
+      "provenance_text": "**Examples include Customer, Product, Supplier, and Employee records.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Department",
+      "definition": "### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.",
+      "synonyms": [],
+      "provenance_text": "### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Employee",
+      "definition": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.",
+      "synonyms": [],
+      "provenance_text": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "General Ledger Account",
+      "definition": "### General Ledger Account\n**Definition**: A chronological record of all financial transactions for a specific account type. Accounts are organized into a chart of accounts with hierarchies for balance sheet and income statement. | **Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status | **Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "synonyms": [],
+      "provenance_text": "### General Ledger Account\n**Definition**: A chronological record of all financial transactions for a specific account type. Accounts are organized into a chart of accounts with hierarchies for balance sheet and income statement. | **Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status | **Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Inventory Transaction",
+      "definition": "### Inventory Transaction\n**Definition**: A record of any movement or change in inventory quantity. Transactions include receipts, issues, transfers, adjustments, and cycle counts. | **Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost | **Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "synonyms": [],
+      "provenance_text": "### Inventory Transaction\n**Definition**: A record of any movement or change in inventory quantity. Transactions include receipts, issues, transfers, adjustments, and cycle counts. | **Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost | **Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Journal Entry",
+      "definition": "### Journal Entry\n**Definition**: A recording of a financial transaction in double-entry bookkeeping. Each journal entry must balance with equal debits and credits. | **Attributes**: entry_id, entry_date, period_id, source_document_type, source_document_id, created_by, approved_by, status, total_debit, total_credit",
+      "synonyms": [],
+      "provenance_text": "### Journal Entry\n**Definition**: A recording of a financial transaction in double-entry bookkeeping. Each journal entry must balance with equal debits and credits. | **Attributes**: entry_id, entry_date, period_id, source_document_type, source_document_id, created_by, approved_by, status, total_debit, total_credit",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Master Data",
+      "definition": "**Examples include Customer, Product, Supplier, and Employee records.",
+      "synonyms": [],
+      "provenance_text": "**Examples include Customer, Product, Supplier, and Employee records.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Non Conformance Report",
+      "definition": "### Non-Conformance Report\n**Definition**: A document describing a quality deviation or defect that does not meet specifications. NCRs trigger root cause analysis and corrective/preventive actions (CAPA).",
+      "synonyms": [],
+      "provenance_text": "### Non-Conformance Report\n**Definition**: A document describing a quality deviation or defect that does not meet specifications. NCRs trigger root cause analysis and corrective/preventive actions (CAPA).",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Primary Statements",
+      "definition": "**Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities) | **Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities) | **Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities)",
+      "synonyms": [],
+      "provenance_text": "**Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities) | **Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities) | **Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities)",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Product",
+      "definition": "### Product\n**Attributes**: product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_id | ### Product\n**Related Concepts**: Product Category, Bill of Materials, Inventory, Price List, Order Line",
+      "synonyms": [],
+      "provenance_text": "### Product\n**Attributes**: product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_id | ### Product\n**Related Concepts**: Product Category, Bill of Materials, Inventory, Price List, Order Line",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Product Category",
+      "definition": "### Product\n**Related Concepts**: Product Category, Bill of Materials, Inventory, Price List, Order Line",
+      "synonyms": [],
+      "provenance_text": "### Product\n**Related Concepts**: Product Category, Bill of Materials, Inventory, Price List, Order Line",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Production Schedule",
+      "definition": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.",
+      "synonyms": [],
+      "provenance_text": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Quality Inspection",
+      "definition": "### Quality Inspection\n**Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping).",
+      "synonyms": [],
+      "provenance_text": "### Quality Inspection\n**Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping).",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Quality Standard",
+      "definition": "### Quality Standard\n**Definition**: A documented specification defining acceptance criteria for products or processes. Standards can be internal (company-specific) or external (ISO, ASTM, FDA).\n\n**Attributes**: standard_id, standard_code, standard_name, standard_type, version, issue_date, status",
+      "synonyms": [],
+      "provenance_text": "### Quality Standard\n**Definition**: A documented specification defining acceptance criteria for products or processes. Standards can be internal (company-specific) or external (ISO, ASTM, FDA).\n\n**Attributes**: standard_id, standard_code, standard_name, standard_type, version, issue_date, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Stock Transfer",
+      "definition": "### Stock Transfer\n**Definition**: The movement of inventory between warehouses or locations. Stock transfers can be planned (inter-warehouse transfers) or ad-hoc (emergency replenishment). | **Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number | **Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number",
+      "synonyms": [],
+      "provenance_text": "### Stock Transfer\n**Definition**: The movement of inventory between warehouses or locations. Stock transfers can be planned (inter-warehouse transfers) or ad-hoc (emergency replenishment). | **Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number | **Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Time Entry",
+      "definition": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.",
+      "synonyms": [],
+      "provenance_text": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Transactional Data",
+      "definition": "**Definition**: High-volume records generated by business operations such as orders, invoices, payments, and inventory movements.",
+      "synonyms": [],
+      "provenance_text": "**Definition**: High-volume records generated by business operations such as orders, invoices, payments, and inventory movements.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Account Type",
+      "definition": "**Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Actual Amount",
+      "definition": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Aisle",
+      "definition": "**Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Amount Due",
+      "definition": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date | **Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date | **Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Ap Id",
+      "definition": "**Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Ar Id",
+      "definition": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Balance Type",
+      "definition": "**Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bin Id",
+      "definition": "**Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Budget Id",
+      "definition": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Budget Type",
+      "definition": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Budgeted Amount",
+      "definition": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Compensation Ranges",
+      "definition": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.",
+      "synonyms": [],
+      "provenance_text": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Contract Id",
+      "definition": "### Supplier Contract\n**Attributes**: contract_id, supplier_id, contract_type, start_date, end_date, payment_terms, status, renewal_terms",
+      "synonyms": [],
+      "provenance_text": "### Supplier Contract\n**Attributes**: contract_id, supplier_id, contract_type, start_date, end_date, payment_terms, status, renewal_terms",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Currency",
+      "definition": "**Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Customer Id",
+      "definition": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Days Overdue",
+      "definition": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Department Id",
+      "definition": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Due Date",
+      "definition": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date | **Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date | **Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Entry Id",
+      "definition": "**Attributes**: entry_id, entry_date, period_id, source_document_type, source_document_id, created_by, approved_by, status, total_debit, total_credit",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: entry_id, entry_date, period_id, source_document_type, source_document_id, created_by, approved_by, status, total_debit, total_credit",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Equipment And Personnel",
+      "definition": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.",
+      "synonyms": [],
+      "provenance_text": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Hours Worked",
+      "definition": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.",
+      "synonyms": [],
+      "provenance_text": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Invoice Id",
+      "definition": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date | **Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date | **Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Last Contact Date",
+      "definition": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: ar_id, customer_id, invoice_id, amount_due, due_date, days_overdue, status, collection_status, last_contact_date",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Location Address",
+      "definition": "**Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Manager Id",
+      "definition": "**Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Order Id",
+      "definition": "### Sales Order\n**Attributes**: order_id, customer_id, order_date, delivery_date, total_amount, status, sales_rep_id, warehouse_id",
+      "synonyms": [],
+      "provenance_text": "### Sales Order\n**Attributes**: order_id, customer_id, order_date, delivery_date, total_amount, status, sales_rep_id, warehouse_id",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Parent Account Id",
+      "definition": "**Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: account_id, account_number, account_name, account_type, parent_account_id, currency, balance_type, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Payment Priority",
+      "definition": "**Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Period Id",
+      "definition": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Po Id",
+      "definition": "### Purchase Order\n**Attributes**: po_id, supplier_id, order_date, required_date, total_amount, status, approved_by, approval_date, warehouse_id",
+      "synonyms": [],
+      "provenance_text": "### Purchase Order\n**Attributes**: po_id, supplier_id, order_date, required_date, total_amount, status, approved_by, approval_date, warehouse_id",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Product Id",
+      "definition": "### Product\n**Attributes**: product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_id | **Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost | **Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "synonyms": [],
+      "provenance_text": "### Product\n**Attributes**: product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_id | **Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost | **Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Shelf",
+      "definition": "**Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Supplier Id",
+      "definition": "### Supplier\n**Attributes**: supplier_id, supplier_name, supplier_type, payment_terms, credit_rating, currency, lead_time_days, status | **Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "synonyms": [],
+      "provenance_text": "### Supplier\n**Attributes**: supplier_id, supplier_name, supplier_type, payment_terms, credit_rating, currency, lead_time_days, status | **Attributes**: ap_id, supplier_id, invoice_id, amount_due, due_date, discount_available, discount_until, status, payment_priority",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Tracking Number",
+      "definition": "**Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Transaction Date",
+      "definition": "**Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Transaction Id",
+      "definition": "**Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Transaction Type",
+      "definition": "**Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Transfer Date",
+      "definition": "**Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Transfer Id",
+      "definition": "**Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: transfer_id, from_warehouse_id, to_warehouse_id, transfer_date, status, shipment_method, tracking_number",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Unit Cost",
+      "definition": "**Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: transaction_id, product_id, warehouse_id, transaction_type, quantity, transaction_date, reference_type, reference_id, unit_cost",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Variance",
+      "definition": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: budget_id, budget_type, period_id, department_id, account_id, budgeted_amount, actual_amount, variance, status",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Zone Id",
+      "definition": "**Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: bin_id, warehouse_id, zone_id, aisle, shelf, position, capacity_quantity, current_quantity, product_id",
+      "source_doc": "/home/marcantoniolopez/Documenti/github/semanticmesh/tests/fixtures/07_stress_large_scale/business_glossary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 84
+  },
+  "tables_parsed": [
+    {
+      "name": "customer_type",
+      "columns": 5
+    },
+    {
+      "name": "customer",
+      "columns": 16
+    },
+    {
+      "name": "customer_address",
+      "columns": 11
+    },
+    {
+      "name": "customer_contact",
+      "columns": 8
+    },
+    {
+      "name": "product_category",
+      "columns": 6
+    },
+    {
+      "name": "product",
+      "columns": 17
+    },
+    {
+      "name": "price_list",
+      "columns": 6
+    },
+    {
+      "name": "product_price",
+      "columns": 7
+    },
+    {
+      "name": "sales_order",
+      "columns": 20
+    },
+    {
+      "name": "sales_order_line",
+      "columns": 14
+    },
+    {
+      "name": "invoice",
+      "columns": 15
+    },
+    {
+      "name": "invoice_line",
+      "columns": 10
+    },
+    {
+      "name": "payment",
+      "columns": 12
+    },
+    {
+      "name": "supplier",
+      "columns": 16
+    },
+    {
+      "name": "supplier_address",
+      "columns": 11
+    },
+    {
+      "name": "supplier_contact",
+      "columns": 8
+    },
+    {
+      "name": "supplier_contract",
+      "columns": 12
+    },
+    {
+      "name": "purchase_order",
+      "columns": 21
+    },
+    {
+      "name": "purchase_order_line",
+      "columns": 14
+    },
+    {
+      "name": "purchase_receipt",
+      "columns": 11
+    },
+    {
+      "name": "purchase_receipt_line",
+      "columns": 12
+    },
+    {
+      "name": "warehouse",
+      "columns": 12
+    },
+    {
+      "name": "warehouse_zone",
+      "columns": 6
+    },
+    {
+      "name": "bin_location",
+      "columns": 11
+    },
+    {
+      "name": "inventory_transaction",
+      "columns": 14
+    },
+    {
+      "name": "stock_transfer",
+      "columns": 10
+    },
+    {
+      "name": "stock_transfer_line",
+      "columns": 9
+    },
+    {
+      "name": "production_line",
+      "columns": 9
+    },
+    {
+      "name": "bill_of_materials",
+      "columns": 9
+    },
+    {
+      "name": "work_order",
+      "columns": 16
+    },
+    {
+      "name": "work_order_material",
+      "columns": 8
+    },
+    {
+      "name": "production_schedule",
+      "columns": 10
+    },
+    {
+      "name": "quality_standard",
+      "columns": 8
+    },
+    {
+      "name": "quality_inspection",
+      "columns": 17
+    },
+    {
+      "name": "non_conformance_report",
+      "columns": 15
+    },
+    {
+      "name": "account_type",
+      "columns": 4
+    },
+    {
+      "name": "general_ledger_account",
+      "columns": 9
+    },
+    {
+      "name": "accounting_period",
+      "columns": 8
+    },
+    {
+      "name": "journal_entry",
+      "columns": 16
+    },
+    {
+      "name": "journal_entry_line",
+      "columns": 10
+    },
+    {
+      "name": "accounts_payable",
+      "columns": 14
+    },
+    {
+      "name": "department",
+      "columns": 9
+    },
+    {
+      "name": "position",
+      "columns": 12
+    },
+    {
+      "name": "employee",
+      "columns": 17
+    },
+    {
+      "name": "time_entry",
+      "columns": 12
+    },
+    {
+      "name": "carrier",
+      "columns": 10
+    },
+    {
+      "name": "shipping_route",
+      "columns": 12
+    },
+    {
+      "name": "shipment",
+      "columns": 17
+    },
+    {
+      "name": "shipment_line",
+      "columns": 9
+    },
+    {
+      "name": "project",
+      "columns": 14
+    },
+    {
+      "name": "project_task",
+      "columns": 15
+    },
+    {
+      "name": "app_user",
+      "columns": 15
+    },
+    {
+      "name": "role",
+      "columns": 7
+    },
+    {
+      "name": "user_role",
+      "columns": 7
+    },
+    {
+      "name": "audit_log",
+      "columns": 11
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customer Type",
+      "description": "Stores the different categories of customers and their related credit and payment terms settings."
+    },
+    {
+      "name": "Customer",
+      "description": "Stores core information about customers, including identifiers, contact details, financial attributes, regulatory IDs, and lifecycle timestamps to support customer management and credit decisions."
+    },
+    {
+      "name": "customer_address",
+      "description": "Stores the physical or mailing addresses associated with customers, including address type, street details, location, default status, and when the record was created."
+    },
+    {
+      "name": "customer_contact",
+      "description": "Stores contact person details associated with customers, including contact name, role, contact information, and whether the contact is the primary contact, along with the record creation timestamp."
+    },
+    {
+      "name": "Product Category",
+      "description": "Stores metadata about product categories, including hierarchical relationships between categories and descriptive details."
+    },
+    {
+      "name": "Product",
+      "description": "Stores information about products, including identifiers, classification, pricing, physical attributes, storage requirements, and lifecycle timestamps."
+    },
+    {
+      "name": "price_list",
+      "description": "Stores the pricing configurations applicable to items, including the price list identity, its name, the currency, validity period, and current status."
+    },
+    {
+      "name": "Product Price",
+      "description": "Stores pricing information for products, including the price, applicable price list, quantity thresholds for discounts, and the date from which the price is effective."
+    },
+    {
+      "name": "sales_order",
+      "description": "Stores sales order data, including identifiers, dates, financial totals, customer and sales contacts, fulfillment details, and order status for each customer order."
+    },
+    {
+      "name": "sales_order_line",
+      "description": "Stores line items for each sales order, including product details, quantities, pricing, discounts and tax, along with shipment dates and current status."
+    },
+    {
+      "name": "Invoice",
+      "description": "Stores billing information for customer invoices, including amounts, dates, currency, and status, linked to the customer and related order."
+    },
+    {
+      "name": "invoice_line",
+      "description": "Stores the details of each line item on an invoice, including product, quantity, pricing, tax, and references to the related invoice and sales order line."
+    },
+    {
+      "name": "payment",
+      "description": "Stores records of payments made by customers, including the payment amount, currency, method, and status, linked to the corresponding customer and invoice."
+    },
+    {
+      "name": "Supplier",
+      "description": "Stores information about suppliers, including contact details, tax and regulatory identifiers, contractual terms, and performance metrics such as delivery reliability and quality ratings."
+    },
+    {
+      "name": "supplier_address",
+      "description": "Stores the address details associated with suppliers, including whether an address is the primary one, and the timestamps for when the address record was created."
+    },
+    {
+      "name": "supplier_contact",
+      "description": "Stores contact information for suppliers, including who the contact is, their role, and how to reach them. Tracks which contact is the primary point of contact and when the record was created."
+    },
+    {
+      "name": "Supplier Contract",
+      "description": "Stores information about contracts between the company and suppliers, including contract timing, terms, currency, value, status, and metadata."
+    },
+    {
+      "name": "purchase_order",
+      "description": "Stores information about purchase orders, including identifiers, dates, involved parties (supplier, buyer), amounts (subtotal, tax, freight, total), currency, status, and metadata about approval and c... [TRUNCATED]"
+    },
+    {
+      "name": "purchase_order_line",
+      "description": "Stores line-level details for each item in purchase orders, including product reference, quantities (ordered, received, invoiced), pricing, discounts, taxes, total amount, promised delivery date, curr... [TRUNCATED]"
+    },
+    {
+      "name": "Purchase Receipt",
+      "description": "Stores records of goods received from suppliers, capturing the associated purchase order, supplier, and receiving details such as date, receiver, carrier, and tracking information, along with the stat... [TRUNCATED]"
+    },
+    {
+      "name": "purchase_receipt_line",
+      "description": "Stores line-level details for items received against purchase receipts, including quantities, costs, lot information, storage location, and whether inspection is required."
+    },
+    {
+      "name": "Warehouse",
+      "description": "Stores information about warehouses, including location details, capacity, management, and status for inventory storage and logistics operations."
+    },
+    {
+      "name": "warehouse_zone",
+      "description": "Stores information about each zone within a warehouse, including identifiers, codes, names, zone classification, and whether the zone is temperature controlled."
+    },
+    {
+      "name": "Bin Location",
+      "description": "Stores information about the physical locations of bins within warehouses, including identifiers, placement details, type, capacity, and current status."
+    },
+    {
+      "name": "inventory_transaction",
+      "description": "Stores records of inventory movements, including the type and date of each transaction, quantities and costs, references to related documents or entities, and metadata about who created the record."
+    },
+    {
+      "name": "Stock Transfer",
+      "description": "Stores records of transfers between warehouses, including identifiers, dates, shipment details, and current status for each transfer."
+    },
+    {
+      "name": "stock_transfer_line",
+      "description": "Stores line-item details for transfers between bins, including requested, shipped, and received quantities, the related transfer and product, and the status of the transfer line."
+    },
+    {
+      "name": "production_line",
+      "description": "Stores data about each production line, including identifiers, location, operating capacity, setup time, and current status."
+    },
+    {
+      "name": "bill_of_materials",
+      "description": "Stores the bill of materials data, listing how a parent product is composed of component products, the quantity and unit of measure for each component, any scrap percentage, effective date range for t... [TRUNCATED]"
+    },
+    {
+      "name": "work_order",
+      "description": "Stores work order records detailing product, production line, and warehouse associations, quantities at various stages, critical dates, status and priority, plus audit information about who created th... [TRUNCATED]"
+    },
+    {
+      "name": "work_order_material",
+      "description": "Stores the relationships between work orders and the materials required to fulfill them, including quantities, costs, storage location, and current status of each material line item."
+    },
+    {
+      "name": "production_schedule",
+      "description": "Stores the planned and actual timing and status for production work orders across production lines, including scheduling windows, progression status, and creation metadata."
+    },
+    {
+      "name": "Quality Standard",
+      "description": "Stores metadata and details about quality standards used to benchmark products or processes, including identifiers, codes, names, types, versions, issue dates, statuses, and descriptive notes."
+    },
+    {
+      "name": "quality_inspection",
+      "description": "Stores records of quality inspections for products, including inspection details, results, defects, sample and batch sizes, related standards, and metadata about who performed the inspection and when ... [TRUNCATED]"
+    },
+    {
+      "name": "non_conformance_report",
+      "description": "Stores data about non-conformances and the actions taken to resolve and prevent recurrence, including timing, responsible party, and status of each NCR."
+    },
+    {
+      "name": "account_type",
+      "description": "Stores information about different account types, including their codes, descriptive names, and the related balance handling category."
+    },
+    {
+      "name": "General Ledger Account",
+      "description": "Stores information about general ledger accounts, including identifiers, names, hierarchical relationships, currency, and metadata for each account."
+    },
+    {
+      "name": "Accounting Period",
+      "description": "Stores information about financial accounting periods, including their codes, names, date ranges, fiscal year, and whether the period is closed along with the timestamp when it was closed."
+    },
+    {
+      "name": "Journal Entry",
+      "description": "Stores journal entries recording financial transactions, including dates, associated period, source documents, monetary amounts (debits and credits), currency, and approval workflow details."
+    },
+    {
+      "name": "journal_entry_line",
+      "description": "Stores the individual line items for journal entries, including debit and credit amounts by account, with optional reference context and cost center attribution."
+    },
+    {
+      "name": "accounts_payable",
+      "description": "Stores information about amounts payable to suppliers, including original and due amounts, relevant dates (invoice, due, discount), payment terms and status, and audit timestamp."
+    },
+    {
+      "name": "Department",
+      "description": "Stores information about organizational departments, including identifiers, hierarchy, leadership, budgeting reference, location, status, and creation timestamp."
+    },
+    {
+      "name": "Position",
+      "description": "Stores information about job positions, including identifiers, titles, classification details, salary ranges, departmental assignment, status, and a description of the role."
+    },
+    {
+      "name": "Employee",
+      "description": "Stores core information about employees, including identification, role, organizational connections, compensation, and contact details for current and terminated employees."
+    },
+    {
+      "name": "time_entry",
+      "description": "This table stores time entry records for employees, including the date worked, hours logged, associated project, type of work, and the approval workflow details (submission and approval information)."
+    },
+    {
+      "name": "Carrier",
+      "description": "Stores information about transportation carriers, including identifiers, contact details, service levels, rating, status, and the timestamp when the carrier was added to the system."
+    },
+    {
+      "name": "Shipping Route",
+      "description": "Stores data about shipping routes including origins and destinations, the distance and estimated transit time, carrier information, service level, pricing by distance, route status, and the record cre... [TRUNCATED]"
+    },
+    {
+      "name": "shipment",
+      "description": "Stores records of shipments, including identifiers, origin and destination locations, tracking and reference details, timing estimates, carrier and route information, cost and weight data, status, and... [TRUNCATED]"
+    },
+    {
+      "name": "shipment_line",
+      "description": "Stores the details of each line within a shipment, including the product, quantity, weight, and any referencing to other line items."
+    },
+    {
+      "name": "Project",
+      "description": "Stores information about projects including identifiers, names, types, related customers and managers, timelines, financials, status, priority, and a description of the project."
+    },
+    {
+      "name": "project_task",
+      "description": "Stores information about tasks within projects, including scheduling dates, assignment, progress, and priority for each task."
+    },
+    {
+      "name": "app_user",
+      "description": "Stores user account information including identifiers, contact details, roles, and audit timestamps used for authentication, authorization, and user lifecycle tracking."
+    },
+    {
+      "name": "Role",
+      "description": "Stores metadata about user roles, including identifying codes, names, types, status, and when each role record was created."
+    },
+    {
+      "name": "user_role",
+      "description": "Stores the mapping of users to their roles, including when roles were assigned, who assigned them, and when they expire, along with the current status."
+    },
+    {
+      "name": "audit_log",
+      "description": "Stores an audit trail of changes and events affecting system entities, including who performed the action, what entity was affected, and the before/after values for trackable changes."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 55,
+    "tables_enriched": 55,
+    "total_columns": 634
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 754,
+    "total_relationships": 838,
+    "completed_tables": 55
+  },
+  "stage_timings": {}
+}
