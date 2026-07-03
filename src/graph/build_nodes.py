@@ -395,22 +395,22 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
 
             # ── Consolidate property updates into single Cypher call ──────────
             # Combines: normalization, source_file stamp, enriched metadata
-            set_clauses: list[str] = ["pt.table_name = $canonical", "pt.name = $canonical"]
+            set_clauses: list[str] = ["keeper.table_name = $canonical", "keeper.name = $canonical"]
             merged_params: dict[str, Any] = {
                 "name": table.table_name,
                 "canonical": table.table_name,
             }
             if table.source_file:
-                set_clauses.append("pt.source_file = $source_file")
+                set_clauses.append("keeper.source_file = $source_file")
                 merged_params["source_file"] = table.source_file
             if getattr(table, "enriched_table_name", None):
-                set_clauses.append("pt.enriched_table_name = $etn")
+                set_clauses.append("keeper.enriched_table_name = $etn")
                 merged_params["etn"] = table.enriched_table_name
             if getattr(table, "table_description", None):
-                set_clauses.append("pt.table_description = $td")
+                set_clauses.append("keeper.table_description = $td")
                 merged_params["td"] = table.table_description
             if getattr(table, "enriched_columns", None):
-                set_clauses.append("pt.enriched_columns = $ec")
+                set_clauses.append("keeper.enriched_columns = $ec")
                 merged_params["ec"] = _json.dumps(
                     [
                         {"original": ec.original_name, "enriched": ec.enriched_name}
@@ -418,12 +418,32 @@ def _node_build_graph(state: BuilderState) -> dict[str, Any]:
                     ]
                 )
             if table.comment:
-                set_clauses.append("pt.comment = $cmt")
+                set_clauses.append("keeper.comment = $cmt")
                 merged_params["cmt"] = table.comment
 
+            # AUDIT: case-variant dedup. The LLM-healed Cypher sometimes creates
+            # the PhysicalTable with the original (often UPPERCASE) identifier
+            # copied from raw DDL, while an FK stub created by an earlier table
+            # (build_fk_cypher emits a lowercase MERGE) may already exist. Both
+            # match the case-insensitive WHERE below, so a naive SET of
+            # ``table_name = $canonical`` would force two nodes onto the same
+            # unique-constrained value → ConstraintError. Collapse all
+            # case-variants into one canonical keeper first: keep the lowercase
+            # node if present (it carries inbound FK edges from other tables),
+            # else rename the survivor. Duplicate variants are DETACH DELETEd —
+            # their MAPPED_TO / FK / Attribute edges are re-created idempotently
+            # by the MERGE steps above (MAPPED_TO ensure) and below (FK/attrs),
+            # and their properties are reapplied here.
             client.execute_cypher(
                 "MATCH (pt:PhysicalTable) "
                 "WHERE toLower(pt.table_name) = toLower($name) "
+                "WITH $canonical AS canonical, collect(pt) AS variants "
+                "WITH canonical, variants, "
+                "  CASE WHEN size([n IN variants WHERE toLower(n.table_name) = n.table_name]) > 0 "
+                "       THEN head([n IN variants WHERE toLower(n.table_name) = n.table_name]) "
+                "       ELSE head(variants) END AS keeper "
+                "WITH canonical, keeper, [n IN variants WHERE n <> keeper] AS dups "
+                "FOREACH (dup IN dups | DETACH DELETE dup) "
                 f"SET {', '.join(set_clauses)}",
                 merged_params,
             )

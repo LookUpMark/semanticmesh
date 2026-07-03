@@ -41,8 +41,8 @@ dependencies = [
     "langchain-ollama>=0.1,<1.0",
     # AUDIT-012: Declare direct imports that were previously transitive-only.
     "numpy>=1.26,<3.0",
-    "langchain-core>=0.3,<1.0",
-    "langchain-text-splitters>=0.3,<1.0",
+    "langchain-core>=1.0,<2.0",
+    "langchain-text-splitters>=1.0,<2.0",
     # AUDIT-025: Tighten langfuse to <3.0 to avoid breaking API changes in 3.x.
     "langfuse>=2.0,<3.0",
 ]
