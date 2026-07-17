@@ -43,7 +43,7 @@ The \texttt{QueryState} schema represents the context of a single Q\&A execution
 \subsection{PDF Loader and SHA-256 Change Detection}
 \label{sec:imp:pdf_loader}
 
-Unstructured documents are loaded in \texttt{src/ingestion/pdf\_loader.py}. To support incremental updates, the loader implements an ingestion manager that computes the SHA-256 hash of each document. During subsequent runs, unchanged files are skipped, and only modified files are processed. Documents are split using a two-level hierarchical chunking strategy:
+Unstructured documents are loaded in \texttt{src/ingestion/pdf\_loader.py}. To support incremental updates, a file registry (\texttt{src/ingestion/file\_registry.py}, invoked from the Builder graph) computes the SHA-256 hash of each document. During subsequent runs, unchanged files are skipped, and only modified files are processed. Documents are split using a two-level hierarchical chunking strategy:
 \begin{enumerate}
     \item \textbf{Parent Chunks}: Large text segments (800 tokens, 96-token overlap) that capture structural context.
     \item \textbf{Child Chunks}: Smaller sub-segments (256 tokens, 32-token overlap) nested inside each parent chunk.
@@ -53,7 +53,7 @@ Only child chunks are embedded and indexed in Neo4j; however, parent chunks are 
 \subsection{DDL Parsing via SQLGlot}
 \label{sec:imp:ddl_parser}
 
-Database schemas are processed in \texttt{src/ingestion/ddl\_parser.py} using SQLGlot~\cite{sqlglot}, a pythonic SQL parser and transpiler. The parser reads SQL DDL statements and outputs structured \texttt{TableSchema} representations containing the table name, columns, data types, and primary/foreign key relationships. Parsing via SQLGlot avoids the fragile regular expressions typical of baseline data catalogs and ensures compatibility across database dialects (PostgreSQL, MySQL, Oracle).
+Database schemas are processed in \texttt{src/ingestion/ddl\_parser.py} using SQLGlot~\cite{sqlglot}, a pythonic SQL parser and transpiler. The parser reads SQL DDL statements and outputs structured \texttt{TableSchema} representations containing the table name, columns, data types, and primary/foreign key relationships. Parsing via SQLGlot's AST avoids the fragile regular expressions typical of baseline data catalogs (regex is retained only for pre-cleaning non-\texttt{CREATE TABLE} statements and \texttt{CHECK} constraints) and ensures compatibility across database dialects (PostgreSQL, MySQL, Oracle, and T-SQL).
 
 \subsection{Schema Enrichment via Acronym Expansion}
 \label{sec:imp:schema_enricher}
@@ -74,7 +74,7 @@ The extraction module in \texttt{src/extraction/triplet\_extractor.py} extracts 
 Once triplets are extracted, the system runs entity resolution in \texttt{src/resolution/entity\_resolver.py} to deduplicate entities across documents:
 \begin{enumerate}
     \item \textbf{Vector Blocking}: Extracted entities are embedded using BGE-M3. Candidates are grouped into clusters using cosine similarity thresholding ($0.75$ by default) to filter down the candidate pairs.
-    \item \textbf{LLM Judge}: For each candidate cluster, the system invokes the lightweight LLM tier as a judge (\texttt{ER\_JUDGE\_SYSTEM} prompt) to make the final determination of whether the entities refer to the same concept or should remain separate.
+    \item \textbf{LLM Judge}: For each candidate cluster, the system invokes the mid-tier LLM as a judge (\texttt{ER\_JUDGE\_SYSTEM} prompt) to make the final determination of whether the entities refer to the same concept or should remain separate.
 \end{enumerate}
 
 \section{Schema Mapping and Validation Nodes}
@@ -101,7 +101,7 @@ If the Critic rejects a mapping, a critique is generated and injected back into 
 \subsection{Few-Shot Cypher Generation}
 \label{sec:imp:cypher_generator}
 
-Once mappings are approved, they are translated into Cypher import scripts in \texttt{src/graph/cypher\_generator.py}. The generator uses a few-shot prompting strategy containing examples of Neo4j import statements (using \texttt{MERGE} and \texttt{UNWIND} for performance).
+Once mappings are approved, they are translated into Cypher import scripts in \texttt{src/graph/cypher\_generator.py}. The generator uses a few-shot prompting strategy whose examples build Neo4j upsert statements from parameterised \texttt{MERGE} patterns chained with \texttt{WITH} and \texttt{ON CREATE SET}/\texttt{ON MATCH SET} clauses for idempotent, repeatable ingestion. A post-processing guard further collapses any accidentally multi-statement output to a single statement, so the generated Cypher is always executable in one call.
 
 \subsection{Cypher Healing Loop}
 \label{sec:imp:cypher_healer}
@@ -122,7 +122,7 @@ If healing fails after three attempts, the system falls back to a deterministic,
 
 The Query pipeline in \texttt{src/retrieval/hybrid\_retriever.py} uses a hybrid retrieval strategy:
 \begin{enumerate}
-    \item \textbf{Vector Search}: Cosine similarity search over the 1024-dimensional BGE-M3 embeddings of child chunks.
+    \item \textbf{Vector Search}: Cosine similarity search over the 1024-dimensional BGE-M3 embeddings, primarily against the \texttt{businessconcept\_embedding} index over BusinessConcept nodes (with additional \texttt{attribute\_embedding} and \texttt{chunk\_embedding} indices for column- and chunk-level matching).
     \item \textbf{BM25 Retrieval}: Fulltext search over exact keyword matches for table identifiers, columns, and codes.
     \item \textbf{Graph Traversal}: BFS expansion from matched concepts to neighboring table nodes.
 \end{enumerate}
@@ -136,7 +136,7 @@ The answer generator generates response candidates based on the retrieved contex
 \section{Provider-Agnostic LLM Factory}
 \label{sec:imp:llm_factory}
 
-All LLM integrations route through \texttt{src/config/llm\_factory.py}. The factory supports five distinct LLM tiers configured via tier-specific environment variables (\texttt{LLM\_PROVIDER\_\textless{}TIER\textgreater{}}, \texttt{LLM\_MODEL\_\textless{}TIER\textgreater{}}). It abstracts access behind an \texttt{LLMProtocol} interface and handles paid-model fallbacks automatically when HTTP 429 errors are encountered.
+All LLM integrations route through \texttt{src/config/llm\_factory.py}. The factory exposes five logical LLM tiers---reasoning, extraction, generation, mid-tier, and lightweight---each backed by a cached singleton. Four of the tiers are configured via dedicated tier-specific environment variables (\texttt{LLM\_PROVIDER\_\textless{}TIER\textgreater{}}, \texttt{LLM\_MODEL\_\textless{}TIER\textgreater{}}); the lightweight tier reuses the extraction-tier configuration. The factory abstracts access behind an \texttt{LLMProtocol} interface and handles paid-model fallbacks automatically when HTTP 429 errors are encountered.
 
 \section{REST API Implementation}
 \label{sec:imp:api}

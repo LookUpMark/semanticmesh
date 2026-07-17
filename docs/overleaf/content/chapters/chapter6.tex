@@ -1,37 +1,61 @@
 \chapter{Conclusions}
 \label{ch:conclusions}
 
-This chapter concludes the thesis by summarizing the primary contributions of this work, discussing the key limitations of the proposed architecture, and outlining directions for future research in automated data governance.
+This chapter concludes the thesis. It first restates the primary contributions of SemanticMesh against the empirical evidence gathered in Chapter~\ref{ch:evaluation}, then discusses the system's limitations---distinguishing limitations that were actually observed during the evaluation from those that remain plausible design extrapolations---and finally outlines directions for future research.
 
 \section{Summary of Contributions}
 \label{sec:conclusion:contributions}
 
-This thesis presented SemanticMesh, a multi-agent framework designed to automate semantic discovery and data governance. By bridging the semantic gap between unstructured business documentation and physical database schemas, the system constructs a queryable Knowledge Graph in Neo4j. The primary contributions include:
+This thesis presented SemanticMesh, a multi-agent framework that automates semantic discovery and data governance by bridging the semantic gap between unstructured business documentation and physical database schemas, constructing a queryable Knowledge Graph in Neo4j. Its primary contributions are:
 \begin{enumerate}
-    \item \textbf{Two-Graph Architecture}: Dividing operations into a write-heavy Builder Graph (ontology construction) and a read-heavy Query Graph (agentic RAG), reflecting CQRS principles for LLM orchestration.
-    \item \textbf{Multi-Stage Entity Resolution}: Resolving concept duplicates across documents through a hybrid pipeline combining vector-based blocking and LLM-based verification.
-    \item \textbf{Robust Self-Correction Loops}: Improving system reliability via Actor-Critic mapping validation, Cypher query healing, and answer groundedness grading.
-    \item \textbf{Ablation-Backed Design}: Conducting a systematic campaign of 21 ablation studies that validated the performance impact of each pipeline component.
+    \item \textbf{Two-graph architecture (CQRS for LLM orchestration).} A strict separation between a write-heavy \emph{Builder} graph that constructs the ontology from governance documents and a read-heavy \emph{Query} graph that performs agentic retrieval-augmented generation. The separation enables independent execution, incremental re-ingestion, and a clean isolation between graph-construction correctness and query-time latency.
+    \item \textbf{Multi-stage entity resolution.} A two-stage pipeline---BGE-M3 vector blocking with Union-Find clustering at a cosine threshold, followed by a mid-tier LLM judge (\texttt{ER\_JUDGE\_SYSTEM})---that deduplicates business concepts across heterogeneous documents. The embedding-based first stage keeps the judge's workload tractable while preserving recall.
+    \item \textbf{Self-reflection loops for quality assurance.} Three independent correction mechanisms: (i) Actor-Critic schema-mapping validation, in which a single mid-tier LLM plays two prompt-separated roles---Actor and Critic---in a Self-Refine-style generate-feedback-refine loop; (ii) Cypher healing, where generated queries are dry-run via \texttt{EXPLAIN} and syntax errors are fed back for correction, with a deterministic parameterised builder as a guaranteed fallback; and (iii) a Self-RAG-style hallucination grader that gates the final answer against the retrieved context.
+    \item \textbf{Hybrid retrieval with reciprocal rank fusion.} A retrieval strategy combining dense vector search (primarily over a \texttt{businessconcept\_embedding} index), BM25 full-text search, and variable-depth graph traversal, fused by Reciprocal Rank Fusion and re-ranked by a cross-encoder (\texttt{bge-reranker-v2-m3}).
+    \item \textbf{Ablation-backed design.} A systematic campaign of 21 single-variable studies (AB-00--AB-20) plus the optimised AB-BEST and AB-BEST-K20 configurations, evaluated by a domain-specific, architecture-aware LLM-as-a-Judge rather than generic metrics. The ablation evidence---not a single winner-takes-all score---informs the default configuration, as detailed in Chapter~\ref{ch:evaluation}.
+    \item \textbf{Provider-agnostic LLM factory and incremental ingestion.} A five-tier LLM factory abstracting twelve provider backends behind a uniform \texttt{LLMProtocol}, and a SHA-256 file-registry that detects changed documents and triggers partial reprocessing without rebuilding the whole graph.
 \end{enumerate}
+
+\section{Empirical Summary}
+\label{sec:conclusion:empirical}
+
+Evaluated across seven synthetic datasets (111 tables, 210 questions) under the systematic \texttt{gpt-5.4-nano} judge, the AB-BEST configuration produced \textbf{210/210 grounded answers (100\%), zero hallucinations, and 100\% builder completion}, including the 58-table stress set (DS07). Its average AI-Judge score was \textbf{4.31/5}, with the hardest cases being DS03 Healthcare (3.65, multi-hop clinical questions) and the degraded schemas DS06 legacy (4.25) and DS07 stress (4.20).
+
+Two findings of the ablation campaign deserve emphasis because they revise intuitive expectations:
+\begin{itemize}
+    \item \textbf{The simple baseline does not discriminate components.} On DS01 the judge is tightly compressed (3.80--4.80), so most single-variable changes are indistinguishable from the baseline (4.50). The only component whose absence the judge penalises on this dataset is Cypher healing (AB-19, 3.80); schema enrichment and Actor-Critic validation remain within noise of the baseline and are retained for robustness on degraded or larger schemas rather than for measurable DS01 quality.
+    \item \textbf{Retrieval recall and answer quality are decoupled.} Expanding the reranker pool from $k{=}5$ to $k{=}20$ raised average Gold-Standard coverage from $0.860$ to $0.986$ but did \emph{not} raise the judge score (4.31 vs.\ 4.28). On complex schemas the extra chunks at ranks 6--20 are often related-but-wrong tables that dilute precision. AB-BEST therefore keeps $k{=}5$ for a $4\times$ cross-encoder inference saving without sacrificing qualitative performance.
+\end{itemize}
+A measurement caveat also surfaced: cross-encoder absolute scores are artificially low on highly technical content (DDL, data dictionaries), so the rerank node exports both a raw and a pool-aware \emph{adjusted} retrieval-quality score, with the quality gate consuming the adjusted value to avoid false rejections on technical documents.
 
 \section{System Limitations}
 \label{sec:conclusion:limitations}
 
-Despite strong empirical performance, the current implementation exhibits several limitations:
+We distinguish limitations observed during the evaluation from design limitations that remain plausible but unmeasured extrapolations.
+
+\textbf{Observed limitations.}
 \begin{itemize}
-    \item \textbf{Wide Tables}: Tables with more than 100 columns degrade schema mapping performance, as the dense schema representations overwhelm model context windows.
-    \item \textbf{Multi-Hop Reasoning Limits}: Running global queries across large databases (exceeding 1,000 tables) exceeds output token limits and degrades traversal precision.
-    \item \textbf{Self-Correction Ceiling}: While Cypher healing fixes syntax errors, it cannot recover from semantically ambiguous mapping errors where the underlying business intent is poorly defined in the source documentation.
-    \item \textbf{Domain-Specific Embedding Drift}: General-purpose embedding models like BGE-M3 show reduced retrieval precision when applied to highly specialized corporate vocabulary.
+    \item \textbf{Multi-hop clinical precision.} On DS03 Healthcare the system stays fully grounded and 94\% covered, yet the judge penalises answer precision (3.65) on multi-hop clinical questions where several tables must be jointly reasoned over.
+    \item \textbf{Degraded-schema coverage.} On incomplete or legacy schemas (DS05, DS06) Gold-Standard coverage drops to 79\% and 63\% respectively---the documentation gaps propagate into the constructed graph and cannot be fully recovered even with the wider $k{=}20$ window.
+    \item \textbf{Retrieval-quality score floor.} As noted above, raw cross-encoder scores on technical content are artificially low and require a pool-aware adjustment; the floor is a workaround, not a fundamental fix.
+\end{itemize}
+
+\textbf{Design limitations (qualitative, not yet measured at the thresholds stated).}
+\begin{itemize}
+    \item \textbf{Wide tables.} Tables with a very large number of columns are expected to degrade schema-mapping performance as the dense schema representation consumes model context; the evaluated fixtures do not exercise this regime (the largest fixture is DS07 with 58 tables, and column counts stay well below the regime where pressure would manifest).
+    \item \textbf{Scale of global reasoning.} Global queries over schemas far larger than those evaluated are expected to approach output-token limits and lose traversal precision; no evaluated dataset reaches that scale.
+    \item \textbf{Embedding drift on specialised vocabulary.} A general-purpose embedder such as BGE-M3 can lose precision on highly specialised corporate vocabulary; this is a known property of the model rather than a measured degradation on the present datasets.
 \end{itemize}
 
 \section{Future Research Directions}
 \label{sec:conclusion:future_work}
 
-To address these limitations, several directions are proposed for future work:
+Several directions follow directly from the limitations above and from the architecture's current boundaries:
 \begin{itemize}
-    \item \textbf{Community Detection for Global Reasoning}: Incorporating graph partitioning algorithms (e.g., Louvain community detection~\cite{blondel2008fast}) to divide large schemas into localized sub-graphs, enabling hierarchical map-reduce operations.
-    \item \textbf{Semantic Intra-Table Chunking}: Clustering columns of wide tables into semantic subgroups before mapping, reducing context window utilization and improving mapping precision.
-    \item \textbf{Domain SLM Fine-Tuning}: Fine-tuning Small Language Models (SLMs) using Parameter-Efficient Fine-Tuning (PEFT/LoRA) on corporate document corpuses to eliminate embedding drift.
-    \item \textbf{Active Learning from HITL}: Persisting corrections from human-in-the-loop review steps to automatically refine future mapping proposals and system prompts.
+    \item \textbf{Community detection for global reasoning.} SemanticMesh currently has no graph-level community-detection stage (unlike Microsoft GraphRAG's Leiden-based hierarchical clustering~\cite{blondel2008fast, traag2019from}). Incorporating Louvain or Leiden community detection to partition large schemas into localised sub-graphs would enable hierarchical map-reduce answering of broad, global questions and is the most promising route to the multi-hop and large-scale limitations.
+    \item \textbf{Semantic intra-table chunking.} Clustering the columns of wide tables into semantic subgroups before mapping would reduce context-window pressure and is expected to improve mapping precision on wide schemas.
+    \item \textbf{Domain-specific embedding or SLM fine-tuning.} Fine-tuning a small language model (e.g.\ via Parameter-Efficient Fine-Tuning) on the corporate document corpus would address embedding drift and reduce the cost of the extraction and entity-resolution tiers.
+    \item \textbf{Adaptive retrieval pool.} Because $k{=}20$ strictly improves recall without hurting judged quality, an adaptive policy that raises the pool size when the adjusted retrieval-quality score is low could capture the recall gain only where the answer is under-supported, paying the cross-encoder cost only when needed.
+    \item \textbf{Stronger text-to-Cypher generation.} Although the single-statement guard and deterministic fallback make Cypher generation robust, a dedicated text-to-Cypher model~\cite{tiwari2025autocypherimprovingllmscypher} could further reduce the residual multi-statement emissions and the fallback load.
+    \item \textbf{Active learning from human-in-the-loop review.} Persisting HITL mapping corrections to refine future mapping proposals and system prompts would let the system improve with use, directly targeting the precision gap on multi-hop and degraded-schema questions.
 \end{itemize}
