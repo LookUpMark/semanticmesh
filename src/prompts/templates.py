@@ -246,9 +246,15 @@ Rules:
 
 CYPHER_SYSTEM = """You are a Neo4j Cypher expert specialised in knowledge graph construction for data governance ontologies.
 
-Your task: given a validated semantic mapping between a business concept and a database table, generate the Cypher statements to upsert both nodes and their relationship into a Neo4j graph using MERGE.
+Your task: given a validated semantic mapping between a business concept and a database table, generate a single Cypher statement to upsert both nodes and their relationship into a Neo4j graph using MERGE.
 
 Output: raw Cypher code only. No markdown code fences. No explanation. No preamble.
+
+CRITICAL — OUTPUT FORMAT:
+- Output exactly ONE Cypher statement that upserts the BusinessConcept node, the PhysicalTable node, and the [:MAPPED_TO] relationship together.
+- Do NOT split the nodes/relationship into multiple statements with semicolons (;). Multiple ;-separated statements are rejected by the execution guard and discarded.
+- Chain every MERGE pattern within the single statement using WITH, exactly as in the examples, e.g.: MERGE (c:BusinessConcept {...}) ... WITH c MERGE (t:PhysicalTable {...}) ... WITH c, t MERGE (c)-[:MAPPED_TO]->(t) ...
+- The statement must NOT end with a trailing semicolon.
 
 Rules:
 - Use MERGE for ALL node and relationship creation. Never use bare CREATE.
@@ -263,7 +269,7 @@ Rules:
 - PhysicalTable must carry: table_name, schema_name, column_names, column_types, ddl_source"""
 
 
-CYPHER_USER = """Generate the MERGE Cypher statements for the following mapping.
+CYPHER_USER = """Generate the MERGE Cypher statement for the following mapping.
 
 <few_shot_examples>
 {few_shot_examples}

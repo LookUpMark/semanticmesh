@@ -90,6 +90,68 @@ def _fix_apostrophes_in_cypher(cypher: str) -> str:
     return "".join(result)
 
 
+def _detect_multi_statement(cypher: str) -> bool:
+    """Return True if ``cypher`` has >= 2 ``;``-separated statements at top level.
+
+    A multi-statement emission (e.g. ``MERGE ...; MERGE ...;``) is rejected by
+    the AUDIT-069 execution guard and forces a deterministic-builder fallback,
+    which is the dominant source of wasted LLM-Cypher work (~38x per run before
+    the prompt was strengthened). This quote-aware scan detects such emissions
+    at generation time so they are observable *before* the downstream
+    execute-time crash, instead of only surfacing in the fallback warning.
+
+    Semicolons inside single- or double-quoted string literals are not counted
+    as statement separators. A trailing ``;`` with nothing after it is treated
+    as a single statement.
+
+    Args:
+        cypher: Raw Cypher string (fences stripped, apostrophes fixed).
+
+    Returns:
+        True if two or more non-empty ``;``-separated statements are present.
+    """
+    if not cypher or not cypher.strip():
+        return False
+    in_single = False
+    in_double = False
+    non_empty_parts = 0
+    start = 0
+    i = 0
+    n = len(cypher)
+    while i < n:
+        ch = cypher[i]
+        if in_single:
+            if ch == "'":
+                # SQL-style '' escape (should not occur after
+                # _fix_apostrophes_in_cypher, but kept for robustness).
+                if i + 1 < n and cypher[i + 1] == "'":
+                    i += 2
+                    continue
+                in_single = False
+        elif in_double:
+            if ch == "\\":
+                i += 2  # skip the escaped character
+                continue
+            if ch == '"':
+                in_double = False
+        else:
+            if ch == "'":
+                in_single = True
+            elif ch == '"':
+                in_double = True
+            elif ch == ";":
+                if cypher[start:i].strip():
+                    non_empty_parts += 1
+                    if non_empty_parts >= 2:
+                        return True
+                start = i + 1
+        i += 1
+    # Trailing segment after the final ';' (if any).
+    if cypher[start:].strip():
+        non_empty_parts += 1
+    return non_empty_parts >= 2
+
+
 def strip_cypher_fence(raw: str) -> str:
     """Remove accidental markdown code fences from LLM-generated Cypher.
 
@@ -178,6 +240,14 @@ def generate_cypher(
         raise RuntimeError(f"LLM call failed for table '{table.table_name}': {exc}") from exc
     raw: str = extract_text_content(response.content)
     cypher = _fix_apostrophes_in_cypher(strip_cypher_fence(raw))
+    if _detect_multi_statement(cypher):
+        logger.warning(
+            "LLM emitted multi-statement Cypher for '%s' — rejected by the "
+            "AUDIT-069 guard and will fall back to the deterministic builder. "
+            "The prompt instructs a single statement; this emission means the "
+            "LLM ignored that constraint.",
+            table.table_name,
+        )
     logger.info(
         "Cypher generated for '%s' (%d chars).",
         table.table_name,

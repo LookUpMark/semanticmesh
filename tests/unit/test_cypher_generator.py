@@ -6,8 +6,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.graph.cypher_generator import _format_few_shot, generate_cypher, strip_cypher_fence
+from src.graph.cypher_generator import (
+    _detect_multi_statement,
+    _format_few_shot,
+    generate_cypher,
+    strip_cypher_fence,
+)
 from src.models.schemas import CypherExample, Entity, MappingProposal, TableSchema
+from src.prompts.templates import CYPHER_SYSTEM, CYPHER_USER
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -328,4 +334,108 @@ class TestGenerateCypher:
         assert any(
             "Cypher generated" in str(call) and "chars" in str(call)
             for call in mock_logger.info.call_args_list
+        )
+
+
+# ── Cypher prompt contract (point 3: single-statement enforcement) ────────────
+
+
+class TestCypherPromptContract:
+    """The prompt must steer the LLM toward ONE Cypher statement.
+
+    Multi-statement output (``;``-separated) is rejected by the AUDIT-069
+    guard and forces a deterministic-builder fallback (~38×/run before this
+    fix). The prompt is the primary, correctness-safe lever to reduce that.
+    """
+
+    def test_system_prompt_requires_single_statement(self) -> None:
+        lower = CYPHER_SYSTEM.lower()
+        assert "single" in lower or "one statement" in lower or "one cypher" in lower
+
+    def test_system_prompt_warns_against_semicolons(self) -> None:
+        lower = CYPHER_SYSTEM.lower()
+        assert "semicolon" in lower or "no `;`" in lower or "do not separate" in lower
+
+    def test_user_prompt_uses_singular_statement(self) -> None:
+        # The user prompt historically said "statements" (plural), which nudges
+        # the LLM toward emitting multiple ;-separated statements.
+        assert "Cypher statement for the following mapping" in CYPHER_USER
+
+
+# ── _detect_multi_statement ───────────────────────────────────────────────────
+
+
+class TestDetectMultiStatement:
+    def test_single_statement_returns_false(self) -> None:
+        assert _detect_multi_statement("MERGE (n:Test {id: 1}) SET n.x = 1") is False
+
+    def test_two_statements_returns_true(self) -> None:
+        cypher = "MERGE (n:A {id: 1}); MERGE (n:B {id: 2})"
+        assert _detect_multi_statement(cypher) is True
+
+    def test_three_statements_returns_true(self) -> None:
+        cypher = "MERGE (c:C {id: 1}); MERGE (t:T {id: 2}); MERGE (c)-[:R]->(t)"
+        assert _detect_multi_statement(cypher) is True
+
+    def test_trailing_semicolon_is_single_statement(self) -> None:
+        # A trailing ';' with nothing after it is still one statement.
+        assert _detect_multi_statement("MERGE (n:Test {id: 1});") is False
+
+    def test_semicolon_inside_single_quoted_string_returns_false(self) -> None:
+        cypher = "MERGE (n:Test {id: 1}) SET n.desc = 'a; b; c'"
+        assert _detect_multi_statement(cypher) is False
+
+    def test_semicolon_inside_double_quoted_string_returns_false(self) -> None:
+        cypher = 'MERGE (n:Test {id: 1}) SET n.desc = "a; b; c"'
+        assert _detect_multi_statement(cypher) is False
+
+    def test_empty_string_returns_false(self) -> None:
+        assert _detect_multi_statement("") is False
+
+    def test_only_whitespace_returns_false(self) -> None:
+        assert _detect_multi_statement("   \n\t  ") is False
+
+
+# ── generate_cypher: multi-statement observability ────────────────────────────
+
+
+class TestGenerateCypherMultiStatement:
+    @patch("src.graph.cypher_generator.logger")
+    def test_logs_warning_when_llm_emits_multi_statement(self, mock_logger: MagicMock) -> None:
+        mapping = _make_mapping(table_name="TB_CST")
+        table = _make_table(table_name="TB_CST")
+        entity = _make_entity()
+        few_shot = []
+
+        llm_mock = MagicMock()
+        llm_mock.invoke.return_value = _make_llm_response(
+            "MERGE (n:A {id: 1}); MERGE (n:B {id: 2})"
+        )
+
+        generate_cypher(mapping, table, entity, few_shot, llm_mock)
+
+        # A source-level warning must fire so the emission is observable before
+        # the downstream AUDIT-069 execute-time rejection.
+        assert any(
+            "TB_CST" in str(call) and "multi-statement" in str(call).lower()
+            for call in mock_logger.warning.call_args_list
+        )
+
+    @patch("src.graph.cypher_generator.logger")
+    def test_no_multi_statement_warning_for_single_statement(
+        self, mock_logger: MagicMock
+    ) -> None:
+        mapping = _make_mapping()
+        table = _make_table()
+        entity = _make_entity()
+        few_shot = []
+
+        llm_mock = MagicMock()
+        llm_mock.invoke.return_value = _make_llm_response("MERGE (n:Customer {id: 1})")
+
+        generate_cypher(mapping, table, entity, few_shot, llm_mock)
+
+        assert not any(
+            "multi-statement" in str(call).lower()
+            for call in mock_logger.warning.call_args_list
         )
