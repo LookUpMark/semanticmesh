@@ -1,0 +1,1337 @@
+{
+  "study_id": "AB-06",
+  "timestamp": "2026-07-17T18:38:25.142672+00:00",
+  "trace_id": "AB-06.2026-07-17T18-38-25.142672+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 128,
+    "chunk_overlap": 16,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "tests/fixtures/01_basics_ecommerce/business_glossary.txt",
+    "tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+  ],
+  "ddl_files": [
+    "tests/fixtures/01_basics_ecommerce/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Business Glossary - E-Commerce Domain (Simplified)\n\nThis document defines the core business concepts for the e-commerce platform test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Definition**: An individual or entity registered on the platform who has made at least one purchase.\n\n**Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, an... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "766"
+    },
+    {
+      "chunk_id": 1,
+      "text": "**Business Context**: Line items break down orders into individual product purchases. Each captures the price at the moment of ordering.\n\n**Key Attributes**:\n- Unique line identifier\n- References exactly one Product\n- Quantity of units ordered\n- Unit price at time of order (historical, not current)\n- Extended amount = quantity \u00d7 unit price\n\n**Business Rules**:\n- A Sales Order must contain at least one line item\n- Cannot be modified after order confirmation\n- Unit price is fixed and does not chan... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "759"
+    },
+    {
+      "chunk_id": 2,
+      "text": "Sales Order Relationships:\n- A Sales Order is placed by exactly one Customer\n- A Sales Order has one or more Order Line Items\n- A Sales Order has one or more Payments\n- A Sales Order has one or more Shipments\n\nOrder Line Item Relationships:\n- An Order Line Item is part of exactly one Sales Order\n- An Order Line Item references exactly one Product\n\nPayment Relationships:\n- A Payment is for exactly one Sales Order\n\nShipment Relationships:\n- A Shipment is for exactly one Sales Order\n- A Shipment co... [TRUNCATED]",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "124"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## MODIFIED FOR TEST A\nRefund: A reimbursement issued to a customer when an order is cancelled.\n\n## SECOND MODIFICATION \u2014 extra term\nReturn Policy: Products can be returned within 30 days of purchase for a full refund.",
+      "source": "business_glossary.txt",
+      "page": "1",
+      "token_count": "48"
+    },
+    {
+      "chunk_id": 4,
+      "text": "# Data Dictionary - E-Commerce Database (Simplified)\n\nThis document describes the physical database schema for the simplified e-commerce test dataset.\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers.\n\n**Primary Key**: CUST_ID (INT, auto-increment)\n\n**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-----------... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "776"
+    },
+    {
+      "chunk_id": 5,
+      "text": "**Foreign Keys**:\n- CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID)\n\n**Business Concept Mapping**: SalesOrder\n\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nORDER_LINE_ITEM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Individual product lines within a sales order.\n\n**Primary Key**: LINE_ID (INT, auto-increment)\n\n**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| LINE_ID | INT | Unique line identifier | NO... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "757"
+    },
+    {
+      "chunk_id": 6,
+      "text": "CUSTOMER_MASTER.CUST_ID\n  \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID\n\nTB_PRODUCT.PRODUCT_ID\n  \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID\n\nTB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID\n  \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference)\n\nSALES_ORDER_HDR.ORDER_ID\n  \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID\n  \u251c\u2500\u2500 PAYMENT.ORDER_ID\n  \u2514\u2500\u2500 SHIPMENT.ORDER_ID\n\nBUSINESS CONCEPT TO TABLE MAPPING\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nCustomer         \u2192 CUSTOMER_MASTER\nProduct          \u2192 TB_PRODUCT\nSalesOrder     ... [TRUNCATED]",
+      "source": "data_dictionary.txt",
+      "page": "1",
+      "token_count": "187"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 7,
+    "total_tokens": 3417,
+    "avg_tokens": 488.14285714285717
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has at least one purchase",
+      "object": "purchase",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "performs",
+      "object": "place orders",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Unique Customer ID",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Valid email address",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "delivery addresses",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Geographic region",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Active/inactive status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "must place",
+      "object": "an order",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "can have",
+      "object": "multiple addresses",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "data retained for",
+      "object": "7 years after last purchase",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "SKU",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "product name",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "price",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "Active/inactive status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "belongs to",
+      "object": "Category",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "must belong to",
+      "object": "valid category",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has",
+      "object": "inventory",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "defines",
+      "object": "transaction with Customer",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "tracks",
+      "object": "customer",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "Order ID",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "references",
+      "object": "Customer",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "order date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "Total monetary value",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "Status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "must contain",
+      "object": "Order Line Item",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "cannot be shipped until",
+      "object": "payment is confirmed",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "can be cancelled if not yet shipped",
+      "object": "Cancellation",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "status changes are logged for",
+      "object": "audit purposes",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order Line Item",
+      "predicate": "defines",
+      "object": "Product, quantity, price",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order Line Item",
+      "predicate": "references",
+      "object": "Product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order Line Item",
+      "predicate": "has",
+      "object": "quantity",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order Line Item",
+      "predicate": "has",
+      "object": "Unit price",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Order Line Item",
+      "predicate": "has",
+      "object": "Extended amount",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Line item",
+      "predicate": "references",
+      "object": "Product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Line item",
+      "predicate": "has",
+      "object": "Quantity of units ordered",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Line item",
+      "predicate": "has",
+      "object": "Unit price at time of order",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Sales Order",
+      "predicate": "must contain",
+      "object": "line item",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Line item",
+      "predicate": "is part of",
+      "object": "Sales Order",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Line item",
+      "predicate": "references",
+      "object": "Product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Payment",
+      "predicate": "is for",
+      "object": "Sales Order",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Shipment",
+      "predicate": "references",
+      "object": "Sales Order",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "Payments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "Shipments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Sales Order",
+      "predicate": "is placed by",
+      "object": "Customer",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "Order Line Items",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "Payments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Sales Order",
+      "predicate": "has",
+      "object": "Shipments",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Order Line Item",
+      "predicate": "is part of",
+      "object": "Sales Order",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Order Line Item",
+      "predicate": "references",
+      "object": "Product",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Payment",
+      "predicate": "is for",
+      "object": "Sales Order",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Shipment",
+      "predicate": "is for",
+      "object": "Sales Order",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Shipment",
+      "predicate": "comes from",
+      "object": "Warehouse",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Shipment",
+      "predicate": "goes to",
+      "object": "Customer Address",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Refund",
+      "predicate": "is issued to",
+      "object": "customer",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Return Policy",
+      "predicate": "applies to",
+      "object": "Products",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Return Policy",
+      "predicate": "allows",
+      "object": "full refund",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Customer",
+      "predicate": "has",
+      "object": "Master record",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 4,
+      "subject": "CUST_ID",
+      "predicate": "is",
+      "object": "PRIMARY KEY",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "CUST_ID",
+      "predicate": "Unique identifier for",
+      "object": "Customer",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "FULL_NAME",
+      "predicate": "is",
+      "object": "Customer's full name",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "EMAIL",
+      "predicate": "is",
+      "object": "Unique email address for login",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "REGION_CODE",
+      "predicate": "is",
+      "object": "Geographic region for tax",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "CREATED_AT",
+      "predicate": "is",
+      "object": "Account creation timestamp",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "IS_ACTIVE",
+      "predicate": "is",
+      "object": "Whether customer can place orders",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "TB_PRODUCT",
+      "predicate": "has",
+      "object": "Master catalogue",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 4,
+      "subject": "PRODUCT_ID",
+      "predicate": "is",
+      "object": "PRIMARY KEY",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "SKU",
+      "predicate": "is",
+      "object": "Stock Keeping Unit code",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "PRODUCT_NAME",
+      "predicate": "is",
+      "object": "Product display name",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "CATEGORY_ID",
+      "predicate": "is",
+      "object": "Category reference",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "UNIT_PRICE",
+      "predicate": "is",
+      "object": "Price in EUR",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "IS_ACTIVE",
+      "predicate": "is",
+      "object": "Whether currently for sale",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "TB_CATEGORY",
+      "predicate": "has",
+      "object": "Hierarchical product category tree",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 4,
+      "subject": "CATEGORY_ID",
+      "predicate": "is",
+      "object": "PRIMARY KEY",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "CATEGORY_NAME",
+      "predicate": "is",
+      "object": "Category display name",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "PARENT_CATEGORY_ID",
+      "predicate": "is",
+      "object": "Parent category for hierarchy",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "SALES_ORDER_HDR",
+      "predicate": "has",
+      "object": "Header record for each customer sales order",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 4,
+      "subject": "ORDER_ID",
+      "predicate": "is",
+      "object": "PRIMARY KEY",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "CUST_ID",
+      "predicate": "references",
+      "object": "CUSTOMER_MASTER(CUST_ID)",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "TOTAL_AMT",
+      "predicate": "is",
+      "object": "Total order value",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 4,
+      "subject": "ORDER_LINE_ITEM",
+      "predicate": "has",
+      "object": "Primary key LINE_ID",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 5,
+      "subject": "CUST_ID",
+      "predicate": "FOREIGN KEY",
+      "object": "CUSTOMER_MASTER",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 5,
+      "subject": "LINE_ID",
+      "predicate": "PRIMARY KEY OF",
+      "object": "ORDER_LINE_ITEM",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 5,
+      "subject": "ORDER_ID",
+      "predicate": "FOREIGN KEY OF",
+      "object": "ORDER_LINE_ITEM",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 5,
+      "subject": "PRODUCT_ID",
+      "predicate": "FOREIGN KEY OF",
+      "object": "ORDER_LINE_ITEM",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 5,
+      "subject": "QUANTITY",
+      "predicate": "COLUMN OF",
+      "object": "ORDER_LINE_ITEM",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 5,
+      "subject": "UNIT_PRICE",
+      "predicate": "COLUMN OF",
+      "object": "ORDER_LINE_ITEM",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 5,
+      "subject": "LINE_AMT",
+      "predicate": "COLUMN OF",
+      "object": "ORDER_LINE_ITEM",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 5,
+      "subject": "ORDER_ID",
+      "predicate": "FOREIGN KEY OF",
+      "object": "PAYMENT",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 5,
+      "subject": "PAYMENT_ID",
+      "predicate": "PRIMARY KEY OF",
+      "object": "PAYMENT",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 5,
+      "subject": "ORDER_ID",
+      "predicate": "FOREIGN KEY OF",
+      "object": "SHIPMENT",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 5,
+      "subject": "SHIPMENT_ID",
+      "predicate": "PRIMARY KEY OF",
+      "object": "SHIPMENT",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 5,
+      "subject": "ORDER_ID",
+      "predicate": "FOREIGN KEY OF",
+      "object": "CUSTOMER_ORDER",
+      "confidence": 0.4
+    },
+    {
+      "chunk_index": 6,
+      "subject": "CUSTOMER_MASTER",
+      "predicate": "has relationship with",
+      "object": "SALES_ORDER_HDR",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 6,
+      "subject": "TB_PRODUCT",
+      "predicate": "has relationship with",
+      "object": "ORDER_LINE_ITEM",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 6,
+      "subject": "TB_CATEGORY",
+      "predicate": "has relationship with",
+      "object": "TB_PRODUCT",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 6,
+      "subject": "TB_CATEGORY",
+      "predicate": "has self reference",
+      "object": "TB_CATEGORY.PARENT_CATEGORY_ID",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 6,
+      "subject": "SALES_ORDER_HDR",
+      "predicate": "has relationship with",
+      "object": "ORDER_LINE_ITEM",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 6,
+      "subject": "SALES_ORDER_HDR",
+      "predicate": "has relationship with",
+      "object": "PAYMENT",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 6,
+      "subject": "SALES_ORDER_HDR",
+      "predicate": "has relationship with",
+      "object": "SHIPMENT",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 6,
+      "subject": "Customer",
+      "predicate": "maps to",
+      "object": "CUSTOMER_MASTER",
+      "confidence": 0.6
+    },
+    "... [6 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 106,
+    "avg_confidence": 0.8783018867924528,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Is Active",
+      "definition": "A boolean field that indicates whether the related entity is currently active or enabled in the business system (active for sale or able to perform actions).",
+      "synonyms": [
+        "Active/inactive status"
+      ],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO | | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| IS_ACTIVE | BOOLEAN | Whether currently for sale | NO | | **Key Attributes**:\n- Active/inactive status",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Category",
+      "definition": "A Category entity representing a classification used to group items, identified by a unique numeric ID and described by a display name.",
+      "synonyms": [
+        "CATEGORY_ID",
+        "CATEGORY_NAME"
+      ],
+      "provenance_text": "**Key Attributes**:\n- Belongs to exactly one Category | Category         \u2192 TB_CATEGORY | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CATEGORY_ID | INT | Category reference | NO | | **Primary Key**: CATEGORY_ID (INT, auto-increment) | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|--------",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Customer Master(Cust Id)",
+      "definition": "A customer master data object (table/dimension) containing unique customer records identified by CUST_ID, used as the target of foreign keys in related transactional data such as SALES_ORDER_HDR.",
+      "synonyms": [
+        "CUSTOMER_MASTER"
+      ],
+      "provenance_text": "**Foreign Keys**:\n- CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID) | CUSTOMER_MASTER.CUST_ID\n  \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID | CUSTOMER CONCEPT TO TABLE MAPPING\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\nCustomer         \u2192 CUSTOMER_MASTER",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Line Item",
+      "definition": "A line item is a single entry on a sales order that references exactly one product and records the ordered quantity and unit price (at the time of order) to compute the extended amount.",
+      "synonyms": [
+        "line item"
+      ],
+      "provenance_text": "**Key Attributes**:\n- Unique line identifier\n- References exactly one Product\n- Quantity of units ordered\n- Unit price at time of order (historical, not current)\n- Extended amount = quantity \u00d7 unit price | **Order Line Item Relationships**:\n- An Order Line Item is part of exactly one Sales Order | **Business Rules**:\n- A Sales Order must contain at least one line item",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Order Line Item",
+      "definition": "The line item entry on a sales order representing a product, its quantity, and unit price at the time of purchase.",
+      "synonyms": [
+        "Order Line Item",
+        "Order Line Items"
+      ],
+      "provenance_text": "ORDER_LINE_ITEM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Individual product lines within a sales order.\n\n**Primary Key**: LINE_ID (INT, auto-increment) | **Primary Key**: LINE_ID (INT, auto-increment) | | ORDER_ID | BIGINT | Parent order | NO |\n|--------|------|-------------|----------|\n| LINE_ID | INT | Unique line identifier | NO\n| ORDER_ID | BIGINT | Parent ",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Tb Category.Parent Category Id",
+      "definition": "A self-referential foreign key column in the TB_CATEGORY table that stores the ID of the parent category in the category hierarchy.",
+      "synonyms": [
+        "PARENT_CATEGORY_ID"
+      ],
+      "provenance_text": "TB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID\n  \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference) | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| PARENT_CATEGORY_ID | INT | Parent category for hierarchy | YES |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Payment",
+      "definition": "A Payment is a monetary transaction recorded as a distinct record that is linked to a Sales Order; a single Sales Order may have one or more Payments.",
+      "synonyms": [
+        "PAYMENT",
+        "Payments"
+      ],
+      "provenance_text": "**Relationships**:\n- A Payment is for exactly one Sales Order | A Payment is for exactly one Sales Order | Payment          \u2192 PAYMENT | **Foreign Keys**:\n- ORDER_ID \u2192 SALES_ORDER_HDR(ORDER_ID) | **Primary Key**: PAYMENT_ID (BIGINT, auto-increment) | SALES_ORDER_HDR.ORDER_ID\n  \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID\n  \u251c\u2500\u2500 PAYMENT.ORDER_ID | **Sales Order Relationships**:\n- A Sales Order has one or more Paymen",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Product Display Name",
+      "definition": "Product display name: the human-readable name used to identify and present a product to customers, stored as a VARCHAR field in the product catalog.",
+      "synonyms": [
+        "PRODUCT_ID",
+        "PRODUCT_NAME",
+        "product name"
+      ],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| PRODUCT_NAME | VARCHAR(300) | Product display name | NO | | **Primary Key**: PRODUCT_ID (INT, auto-increment) | | ORDER_ID | BIGINT | Parent order | NO |\n|--------|------|-------------|----------|\n| LINE_ID | INT | Unique line identifier | NO\n| ORDER_ID | BIGINT | Parent order | NO\n| PRODUCT",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Product",
+      "definition": "A sellable item in the product catalog identified by a unique SKU and described by a human-readable name.",
+      "synonyms": [
+        "Products"
+      ],
+      "provenance_text": "**Key Attributes**:\n- Unique SKU code | **Key Attributes**:\n- Human-readable product name | **Key Attributes**:\n- Unit price in base currency (EUR) | **Key Attributes**:\n- Active/inactive status | **Key Attributes**:\n- Belongs to exactly one Category | **Business Rules**:\n- Must belong to a valid category before being sold | **Business Context**: Products are the core items that customers purchase",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Shipment",
+      "definition": "Shipment is the business entity representing the movement of goods for a Sales Order, identified by a unique Shipment ID, linked to exactly one Sales Order, and may include source warehouse, destination address, ship timestamp, tracking number, and status; a Sales Order may have one or more Shipments.",
+      "synonyms": [
+        "SHIPMENT",
+        "Shipments"
+      ],
+      "provenance_text": "**Key Attributes**:\n- Unique Shipment ID\n- References exactly one Sales Order\n- Source Warehouse\n- Destination Customer Address\n- Shipped timestamp\n- Tracking number\n- Status: PREPARING, SHIPPED, IN_TRANSIT, DELIVERED | A Shipment is for exactly one Sales Order | A Shipment comes from exactly one Warehouse | A Shipment goes to exactly one Customer Address | Shipment         \u2192 SHIPMENT | **Foreign ",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Customer",
+      "definition": "A Customer is an individual or organization registered on the platform who conducts purchases, has associated attributes such as full name and address, and participates in orders, shipments, and related transactions.",
+      "synonyms": [
+        "Customer Address",
+        "Customer's full name",
+        "FULL_NAME",
+        "customer",
+        "transaction with Customer"
+      ],
+      "provenance_text": "**Definition**: An individual or entity registered on the platform who has made at least one purchase. | **Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments. | **Key Attributes**:\n- Unique Customer ID | **Key Attributes**:\n- Unique Customer ID\n- Valid email address (required for login) | **Key Attributes**:\n- On",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Email",
+      "definition": "The EMAIL column stores the user's login email address, defined as a unique, non-null value used to authenticate the user.",
+      "synonyms": [
+        "Unique email address for login",
+        "Valid email address"
+      ],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| EMAIL | VARCHAR(150) | Unique email address for login | NO | | **Key Attributes**:\n- Unique Customer ID\n- Valid email address (required for login)",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Geographic Region For Tax",
+      "definition": "A geographic region code used to determine applicable tax rules and calculations.",
+      "synonyms": [
+        "Geographic region"
+      ],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| REGION_CODE | VARCHAR(10) | Geographic region for tax | YES | | **Key Attributes**:\n- Geographic region for tax calculation",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Unit Price At",
+      "definition": "Unit price at time of order refers to the price per unit for a product as recorded on a sales order line at the time the order was placed (historical price, not the current price).",
+      "synonyms": [
+        "Price in EUR",
+        "Product, quantity, price",
+        "Quantity of units ordered",
+        "UNIT_PRICE",
+        "Unit price",
+        "price",
+        "purchase"
+      ],
+      "provenance_text": "**Key Attributes**:\n- Unique line identifier\n- References exactly one Product\n- Quantity of units ordered\n- Unit price at time of order (historical, not current)\n- Extended amount = quantity \u00d7 unit price | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| UNIT_PRICE | DECIMAL(10,2) | Price in EUR | NO | | **Definition**: A single line withi",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Quantity",
+      "definition": "The quantity field denotes the number of units of a product ordered in a line item of a parent order.",
+      "synonyms": [
+        "quantity"
+      ],
+      "provenance_text": "| ORDER_ID | BIGINT | Parent order | NO |\n|--------|------|-------------|----------|\n| LINE_ID | INT | Unique line identifier | NO\n| ORDER_ID | BIGINT | Parent order | NO\n| PRODUCT_ID | INT | Product ordered | NO\n| QUANTITY | INT | Number of units | NO |\n| UNIT_PRICE | DECIMAL(10,2) | Price at time of order | NO |\n| LINE_AMT | DECIMAL(12,2) | Extended amount (qty \u00d7 price) | NO | | **Key Attributes",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Refund",
+      "definition": "A monetary reimbursement provided to a customer, typically issued when an order is cancelled or when goods are returned under a policy that offers a full refund.",
+      "synonyms": [
+        "Return Policy",
+        "full refund"
+      ],
+      "provenance_text": "Refund: A reimbursement issued to a customer when an order is cancelled. | Return Policy: Products can be returned within 30 days of purchase for a full refund.",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Delivery And Billing Addresses",
+      "definition": "A set of address records associated with a customer, including delivery and billing addresses, allowing multiple addresses with one primary address per address type.",
+      "synonyms": [
+        "delivery addresses",
+        "multiple addresses"
+      ],
+      "provenance_text": "**Key Attributes**:\n- One or more delivery/billing addresses | **Business Rules**:\n- Can have multiple addresses but only one primary per type",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "7 Years After",
+      "definition": "**Business Rules**:\n- Data retained for 7 years after last purchase",
+      "synonyms": [],
+      "provenance_text": "**Business Rules**:\n- Data retained for 7 years after last purchase",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Account Creation Timestamp",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CREATED_AT | DATETIME | Account creation timestamp | NO |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CREATED_AT | DATETIME | Account creation timestamp | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Created At",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CREATED_AT | DATETIME | Account creation timestamp | NO |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CREATED_AT | DATETIME | Account creation timestamp | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Customer Order",
+      "definition": "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nRELATIONSHIP SUMMARY\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nCUSTOMER_MASTER.CUST_ID\n  \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID",
+      "synonyms": [],
+      "provenance_text": "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nRELATIONSHIP SUMMARY\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\nCUSTOMER_MASTER.CUST_ID\n  \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Cust Id",
+      "definition": "**Primary Key**: CUST_ID (INT, auto-increment) | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CUST_ID | INT | Unique customer identifier | NO | | **Foreign Keys**:\n- CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID)",
+      "synonyms": [],
+      "provenance_text": "**Primary Key**: CUST_ID (INT, auto-increment) | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CUST_ID | INT | Unique customer identifier | NO | | **Foreign Keys**:\n- CUST_ID \u2192 CUSTOMER_MASTER(CUST_ID)",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Cancellation",
+      "definition": "**Business Rules**:\n- Can only be cancelled if not yet shipped",
+      "synonyms": [],
+      "provenance_text": "**Business Rules**:\n- Can only be cancelled if not yet shipped",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Category",
+      "definition": "**Key Attributes**:\n- Belongs to exactly one Category | Category         \u2192 TB_CATEGORY | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CATEGORY_ID | INT | Category reference | NO |",
+      "synonyms": [],
+      "provenance_text": "**Key Attributes**:\n- Belongs to exactly one Category | Category         \u2192 TB_CATEGORY | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CATEGORY_ID | INT | Category reference | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Category Display Name",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CATEGORY_NAME | VARCHAR(200) | Category display name | NO |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CATEGORY_NAME | VARCHAR(200) | Category display name | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Category Reference",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CATEGORY_ID | INT | Category reference | NO |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| CATEGORY_ID | INT | Category reference | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Extended Amount",
+      "definition": "**Key Attributes**:\n- Extended amount = quantity \u00d7 unit price",
+      "synonyms": [],
+      "provenance_text": "**Key Attributes**:\n- Extended amount = quantity \u00d7 unit price",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Header Record For",
+      "definition": "SALES_ORDER_HDR\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Header record for each customer sales order.",
+      "synonyms": [],
+      "provenance_text": "SALES_ORDER_HDR\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Header record for each customer sales order.",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Hierarchical Product Category Tree",
+      "definition": "TB_CATEGORY\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Hierarchical product category tree.",
+      "synonyms": [],
+      "provenance_text": "TB_CATEGORY\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Hierarchical product category tree.",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Line Amt",
+      "definition": "| QUANTITY | INT | Number of units | NO |\n| UNIT_PRICE | DECIMAL(10,2) | Price at time of order | NO |\n| LINE_AMT | DECIMAL(12,2) | Extended amount (qty \u00d7 price) | NO |",
+      "synonyms": [],
+      "provenance_text": "| QUANTITY | INT | Number of units | NO |\n| UNIT_PRICE | DECIMAL(10,2) | Price at time of order | NO |\n| LINE_AMT | DECIMAL(12,2) | Extended amount (qty \u00d7 price) | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Line Id",
+      "definition": "**Primary Key**: LINE_ID (INT, auto-increment)",
+      "synonyms": [],
+      "provenance_text": "**Primary Key**: LINE_ID (INT, auto-increment)",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Master Catalogue",
+      "definition": "TB_PRODUCT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master catalogue of all products available for sale.",
+      "synonyms": [],
+      "provenance_text": "TB_PRODUCT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master catalogue of all products available for sale.",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Master Record",
+      "definition": "CUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers.",
+      "synonyms": [],
+      "provenance_text": "CUSTOMER_MASTER\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master record for all registered platform customers.",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Order Id",
+      "definition": "**Primary Key**: ORDER_ID (BIGINT, auto-increment) | | ORDER_ID | BIGINT | Parent order | NO |\n|--------|------|-------------|----------|\n| LINE_ID | INT | Unique line identifier | NO\n| ORDER_ID | BIGINT | Parent order | NO | **Foreign Keys**:\n- ORDER_ID \u2192 SALES_ORDER_HDR(ORDER_ID)",
+      "synonyms": [],
+      "provenance_text": "**Primary Key**: ORDER_ID (BIGINT, auto-increment) | | ORDER_ID | BIGINT | Parent order | NO |\n|--------|------|-------------|----------|\n| LINE_ID | INT | Unique line identifier | NO\n| ORDER_ID | BIGINT | Parent order | NO | **Foreign Keys**:\n- ORDER_ID \u2192 SALES_ORDER_HDR(ORDER_ID)",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Order Line Item",
+      "definition": "OrderLineItem    \u2192 ORDER_LINE_ITEM",
+      "synonyms": [],
+      "provenance_text": "OrderLineItem    \u2192 ORDER_LINE_ITEM",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Payment Id",
+      "definition": "**Primary Key**: PAYMENT_ID (BIGINT, auto-increment)",
+      "synonyms": [],
+      "provenance_text": "**Primary Key**: PAYMENT_ID (BIGINT, auto-increment)",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Parent Category For Hierarchy",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| PARENT_CATEGORY_ID | INT | Parent category for hierarchy | YES |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| PARENT_CATEGORY_ID | INT | Parent category for hierarchy | YES |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Primary Key Line Id",
+      "definition": "ORDER_LINE_ITEM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Individual product lines within a sales order.\n\n**Primary Key**: LINE_ID (INT, auto-increment)",
+      "synonyms": [],
+      "provenance_text": "ORDER_LINE_ITEM\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Individual product lines within a sales order.\n\n**Primary Key**: LINE_ID (INT, auto-increment)",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Region Code",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| REGION_CODE | VARCHAR(10) | Geographic region for tax | YES |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| REGION_CODE | VARCHAR(10) | Geographic region for tax | YES |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Sales Order Hdr",
+      "definition": "SALES_ORDER_HDR\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Header record for each customer sales order. | CUSTOMER_MASTER.CUST_ID\n  \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID | SALES_ORDER_HDR.ORDER_ID\n  \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID",
+      "synonyms": [],
+      "provenance_text": "SALES_ORDER_HDR\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Header record for each customer sales order. | CUSTOMER_MASTER.CUST_ID\n  \u2514\u2500\u2500 SALES_ORDER_HDR.CUST_ID | SALES_ORDER_HDR.ORDER_ID\n  \u251c\u2500\u2500 ORDER_LINE_ITEM.ORDER_ID",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Shipment Id",
+      "definition": "**Primary Key**: SHIPMENT_ID (BIGINT, auto-increment)",
+      "synonyms": [],
+      "provenance_text": "**Primary Key**: SHIPMENT_ID (BIGINT, auto-increment)",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Sku",
+      "definition": "**Key Attributes**:\n- Unique SKU code | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| SKU | VARCHAR(50) | Stock Keeping Unit code | NO |",
+      "synonyms": [],
+      "provenance_text": "**Key Attributes**:\n- Unique SKU code | **Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| SKU | VARCHAR(50) | Stock Keeping Unit code | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Sales Order",
+      "definition": "**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. | **Business Context**: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. | **Key Attributes**:\n- Unique Order ID",
+      "synonyms": [],
+      "provenance_text": "**Definition**: A formal transaction document recording the agreement between the platform and a Customer to supply Products. | **Business Context**: Orders are created when customers complete checkout. They track the customer, items, payment status, and delivery information. | **Key Attributes**:\n- Unique Order ID",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Sales Order",
+      "definition": "SalesOrder       \u2192 SALES_ORDER_HDR",
+      "synonyms": [],
+      "provenance_text": "SalesOrder       \u2192 SALES_ORDER_HDR",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Status",
+      "definition": "**Key Attributes**:\n- Status: PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED",
+      "synonyms": [],
+      "provenance_text": "**Key Attributes**:\n- Status: PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Tb Category",
+      "definition": "TB_CATEGORY\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Hierarchical product category tree. | TB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID | TB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID\n  \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference)",
+      "synonyms": [],
+      "provenance_text": "TB_CATEGORY\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Hierarchical product category tree. | TB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID | TB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID\n  \u2514\u2500\u2500 TB_CATEGORY.PARENT_CATEGORY_ID (self-reference)",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Tb Product",
+      "definition": "TB_PRODUCT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master catalogue of all products available for sale. | TB_PRODUCT.PRODUCT_ID\n  \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID | TB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID",
+      "synonyms": [],
+      "provenance_text": "TB_PRODUCT\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n**Description**: Master catalogue of all products available for sale. | TB_PRODUCT.PRODUCT_ID\n  \u2514\u2500\u2500 ORDER_LINE_ITEM.PRODUCT_ID | TB_CATEGORY.CATEGORY_ID\n  \u251c\u2500\u2500 TB_PRODUCT.CATEGORY_ID",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Total Amt",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| TOTAL_AMT | DECIMAL(12,2) | Total order value | NO |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| TOTAL_AMT | DECIMAL(12,2) | Total order value | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Total Monetary Value",
+      "definition": "**Key Attributes**:\n- Total monetary value",
+      "synonyms": [],
+      "provenance_text": "**Key Attributes**:\n- Total monetary value",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Total Order Value",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| TOTAL_AMT | DECIMAL(12,2) | Total order value | NO |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| TOTAL_AMT | DECIMAL(12,2) | Total order value | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Warehouse",
+      "definition": "A Shipment comes from exactly one Warehouse",
+      "synonyms": [],
+      "provenance_text": "A Shipment comes from exactly one Warehouse",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Whether Currently For Sale",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| IS_ACTIVE | BOOLEAN | Whether currently for sale | NO |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| IS_ACTIVE | BOOLEAN | Whether currently for sale | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Whether Customer Can",
+      "definition": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO |",
+      "synonyms": [],
+      "provenance_text": "**Column Details**:\n| Column | Type | Description | Nullable |\n|--------|------|-------------|----------|\n| IS_ACTIVE | BOOLEAN | Whether customer can place orders | NO |",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Order",
+      "definition": "**Business Rules**:\n- Must place at least one order to remain active",
+      "synonyms": [],
+      "provenance_text": "**Business Rules**:\n- Must place at least one order to remain active",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Audit Purposes",
+      "definition": "**Business Rules**:\n- Status changes are logged for audit purposes",
+      "synonyms": [],
+      "provenance_text": "**Business Rules**:\n- Status changes are logged for audit purposes",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Inventory",
+      "definition": "**Business Context**: Products are the core items that customers purchase. They are organized into categories and have inventory tracked across warehouses.",
+      "synonyms": [],
+      "provenance_text": "**Business Context**: Products are the core items that customers purchase. They are organized into categories and have inventory tracked across warehouses.",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Order Date",
+      "definition": "**Key Attributes**:\n- Order date when transaction was initiated",
+      "synonyms": [],
+      "provenance_text": "**Key Attributes**:\n- Order date when transaction was initiated",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Place Orders",
+      "definition": "**Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments.",
+      "synonyms": [],
+      "provenance_text": "**Business Context**: Customers are the primary actors in the e-commerce system. They browse products, place orders, and receive shipments.",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    },
+    {
+      "name": "Valid Category",
+      "definition": "**Business Rules**:\n- Must belong to a valid category before being sold",
+      "synonyms": [],
+      "provenance_text": "**Business Rules**:\n- Must belong to a valid category before being sold",
+      "source_doc": "tests/fixtures/01_basics_ecommerce/business_glossary.txt, tests/fixtures/01_basics_ecommerce/data_dictionary.txt"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 59
+  },
+  "tables_parsed": [
+    {
+      "name": "customer_master",
+      "columns": 6
+    },
+    {
+      "name": "tb_product",
+      "columns": 6
+    },
+    {
+      "name": "tb_category",
+      "columns": 3
+    },
+    {
+      "name": "sales_order_hdr",
+      "columns": 8
+    },
+    {
+      "name": "order_line_item",
+      "columns": 6
+    },
+    {
+      "name": "payment",
+      "columns": 7
+    },
+    {
+      "name": "shipment",
+      "columns": 6
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customer Master",
+      "description": "Stores basic information about customers including their identifier, name, contact email, region, account creation timestamp, and active status."
+    },
+    {
+      "name": "tb_product",
+      "description": "Stores product information including identifiers, names, category association, pricing, and active status for catalog and sales operations."
+    },
+    {
+      "name": "tb_category",
+      "description": "Stores product category definitions and the hierarchical relationship between subcategories and their parent categories."
+    },
+    {
+      "name": "Sales Order Header",
+      "description": "Stores header information for sales orders, including customer linkage, order timing, total amount, status, payment confirmation, delivery timing, and record creation time."
+    },
+    {
+      "name": "order_line_item",
+      "description": "Stores line items for each order, detailing the products ordered, their quantities, unit prices, and total line amounts."
+    },
+    {
+      "name": "payment",
+      "description": "Stores payment transactions linked to orders, including method, amount, status, and timestamps for confirmation and creation."
+    },
+    {
+      "name": "Shipment",
+      "description": "Stores records of shipments, linking each shipment to its order and capturing shipping details such as when it was shipped, the warehouse, tracking information, and current status."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 7,
+    "tables_enriched": 7,
+    "total_columns": 42
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 104,
+    "total_relationships": 107,
+    "completed_tables": 7
+  },
+  "stage_timings": {}
+}

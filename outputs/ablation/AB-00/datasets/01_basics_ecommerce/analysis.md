@@ -1,7 +1,7 @@
 # AB-00 — 01_basics_ecommerce — Run Analysis
 
-**Timestamp:** 2026-06-28 16:59:06  
-**Run tag:** `run-20260628_184441`
+**Timestamp:** 2026-07-17 18:00:24  
+**Run tag:** `run-20260717_195424`
 
 ## Configuration
 
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 126 |
-| Entities resolved | 98 |
+| Triplets extracted | 112 |
+| Entities resolved | 76 |
 | Tables parsed | 7 |
 | Tables completed | 7 |
 
@@ -31,9 +31,9 @@
 |--------|-------|
 | Questions | 15 |
 | Grounded | **15/15 (100%)** |
-| Avg GT Coverage | 95% |
-| Avg Top Score | 0.7843 |
-| Avg Chunk Count | 15.3 |
+| Avg GT Coverage | 98% |
+| Avg Top Score | 0.7813 |
+| Avg Chunk Count | 16.7 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (10):** `parent_chunk_business_glossary.txt_1`, `CUSTOMER_MASTER.FULL_NAME`, `CUSTOMER_MASTER.CUST_ID`, `CUSTOMER_MASTER.IS_ACTIVE`, `CUSTOMER_MASTER.EMAIL`, `CUSTOMER_MASTER.REGION_CODE`, `CUSTOMER_MASTER`, `Customer Master`
+**Sources retrieved (8):** `parent_chunk_business_glossary.txt_1`, `customer_master.full_name`, `sales_order_hdr.cust_id`, `customer_master`, `Customer Master`, `customer_master.created_at`, `customer_master.region_code`, `sales_order_hdr`
 
 ---
 
@@ -68,7 +68,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `Product`, `TB_PRODUCT→TB_CATEGORY`, `TB_PRODUCT.CATEGORY_ID`, `TB_PRODUCT`, `TB_CATEGORY`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `Tb Product`, `tb_category.category_id`, `tb_product.category_id`, `tb_product`, `tb_category`
 
 ---
 
@@ -83,7 +83,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `Product`, `SALES_ORDER_HDR→CUSTOMER_MASTER`, `Shipment`, `SALES_ORDER_HDR`, `Order Line Item`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `sales_order_hdr.cust_id`, `sales_order_hdr→customer_master`, `sales_order_hdr`, `Sales Order Hdr`, `sales_order_hdr.order_id`
 
 ---
 
@@ -98,7 +98,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_2`, `Order Line Item`, `ORDER_LINE_ITEM.ORDER_ID`, `ORDER_LINE_ITEM.LINE_AMT`, `ORDER_LINE_ITEM.PRODUCT_ID`, `ORDER_LINE_ITEM.LINE_ID`, `ORDER_LINE_ITEM`, `ORDER_LINE_ITEM.QUANTITY`
+**Sources retrieved (9):** `parent_chunk_business_glossary.txt_1`, `Order Line Item`, `order_line_item.line_amt`, `order_line_item`, `order_line_item.unit_price`, `order_line_item.quantity`, `sales_order_hdr`, `Payment`
 
 ---
 
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `PAYMENT.PAYMENT_METHOD`, `PAYMENT.ORDER_ID`, `PAYMENT→SALES_ORDER_HDR`, `Product`, `Shipment`, `Payment`, `PAYMENT`
+**Sources retrieved (10):** `parent_chunk_business_glossary.txt_1`, `payment.order_id`, `payment→sales_order_hdr`, `Payment`, `Shipment`, `payment`, `sales_order_hdr`, `payment.amount`
 
 ---
 
@@ -128,7 +128,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `Sales Order Hdr`, `SALES_ORDER_HDR.STATUS_CODE`, `SHIPMENT.STATUS_CODE`, `PAYMENT.STATUS_CODE`, `SALES_ORDER_HDR`, `SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `sales_order_hdr.status_code`, `shipment.status_code`, `payment.status_code`, `sales_order_hdr`, `Sales Order Hdr`, `sales_order_hdr.order_id`
 
 ---
 
@@ -143,14 +143,14 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (11):** `TB_PRODUCT.SKU`, `TB_PRODUCT.IS_ACTIVE`, `TB_PRODUCT.PRODUCT_NAME`, `TB_PRODUCT.CATEGORY_ID`, `TB_PRODUCT.PRODUCT_ID`, `parent_chunk_business_glossary.txt_0`, `Product`, `TB_PRODUCT`
+**Sources retrieved (10):** `tb_product.sku`, `parent_chunk_business_glossary.txt_0`, `Tb Product`, `shipment.warehouse_code`, `sales_order_hdr.cust_id`, `tb_product`, `tb_product.category_id`, `tb_product.is_active`
 
 ---
 
 ### ✅ Q008 — How can I find all orders placed by a specific customer?
 
 **Status:** GROUNDED  
-**GT Coverage:** 50% | **Top Score:** 0.0000 | **Gate:** `proceed`
+**GT Coverage:** 100% | **Top Score:** 0.0000 | **Gate:** `proceed`
 
 **Expected answer:**
 > Query the SALES_ORDER_HDR table filtering by CUST_ID. Each order has a foreign key reference to CUSTOMER_MASTER.CUST_ID, so joining these tables on CUST_ID will show all orders for a customer along with their details.
@@ -158,7 +158,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_2`, `PAYMENT.ORDER_ID`, `parent_chunk_data_dictionary.txt_5`, `PAYMENT`, `Payment`, `SALES_ORDER_HDR`
+**Sources retrieved (9):** `parent_chunk_data_dictionary.txt_4`, `sales_order_hdr.cust_id`, `sales_order_hdr.payment_confirmed_at`, `Sales Order Hdr`, `customer_master`, `sales_order_hdr`, `sales_order_hdr.order_date`, `sales_order_hdr.status_code`
 
 ---
 
@@ -173,7 +173,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `ORDER_LINE_ITEM→TB_PRODUCT`, `parent_chunk_data_dictionary.txt_5`, `ORDER_LINE_ITEM→SALES_ORDER_HDR`, `ORDER_LINE_ITEM.PRODUCT_ID`, `Order Line Item`, `ORDER_LINE_ITEM`, `TB_PRODUCT`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `order_line_item→tb_product`, `parent_chunk_data_dictionary.txt_5`, `order_line_item.product_id`, `order_line_item→sales_order_hdr`, `Order Line Item`, `order_line_item`, `tb_product`
 
 ---
 
@@ -188,7 +188,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_5`, `Order Line Item`, `ORDER_LINE_ITEM.ORDER_ID`, `ORDER_LINE_ITEM`, `ORDER_LINE_ITEM.QUANTITY`, `ORDER_LINE_ITEM.LINE_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_5`, `order_line_item→sales_order_hdr`, `Order Line Item`, `order_line_item`, `order_line_item.unit_price`, `order_line_item.order_id`
 
 ---
 
@@ -203,7 +203,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_1`, `PAYMENT.CONFIRMED_AT`, `SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT`, `PAYMENT.AMOUNT`, `PAYMENT.STATUS_CODE`, `Payment`, `PAYMENT.ORDER_ID`, `Sales Order Hdr`
+**Sources retrieved (10):** `parent_chunk_business_glossary.txt_1`, `payment.confirmed_at`, `sales_order_hdr.payment_confirmed_at`, `Payment`, `sales_order_hdr`, `Sales Order Hdr`, `sales_order_hdr.order_id`, `sales_order_hdr.created_at`
 
 ---
 
@@ -218,7 +218,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (10):** `parent_chunk_business_glossary.txt_1`, `SHIPMENT.WAREHOUSE_CODE`, `SHIPMENT.SHIPPED_AT`, `SHIPMENT.SHIPMENT_ID`, `SHIPMENT.ORDER_ID`, `SHIPMENT.STATUS_CODE`, `Shipment`, `SHIPMENT`
+**Sources retrieved (9):** `parent_chunk_business_glossary.txt_1`, `shipment.warehouse_code`, `Shipment`, `shipment`, `sales_order_hdr`, `shipment.tracking_number`, `shipment.shipment_id`, `Payment`
 
 ---
 
@@ -233,7 +233,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (8):** `parent_chunk_business_glossary.txt_0`, `Product Category`, `TB_PRODUCT→TB_CATEGORY`, `TB_CATEGORY.CATEGORY_NAME`, `TB_CATEGORY.CATEGORY_ID`, `TB_PRODUCT`, `TB_CATEGORY`, `TB_CATEGORY.PARENT_CATEGORY_ID`
+**Sources retrieved (8):** `parent_chunk_business_glossary.txt_0`, `tb_product→tb_category`, `tb_category.category_name`, `parent_chunk_data_dictionary.txt_6`, `tb_product`, `Hierarchical Product Category Tree`, `tb_category`, `tb_category.parent_category_id`
 
 ---
 
@@ -248,7 +248,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_0`, `Product`, `Payment`, `PAYMENT.ORDER_ID`, `Shipment`
+**Sources retrieved (12):** `parent_chunk_data_dictionary.txt_4`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_business_glossary.txt_2`, `parent_chunk_business_glossary.txt_0`, `sales_order_hdr.payment_confirmed_at`, `Sales Order Hdr`, `sales_order_hdr`, `customer_master`
 
 ---
 
@@ -263,7 +263,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_5`, `ORDER_LINE_ITEM.LINE_AMT`, `ORDER_LINE_ITEM.UNIT_PRICE`, `Order Line Item`, `ORDER_LINE_ITEM`, `ORDER_LINE_ITEM.ORDER_ID`
+**Sources retrieved (12):** `parent_chunk_business_glossary.txt_0`, `parent_chunk_business_glossary.txt_1`, `parent_chunk_data_dictionary.txt_5`, `order_line_item.line_amt`, `Order Line Item`, `parent_chunk_data_dictionary.txt_6`, `order_line_item`, `order_line_item.unit_price`
 
 ---
 

@@ -1,7 +1,7 @@
 # AB-01 — 01_basics_ecommerce — Run Analysis
 
-**Timestamp:** 2026-06-28 17:09:47  
-**Run tag:** `run-20260628_184441`
+**Timestamp:** 2026-07-17 18:08:39  
+**Run tag:** `run-20260717_195424`
 
 ## Configuration
 
@@ -20,8 +20,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Triplets extracted | 115 |
-| Entities resolved | 85 |
+| Triplets extracted | 80 |
+| Entities resolved | 64 |
 | Tables parsed | 7 |
 | Tables completed | 7 |
 
@@ -32,8 +32,8 @@
 | Questions | 15 |
 | Grounded | **15/15 (100%)** |
 | Avg GT Coverage | 100% |
-| Avg Top Score | 0.5725 |
-| Avg Chunk Count | 26.9 |
+| Avg Top Score | 0.5722 |
+| Avg Chunk Count | 27.3 |
 | Abstained | 0 |
 
 ## RAGAS Metrics
@@ -53,7 +53,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Customer Master`, `Sales Order Hdr`, `Shipment`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CUST_ID`, `CUSTOMER_MASTER.FULL_NAME`, `CUSTOMER_MASTER.EMAIL`, `CUSTOMER_MASTER.REGION_CODE`
+**Sources retrieved (12):** `Customer Master`, `Sales Order Header`, `Shipment`, `Payment`, `customer_master`, `customer_master.cust_id`, `customer_master.email`, `customer_master.created_at`
 
 ---
 
@@ -68,7 +68,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Product`, `Hierarchical Product Category Tree`, `Shipment`, `Order Line Item`, `Sales Order Hdr`, `TB_PRODUCT`, `TB_CATEGORY`, `TB_PRODUCT.PRODUCT_ID`
+**Sources retrieved (12):** `Customer Master`, `Category`, `Shipment`, `Order Line Item`, `Tb Product`, `customer_master`, `customer_master.cust_id`, `customer_master.email`
 
 ---
 
@@ -83,7 +83,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Shipment`, `Sales Order Hdr`, `Payment`, `SALES_ORDER_HDR`, `SALES_ORDER_HDR.ORDER_ID`, `SALES_ORDER_HDR.CREATED_AT`, `SALES_ORDER_HDR.CUST_ID`, `SALES_ORDER_HDR.STATUS_CODE`
+**Sources retrieved (12):** `Customer Master`, `Payment`, `Shipment`, `Sales Order Header`, `Order Line Item`, `sales_order_hdr`, `sales_order_hdr.order_date`, `sales_order_hdr.order_id`
 
 ---
 
@@ -98,7 +98,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Order Line Item`, `ORDER_LINE_ITEM`, `ORDER_LINE_ITEM.PRODUCT_ID`, `ORDER_LINE_ITEM.LINE_AMT`, `ORDER_LINE_ITEM.LINE_ID`, `ORDER_LINE_ITEM.QUANTITY`, `ORDER_LINE_ITEM.ORDER_ID`, `Shipment`
+**Sources retrieved (12):** `Order Line Item`, `order_line_item`, `order_line_item.line_id`, `order_line_item.quantity`, `order_line_item.order_id`, `order_line_item.unit_price`, `order_line_item.product_id`, `Customer Master`
 
 ---
 
@@ -113,7 +113,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Payment`, `Shipment`, `Order Line Item`, `Sales Order Hdr`, `Customer Master`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CUST_ID`, `CUSTOMER_MASTER.FULL_NAME`
+**Sources retrieved (12):** `Payment`, `Shipment`, `Customer Master`, `Order Line Item`, `Sales Order Header`, `customer_master`, `customer_master.cust_id`, `customer_master.email`
 
 ---
 
@@ -128,7 +128,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Shipment`, `Payment`, `Order Line Item`, `Sales Order Hdr`, `SALES_ORDER_HDR`, `SALES_ORDER_HDR.ORDER_ID`, `SALES_ORDER_HDR.CREATED_AT`, `SALES_ORDER_HDR.CUST_ID`
+**Sources retrieved (12):** `Customer Master`, `Shipment`, `Payment`, `Sales Order Header`, `Order Line Item`, `sales_order_hdr`, `sales_order_hdr.order_date`, `sales_order_hdr.order_id`
 
 ---
 
@@ -143,7 +143,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `TB_PRODUCT.SKU`, `Product`, `Hierarchical Product Category Tree`, `TB_PRODUCT`, `TB_PRODUCT.PRODUCT_ID`, `TB_PRODUCT.PRODUCT_NAME`, `TB_PRODUCT.CATEGORY_ID`, `TB_PRODUCT.UNIT_PRICE`
+**Sources retrieved (12):** `Shipment`, `Order Line Item`, `Category`, `tb_product`, `Customer Master`, `Sales Order Header`, `customer_master`, `customer_master.cust_id`
 
 ---
 
@@ -158,7 +158,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Sales Order Hdr`, `Shipment`, `Customer Master`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CUST_ID`, `CUSTOMER_MASTER.FULL_NAME`, `CUSTOMER_MASTER.EMAIL`, `CUSTOMER_MASTER.REGION_CODE`
+**Sources retrieved (12):** `Sales Order Header`, `Customer Master`, `Payment`, `Shipment`, `customer_master`, `customer_master.cust_id`, `customer_master.email`, `customer_master.created_at`
 
 ---
 
@@ -173,7 +173,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Order Line Item`, `Shipment`, `Payment`, `Product`, `Hierarchical Product Category Tree`, `TB_PRODUCT`, `TB_PRODUCT.PRODUCT_ID`, `TB_PRODUCT.SKU`
+**Sources retrieved (12):** `Order Line Item`, `Shipment`, `Category`, `Payment`, `tb_product`, `Sales Order Header`, `tb_category`, `tb_category.category_id`
 
 ---
 
@@ -188,7 +188,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Order Line Item`, `Sales Order Hdr`, `Shipment`, `Customer Master`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CUST_ID`, `CUSTOMER_MASTER.FULL_NAME`, `CUSTOMER_MASTER.EMAIL`
+**Sources retrieved (12):** `Customer Master`, `Order Line Item`, `Sales Order Header`, `Shipment`, `Payment`, `customer_master`, `customer_master.cust_id`, `customer_master.email`
 
 ---
 
@@ -203,7 +203,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Payment`, `Order Line Item`, `SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT`, `Shipment`, `Sales Order Hdr`, `SALES_ORDER_HDR`, `SALES_ORDER_HDR.ORDER_ID`, `SALES_ORDER_HDR.CREATED_AT`
+**Sources retrieved (12):** `Payment`, `sales_order_hdr.payment_confirmed_at`, `Customer Master`, `Shipment`, `Sales Order Header`, `Order Line Item`, `sales_order_hdr`, `sales_order_hdr.order_date`
 
 ---
 
@@ -218,7 +218,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Shipment`, `Payment`, `Order Line Item`, `Sales Order Hdr`, `Customer Master`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CUST_ID`, `CUSTOMER_MASTER.FULL_NAME`
+**Sources retrieved (12):** `Shipment`, `Customer Master`, `Payment`, `Order Line Item`, `Sales Order Header`, `customer_master`, `customer_master.cust_id`, `customer_master.email`
 
 ---
 
@@ -233,7 +233,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Hierarchical Product Category Tree`, `Product`, `TB_PRODUCT`, `TB_PRODUCT.PRODUCT_ID`, `TB_PRODUCT.SKU`, `TB_PRODUCT.PRODUCT_NAME`, `TB_PRODUCT.CATEGORY_ID`, `TB_PRODUCT.UNIT_PRICE`
+**Sources retrieved (12):** `Shipment`, `Order Line Item`, `Category`, `Tb Product`, `tb_product`, `tb_product.product_name`, `tb_product.unit_price`, `tb_product.category_id`
 
 ---
 
@@ -248,7 +248,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Payment`, `Shipment`, `Sales Order Hdr`, `SALES_ORDER_HDR.PAYMENT_CONFIRMED_AT`, `Order Line Item`, `Customer Master`, `CUSTOMER_MASTER`, `CUSTOMER_MASTER.CUST_ID`
+**Sources retrieved (12):** `Payment`, `Sales Order Header`, `Customer Master`, `Shipment`, `sales_order_hdr.payment_confirmed_at`, `Order Line Item`, `customer_master`, `customer_master.cust_id`
 
 ---
 
@@ -263,7 +263,7 @@ RAGAS evaluation not enabled for this run.
 **System answer:**
 > 
 
-**Sources retrieved (12):** `Order Line Item`, `Shipment`, `ORDER_LINE_ITEM`, `ORDER_LINE_ITEM.PRODUCT_ID`, `ORDER_LINE_ITEM.LINE_AMT`, `ORDER_LINE_ITEM.LINE_ID`, `ORDER_LINE_ITEM.QUANTITY`, `ORDER_LINE_ITEM.ORDER_ID`
+**Sources retrieved (12):** `Order Line Item`, `Shipment`, `order_line_item`, `order_line_item.line_id`, `order_line_item.quantity`, `order_line_item.order_id`, `order_line_item.unit_price`, `order_line_item.product_id`
 
 ---
 
