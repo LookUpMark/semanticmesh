@@ -1,0 +1,1904 @@
+{
+  "study_id": "AB-BEST-K20",
+  "timestamp": "2026-07-17T14:34:16.830210+00:00",
+  "trace_id": "AB-BEST-K20.2026-07-17T14-34-16.830210+00-00",
+  "config": {
+    "llm_model_reasoning": "gpt-5.4-nano-2026-03-17",
+    "llm_model_extraction": "gpt-5-nano-2025-08-07",
+    "chunk_size": 256,
+    "chunk_overlap": 32,
+    "er_similarity_threshold": 0.75,
+    "er_blocking_top_k": 10,
+    "enable_schema_enrichment": true,
+    "enable_critic_validation": true,
+    "enable_cypher_healing": true,
+    "retrieval_mode": "hybrid",
+    "enable_reranker": true
+  },
+  "source_documents": [
+    "tests/fixtures/07_stress_large_scale/business_glossary.md"
+  ],
+  "ddl_files": [
+    "tests/fixtures/07_stress_large_scale/schema.sql"
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "# Enterprise ERP Business Glossary\n\n## Sales & Customer Management\n\n### Customer\n**Definition**: An individual or organization that purchases goods or services from the company. Customers can be classified as retail (B2C) or business (B2B) with different credit terms and pricing structures.\n\n**Attributes**: customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, status\n\n**Related Concepts**: Sales Order, Invoice, Payment, Customer Address, Credit Score\n... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "537"
+    },
+    {
+      "chunk_id": 1,
+      "text": "## Inventory & Warehousing\n\n### Warehouse\n**Definition**: A physical location where inventory is stored. Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory.\n\n**Attributes**: warehouse_id, warehouse_name, warehouse_type, location_address, capacity_cubic_meters, manager_id, status\n\n**Related Concepts**: Inventory Transaction, Bin Location, Warehouse Zone, Stock Transfer\n\n### Inventory Transaction\n**Definition**: A record of any movem... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "724"
+    },
+    {
+      "chunk_id": 2,
+      "text": "## Human Resources\n\n### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id\n\n**Related Concepts**: Department, Position, Employee Compensation, Time Entry, Performance Review\n\n### Department\n**Definition**: An... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "647"
+    },
+    {
+      "chunk_id": 3,
+      "text": "## Quality & Compliance\n\n### Quality Inspection\n**Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping).\n\n**Attributes**: inspection_id, inspection_type, reference_type, reference_id, product_id, inspection_date, inspector_id, result, defects_found, status\n\n**Related Concepts**: Product, Supplier, Purchase Receipt, Work Order, Quality Standar... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "668"
+    },
+    {
+      "chunk_id": 4,
+      "text": "## Reporting & Analytics\n\n### Key Performance Indicator (KPI)\n**Definition**: A quantifiable metric used to evaluate performance against strategic objectives. KPIs can be financial, operational, customer-facing, or employee-related.\n\n**Common KPIs**: Order fulfillment rate, Inventory turnover, Supplier on-time delivery, Customer satisfaction, Employee productivity, Production yield\n\n### Financial Statement\n**Definition**: Formal reports summarizing financial performance and position. Primary sta... [TRUNCATED]",
+      "source": "business_glossary.md",
+      "page": "1",
+      "token_count": "494"
+    }
+  ],
+  "chunking_summary": {
+    "total_chunks": 5,
+    "total_tokens": 3070,
+    "avg_tokens": 614.0
+  },
+  "triplets": [
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "is defined as",
+      "object": "an individual or organization that purchases goods or services from the company",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Customer",
+      "predicate": "has attribute",
+      "object": "customer_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "is defined as",
+      "object": "A commercial document issued by a seller to a buyer indicating types, quantities, and agreed prices ... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Sales Order",
+      "predicate": "has attribute",
+      "object": "order_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "is defined as",
+      "object": "A tangible item or service that the company sells to customers",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Product",
+      "predicate": "has attribute",
+      "object": "product_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "is defined as",
+      "object": "An external entity that provides goods or services to the company",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier",
+      "predicate": "has attribute",
+      "object": "supplier_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase Order",
+      "predicate": "is defined as",
+      "object": "A commercial document issued by a buyer to a seller indicating types, quantities, and agreed prices ... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Purchase Order",
+      "predicate": "has attribute",
+      "object": "po_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier Contract",
+      "predicate": "is defined as",
+      "object": "A formal agreement between the company and a supplier defining terms, conditions, pricing, and servi... [TRUNCATED]",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 0,
+      "subject": "Supplier Contract",
+      "predicate": "has attribute",
+      "object": "contract_id",
+      "confidence": 0.9
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Warehouse",
+      "predicate": "is a",
+      "object": "physical location",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Inventory Transaction",
+      "predicate": "is",
+      "object": "record",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Bin Location",
+      "predicate": "is",
+      "object": "specific storage location",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Stock Transfer",
+      "predicate": "is",
+      "object": "movement of inventory between warehouses or locations",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "General Ledger Account",
+      "predicate": "is",
+      "object": "financial account",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Journal Entry",
+      "predicate": "is",
+      "object": "financial transaction",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Receivable",
+      "predicate": "is",
+      "object": "money owed",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Accounts Payable",
+      "predicate": "is",
+      "object": "money owed",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 1,
+      "subject": "Budget",
+      "predicate": "is",
+      "object": "financial plan",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "employee_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "first_name",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "last_name",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "employee_type",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "department_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "position_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "hire_date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "salary",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Employee",
+      "predicate": "has attribute",
+      "object": "manager_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Department",
+      "predicate": "has attribute",
+      "object": "department_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Department",
+      "predicate": "has attribute",
+      "object": "department_name",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Department",
+      "predicate": "has attribute",
+      "object": "parent_department_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Department",
+      "predicate": "has attribute",
+      "object": "manager_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Department",
+      "predicate": "has attribute",
+      "object": "budget_code",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Department",
+      "predicate": "has attribute",
+      "object": "location",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Department",
+      "predicate": "has attribute",
+      "object": "status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Position",
+      "predicate": "has attribute",
+      "object": "position_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Position",
+      "predicate": "has attribute",
+      "object": "position_title",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Position",
+      "predicate": "has attribute",
+      "object": "job_family",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Position",
+      "predicate": "has attribute",
+      "object": "min_salary",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Position",
+      "predicate": "has attribute",
+      "object": "max_salary",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "has attribute",
+      "object": "time_entry_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "has attribute",
+      "object": "employee_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "has attribute",
+      "object": "project_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "has attribute",
+      "object": "work_date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "has attribute",
+      "object": "hours_worked",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "has attribute",
+      "object": "work_type",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "has attribute",
+      "object": "description",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "has attribute",
+      "object": "approval_status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Time Entry",
+      "predicate": "has attribute",
+      "object": "submitted_date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Bill of Materials",
+      "predicate": "has attribute",
+      "object": "bom_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Bill of Materials",
+      "predicate": "has attribute",
+      "object": "product_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Bill of Materials",
+      "predicate": "has attribute",
+      "object": "component_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Bill of Materials",
+      "predicate": "has attribute",
+      "object": "quantity",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Bill of Materials",
+      "predicate": "has attribute",
+      "object": "unit_of_measure",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Bill of Materials",
+      "predicate": "has attribute",
+      "object": "scrap_percentage",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Bill of Materials",
+      "predicate": "has attribute",
+      "object": "effective_start_date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Bill of Materials",
+      "predicate": "has attribute",
+      "object": "effective_end_date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "has attribute",
+      "object": "work_order_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "has attribute",
+      "object": "product_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "has attribute",
+      "object": "quantity_ordered",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "has attribute",
+      "object": "quantity_completed",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "has attribute",
+      "object": "start_date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "has attribute",
+      "object": "required_date",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "has attribute",
+      "object": "status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "has attribute",
+      "object": "production_line_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Work Order",
+      "predicate": "has attribute",
+      "object": "priority",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "has attribute",
+      "object": "schedule_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "has attribute",
+      "object": "work_order_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "has attribute",
+      "object": "production_line_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "has attribute",
+      "object": "scheduled_start",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "has attribute",
+      "object": "scheduled_end",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "has attribute",
+      "object": "actual_start",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "has attribute",
+      "object": "actual_end",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "has attribute",
+      "object": "status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Schedule",
+      "predicate": "has attribute",
+      "object": "priority",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Line",
+      "predicate": "has attribute",
+      "object": "line_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Line",
+      "predicate": "has attribute",
+      "object": "line_name",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Line",
+      "predicate": "has attribute",
+      "object": "line_type",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Line",
+      "predicate": "has attribute",
+      "object": "capacity_per_hour",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Line",
+      "predicate": "has attribute",
+      "object": "location_id",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 2,
+      "subject": "Production Line",
+      "predicate": "has attribute",
+      "object": "status",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Quality Inspection",
+      "predicate": "is defined as",
+      "object": "A systematic examination of materials or products to verify conformance to specifications",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Quality Standard",
+      "predicate": "has",
+      "object": "Attributes",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Non-Conformance Report",
+      "predicate": "is defined as",
+      "object": "A document describing a quality deviation or defect that does not meet specifications",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Shipment",
+      "predicate": "is defined as",
+      "object": "The physical transportation of goods from one location to another",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Carrier",
+      "predicate": "is defined as",
+      "object": "A company that provides transportation services for shipping goods",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Shipping Route",
+      "predicate": "is defined as",
+      "object": "A predefined path for moving goods between locations with specific transit times, costs, and handlin... [TRUNCATED]",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Project",
+      "predicate": "is defined as",
+      "object": "A temporary endeavor with defined objectives, deliverables, timelines, and resources",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 3,
+      "subject": "Project Task",
+      "predicate": "is defined as",
+      "object": "A specific work item within a project that must be completed",
+      "confidence": 0.6
+    },
+    {
+      "chunk_index": 4,
+      "subject": "KPIs",
+      "predicate": "are financial, operational, customer-facing, or employee-related",
+      "object": "Common KPIs",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 4,
+      "subject": "KPI",
+      "predicate": "definition",
+      "object": "A quantifiable metric used to evaluate performance against strategic objectives",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Financial Statement",
+      "predicate": "definition",
+      "object": "Formal reports summarizing financial performance and position",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Balance Sheet",
+      "predicate": "part of",
+      "object": "Financial Statement",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Income Statement",
+      "predicate": "part of",
+      "object": "Financial Statement",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Cash Flow Statement",
+      "predicate": "part of",
+      "object": "Financial Statement",
+      "confidence": 0.5
+    },
+    {
+      "chunk_index": 4,
+      "subject": "User",
+      "predicate": "definition",
+      "object": "A person who interacts with the ERP system with specific permissions and roles",
+      "confidence": 1.0
+    },
+    {
+      "chunk_index": 4,
+      "subject": "Role",
+      "predicate": "definition",
+      "object": "A collection of permissions that grants access to specific system functions",
+      "confidence": 1.0
+    },
+    "... [4 more items TRUNCATED]"
+  ],
+  "extraction_summary": {
+    "total_triplets": 104,
+    "avg_confidence": 0.9442307692307692,
+    "extraction_errors": 0
+  },
+  "entities_pre_resolution": [],
+  "blocks": [],
+  "cluster_decisions": [],
+  "entities_post_resolution": [
+    {
+      "name": "Accounts Receivable",
+      "definition": "Money owed by the company to suppliers for goods or services received on credit; AP aging tracks payment due dates and supports payment approval workflows.",
+      "synonyms": [
+        "Accounts Payable"
+      ],
+      "provenance_text": "### Accounts Receivable\n**Definition**: Money owed to the company by customers for goods or services delivered on credit. AR aging tracks overdue payments and supports collections workflows. | ### Accounts Payable\n**Definition**: Money owed by the company to suppliers for goods or services received on credit. AP aging tracks payment due dates and supports payment approval workflows.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Budget Code",
+      "definition": "A code used to identify the budget associated with a department, serving as an attribute within the Department entity.",
+      "synonyms": [
+        "Budget"
+      ],
+      "provenance_text": "### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status | ### Budget\n**Definition**: A financial plan that allocates resources to departments, projects, or accoun",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Cash Flow Statement",
+      "definition": "A primary financial statement that reports cash inflows and outflows from operating, investing, and financing activities.",
+      "synonyms": [
+        "Financial Statement",
+        "Income Statement"
+      ],
+      "provenance_text": "**Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities) | **Definition**: Formal reports summarizing financial performance and position. Primary statements include Balance Sheet, Income Statement, and Cash Flow Statement.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Key Performance Indicator (Kpi)",
+      "definition": "A Key Performance Indicator (KPI) is a quantifiable metric used to evaluate progress toward strategic objectives.",
+      "synonyms": [
+        "Common KPIs",
+        "KPI",
+        "KPIs"
+      ],
+      "provenance_text": "**Common KPIs**: Order fulfillment rate, Inventory turnover, Supplier on-time delivery, Customer satisfaction, Employee productivity, Production yield | **Definition**: A quantifiable metric used to evaluate performance against strategic objectives. KPIs can be financial, operational, customer-facing, or employee-related.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Purchase Order",
+      "definition": "A commercial document issued by a buyer to a seller indicating types, quantities, and agreed prices for products or services.",
+      "synonyms": [
+        "Sales Order"
+      ],
+      "provenance_text": "### Purchase Order\n**Definition**: A commercial document issued by a buyer to a seller indicating types, quantities, and agreed prices for products or services. | **Attributes**: po_id, supplier_id, order_date, required_date, total_amount, status, approved_by, approval_date, warehouse_id | ### Sales Order\n**Definition**: A commercial document issued by a seller to a buyer indicating types, quantit",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Department",
+      "definition": "An organizational unit within a company responsible for specific business functions, characterized by attributes such as department_id and department_name and governed by budgets, a manager, and a reporting hierarchy.",
+      "synonyms": [
+        "department_id",
+        "department_name"
+      ],
+      "provenance_text": "### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status | ### Employee\n**Definition**: An individual who works for the company under an employment contract. Emplo",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Effective Start Date",
+      "definition": "The date from which the Bill of Materials becomes effective/valid for use in manufacturing.",
+      "synonyms": [
+        "effective_end_date"
+      ],
+      "provenance_text": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Employee Type",
+      "definition": "work_type is the classification of a time entry that indicates the nature of hours worked (e.g., billable vs non-billable) used for payroll processing and project costing.",
+      "synonyms": [
+        "work_type"
+      ],
+      "provenance_text": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Time Entry\n**Definition**: A record of hours wo",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Physical Location",
+      "definition": "physical location: A physical place where inventory is stored, such as warehouses (company-owned, 3PL facilities, or virtual locations for transit inventory).",
+      "synonyms": [
+        "location"
+      ],
+      "provenance_text": "### Warehouse\n**Definition**: A physical location where inventory is stored. Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory. | ### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: depart",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Production Schedule",
+      "definition": "Production Schedule: a plan that allocates production resources (lines, machines, labor) to work orders over time, including planned start and end times (scheduled_start and scheduled_end).",
+      "synonyms": [
+        "scheduled_end",
+        "scheduled_start"
+      ],
+      "provenance_text": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Shipping Route",
+      "definition": "A predefined path for moving goods between locations, characterized by specified transit times, costs, and handling requirements, and may include multiple stops and transshipments.",
+      "synonyms": [
+        "Shipment"
+      ],
+      "provenance_text": "### Shipping Route\n**Definition**: A predefined path for moving goods between locations with specific transit times, costs, and handling requirements. Routes can include multiple stops and transshipments. | ### Shipment\n**Definition**: The physical transportation of goods from one location to another. Shipments can be outbound (to customers), inbound (from suppliers), or inter-warehouse transfers.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Supplier Contract",
+      "definition": "Supplier Contract is a formal agreement between the company and a supplier that defines terms, conditions, pricing, and service level agreements (SLAs).",
+      "synonyms": [
+        "Supplier"
+      ],
+      "provenance_text": "### Supplier Contract\n**Definition**: A formal agreement between the company and a supplier defining terms, conditions, pricing, and service level agreements (SLAs). | **Attributes**: contract_id, supplier_id, contract_type, start_date, end_date, payment_terms, status, renewal_terms | ### Supplier\n**Definition**: An external entity that provides goods or services to the company. | **Attributes**: ",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Time Entry",
+      "definition": "A Time Entry is a record of hours worked by an employee, used for payroll processing and project costing, typically identified by a unique time_entry_id.",
+      "synonyms": [
+        "time_entry_id"
+      ],
+      "provenance_text": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Approval Status",
+      "definition": "Approval_status is the approval state of a Time Entry, indicating whether the time entry has been approved for payroll processing and project costing.",
+      "synonyms": [
+        "status"
+      ],
+      "provenance_text": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date | ### Employee\n**Definition**: An individual who works for the company under an emp",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Financial Transaction",
+      "definition": "A financial transaction is an economic event recorded in double-entry bookkeeping, typically represented by a journal entry that balances debits and credits.",
+      "synonyms": [
+        "financial account",
+        "financial plan"
+      ],
+      "provenance_text": "### Journal Entry\n**Definition**: A recording of a financial transaction in double-entry bookkeeping. Each journal entry must balance with equal debits and credits. | ### General Ledger Account\n**Definition**: A chronological record of all financial transactions for a specific account type. Accounts are organized into a chart of accounts with hierarchies for balance sheet and income statement. | #",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "First Name",
+      "definition": "The employee's given name (first_name), a personal attribute used for identification and communication.",
+      "synonyms": [
+        "last_name"
+      ],
+      "provenance_text": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Max Salary",
+      "definition": "Minimum salary value defined for a job position as part of the position's compensation range.",
+      "synonyms": [
+        "min_salary",
+        "salary"
+      ],
+      "provenance_text": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications | ### Employee\n**Definition**: An individual who work",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Attributes",
+      "definition": "### Quality Standard\n**Definition**: A documented specification defining acceptance criteria for products or processes. Standards can be internal (company-specific) or external (ISO, ASTM, FDA).\n\n**Attributes**: standard_id, standard_code, standard_name, standard_type, version, issue_date, status",
+      "synonyms": [],
+      "provenance_text": "### Quality Standard\n**Definition**: A documented specification defining acceptance criteria for products or processes. Standards can be internal (company-specific) or external (ISO, ASTM, FDA).\n\n**Attributes**: standard_id, standard_code, standard_name, standard_type, version, issue_date, status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Audit Log",
+      "definition": "**Definition**: A chronological record of system events including logins, data changes, approvals, and errors. Audit logs support security monitoring and compliance requirements.",
+      "synonyms": [],
+      "provenance_text": "**Definition**: A chronological record of system events including logins, data changes, approvals, and errors. Audit logs support security monitoring and compliance requirements.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Balance Sheet",
+      "definition": "**Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities)",
+      "synonyms": [],
+      "provenance_text": "**Types**: Balance Sheet (assets, liabilities, equity), Income Statement (revenue, expenses, profit), Cash Flow Statement (operating, investing, financing activities)",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bill Of Materials",
+      "definition": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date | ### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date | ### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "synonyms": [],
+      "provenance_text": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date | ### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date | ### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bin Location",
+      "definition": "### Bin Location\n**Definition**: A specific storage location within a warehouse. Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away.",
+      "synonyms": [],
+      "provenance_text": "### Bin Location\n**Definition**: A specific storage location within a warehouse. Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Carrier",
+      "definition": "### Carrier\n**Definition**: A company that provides transportation services for shipping goods. Carriers are rated on cost, transit time, and delivery performance.",
+      "synonyms": [],
+      "provenance_text": "### Carrier\n**Definition**: A company that provides transportation services for shipping goods. Carriers are rated on cost, transit time, and delivery performance.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Customer",
+      "definition": "### Customer\n**Definition**: An individual or organization that purchases goods or services from the company. | **Attributes**: customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, status",
+      "synonyms": [],
+      "provenance_text": "### Customer\n**Definition**: An individual or organization that purchases goods or services from the company. | **Attributes**: customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Department",
+      "definition": "### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status | ### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status | ### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status",
+      "synonyms": [],
+      "provenance_text": "### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status | ### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status | ### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Employee",
+      "definition": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id",
+      "synonyms": [],
+      "provenance_text": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Formal Reports Summarizing",
+      "definition": "**Definition**: Formal reports summarizing financial performance and position. Primary statements include Balance Sheet, Income Statement, and Cash Flow Statement.",
+      "synonyms": [],
+      "provenance_text": "**Definition**: Formal reports summarizing financial performance and position. Primary statements include Balance Sheet, Income Statement, and Cash Flow Statement.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "General Ledger Account",
+      "definition": "### General Ledger Account\n**Definition**: A chronological record of all financial transactions for a specific account type. Accounts are organized into a chart of accounts with hierarchies for balance sheet and income statement.",
+      "synonyms": [],
+      "provenance_text": "### General Ledger Account\n**Definition**: A chronological record of all financial transactions for a specific account type. Accounts are organized into a chart of accounts with hierarchies for balance sheet and income statement.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Inventory Transaction",
+      "definition": "### Inventory Transaction\n**Definition**: A record of any movement or change in inventory quantity. Transactions include receipts, issues, transfers, adjustments, and cycle counts.",
+      "synonyms": [],
+      "provenance_text": "### Inventory Transaction\n**Definition**: A record of any movement or change in inventory quantity. Transactions include receipts, issues, transfers, adjustments, and cycle counts.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Journal Entry",
+      "definition": "### Journal Entry\n**Definition**: A recording of a financial transaction in double-entry bookkeeping. Each journal entry must balance with equal debits and credits.",
+      "synonyms": [],
+      "provenance_text": "### Journal Entry\n**Definition**: A recording of a financial transaction in double-entry bookkeeping. Each journal entry must balance with equal debits and credits.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Master Data",
+      "definition": "**Definition**: Core business entities that are shared across multiple business processes. Examples include Customer, Product, Supplier, and Employee records.",
+      "synonyms": [],
+      "provenance_text": "**Definition**: Core business entities that are shared across multiple business processes. Examples include Customer, Product, Supplier, and Employee records.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Non Conformance Report",
+      "definition": "### Non-Conformance Report\n**Definition**: A document describing a quality deviation or defect that does not meet specifications. NCRs trigger root cause analysis and corrective/preventive actions (CAPA).",
+      "synonyms": [],
+      "provenance_text": "### Non-Conformance Report\n**Definition**: A document describing a quality deviation or defect that does not meet specifications. NCRs trigger root cause analysis and corrective/preventive actions (CAPA).",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Position",
+      "definition": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications | ### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications | ### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications",
+      "synonyms": [],
+      "provenance_text": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications | ### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications | ### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Product",
+      "definition": "### Product\n**Definition**: A tangible item or service that the company sells to customers. | **Attributes**: product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_id",
+      "synonyms": [],
+      "provenance_text": "### Product\n**Definition**: A tangible item or service that the company sells to customers. | **Attributes**: product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Production Line",
+      "definition": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id | ### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id | ### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "synonyms": [],
+      "provenance_text": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id | ### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id | ### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Production Schedule",
+      "definition": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "synonyms": [],
+      "provenance_text": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Project",
+      "definition": "### Project\n**Definition**: A temporary endeavor with defined objectives, deliverables, timelines, and resources. Projects can be customer-facing (consulting, construction) or internal (R&D, process improvement).",
+      "synonyms": [],
+      "provenance_text": "### Project\n**Definition**: A temporary endeavor with defined objectives, deliverables, timelines, and resources. Projects can be customer-facing (consulting, construction) or internal (R&D, process improvement).",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Project Task",
+      "definition": "### Project Task\n**Definition**: A specific work item within a project that must be completed. Tasks have dependencies, assignments, and progress tracking.",
+      "synonyms": [],
+      "provenance_text": "### Project Task\n**Definition**: A specific work item within a project that must be completed. Tasks have dependencies, assignments, and progress tracking.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Quality Inspection",
+      "definition": "### Quality Inspection\n**Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping).",
+      "synonyms": [],
+      "provenance_text": "### Quality Inspection\n**Definition**: A systematic examination of materials or products to verify conformance to specifications. Inspections can be incoming (from suppliers), in-process (during production), or final (before shipping).",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Quality Standard",
+      "definition": "### Quality Standard\n**Definition**: A documented specification defining acceptance criteria for products or processes. Standards can be internal (company-specific) or external (ISO, ASTM, FDA).\n\n**Attributes**: standard_id, standard_code, standard_name, standard_type, version, issue_date, status",
+      "synonyms": [],
+      "provenance_text": "### Quality Standard\n**Definition**: A documented specification defining acceptance criteria for products or processes. Standards can be internal (company-specific) or external (ISO, ASTM, FDA).\n\n**Attributes**: standard_id, standard_code, standard_name, standard_type, version, issue_date, status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Reference Data",
+      "definition": "**Definition**: Standardized codes and classifications used across the system. Examples include currency codes, country codes, unit measures, and tax categories.",
+      "synonyms": [],
+      "provenance_text": "**Definition**: Standardized codes and classifications used across the system. Examples include currency codes, country codes, unit measures, and tax categories.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Role",
+      "definition": "**Definition**: A collection of permissions that grants access to specific system functions. Users can have multiple roles for different contexts (e.g., Buyer and Approver).",
+      "synonyms": [],
+      "provenance_text": "**Definition**: A collection of permissions that grants access to specific system functions. Users can have multiple roles for different contexts (e.g., Buyer and Approver).",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Standardized Codes And",
+      "definition": "**Definition**: Standardized codes and classifications used across the system. Examples include currency codes, country codes, unit measures, and tax categories.",
+      "synonyms": [],
+      "provenance_text": "**Definition**: Standardized codes and classifications used across the system. Examples include currency codes, country codes, unit measures, and tax categories.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Stock Transfer",
+      "definition": "### Stock Transfer\n**Definition**: The movement of inventory between warehouses or locations. Stock transfers can be planned (inter-warehouse transfers) or ad-hoc (emergency replenishment).",
+      "synonyms": [],
+      "provenance_text": "### Stock Transfer\n**Definition**: The movement of inventory between warehouses or locations. Stock transfers can be planned (inter-warehouse transfers) or ad-hoc (emergency replenishment).",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Transactional Data",
+      "definition": "**Definition**: High-volume records generated by business operations such as orders, invoices, payments, and inventory movements.",
+      "synonyms": [],
+      "provenance_text": "**Definition**: High-volume records generated by business operations such as orders, invoices, payments, and inventory movements.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "User",
+      "definition": "**Definition**: A person who interacts with the ERP system with specific permissions and roles. Users can be employees, customers, suppliers, or system administrators.",
+      "synonyms": [],
+      "provenance_text": "**Definition**: A person who interacts with the ERP system with specific permissions and roles. Users can be employees, customers, suppliers, or system administrators.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Warehouse",
+      "definition": "### Warehouse\n**Definition**: A physical location where inventory is stored. Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory.",
+      "synonyms": [],
+      "provenance_text": "### Warehouse\n**Definition**: A physical location where inventory is stored. Warehouses can be company-owned, third-party logistics (3PL) facilities, or virtual locations for transit inventory.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Work Order",
+      "definition": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "synonyms": [],
+      "provenance_text": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Actual End",
+      "definition": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "synonyms": [],
+      "provenance_text": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Actual Start",
+      "definition": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "synonyms": [],
+      "provenance_text": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Bom Id",
+      "definition": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "synonyms": [],
+      "provenance_text": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Capacity Per Hour",
+      "definition": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "synonyms": [],
+      "provenance_text": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Component Id",
+      "definition": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "synonyms": [],
+      "provenance_text": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Contract Id",
+      "definition": "**Attributes**: contract_id, supplier_id, contract_type, start_date, end_date, payment_terms, status, renewal_terms",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: contract_id, supplier_id, contract_type, start_date, end_date, payment_terms, status, renewal_terms",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Customer Id",
+      "definition": "**Attributes**: customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: customer_id, customer_name, customer_type, credit_limit, payment_terms, tax_id, registration_date, status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Description",
+      "definition": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "synonyms": [],
+      "provenance_text": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Employee Id",
+      "definition": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "synonyms": [],
+      "provenance_text": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Hire Date",
+      "definition": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id",
+      "synonyms": [],
+      "provenance_text": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Hours Worked",
+      "definition": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "synonyms": [],
+      "provenance_text": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Job Family",
+      "definition": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications",
+      "synonyms": [],
+      "provenance_text": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Line Id",
+      "definition": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "synonyms": [],
+      "provenance_text": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Line Name",
+      "definition": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "synonyms": [],
+      "provenance_text": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Line Type",
+      "definition": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "synonyms": [],
+      "provenance_text": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Location Id",
+      "definition": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "synonyms": [],
+      "provenance_text": "### Production Line\n**Definition**: A manufacturing resource consisting of equipment and personnel configured to produce products. Lines have capacity rates, changeover times, and maintenance schedules.\n\n**Attributes**: line_id, line_name, line_type, capacity_per_hour, location_id, status, maintenance_schedule_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Manager Id",
+      "definition": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status",
+      "synonyms": [],
+      "provenance_text": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Money Owed",
+      "definition": "### Accounts Receivable\n**Definition**: Money owed to the company by customers for goods or services delivered on credit. AR aging tracks overdue payments and supports collections workflows. | ### Accounts Payable\n**Definition**: Money owed by the company to suppliers for goods or services received on credit. AP aging tracks payment due dates and supports payment approval workflows.",
+      "synonyms": [],
+      "provenance_text": "### Accounts Receivable\n**Definition**: Money owed to the company by customers for goods or services delivered on credit. AR aging tracks overdue payments and supports collections workflows. | ### Accounts Payable\n**Definition**: Money owed by the company to suppliers for goods or services received on credit. AP aging tracks payment due dates and supports payment approval workflows.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Movement Of Inventory",
+      "definition": "### Stock Transfer\n**Definition**: The movement of inventory between warehouses or locations. Stock transfers can be planned (inter-warehouse transfers) or ad-hoc (emergency replenishment).",
+      "synonyms": [],
+      "provenance_text": "### Stock Transfer\n**Definition**: The movement of inventory between warehouses or locations. Stock transfers can be planned (inter-warehouse transfers) or ad-hoc (emergency replenishment).",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Order Id",
+      "definition": "**Attributes**: order_id, customer_id, order_date, delivery_date, total_amount, status, sales_rep_id, warehouse_id",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: order_id, customer_id, order_date, delivery_date, total_amount, status, sales_rep_id, warehouse_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Parent Department Id",
+      "definition": "### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status",
+      "synonyms": [],
+      "provenance_text": "### Department\n**Definition**: An organizational unit within the company responsible for specific business functions. Departments have budgets, managers, and reporting hierarchies.\n\n**Attributes**: department_id, department_name, parent_department_id, manager_id, budget_code, location, status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Po Id",
+      "definition": "**Attributes**: po_id, supplier_id, order_date, required_date, total_amount, status, approved_by, approval_date, warehouse_id",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: po_id, supplier_id, order_date, required_date, total_amount, status, approved_by, approval_date, warehouse_id",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Position Id",
+      "definition": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications",
+      "synonyms": [],
+      "provenance_text": "### Employee\n**Definition**: An individual who works for the company under an employment contract. Employees can be full-time, part-time, contract, or temporary with different compensation and benefit structures.\n\n**Attributes**: employee_id, first_name, last_name, employee_type, department_id, position_id, hire_date, status, salary, manager_id | ### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Position Title",
+      "definition": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications",
+      "synonyms": [],
+      "provenance_text": "### Position\n**Definition**: A specific role within the organizational structure with defined responsibilities, qualifications, and compensation ranges. Positions belong to job families with career paths.\n\n**Attributes**: position_id, position_title, job_family, grade_level, min_salary, max_salary, department_id, status, required_qualifications",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Priority",
+      "definition": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "synonyms": [],
+      "provenance_text": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Product Id",
+      "definition": "**Attributes**: product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_id | ### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date | ### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: product_id, product_name, product_type, base_price, cost, weight, unit_of_measure, status, category_id | ### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date | ### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Production Line Id",
+      "definition": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "synonyms": [],
+      "provenance_text": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Project Id",
+      "definition": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "synonyms": [],
+      "provenance_text": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Quantity",
+      "definition": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "synonyms": [],
+      "provenance_text": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Quantity Completed",
+      "definition": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "synonyms": [],
+      "provenance_text": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Quantity Ordered",
+      "definition": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "synonyms": [],
+      "provenance_text": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Required Date",
+      "definition": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "synonyms": [],
+      "provenance_text": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Schedule Id",
+      "definition": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "synonyms": [],
+      "provenance_text": "### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Scrap Percentage",
+      "definition": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "synonyms": [],
+      "provenance_text": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Specific Storage Location",
+      "definition": "### Bin Location\n**Definition**: A specific storage location within a warehouse. Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away.",
+      "synonyms": [],
+      "provenance_text": "### Bin Location\n**Definition**: A specific storage location within a warehouse. Bin locations are organized into zones, aisles, shelves, and positions for efficient picking and put-away.",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Start Date",
+      "definition": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "synonyms": [],
+      "provenance_text": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Submitted Date",
+      "definition": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "synonyms": [],
+      "provenance_text": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Supplier Id",
+      "definition": "**Attributes**: supplier_id, supplier_name, supplier_type, payment_terms, credit_rating, currency, lead_time_days, status",
+      "synonyms": [],
+      "provenance_text": "**Attributes**: supplier_id, supplier_name, supplier_type, payment_terms, credit_rating, currency, lead_time_days, status",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Unit Of Measure",
+      "definition": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "synonyms": [],
+      "provenance_text": "### Bill of Materials\n**Definition**: A hierarchical list of raw materials, sub-assemblies, and quantities required to manufacture a finished product. BOMs can be single-level or multi-level with phantom items.\n\n**Attributes**: bom_id, product_id, component_id, quantity, unit_of_measure, scrap_percentage, effective_start_date, effective_end_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Work Date",
+      "definition": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "synonyms": [],
+      "provenance_text": "### Time Entry\n**Definition**: A record of hours worked by an employee, used for payroll processing and project costing. Time entries can be billable or non-billable to projects.\n\n**Attributes**: time_entry_id, employee_id, project_id, work_date, hours_worked, work_type, description, approval_status, submitted_date",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    },
+    {
+      "name": "Work Order Id",
+      "definition": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "synonyms": [],
+      "provenance_text": "### Work Order\n**Definition**: A document authorizing the production of a specified quantity of product. Work orders track labor, materials, and overhead costs for job costing.\n\n**Attributes**: work_order_id, product_id, quantity_ordered, quantity_completed, start_date, required_date, status, production_line_id, priority | ### Production Schedule\n**Definition**: A plan that allocates production resources (lines, machines, labor) to work orders over time. Schedules consider capacity constraints, material availability, and demand priorities.\n\n**Attributes**: schedule_id, work_order_id, production_line_id, scheduled_start, scheduled_end, actual_start, actual_end, status, priority",
+      "source_doc": "tests/fixtures/07_stress_large_scale/business_glossary.md"
+    }
+  ],
+  "resolution_summary": {
+    "entities_post": 89
+  },
+  "tables_parsed": [
+    {
+      "name": "customer_type",
+      "columns": 5
+    },
+    {
+      "name": "customer",
+      "columns": 16
+    },
+    {
+      "name": "customer_address",
+      "columns": 11
+    },
+    {
+      "name": "customer_contact",
+      "columns": 8
+    },
+    {
+      "name": "product_category",
+      "columns": 6
+    },
+    {
+      "name": "product",
+      "columns": 17
+    },
+    {
+      "name": "price_list",
+      "columns": 6
+    },
+    {
+      "name": "product_price",
+      "columns": 7
+    },
+    {
+      "name": "sales_order",
+      "columns": 20
+    },
+    {
+      "name": "sales_order_line",
+      "columns": 14
+    },
+    {
+      "name": "invoice",
+      "columns": 15
+    },
+    {
+      "name": "invoice_line",
+      "columns": 10
+    },
+    {
+      "name": "payment",
+      "columns": 12
+    },
+    {
+      "name": "supplier",
+      "columns": 16
+    },
+    {
+      "name": "supplier_address",
+      "columns": 11
+    },
+    {
+      "name": "supplier_contact",
+      "columns": 8
+    },
+    {
+      "name": "supplier_contract",
+      "columns": 12
+    },
+    {
+      "name": "purchase_order",
+      "columns": 21
+    },
+    {
+      "name": "purchase_order_line",
+      "columns": 14
+    },
+    {
+      "name": "purchase_receipt",
+      "columns": 11
+    },
+    {
+      "name": "purchase_receipt_line",
+      "columns": 12
+    },
+    {
+      "name": "warehouse",
+      "columns": 12
+    },
+    {
+      "name": "warehouse_zone",
+      "columns": 6
+    },
+    {
+      "name": "bin_location",
+      "columns": 11
+    },
+    {
+      "name": "inventory_transaction",
+      "columns": 14
+    },
+    {
+      "name": "stock_transfer",
+      "columns": 10
+    },
+    {
+      "name": "stock_transfer_line",
+      "columns": 9
+    },
+    {
+      "name": "production_line",
+      "columns": 9
+    },
+    {
+      "name": "bill_of_materials",
+      "columns": 9
+    },
+    {
+      "name": "work_order",
+      "columns": 16
+    },
+    {
+      "name": "work_order_material",
+      "columns": 8
+    },
+    {
+      "name": "production_schedule",
+      "columns": 10
+    },
+    {
+      "name": "quality_standard",
+      "columns": 8
+    },
+    {
+      "name": "quality_inspection",
+      "columns": 17
+    },
+    {
+      "name": "non_conformance_report",
+      "columns": 15
+    },
+    {
+      "name": "account_type",
+      "columns": 4
+    },
+    {
+      "name": "general_ledger_account",
+      "columns": 9
+    },
+    {
+      "name": "accounting_period",
+      "columns": 8
+    },
+    {
+      "name": "journal_entry",
+      "columns": 16
+    },
+    {
+      "name": "journal_entry_line",
+      "columns": 10
+    },
+    {
+      "name": "accounts_payable",
+      "columns": 14
+    },
+    {
+      "name": "department",
+      "columns": 9
+    },
+    {
+      "name": "position",
+      "columns": 12
+    },
+    {
+      "name": "employee",
+      "columns": 17
+    },
+    {
+      "name": "time_entry",
+      "columns": 12
+    },
+    {
+      "name": "carrier",
+      "columns": 10
+    },
+    {
+      "name": "shipping_route",
+      "columns": 12
+    },
+    {
+      "name": "shipment",
+      "columns": 17
+    },
+    {
+      "name": "shipment_line",
+      "columns": 9
+    },
+    {
+      "name": "project",
+      "columns": 14
+    },
+    {
+      "name": "project_task",
+      "columns": 15
+    },
+    {
+      "name": "app_user",
+      "columns": 15
+    },
+    {
+      "name": "role",
+      "columns": 7
+    },
+    {
+      "name": "user_role",
+      "columns": 7
+    },
+    {
+      "name": "audit_log",
+      "columns": 11
+    }
+  ],
+  "tables_enriched": [
+    {
+      "name": "Customer Type",
+      "description": "Stores metadata about different customer types, including identifiers, descriptive names, any descriptive details, whether a credit check is required for that type, and the default payment terms assoc... [TRUNCATED]"
+    },
+    {
+      "name": "Customer",
+      "description": "Stores key information about customers, including identifiers, names, classification, tax and regulatory details, financial credentials, contact-related data, and audit timestamps."
+    },
+    {
+      "name": "customer_address",
+      "description": "Stores the addresses associated with customers, including address type, lines, city, state, postal and country information, and whether the address is the default for the customer."
+    },
+    {
+      "name": "customer_contact",
+      "description": "Stores contact person details for customers, including each contact's name, role, contact information, and whether they are the primary contact, along with the record creation timestamp."
+    },
+    {
+      "name": "Product Category",
+      "description": "Stores hierarchical product category information including codes, names, and descriptions, with a reference to a parent category and a timestamp for when the category was created."
+    },
+    {
+      "name": "Product",
+      "description": "Stores data about products, including identifiers, naming, categorization, pricing, physical attributes, storage requirements, and lifecycle timestamps."
+    },
+    {
+      "name": "Price List",
+      "description": "Stores information about price lists used for pricing products, including their names, associated currency, effective and expiration dates, and current status."
+    },
+    {
+      "name": "Product Price",
+      "description": "Stores pricing information for products, linking each product to a price list with price, minimum quantity for the price, any discount, and the effective date of the price."
+    },
+    {
+      "name": "Sales Order",
+      "description": "Stores business data for customer orders, including customer and salesperson references, order dates, shipping and payment details, currency and line-item totals, order status and priority, and audit ... [TRUNCATED]"
+    },
+    {
+      "name": "sales_order_line",
+      "description": "Stores line-level details for sales orders, including quantities, pricing, discounts, taxes, and shipping dates for each product within an order."
+    },
+    {
+      "name": "Invoice",
+      "description": "Stores financial records for customer invoices, including identifiers, dates, currency, line-item totals, tax, payments, and current status."
+    },
+    {
+      "name": "invoice_line",
+      "description": "Stores the individual line items for invoices, detailing the product, quantity, pricing, tax, and the associated order line reference to support invoice calculations and reconciliation."
+    },
+    {
+      "name": "Payment",
+      "description": "Stores records of payments made by customers, including identifiers, dates, amounts, currencies, methods, references, and status for reconciliation with invoices."
+    },
+    {
+      "name": "Supplier",
+      "description": "Stores information about suppliers, including identification, contact and tax details, qualification metrics, delivery performance, and metadata on when records were created or updated."
+    },
+    {
+      "name": "supplier_address",
+      "description": "Stores the address records associated with suppliers, including address type and location details, and marks whether the address is the primary one."
+    },
+    {
+      "name": "supplier_contact",
+      "description": "Stores contact details for suppliers, including who to contact, their role, and contact information; identifies the primary contact and when the record was created."
+    },
+    {
+      "name": "supplier_contract",
+      "description": "Stores information about contracts with suppliers, including contract identifiers, validity dates, renewal terms, payment conditions, currency, total value, and status."
+    },
+    {
+      "name": "Purchase Order",
+      "description": "Stores records of purchase orders placed with suppliers, including dates, financial totals, status, and related references for order tracking and supplier coordination."
+    },
+    {
+      "name": "purchase_order_line",
+      "description": "Stores line-level details for items on purchase orders, including quantities, pricing, discounts, tax, status, and supplier part information."
+    },
+    {
+      "name": "Purchase Receipt",
+      "description": "Stores information about incoming product receipts from suppliers, including linkage to purchase orders, supplier and warehouse details, receipt date, who received it, shipping carrier and tracking, s... [TRUNCATED]"
+    },
+    {
+      "name": "purchase_receipt_line",
+      "description": "Stores line-level details for purchase receipts, including quantities received and rejected, costs, lot information, expiration, and whether inspection is required for each product in a receipt."
+    },
+    {
+      "name": "Warehouse",
+      "description": "Stores information about warehouses, including identifiers, location details, capacity, management, and status, to support inventory and logistics operations."
+    },
+    {
+      "name": "warehouse_zone",
+      "description": "Stores information about zones within a warehouse, including identifiers, the parent warehouse, zone identifiers, names, types, and whether the zone is temperature controlled."
+    },
+    {
+      "name": "Bin Location",
+      "description": "Stores physical bin locations within warehouses, including their codes, location identifiers, type, capacity, and current status."
+    },
+    {
+      "name": "inventory_transaction",
+      "description": "Holds records of inventory movements, linking product, warehouse, and bin locations with details about the transaction type, date, quantity, cost, and any reference or reason codes for auditing and st... [TRUNCATED]"
+    },
+    {
+      "name": "Stock Transfer",
+      "description": "Stores records of transfers between warehouses, including identifiers, dates, shipment details, and status for tracking the movement of stock."
+    },
+    {
+      "name": "stock_transfer_line",
+      "description": "Stores line items for stock transfer between bins, including requested, shipped, and received quantities for each product and the transfer's status."
+    },
+    {
+      "name": "production_line",
+      "description": "Stores information about each production line, including identifiers, type, location, capacity, setup time, status, and creation timestamp."
+    },
+    {
+      "name": "bill_of_materials",
+      "description": "Stores the Bill of Materials detailing which components (by Product) are required to assemble a parent product, including quantities, units, scrap factors, and validity dates for each component."
+    },
+    {
+      "name": "work_order",
+      "description": "Stores the records for manufacturing work orders, including quantities, scheduling dates, status and priority, and links to product, production line, and warehouse details."
+    },
+    {
+      "name": "work_order_material",
+      "description": "Stores the materials associated with each work order, including quantities required and issued, costing, and the bin location for picking/fulfillment."
+    },
+    {
+      "name": "production_schedule",
+      "description": "Stores the planned and actual timing and status for production work orders on each production line, including scheduling windows, priority, and creation timestamp."
+    },
+    {
+      "name": "Quality Standard",
+      "description": "Stores information about quality standards, including identifiers, codes, names, types, versions, issue dates, statuses, and descriptions used to define quality criteria."
+    },
+    {
+      "name": "quality_inspection",
+      "description": "Stores records of quality inspections, including the inspection details, results, defects found, and references to the product, warehouse, and quality standard involved in each inspection."
+    },
+    {
+      "name": "non_conformance_report",
+      "description": "Stores records of non-conformance events and associated actions, including reference details, product involved, issue timing, responsible individuals, severity, root causes, corrective and preventive ... [TRUNCATED]"
+    },
+    {
+      "name": "Account Type",
+      "description": "Stores definitions and characteristics of different account types, including their identifiers, codes, names, and the associated balance handling."
+    },
+    {
+      "name": "General Ledger Account",
+      "description": "Stores the accounts that comprise the general ledger, including account identifiers, names, types, hierarchical parent relationships, currency, and metadata such as status and creation timestamp."
+    },
+    {
+      "name": "Accounting Period",
+      "description": "Stores metadata about accounting periods, including their identifiers, codes, date ranges, fiscal year context, and whether the period is closed."
+    },
+    {
+      "name": "journal_entry",
+      "description": "Stores journal entries for general ledger activity, including amounts, related source documents, approvals, and audit timestamps."
+    },
+    {
+      "name": "journal_entry_line",
+      "description": "Stores line-level details of journal entries, including the associated general ledger account, debit/credit amounts, descriptive notes, and any reference information for budgeting or cross-referencing... [TRUNCATED]"
+    },
+    {
+      "name": "Accounts Payable",
+      "description": "Stores accounts payable records including supplier and invoice references, amounts, key dates, discount terms, and payment status to manage obligations and track outstanding payments."
+    },
+    {
+      "name": "Department",
+      "description": "Stores organizational structure data for departments, including hierarchical relationships, management, budgeting, location, status, and creation timestamp."
+    },
+    {
+      "name": "Position",
+      "description": "Stores job position details including identifiers, titles, compensation ranges, department association, and status information for human resources and recruitment processes."
+    },
+    {
+      "name": "Employee",
+      "description": "Stores core information about employees, including identification, role, department and position references, employment dates, compensation, contact details, and the account creation timestamp."
+    },
+    {
+      "name": "time_entry",
+      "description": "Stores records of time entries for work performed, including who worked, when, how many hours, the type of work, and the approval workflow (submission, approval, and timestamped metadata)."
+    },
+    {
+      "name": "Carrier",
+      "description": "Stores information about shipping carriers, including identifiers, contact details, service capabilities, and current status."
+    },
+    {
+      "name": "shipping_route",
+      "description": "Stores routes for shipping between warehouses, including distances, estimated travel time, carrier, service level, and cost details."
+    },
+    {
+      "name": "Shipment",
+      "description": "Stores data about shipments including identifiers, routing, timing, carrier, and tracking details for outbound and inbound movements."
+    },
+    {
+      "name": "Shipment Line",
+      "description": "Stores detailed line items for shipments, including product referenced, quantities, weight, and line-specific references."
+    },
+    {
+      "name": "Project",
+      "description": "Stores information about projects, including identifiers, codes, names, types, associated customer and project manager, timelines, budgeting, current cost, status, priority, descriptive notes, and a t... [TRUNCATED]"
+    },
+    {
+      "name": "project_task",
+      "description": "Stores information about tasks within projects, including scheduling, assignment, progress, and estimated versus actual effort."
+    },
+    {
+      "name": "app_user",
+      "description": "Stores user account information including identifiers, contact details, associations to employee, customer, and supplier entities, authentication state, and timestamps for account creation, updates, a... [TRUNCATED]"
+    },
+    {
+      "name": "Role",
+      "description": "Stores metadata and attributes for roles used in authorization and access control, including identifiers, codes, names, type, descriptive text, current status, and creation timestamp."
+    },
+    {
+      "name": "User Role",
+      "description": "Stores the assignments of roles to users, including when a role was assigned, who assigned it, when it expires, and the current status."
+    },
+    {
+      "name": "audit_log",
+      "description": "Stores a historical record of user and system events, including who performed actions, what entity was affected, the before-and-after values, and contextual metadata such as IP address and user agent."
+    }
+  ],
+  "schema_summary": {
+    "tables_parsed": 55,
+    "tables_enriched": 55,
+    "total_columns": 634
+  },
+  "table_mappings": [],
+  "mapping_summary": {},
+  "cypher_queries": [],
+  "neo4j_summary": {
+    "total_nodes": 751,
+    "total_relationships": 833,
+    "completed_tables": 55
+  },
+  "stage_timings": {}
+}
