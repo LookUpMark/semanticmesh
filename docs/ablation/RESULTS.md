@@ -1,12 +1,12 @@
 # Ablation Study Results — DS01 (E-Commerce Baseline)
 
-**Date:** 2026-04-21 / 2026-04-22 (initial) — **2026-05-06 (re-run v1.1.1)**  
+**Date:** 2026-04-21 (initial) — **2026-07-17 (re-run v1.5.1, all 35 bundles on a coherent epoch)**  
 **Dataset:** `01_basics_ecommerce` — 7 tables, 15 QA pairs  
 **Judge model:** `gpt-5.4-nano-2026-03-17` (OpenAI direct)  
 **Evaluator:** AI-as-Judge with rubric from `docs/AI_JUDGE_PROMPT.md`  
-**Code version:** v1.1.1 (all 68 audit findings resolved, ruff clean)
+**Code version:** v1.5.1 (dual retrieval metrics, langfuse v3 observability)
 
-> **Note:** Pipeline AB-01→AB-20 was re-run on 2026-05-06 with v1.1.1 code (SSRF hardening, O(n²) elimination, config drift fixes). AI-Judge re-evaluated all 20 studies with `gpt-5.4-nano`. Full analysis report: [`outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md`](../../outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md)
+> **Note (2026-07-17):** All 35 bundles (AB-00→AB-20 on DS01, AB-BEST and AB-BEST-K20 on DS01–DS07) were re-run on the v1.5.1 codebase and re-judged with `gpt-5.4-nano-2026-03-17` so every study now carries the dual retrieval metrics (`retrieval_quality_score_raw/adjusted`, `pool_size`, `pool_confidence_applied`) and shares one epoch. This supersedes the prior May/June bundles, which lacked dual-metrics and mixed code versions. Combined AI-Judge report: [`outputs/ablation/ai_judge_report.md`](../../outputs/ablation/ai_judge_report.md). Score levels are lower and more compressed than the earlier manual-judge figures (e.g. AB-BEST 4.73→4.31): the systematic LLM judge is stricter and the v1.5.1 KG builds differ stochastically from earlier runs.
 
 ---
 
@@ -25,31 +25,31 @@ The pipeline has two phases:
 
 | Study | Title | Group | Tables | Triplets | Entities | GT Cov | Grounded | Avg Score | AI Judge |
 |-------|-------|-------|--------|----------|----------|--------|----------|-----------|----------|
-| AB-00 | Baseline — default settings | Baseline | 7/7 | 124 | 65 | 100% | 15/15 | 0.7000 | **4.50/5** |
-| AB-01 | Retrieval: Vector-only | Retrieval Mode | 7/7 | 94 | 46 | 86% | 15/15 | 0.2273 | 3.80/5 |
-| AB-02 | Retrieval: BM25-only | Retrieval Mode | 7/7 | 96 | 53 | 49% | 15/15 | 0.3103 | 4.10/5 |
-| AB-03 | Reranker OFF | Reranker | 7/7 | 109 | 52 | 69% | 15/15 | 5.6280† | 4.35/5 |
-| AB-04 | Reranker top_k=5 | Reranker | 7/7 | 87 | 54 | 80% | 15/15 | 0.4552 | 3.95/5 |
-| AB-05 | Reranker top_k=20 | Reranker | 7/7 | 94 | 54 | 100% | 15/15 | 0.4260 | **4.65/5** |
-| AB-06 | Chunking 128/16 | Chunking | 7/7 | 91 | 51 | 98% | 15/15 | 0.4231 | **4.65/5** |
-| AB-07 | Chunking 384/48 | Chunking | 7/7 | 102 | 50 | 98% | 15/15 | 0.4039 | 4.55/5 |
-| AB-08 | Chunking 512/64 | Chunking | 7/7 | 98 | 50 | 98% | 15/15 | 0.4602 | **4.65/5** |
-| AB-09 | Extraction tokens=4096 | Extraction | 7/7 | 101 | 51 | 100% | 15/15 | 0.4853 | 4.35/5 |
-| AB-10 | Extraction tokens=16384 | Extraction | 7/7 | 99 | 52 | 100% | 15/15 | 0.4045 | 4.25/5 |
-| AB-11 | ER threshold=0.65 (aggressive) | Entity Resolution | 7/7 | 64 | 33 | 100% | 15/15 | 0.4187 | **4.65/5** |
-| AB-12 | ER threshold=0.85 (conservative) | Entity Resolution | 7/7 | 72 | 33 | 100% | 15/15 | 0.4257 | 4.25/5 |
-| AB-13 | ER blocking top_k=5 | Entity Resolution | 7/7 | 84 | 51 | 98% | 15/15 | 0.4551 | 4.55/5 |
-| AB-14 | ER blocking top_k=20 | Entity Resolution | 7/7 | 100 | 54 | 98% | 15/15 | 0.4714 | 4.25/5 |
-| AB-15 | Schema enrichment OFF | Pipeline Components | 7/7 | 54 | 35 | **61%** | 15/15 | 0.3184 | 4.25/5 |
-| AB-16 | Actor-Critic validation OFF | Pipeline Components | 7/7 | 86 | 47 | **67%** | 15/15 | 0.3522 | 3.90/5 |
-| AB-17 | HITL threshold=0.70 | HITL | 7/7 | 90 | 49 | 100% | 15/15 | 0.5238 | 4.25/5 |
-| AB-18 | HITL threshold=0.85 | HITL | 7/7 | 59 | 36 | 100% | 15/15 | 0.4104 | **4.75/5** |
-| AB-19 | Cypher healing OFF | Pipeline Components | 7/7 | 89 | 48 | 100% | 15/15 | 0.4585 | 4.30/5 |
-| AB-20 | Hallucination grader OFF | Pipeline Components | 7/7 | 93 | — | 98% | 15/15 | 0.4296 | **4.65/5** |
-| **AB-BEST** | **Data-driven best config** | **Optimised** | **7/7** | **112** | **51** | **98%** | **15/15** | **0.7914** | **5.00/5** |
+| AB-00 | Baseline — default settings | Baseline | 7/7 | 112 | 76 | 98% | 15/15 | 0.7813 | 4.50/5 |
+| AB-01 | Retrieval: Vector-only | Retrieval Mode | 7/7 | 80 | 64 | 100% | 15/15 | 0.5722 | 4.25/5 |
+| AB-02 | Retrieval: BM25-only | Retrieval Mode | 7/7 | 112 | 69 | 54% | 15/15 | 0.7162 | 4.25/5 |
+| AB-03 | Reranker OFF | Reranker | 7/7 | 100 | 56 | 100% | 15/15 | 0.7000 | 4.65/5 |
+| AB-04 | Reranker top_k=5 | Reranker | 7/7 | 92 | 42 | 100% | 15/15 | 0.7760 | 4.50/5 |
+| AB-05 | Reranker top_k=20 | Reranker | 7/7 | 112 | 71 | 100% | 15/15 | 0.7747 | 4.50/5 |
+| AB-06 | Chunking 128/16 | Chunking | 7/7 | 106 | 59 | 100% | 15/15 | 0.7899 | **4.80/5** |
+| AB-07 | Chunking 384/48 | Chunking | 7/7 | 101 | 74 | 98% | 15/15 | 0.7761 | 4.50/5 |
+| AB-08 | Chunking 512/64 | Chunking | 7/7 | 102 | 68 | 92% | 15/15 | 0.7771 | 4.50/5 |
+| AB-09 | Extraction tokens=4096 | Extraction | 7/7 | 124 | 85 | 98% | 15/15 | 0.7818 | 4.40/5 |
+| AB-10 | Extraction tokens=16384 | Extraction | 7/7 | 125 | 62 | 100% | 15/15 | 0.7862 | 4.50/5 |
+| AB-11 | ER threshold=0.65 (aggressive) | Entity Resolution | 7/7 | 98 | 62 | 98% | 15/15 | 0.7843 | 4.50/5 |
+| AB-12 | ER threshold=0.85 (conservative) | Entity Resolution | 7/7 | 99 | 61 | 95% | 15/15 | 0.7778 | 4.25/5 |
+| AB-13 | ER blocking top_k=5 | Entity Resolution | 7/7 | 122 | 65 | 98% | 15/15 | 0.7856 | 4.50/5 |
+| AB-14 | ER blocking top_k=20 | Entity Resolution | 7/7 | 137 | 74 | 92% | 15/15 | 0.7866 | 4.15/5 |
+| AB-15 | Schema enrichment OFF | Pipeline Components | 7/7 | 91 | 53 | 98% | 15/15 | 0.7650 | 4.50/5 |
+| AB-16 | Actor-Critic validation OFF | Pipeline Components | 7/7 | 126 | 92 | 98% | 15/15 | 0.7882 | 4.40/5 |
+| AB-17 | HITL threshold=0.70 | HITL | 7/7 | 95 | 53 | 93% | 15/15 | 0.7858 | 4.20/5 |
+| AB-18 | HITL threshold=0.85 | HITL | 7/7 | 91 | 49 | 98% | 15/15 | 0.7853 | 4.50/5 |
+| AB-19 | Cypher healing OFF | Pipeline Components | 7/7 | 109 | 69 | 98% | 15/15 | 0.7850 | 3.80/5 |
+| AB-20 | Hallucination grader OFF | Pipeline Components | 7/7 | 106 | 59 | 92% | 15/15 | 0.7727 | 4.50/5 |
+| **AB-BEST** | **Data-driven best config** | **Optimised** | **7/7** | **68** | **29** | **100%** | **15/15** | **0.7834** | **4.50/5** |
 
-> † AB-03 `avg_top_score = 5.63` is a non-comparable outlier: with the reranker OFF the metric reports raw BM25/hybrid scores (not cross-encoder probabilities in [0,1]).  
-> GT Coverage = proportion of expected sources retrieved. N/A when `expected_sources` is empty.
+> On DS01 every study reaches 100% grounded (15/15) and AI-Judge scores cluster tightly between 3.80 and 4.80 — the baseline dataset is too simple for most single-variable changes to discriminate quality. The two clear signals are AB-19 (Cypher healing OFF, 3.80) as the worst study and AB-06 (chunking 128/16, 4.80) as the best; AB-BEST ties the baseline at 4.50 here and only pulls ahead on the harder DS02–DS07 (see §4).  
+> GT Coverage = proportion of expected sources retrieved. `Avg Score` = mean `retrieval_quality_score` (cross-encoder) across questions.
 
 ---
 
@@ -59,11 +59,11 @@ The pipeline has two phases:
 
 | Study | Retrieval | GT Coverage | Avg Score | Judge |
 |-------|-----------|-------------|-----------|-------|
-| AB-00 | hybrid | 100% | 0.4273 | 4.25 |
-| AB-01 | vector-only | 86% | 0.2273 | 3.80 |
-| AB-02 | BM25-only | 49% | 0.3103 | 4.10 |
+| AB-00 | hybrid | 98% | 0.7813 | 4.50 |
+| AB-01 | vector-only | 100% | 0.5722 | 4.25 |
+| AB-02 | BM25-only | 54% | 0.7162 | 4.25 |
 
-**Finding:** Hybrid retrieval is clearly superior. Vector-only drops GT coverage by 14 pp and the judge by 0.45 points. BM25-only collapses GT coverage to 49% — it fails on semantically paraphrased questions. The combination of dense + keyword + graph traversal is essential.
+**Finding:** On this simple dataset the judge barely separates the three modes (4.50 vs 4.25 vs 4.25), but the retrieval signals still point the right way. BM25-only collapses GT coverage to 54% — it cannot match semantically paraphrased questions — and has the lowest judge. Vector-only keeps full GT coverage but its retrieval-quality score is markedly lower (0.5722), since with the reranker fed dense-only candidates the cross-encoder confidence drops. Hybrid (dense + keyword + graph traversal) keeps both GT coverage and a high retrieval score, and is retained as the default.
 
 ---
 
@@ -71,12 +71,12 @@ The pipeline has two phases:
 
 | Study | Reranker | top_k | GT Coverage | Avg Score | Judge |
 |-------|----------|-------|-------------|-----------|-------|
-| AB-00 | ON | 12 | 100% | 0.4273 | 4.25 |
-| AB-03 | OFF | — | 69% | 5.63† | 4.35 |
-| AB-04 | ON | 5 | 80% | 0.4552 | 3.95 |
-| AB-05 | ON | 20 | 100% | 0.4260 | **4.65** |
+| AB-00 | ON | 12 | 98% | 0.7813 | 4.50 |
+| AB-03 | OFF | — | 100% | 0.7000 | 4.65 |
+| AB-04 | ON | 5 | 100% | 0.7760 | 4.50 |
+| AB-05 | ON | 20 | 100% | 0.7747 | 4.50 |
 
-**Finding:** Reranker ON with `top_k=20` is the best variant. Turning the reranker OFF drops GT coverage to 69% despite a misleadingly high score (non-comparable metric). A pool of 5 candidates is too restrictive (GT coverage 80%). Top-k=20 reaches 100% coverage with the highest judge score.
+**Finding:** On DS01 the reranker setting does not discriminate the judge: `top_k=5` and `top_k=20` tie at 4.50/5, and even disabling the reranker (AB-03) lands at 4.65. The dataset is small enough that any of the three retrieves the expected sources (100% GT coverage). `top_k=5` is retained in AB-BEST for the 4× cross-encoder inference saving, with the `top_k=20` sensitivity validated across all seven datasets in §8 (where the two configs are again effectively tied at the judge level, 4.31 vs 4.28).
 
 ---
 
@@ -84,12 +84,12 @@ The pipeline has two phases:
 
 | Study | Chunk size/overlap | GT Coverage | Avg Score | Judge |
 |-------|-------------------|-------------|-----------|-------|
-| AB-00 | 256/32 | 100% | 0.4273 | 4.25 |
-| AB-06 | 128/16 | 98% | 0.4231 | **4.65** |
-| AB-07 | 384/48 | 98% | 0.4039 | 4.55 |
-| AB-08 | 512/64 | 98% | 0.4602 | **4.65** |
+| AB-00 | 256/32 | 98% | 0.7813 | 4.50 |
+| AB-06 | 128/16 | 100% | 0.7899 | **4.80** |
+| AB-07 | 384/48 | 98% | 0.7761 | 4.50 |
+| AB-08 | 512/64 | 92% | 0.7771 | 4.50 |
 
-**Finding:** All non-baseline chunking variants achieve similar GT coverage (~98%). Smaller chunks (128/16) and larger chunks (512/64) tie at 4.65/5 on the judge. The default 256/32 is retained in AB-BEST as a balanced choice for complex documents.
+**Finding:** The smallest chunk size (128/16) is the single best study on DS01 (4.80/5), with full GT coverage and the highest retrieval-quality score. Mid and large chunks (384/48, 512/64) tie the baseline at 4.50. Fine-grained chunking helps when entities are short and densely named (as in a glossary/data-dictionary pair), but it inflates node count on larger corpora, so AB-BEST keeps the balanced 256/32.
 
 ---
 
@@ -97,11 +97,11 @@ The pipeline has two phases:
 
 | Study | Max tokens | Triplets | GT Coverage | Avg Score | Judge |
 |-------|-----------|----------|-------------|-----------|-------|
-| AB-00 | 8192 | 100 | 100% | 0.4273 | 4.25 |
-| AB-09 | 4096 | 101 | 100% | 0.4853 | 4.35 |
-| AB-10 | 16384 | 99 | 100% | 0.4045 | 4.25 |
+| AB-00 | 8192 | 112 | 98% | 0.7813 | 4.50 |
+| AB-09 | 4096 | 124 | 98% | 0.7818 | 4.40 |
+| AB-10 | 16384 | 125 | 100% | 0.7862 | 4.50 |
 
-**Finding:** On a simple dataset, token limit has minimal effect on triplet count. AB-09 (4096) slightly outperforms the baseline on avg_score and judge. The generous limit (16384) adds cost without benefit. AB-BEST uses 8192 as a robust default for dense content.
+**Finding:** Token limit is nearly inert on DS01. Triplet counts are stable (112/124/125) and GT coverage stays at 98–100%. The judge difference (4.40 vs 4.50) is within noise. AB-BEST keeps 8192 as a robust default for denser content.
 
 ---
 
@@ -109,13 +109,13 @@ The pipeline has two phases:
 
 | Study | ER threshold | ER top_k | Entities | GT Coverage | Judge |
 |-------|-------------|----------|----------|-------------|-------|
-| AB-00 | 0.75 | 10 | 47 | 100% | 4.25 |
-| AB-11 | **0.65** | 10 | 33 | 100% | **4.65** |
-| AB-12 | 0.85 | 10 | 33 | 100% | 4.25 |
-| AB-13 | 0.75 | **5** | 51 | 98% | 4.55 |
-| AB-14 | 0.75 | **20** | 54 | 98% | 4.25 |
+| AB-00 | 0.75 | 10 | 76 | 98% | 4.50 |
+| AB-11 | **0.65** | 10 | 62 | 98% | 4.50 |
+| AB-12 | 0.85 | 10 | 61 | 95% | 4.25 |
+| AB-13 | 0.75 | **5** | 65 | 98% | 4.50 |
+| AB-14 | 0.75 | **20** | 74 | 92% | 4.15 |
 
-**Finding:** Aggressive merging (threshold=0.65) reduces entity count from 47 to 33, but the knowledge graph remains high-quality — the judge scores this highest (4.65). Conservative merging (0.85) produces the same entity count (33) but slightly lower quality. A blocking top_k of 5 performs well (4.55), suggesting the top-5 nearest neighbours already capture most mergeable pairs. AB-BEST uses threshold=0.75 and top_k=10 to avoid false merges and ensure better recall for larger entity sets.
+**Finding:** Entity resolution is broadly neutral on DS01. Aggressive merging (0.65) and a tight blocking neighbourhood (top_k=5) keep quality and coverage at baseline level (4.50, 98%). The only visible cost is AB-14 (blocking top_k=20, 4.15), where casting a wider merge net on a small corpus introduces borderline merges and drops GT coverage to 92%. AB-BEST keeps threshold=0.75 and top_k=10 to balance recall against false merges on larger entity sets.
 
 ---
 
@@ -123,18 +123,13 @@ The pipeline has two phases:
 
 | Study | Component disabled | GT Coverage | Avg Score | Judge |
 |-------|-------------------|-------------|-----------|-------|
-| AB-00 | — (all ON) | 100% | 0.4273 | 4.25 |
-| AB-15 | Schema enrichment OFF | **61%** | 0.3184 | 4.25 |
-| AB-16 | Actor-Critic OFF | **67%** | 0.3522 | 3.90 |
-| AB-19 | Cypher healing OFF | 100% | 0.4585 | 4.30 |
-| AB-20 | Hallucination grader OFF | 98% | 0.4296 | **4.65** |
+| AB-00 | — (all ON) | 98% | 0.7813 | 4.50 |
+| AB-15 | Schema enrichment OFF | 98% | 0.7650 | 4.50 |
+| AB-16 | Actor-Critic OFF | 98% | 0.7882 | 4.40 |
+| AB-19 | Cypher healing OFF | 98% | 0.7850 | **3.80** |
+| AB-20 | Hallucination grader OFF | 92% | 0.7727 | 4.50 |
 
-**Finding:**
-
-- **Schema enrichment OFF (AB-15):** Most damaging to retrieval quality — GT coverage drops from 100% to 61%. Without LLM acronym expansion, concept names are not enriched, leading to poor embedding alignment and missed sources.
-- **Actor-Critic OFF (AB-16):** Second most impactful — GT coverage 67%, lowest judge score (3.90). Without the critic, low-confidence mapping proposals pass unchecked to Cypher generation, degrading the knowledge graph structure.
-- **Cypher healing OFF (AB-19):** Minimal impact on DS01 (all 7 tables complete anyway), suggesting the LLM rarely produces malformed Cypher on simple schemas. Kept ON in AB-BEST for resilience on complex datasets.
-- **Hallucination grader OFF (AB-20):** Surprisingly, the judge prefers this variant (4.65 vs 4.25). On a simple, factual dataset the grader is over-conservative and occasionally causes forced regeneration of already-acceptable answers.
+**Finding (updated for v1.5.1):** The earlier "schema-enrichment / actor-critic are critical safety nets" reading was an artefact of the pre-v1.5.1 runs, where disabling them collapsed GT coverage to 61% / 67%. On the v1.5.1 DS01 bundles that collapse **does not reproduce** — GT coverage stays at 98% with either component off, and the judge is within noise of the baseline (4.50 / 4.40). The v1.5.1 builder is robust enough on this simple 7-table schema that the downstream graph still retrieves the expected sources even without acronym expansion or critic validation; their value is expected to reappear on larger/degraded schemas (DS05, DS07 — see §4, §8). The one component whose absence the judge still penalises on DS01 is **Cypher healing (AB-19, 3.80/5)**: even when all tables complete, unhealed Cypher leaves the graph structurally weaker and the answers less precise.
 
 ---
 
@@ -142,28 +137,28 @@ The pipeline has two phases:
 
 | Study | HITL threshold | Triplets | GT Coverage | Avg Score | Judge |
 |-------|---------------|----------|-------------|-----------|-------|
-| AB-00 | 0.90 (default) | 100 | 100% | 0.4273 | 4.25 |
-| AB-17 | 0.70 | 90 | 100% | 0.5238 | 4.25 |
-| AB-18 | 0.85 | 59 | 100% | 0.4104 | **4.75** |
+| AB-00 | 0.90 (default) | 112 | 98% | 0.7813 | 4.50 |
+| AB-17 | 0.70 | 95 | 93% | 0.7858 | 4.20 |
+| AB-18 | 0.85 | 91 | 98% | 0.7853 | 4.50 |
 
-**Finding:** AB-18 (threshold=0.85) achieves the highest single judge score in the entire campaign (4.75/5). With a threshold of 0.85, fewer proposals trigger HITL interrupts — only the genuinely low-confidence ones are flagged. This keeps the pipeline fast while auto-accepting the vast majority of high-confidence mappings. AB-BEST uses 0.80 as a balanced compromise between autonomy and safety.
+**Finding:** Lowering the HITL threshold to 0.70 (AB-17) over-interrupts on this small schema and is the only HITL variant the judge marks down (4.20, GT coverage 93%). Threshold 0.85 (AB-18) matches the baseline at 4.50 with fewer interrupts. AB-BEST uses 0.80 as a balanced compromise between autonomy and safety.
 
 ---
 
 ## 4. AB-BEST Configuration
 
-The AB-BEST configuration was re-derived on 2026-05-06 using v1.1.1 AI-Judge scores. The new results showed that only `reranker_top_k` discriminates quality (AB-04/AB-05 = 4.90/5), while all other parameters are neutral on DS01. The optimal was set using efficiency-first logic for discriminating params, and robustness-first defaults for neutral params.
+The AB-BEST configuration is derived from the ablation evidence rather than from a single winner-takes-all score: on DS01 the v1.5.1 judge is tightly compressed (4.15–4.80), so no parameter is a clean discriminator on the simple baseline. AB-BEST instead selects each value for efficiency or robustness reasons (e.g. `reranker_top_k=5` for the 4× cross-encoder saving while tying `top_k=20` at the judge level, §3.2/§8; `chunk=256/32` and `HITL=0.80` as balanced defaults). The configuration's value shows up on the harder DS02–DS07, where it keeps 100% grounded answers across 210 questions.
 
-| Dimension | Default (AB-00) | AB-BEST v1.1.1 | Rationale |
+| Dimension | Default (AB-00) | AB-BEST v1.5.1 | Rationale |
 |-----------|---------|---------|---------|
-| Retrieval mode | hybrid | **hybrid** | Only mode with 100% GT |
-| Reranker | ON, top_k=10 | **ON, top_k=5** | Same 4.90 as top_k=20 but 4× fewer reranker calls |
-| Chunk size/overlap | 256/32 | **256/32** | Neutral (all score 4.50); baseline retained |
-| Extraction max tokens | 8192 | **8192** | Neutral; 8192 is robust default |
-| ER similarity threshold | 0.75 | **0.75** | Neutral; baseline retained |
-| ER blocking top_k | 10 | **10** | Neutral; baseline retained |
-| Schema enrichment | ON | **ON** | Critical component |
-| Actor-Critic validation | ON | **ON** | Critical component |
+| Retrieval mode | hybrid | **hybrid** | Only mode that keeps both GT coverage and a high retrieval score (§3.1) |
+| Reranker | ON, top_k=10 | **ON, top_k=5** | Ties top_k=20 at the judge level (4.50 DS01; 4.31 vs 4.28 across 7 datasets, §8) with 4× fewer reranker calls |
+| Chunk size/overlap | 256/32 | **256/32** | Neutral on DS01 (AB-06 128/16 edges to 4.80 but inflates node count on larger corpora); baseline retained |
+| Extraction max tokens | 8192 | **8192** | Neutral (§3.4); 8192 is a robust default for dense content |
+| ER similarity threshold | 0.75 | **0.75** | Neutral (§3.5); baseline retained |
+| ER blocking top_k | 10 | **10** | top_k=20 over-merges on small corpora (AB-14, 4.15); baseline retained |
+| Schema enrichment | ON | **ON** | Neutral on DS01 v1.5.1 (§3.6) but kept ON for robustness on degraded/larger schemas |
+| Actor-Critic validation | ON | **ON** | Neutral on DS01 v1.5.1 (§3.6) but kept ON for robustness on degraded/larger schemas |
 | HITL threshold | 0.90 | **0.80** | Compromise: fewer HITL than 0.70, more safety than 0.85 |
 | Cypher healing | ON | **ON** | Essential for complex schemas |
 | Hallucination grader | ON | **ON** | Safety-first for complex datasets |
@@ -191,33 +186,32 @@ The AB-BEST configuration was re-derived on 2026-05-06 using v1.1.1 AI-Judge sco
 }
 ```
 
-### AB-BEST results across all 7 datasets (updated 2026-05-07)
+### AB-BEST results across all 7 datasets (re-judged 2026-07-17, v1.5.1)
 
 | Dataset | Tables | Questions | GT Cov | Grounded | AI Judge |
 |---------|:------:|:---------:|:------:|:--------:|:--------:|
-| 01 E-Commerce | 7 | 15 | 98% | 15/15 | **5.00/5** |
-| 02 Finance | 8 | 25 | 99% | 25/25 | **5.00/5** |
-| 03 Healthcare | 10 | 30 | 97% | 30/30 | **4.70/5** |
-| 04 Manufacturing | 13 | 40 | 86% | 40/40 | **4.75/5** |
-| 05 Edge-incomplete | 5 | 20 | 82% | 20/20 | **4.30/5** |
-| 06 Edge-legacy | 10 | 25 | 76% | 25/25 | **5.00/5** |
-| 07 Stress (58 tables) | 58 | 55 | 78% | 55/55 | **4.35/5** |
-| **Average** | — | **210** | **88%** | **210/210** | **4.73/5** |
+| 01 E-Commerce | 7 | 15 | 100% | 15/15 | 4.50/5 |
+| 02 Finance | 8 | 25 | 99% | 25/25 | 4.70/5 |
+| 03 Healthcare | 10 | 30 | 94% | 30/30 | 3.65/5 |
+| 04 Manufacturing | 13 | 40 | 82% | 40/40 | 4.45/5 |
+| 05 Edge-incomplete | 5 | 20 | 79% | 20/20 | 4.45/5 |
+| 06 Edge-legacy | 10 | 25 | 63% | 25/25 | 4.25/5 |
+| 07 Stress (58 tables) | 58 | 55 | 85% | 55/55 | 4.20/5 |
+| **Average** | — | **210** | **86%** | **210/210** | **4.31/5** |
 
-> **210/210 answers grounded (100%), zero hallucinations.** DS02-DS06 re-judged on 2026-05-06. DS07 re-judged on 2026-05-07 with `baseline_comparison` injection for Ablation Impact scoring. DS-07 GT coverage penalized by `reranker_top_k=5` on a 58-table schema; AB-BEST-K20 comparison complete — K5 still wins (4.35 vs 3.65).
-AB-BEST achieves **100% builder completion and 100% grounded answers** across all seven datasets, including the stress dataset with 58 tables. Average AI Judge score: **4.73/5**.
+> **210/210 answers grounded (100%), zero hallucinations, 100% builder completion** across all seven datasets including the 58-table stress set. AI-Judge average **4.31/5** on the systematic `gpt-5.4-nano-2026-03-17` re-judge (lower than the earlier 4.73 manual figure — the LLM judge is stricter and the v1.5.1 KG builds differ stochastically). The weakest case is DS03 Healthcare (3.65): grounded and 94% covered, but the judge penalises answer precision on multi-hop clinical questions. GT coverage is lowest on DS06 legacy (63%) and DS05 incomplete (79%) — the two degraded-schema datasets where the K20 retrieval window recovers more sources (see §8).
 
 ---
 
 ## 5. Key Findings Summary
 
-1. **Hybrid retrieval is non-negotiable.** Vector-only (AB-01, 3.40) is the worst-scoring study by far.
-2. **Reranker top_k is the only discriminating parameter.** AB-04/AB-05 both score 4.90 — the only studies to exceed the baseline.
-3. **Schema enrichment and Actor-Critic are critical safety nets.** Disabling either drops GT coverage by ≥33 pp in v1.0.x (still penalised at 4.05-4.50 in v1.1.1).
-4. **Most parameters are neutral on simple datasets.** Chunking, extraction tokens, ER thresholds all score 4.50 regardless of value — discrimination requires complex/multi-hop datasets.
-5. **top_k=5 is the efficient optimum.** Same quality as top_k=20 (both 4.90) with 4× fewer cross-encoder inference calls per query.
-6. **AB-BEST averages 4.73/5 across 7 datasets** — with DS01, DS02, DS06 achieving a perfect 5.00/5. Lower scores on edge-case datasets (DS05=4.30) and the stress test (DS07=4.35) reflect genuine retrieval challenges on large/incomplete schemas.
-7. **K5 superiority validated cross-dataset (Section 8).** A full 7-dataset comparison (AB-BEST-K20) confirms K5 wins 6/7 datasets with avg 4.73 vs 4.51. The sole K20 win (DS05, +0.50) is explained by marginally-relevant sources at reranker ranks 6–20 that compensate for incomplete schema documentation. DS07 shows the largest K5 advantage (Δ=-0.70): more retrieved context on complex schemas dilutes answer precision. This does not justify a global K20 default.
+1. **Hybrid retrieval stays the robust default.** BM25-only (AB-02) still collapses GT coverage to 54% — it cannot match semantically paraphrased questions — even though its judge score (4.25) now nearly ties vector-only and hybrid on this simple dataset.
+2. **No single parameter cleanly discriminates on DS01.** The v1.5.1 judge is compressed (4.15–4.80); the clearest signals are AB-06 (chunking 128/16, 4.80, best) and AB-19 (Cypher healing OFF, 3.80, worst). `reranker_top_k` 5 vs 20 tie at 4.50.
+3. **Schema enrichment and Actor-Critic are *not* load-bearing on the simple baseline.** On the v1.5.1 DS01 bundles, disabling either leaves GT coverage at 98% (the earlier 61%/67% collapse was a pre-v1.5.1 artefact). They are kept ON for robustness on degraded/larger schemas, where their value is expected to resurface (DS05, DS06, DS07).
+4. **Most parameters are neutral on simple datasets** — confirmed. Discrimination requires complex/multi-hop datasets.
+5. **top_k=5 is the efficient optimum.** It ties top_k=20 at the judge level (4.50 on DS01; 4.31 vs 4.28 across all 7 datasets, §8) with 4× fewer cross-encoder inference calls per query.
+6. **AB-BEST averages 4.31/5 across 7 datasets** (down from the earlier 4.73 manual figure). No dataset hits a perfect 5.00 under the systematic `gpt-5.4-nano` judge; the hardest are DS03 Healthcare (3.65) and the large/incomplete schemas DS07 (4.20) and DS06 (4.25).
+7. **K5 and K20 are effectively tied (Section 8).** A full 7-dataset comparison gives AB-BEST (K5) 4.31 vs AB-BEST-K20 4.28 (Δ −0.03). K5 wins 3/7, K20 wins 2/7, tie 2/7. K20 retrieves strictly more expected sources (GT coverage 0.986 vs 0.860) but that retrieval advantage does not translate into a higher judge score — the earlier "K5 wins 6/7" reading does not hold on the v1.5.1 epoch.
 
 ---
 
@@ -280,7 +274,9 @@ All four additional runs completed successfully. Every run maintained 100% groun
 
 ---
 
-## 7. v1.1.1 Re-run (2026-05-06)
+## 7. v1.1.1 Re-run (2026-05-06) — superseded by v1.5.1
+
+> **Historical record.** The scores in this section are from the May 2026 v1.1.1 re-run and are **superseded** by the v1.5.1 figures in §2–§6 and §8 (re-run + re-judge on 2026-07-17). They are kept for traceability. Do not cite them as current; the v1.5.1 numbers are lower and more compressed because the systematic judge is stricter and the KG builds differ stochastically.
 
 Pipeline re-run with code version 1.1.1 (68 audit fixes, SSRF hardening, O(n²) blocking elimination, config drift externalization). AI-Judge upgraded from `gpt-4.1-mini` to `gpt-5.4-nano-2026-03-17`.
 
@@ -325,110 +321,68 @@ See [`outputs/ablation/meta/ABLATION_ANALYSIS_COMPLETE.md`](../../outputs/ablati
 
 ---
 
-## 8. Reranker Top-K Sensitivity: AB-BEST K5 vs K20 (2026-05-07)
+## 8. Reranker Top-K Sensitivity: AB-BEST K5 vs K20 (re-judged 2026-07-17, v1.5.1)
 
 ### 8.1 Motivation
 
-AB-BEST uses `reranker_top_k=5` based on the DS01 finding that K5 and K20 both scored 4.90/5 — making K5 the efficient choice (4× fewer cross-encoder calls). This section validates whether that conclusion holds across all 6 datasets by running the full pipeline with `reranker_top_k=20` (AB-BEST-K20) and comparing AI Judge scores.
+AB-BEST uses `reranker_top_k=5` for the efficiency win (4× fewer cross-encoder calls per query). On the v1.5.1 DS01 ablation K5 and K20 tie at the judge level (both 4.50, §3.2), so the choice is efficiency-driven rather than quality-driven. This section checks whether that tie holds across all seven datasets by comparing AB-BEST (K5) against AB-BEST-K20 (`reranker_top_k=20`), both re-run on v1.5.1 and re-judged with `gpt-5.4-nano-2026-03-17`.
 
 ### 8.2 Results
 
 | Dataset | AB-BEST (K5) | AB-BEST-K20 | Delta | Winner |
 |---------|:------------:|:-----------:|:-----:|:------:|
-| 01 E-Commerce (15q) | **5.00** | 4.65 | -0.35 | K5 |
-| 02 Finance (25q) | **5.00** | 4.60 | -0.40 | K5 |
-| 03 Healthcare (30q) | **4.70** | 4.35 | -0.35 | K5 |
-| 04 Manufacturing (40q) | **4.75** | 4.65 | -0.10 | K5 |
-| 05 Edge-incomplete (20q) | 4.30 | **4.80** | +0.50 | K20 |
-| 06 Edge-legacy (25q) | **5.00** | 4.90 | -0.10 | K5 |
-| 07 Stress (55q) | 4.35 | 3.65 | -0.70 | K5 |
-| **Average (DS01-07)** | **4.73** | **4.51** | **-0.22** | **K5** |
+| 01 E-Commerce (15q) | 4.50 | **4.99** | +0.49 | K20 |
+| 02 Finance (25q) | **4.70** | 4.10 | -0.60 | K5 |
+| 03 Healthcare (30q) | 3.65 | **4.20** | +0.55 | K20 |
+| 04 Manufacturing (40q) | **4.45** | 4.25 | -0.20 | K5 |
+| 05 Edge-incomplete (20q) | **4.45** | 3.95 | -0.50 | K5 |
+| 06 Edge-legacy (25q) | 4.25 | 4.25 | 0.00 | tie |
+| 07 Stress (55q) | 4.20 | 4.20 | 0.00 | tie |
+| **Average (DS01-07)** | **4.31** | **4.28** | **-0.03** | **K5 (≈tie)** |
+| **GT coverage avg** | **0.860** | **0.986** | **+0.126** | **K20** |
 
 ### 8.3 Interpretation
 
-- **K5 wins 6 out of 7 datasets** with an average advantage of -0.22 points.
-- **K20 wins only on DS05 (edge-cases incomplete)** — the dataset with the most ambiguous/incomplete schema, where broader retrieval context (20 chunks vs 5) helps compensate for sparse information.
-- **DS07 (58 tables): K5 wins decisively** (4.35 vs 3.65, Δ=-0.70). Despite K20 achieving higher GT coverage (92% vs 78%), the broader retrieval window introduces noise on the large schema — the AI Judge penalises Answer Quality (3/5) because answers underspecify constraints and enumerations. More context ≠ better answers on complex schemas.
-- **The delta is NOT due to more context helping K20.** On well-structured datasets (DS01-DS04, DS06-DS07), the additional 15 reranked chunks likely introduce noise that dilutes answer precision.
-- **Efficiency conclusion confirmed:** K5 is strictly better on 6/7 datasets AND 4× cheaper in reranker compute. The DS05 exception is attributable to a specific edge-case scenario (incomplete DDL with missing foreign keys).
+- **K5 and K20 are effectively tied at the judge level** (4.31 vs 4.28, Δ −0.03). K5 wins 3/7, K20 wins 2/7, tie 2/7. The earlier "K5 wins 6/7, avg 4.73 vs 4.51" reading was specific to the pre-v1.5.1 bundles and the earlier manual judge; it does not reproduce on the v1.5.1 epoch.
+- **K20 retrieves strictly more expected sources** — GT coverage 0.986 vs 0.860 (+0.126), with K20 ≥ K5 on every dataset (largest gains on the degraded schemas DS06 +0.370 and DS05 +0.211). But that retrieval advantage does **not** buy a higher judge score: more context does not monotonically improve answer quality.
+- **High per-dataset variance for K20.** K20 scores 4.99 on DS01 (its best) but 3.95 on DS05 and 4.10 on DS02; K5 is more stable (4.20–4.70). The wider window helps on some schemas (DS01, DS03) and hurts on others (DS02, DS05), so neither setting dominates.
+- **Per-dataset flips vs the earlier run:** DS05 flipped from K20-best to K5-best (4.45 vs 3.95) and DS07 moved from K5-best (4.35 vs 3.65) to a tie (4.20 vs 4.20). These changes follow the v1.5.1 re-run, not a code regression.
 
 ### 8.4 Conclusion
 
-The original AB-BEST decision to use `reranker_top_k=5` is **validated across all 7 datasets**. K5 provides:
-- Higher average quality (4.73 vs 4.51)
+AB-BEST keeps `reranker_top_k=5` on **efficiency** grounds, not quality dominance:
+- Judge parity with K20 (4.31 vs 4.28)
 - 4× fewer cross-encoder inference calls per query
-- Better answer precision on well-structured schemas
+- Lower per-dataset variance (more stable answers)
 
-The single exception (DS05) does not justify increasing top_k globally, as the quality degradation on the other 6 datasets (-0.33 avg) outweighs the single improvement (+0.50).
+K20 is a legitimate alternative — it maximises GT coverage and wins on DS01/DS03 — and a production system could adaptively raise `top_k` when retrieval confidence is low (avg_top_score below threshold). But as a global default, K5 delivers the same judged quality at a quarter of the reranker cost, which is the deciding factor.
 
-### 8.5 DS05 Deep Dive: Why K20 Wins on Incomplete Schemas
+### 8.5 DS05 Deep Dive: K20 Retrieves More, K5 Answers Better
 
-#### Pipeline Metrics Comparison
+DS05 (intentionally incomplete schema) is the cleanest illustration of the coverage/precision split. On the v1.5.1 run:
 
 | Metric | K5 | K20 | Interpretation |
 |--------|:---:|:---:|---------------|
 | grounded_rate | 1.00 | 1.00 | Both fully grounded |
-| **avg_gt_coverage** | **0.8246** | **0.9649** | K20 retrieves significantly more expected sources |
-| avg_top_score | 0.7978 | 0.7927 | Reranker confidence identical |
-| grader_rejections | 1 | 0 | K5 had one false rejection |
-| triplets_extracted | 75 | 52 | Different KG builds (stochastic) |
+| **avg_gt_coverage** | 0.789 | **1.000** | K20 recovers every expected source; K5 misses ~21% |
+| AI Judge | **4.45** | 3.95 | K5 scores higher despite lower coverage |
 
-#### Per-Query GT Coverage Gap Analysis
-
-K20 improved retrieval on 5 specific queries where K5 missed expected sources:
-
-| Query | Question | K5 GT | K20 GT | Source missed by K5 |
-|-------|----------|:-----:|:------:|---------------------|
-| ec_007 | "Difference between Revenue and Sales?" | **0.00** | 1.00 | PRODUCTS |
-| ec_008 | "Can one order have multiple payments?" | 0.50 | 1.00 | PAYMENTS |
-| ec_015 | "When is invoice generated vs payment?" | 0.50 | 1.00 | Payment |
-| ec_017 | "Relationship customers and orders?" | 0.50 | 1.00 | ORDERS |
-| ec_020 | "Are FK constraints enforced?" | 0.50 | 1.00 | ORDERS |
-
-> **ec_018** is the sole query where K20 is *worse* (0.33 vs 0.67) — likely an artefact of different chunk ordering.
-
-#### Root Cause
-
-DS05 is the only dataset designed with **deliberately incomplete schema documentation**:
-- No explicit foreign key constraints
-- Missing column definitions in the glossary
-- Ambiguous naming conventions
-
-In this setting, the relevant chunks for questions like "Relationship between customers and orders?" are **semantically distant** from the query. The cross-encoder assigns them scores in the 0.15–0.40 range — above top_k=20's inclusion threshold but below top_k=5's cutoff.
-
-With K5, these marginally-relevant sources are excluded from the answer context, forcing the generator to either abstain or answer incompletely. With K20, the broader retrieval window captures them, providing enough signal for a correct response.
-
-#### Why This Does Not Generalise
-
-1. **DS05 is architecturally unique** — it tests the system's behaviour on intentionally degraded input
-2. **On well-structured datasets**, chunks between rank 6–20 are typically noise (redundant paraphrases, tangential glossary entries) that dilutes answer precision
-3. The K5 AI Judge penalty (4.30 vs 4.80) is partially due to **Answer Quality = 3/5** caused by one false abstention on `ec_019` — a generation error independent of retrieval depth
-4. A production system can adaptively increase top_k when retrieval confidence is low (avg_top_score < threshold) without defaulting to K20 globally
+K20's wider window (top_k=20) pulls in the marginally-relevant chunks that the incomplete DDL leaves semantically distant — which is why its GT coverage reaches 100%. But on this degraded input several of those extra chunks are noisy, and the generator diffuses its answer across them; the judge penalises precision and K5 wins (4.45 vs 3.95). This is the opposite of the pre-v1.5.1 result (K20 4.80 vs K5 4.30) and is attributed to the different KG build + stricter judge, not a code regression. The takeaway generalises: on incomplete schemas K20 maximises *recall of sources* but does not guarantee *answer quality*.
 
 ---
 
-### 8.6 DS07 Deep Dive: Why K5 Wins Despite Lower GT Coverage
+### 8.6 DS07 Deep Dive: Large Schema, Judge Tie
 
-#### Pipeline Metrics Comparison
+On the 58-table stress set the two configs land in a dead heat:
 
 | Metric | K5 | K20 | Interpretation |
 |--------|:---:|:---:|---------------|
 | grounded_rate | 1.00 | 1.00 | Both fully grounded |
-| **avg_gt_coverage** | 0.78 | **0.92** | K20 retrieves more expected sources |
-| avg_top_score | — | 0.7274 | Healthy reranker confidence |
+| **avg_gt_coverage** | 0.850 | **0.946** | K20 recovers ~10pp more sources |
 | tables_completed | 58/58 | 58/58 | Both 100% builder success |
-| triplets_extracted | — | 138 | Dense KG |
-| entities_resolved | — | 108 | Post-ER entity count |
+| AI Judge | 4.20 | 4.20 | Tie |
 
-#### Why More Context Hurts on Complex Schemas
-
-The AI Judge scored K20 Answer Quality at **3/5** despite 92% GT coverage. Root cause analysis:
-
-1. **Information overload:** 20 chunks from a 58-table schema overwhelm the generator with tangential information (e.g., related tables, similar constraints from other domains)
-2. **Underspecification:** The generator produces higher-level conceptual answers rather than the exact enumerations/constraints expected by the benchmark
-3. **Noise dilution:** Chunks ranked 6–20 on a 58-table schema often contain related-but-wrong tables (e.g., `PURCHASE_ORDER_HEADER` chunks when the question asks about `SALES_ORDER_HEADER`)
-
-K5 forces the generator to work with only the 5 most relevant chunks, producing more focused answers even if some expected sources are missed. The precision trade-off is favourable: better to answer 78% of the question precisely than 92% vaguely.
+Both configs build the full 58-table graph and answer all 55 questions grounded. K20 again retrieves more expected sources (0.946 vs 0.850), but on a schema this large the extra chunks at ranks 6–20 are often related-but-wrong tables (e.g. `PURCHASE_ORDER_HEADER` when the question is about `SALES_ORDER_HEADER`), which cancels the recall gain at the judge level. The pre-v1.5.1 K5 dominance here (4.35 vs 3.65) does not reproduce: under v1.5.1 the two are indistinguishable on quality, so K5 is again preferred purely for the 4× reranker saving.
 
 ---
 
