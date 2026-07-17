@@ -43,8 +43,10 @@ dependencies = [
     "numpy>=1.26,<3.0",
     "langchain-core>=1.0,<2.0",
     "langchain-text-splitters>=1.0,<2.0",
-    # AUDIT-025: Tighten langfuse to <3.0 to avoid breaking API changes in 3.x.
-    "langfuse>=2.0,<3.0",
+    # langfuse v3: required for langchain 1.x compatibility (v2 imports the
+    # removed `langchain.callbacks.base` module). Code uses the v3 path
+    # `from langfuse.langchain import CallbackHandler`.
+    "langfuse>=3.0,<4.0",
 ]
 
 [project.optional-dependencies]
