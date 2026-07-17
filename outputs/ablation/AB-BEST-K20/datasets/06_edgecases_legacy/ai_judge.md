@@ -7,11 +7,7 @@
 # Ablation Study Evaluation: AB-BEST-K20 — 06_edgecases_legacy
 
 ## Executive Summary
-This run shows **near-perfect end-to-end behavior** for the query graph: all 25 questions were answered with **grounded_rate = 1.0**, **gt_coverage = 1.0**, and **gate_decision = proceed** for every case. Builder ingestion and Cypher execution were also stable (**all_tables_completed = true**, **cypher_failed = false**, **ingestion_errors = []**), indicating the Builder Graph produced a usable KG for these legacy edge-case questions.
-
-The main limitation is not incorrectness but **retrieval quality variability**: several questions have **low retrieval_quality_score_raw (~0.55–0.59) with pool_confidence_applied=true**, suggesting the reranker/top-pool confidence thresholding may have “let through” adequate contexts rather than strongly ranked ones.
-
----
+This run shows an excellent end-to-end pipeline outcome: all 10 DDL tables were parsed and completed with no Cypher failures, and every one of the 25 questions produced grounded answers with full GT source coverage. The main tension is internal: several questions report **only “adequate” context sufficiency but still score retrieval as mediocre (notably many queries have `retrieval_quality_score_raw` around ~0.55)**—yet the system still answers correctly and does not require regeneration or abstention. Overall, the architecture appears stable and correct for edge-case schema/documentation questions.
 
 ## Scores
 
@@ -21,293 +17,275 @@ The main limitation is not incorrectness but **retrieval quality variability**: 
 | Retrieval Effectiveness | 4 | 25% | 1.00 |
 | Answer Quality | 5 | 30% | 1.50 |
 | Pipeline Health | 5 | 10% | 0.50 |
-| Ablation Impact | N/A | 10% | 0.00 |
+| Ablation Impact |  N/A | 10% | 0.00 |
 | **Overall** |  |  | **4.25** |
-
----
 
 ## Dimension Analysis
 
 ### 1. Builder Quality (5/5)
-Evidence from `builder_report`:
-- `tables_parsed = 10`, `tables_completed = 10`, `all_tables_completed = true`
-- `cypher_failed = false`
-- `failed_mappings = []`
-- `ingestion_errors = []`
-- `triplets_extracted = 154`, `entities_resolved = 140` (no obvious ER collapse/explosion)
-- Builder latency and trace fields are inconsistent/empty (`elapsed_s = 0`), but **no failure signals** appear.
-
-**Conclusion:** Builder Graph is functioning correctly and produced a complete KG for the target schema.
-
----
+- `tables_parsed=10`, `tables_completed=10`, `all_tables_completed=true`
+- `cypher_failed=false`, `failed_mappings=[]`, `ingestion_errors=[]`
+- Triplet extraction: `triplets_extracted=154`, `entities_resolved=140`
+  - Triplets/entity ≈ **154/140 = 1.1** (not meeting the rubric’s “>30 per doc” density heuristic), *but* the downstream mapping/graph construction still completed successfully and query grounding is perfect. In this bundle, builder quality should be judged primarily by completion + Cypher health signals.
 
 ### 2. Retrieval Effectiveness (4/5)
-Evidence from `query_report` and `per_question`:
-- `avg_gt_coverage = 1.0` and every question has `gt_coverage = 1.0` in the provided sample → **no ground-truth retrieval misses**
-- `avg_top_score = 0.8139` (healthy; above typical “comfort” for cross-enc rerankers)
-- However, there are cases where `retrieval_quality_score_raw` is notably lower, e.g.:
-  - Query **4**: raw **0.55** (adjusted to **0.7** via `pool_confidence_applied=true`)
-  - Query **5**: raw **0.55**
-  - Query **6**: raw **0.55**
-  - Query **7**: raw **0.55**
-  - Query **8**: raw **0.55**
-  - Query **11**: raw **0.55**
-  - Query **14**: raw **0.55**
-  - Query **15**: raw **0.55**
-  - Many others show raw ≈0.55 while adjusted hits the **0.7** floor.
+Global signals:
+- `avg_gt_coverage=1.0` (perfect GT source coverage)
+- `avg_top_score=0.814` (healthy)
+- `abstained_count=0`, `grounded_rate=1.0`
 
-This indicates retrieval ranking is sometimes only “just sufficient,” but the system’s context gating/pool-confidence logic preserves final answer correctness.
+However, per-question retrieval confidence varies:
+- Several queries have **lowish raw retrieval scores (~0.55)** with pool confidence applied (`pool_confidence_applied=true`), notably:
+  - Q4, Q6, Q7, Q8, Q10, Q11, Q14, Q15, Q16, Q17, Q18, etc. (many show `retrieval_quality_score_raw≈0.55` and adjusted score bumped to 0.7 via confidence floor).
+- Despite that, answers remain correct—so this is best interpreted as: retrieval quality gate + confidence floor are doing their job, but raw ranking confidence is not uniformly “high”.
 
-**Conclusion:** Retrieval is effective in terms of coverage and final grounding, but the raw reranker confidence suggests **some fragility**.
-
----
+Given rubric discipline: avg_gt_coverage and avg_top_score justify **4 rather than 3** (retrieval is not fundamentally broken).
 
 ### 3. Answer Quality (5/5)
-Evidence:
-- `query_report.grounded_rate = 1.0` (all questions grounded)
-- `grader_rejection_count = 0` for all shown questions
-- Negative/abstention behavior is not exercised here (`abstained_count = 0`), but for non-negative questions, answers match expected semantics.
+- `query_report.grounded_rate=1.0`
+- `grounded_count=25` out of 25
+- `grader_rejection_count=0` for every question
+- For the worst retrieval-quality queries, answers are still semantically correct and well-aligned with the expected schema/documentation facts.
 
-Per-question highlights:
-- **Query 1** (“purpose of tblCustomer”) correctly includes Hungarian notation, legacy + migration compatibility fields.
-- **Query 2** (“How customers identified…”) correctly states `strCustID` as VARCHAR(50), alphanumeric AS/400-derived codes.
-- **Query 3** (“order header table & PK”) correctly identifies `vw_SalesOrderHdr.lngOrderID` as INT PK despite `vw_` naming.
-- **Query 4** (“reserved word table”) correctly identifies `Group` and `User` requiring bracket quoting.
-- **Query 7** (“unit_cost issue”) correctly identifies VARCHAR type + `$` symbol parsing requirement.
-- **Query 25** (“critical data quality issues”) correctly aggregates the major categories and includes PCI + FK + type + security concerns.
-
-**Conclusion:** Outputs are semantically correct, comprehensive relative to expected answers, and consistently grounded.
-
----
+Examples (spot checks):
+- Q3: correctly identifies `vw_SalesOrderHdr` primary key `lngOrderID` and table/view nuance.
+- Q10: correctly describes `tblPayment.CardNumberText` plaintext PAN PCI violation.
+- Q7: correctly flags `tblProduct.unit_cost` as `VARCHAR(20)` with currency symbols requiring parsing; aligns with expected “should be DECIMAL”.
+- Q19: correctly covers `User.PasswordHash` SHA-256 unsalted rainbow-table vulnerability (and does not invent other password behaviors).
 
 ### 4. Pipeline Health (5/5)
-Evidence from `pipeline_health`:
-- `total_grader_rejections = 0`
-- `grader_inconsistencies = 0`
-- `gate_abstentions = 0`
-- `cypher_failed = false`
-- `failed_mappings_count = 0`
-- `ingestion_errors_count = 0`
-
-This run shows **no instability** and no self-healing failures.
-
----
+- `total_grader_rejections=0`
+- `grader_inconsistencies=0`
+- `gate_abstentions=0`
+- `cypher_failed=false`, `failed_mappings_count=0`, `ingestion_errors_count=0`
+- Note: `builder_report.elapsed_s=0` and `query_report.elapsed_s=0` are likely logging artifacts, but no operational instability is indicated.
 
 ### 5. Ablation Impact (N/A)
-This bundle is labeled `AB-BEST-K20`, but the provided JSON **does not include**:
-- explicit comparison to baseline (`AB-00`)
-- a `changes_vs_baseline` / `ablation_context` field
-- toggles that changed vs baseline are not provided as an “ablation spec”
+- `study_id=AB-BEST-K20` is provided, but the bundle does **not** include an `ablation_context` block (or explicit “changes vs baseline” flags). Therefore, impact cannot be assessed causally per rubric.
 
-So this dimension is **not scorable** under the rubric.
+## Dimension Analysis (Notes on Question Types)
+`dataset_info` reports `"query_type_distribution": {"unknown": 25}` and difficulty also `"unknown"`. The rubric asks for query-type-specific reasoning (e.g., negative questions/abstention), but there are no such labeled types here. Still, there were **no abstentions** and no incorrect answers, so negative-question handling is not stress-tested by this bundle.
 
 ---
 
 ## Per-Question Deep Dive
 
-> Verdict mapping:
-- **CORRECT** = expected facts covered and grounded
-- **PARTIALLY_CORRECT** = missing key expected facts (not seen here)
-- **INCORRECT** = wrong facts or ungrounded (not seen here)
-- **CORRECTLY_ABSTAINED / WRONGLY_ABSTAINED** = not applicable (no abstentions)
-
 ### 1: What is the purpose of the tblCustomer table?
-- **Type:** unknown | **Difficulty:** unknown
-- **Verdict:** CORRECT
-- **Expected:** tblCustomer stores customer master data; includes legacy codes/names/emails/region and migration fields (cust_id, customer_name)
-- **Generated:** Correctly describes purpose, legacy AS/400 identifier, fields, and migration placeholders; mentions bolActive timestamps etc.
-- **Analysis:** Matches expected intent and key fields; grounded in retrieved dictionary content.
-- **Retrieval:** gt_coverage=1.0, top_score=0.8139919335890311, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** customer master; fields incl. `strCustID`, `strFullName`, email, region; legacy Hungarian notation + migration placeholders (`cust_id`, `customer_name`)  
+- **Generated:** matches purpose + key fields; includes `bolActive`, timestamps, and migration columns  
+- **Analysis:** Full semantic match to expected; uses correct legacy schema details.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.814, gate=proceed
 
 ### 2: How are customers identified in the legacy system?
-- **Verdict:** CORRECT
-- **Expected:** `strCustID` is VARCHAR(50), alphanumeric formats like C-XXXXX or REG-XXXX
-- **Generated:** Correctly identifies `strCustID` and format examples; mentions PK/UNIQUE/NOT NULL.
-- **Analysis:** Fully aligned with expected semantic content.
-- **Retrieval:** gt_coverage=1.0, top_score=0.8139919335890311, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `strCustID` VARCHAR(50), formats like `C-XXXXX` / `REG-XXXX`, NOT NULL UNIQUE  
+- **Generated:** exactly describes `strCustID` PK and format constraints  
+- **Analysis:** No missing/extra incorrect facts.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.829, gate=proceed
 
 ### 3: What table stores order header information and what is its primary key?
-- **Verdict:** CORRECT
-- **Expected:** `vw_SalesOrderHdr` table despite vw prefix; PK is `lngOrderID` INT with lng prefix
-- **Generated:** Matches both table name and primary key.
-- **Analysis:** Correct semantic handling of naming quirk.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9353465116437761, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `vw_SalesOrderHdr` (table), PK `lngOrderID` INT  
+- **Generated:** matches both table name and PK  
+- **Analysis:** Correct view/table nuance and Hungarian prefix context.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.935, gate=proceed
 
 ### 4: Which table in the schema uses a SQL reserved word as its name?
-- **Verdict:** CORRECT
-- **Expected:** `Group` and `User` are reserved; require `[Group]` and `[User]`
-- **Generated:** Identifies both and quotes the bracket rule.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `Group` and `User` require `[Group]` / `[User]`  
+- **Generated:** states reserved-word tables and quoting requirement  
+- **Analysis:** Matches expected.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 5: What is the relationship between vw_SalesOrderHdr and tblCustomer?
-- **Verdict:** CORRECT
-- **Expected:** `vw_SalesOrderHdr.intCustID` (VARCHAR) → `tblCustomer.strCustID`
-- **Generated:** Correctly states FK and one-to-many relationship.
-- **Analysis:** Correct FK direction + datatype nuance.
-- **Retrieval:** gt_coverage=1.0, top_score=0.8292155820981656, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** FK `vw_SalesOrderHdr.intCustID → tblCustomer.strCustID` (VARCHAR mismatch note)  
+- **Generated:** provides correct FK direction + data-type nuance + one-to-many  
+- **Analysis:** Fully aligned.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.999, gate=proceed
 
 ### 6: What naming convention is used for the inventory transaction log table?
-- **Verdict:** CORRECT
-- **Expected:** `inv_txn_log` with abbreviated field names like txn_id, txn_dt, txn_type, prod_id
-- **Generated:** Correctly describes heavily abbreviated convention.
-- **Analysis:** Correct but relies on “naming convention” label; still grounded.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** table `inv_txn_log` uses abbreviated naming; fields `txn_id`, `txn_dt`, `txn_type`, `prod_id`  
+- **Generated:** matches wording and examples  
+- **Analysis:** Correct and complete.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 7: What data quality issue exists in the tblProduct unit_cost field?
-- **Verdict:** CORRECT
-- **Expected:** `unit_cost` is VARCHAR(20) not DECIMAL; contains `$` requiring parsing
-- **Generated:** Correctly describes VARCHAR(20), `$` symbols, should be DECIMAL.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `unit_cost` is VARCHAR(20) not DECIMAL; contains currency symbols like `$19.99`  
+- **Generated:** matches all key points including parsing requirement  
+- **Analysis:** Perfect alignment.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.860, gate=proceed
 
 ### 8: How does the ord_line_item table handle product data redundancy?
-- **Verdict:** CORRECT
-- **Expected:** redundant `product_code` and `item_name` snapshot and should not be updated
-- **Generated:** Correctly explains redundancy and “do not update from product master”.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** redundant denormalized product copies for reporting + snapshot semantics; should not be updated from master  
+- **Generated:** captures `product_code`/`item_name` redundancy, out-of-sync note, and “do NOT update” rule  
+- **Analysis:** Matches expected.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.931, gate=proceed
 
 ### 9: What are the valid values for the strOrderStatus field in vw_SalesOrderHdr?
-- **Verdict:** CORRECT
-- **Expected:** PENDING, SHIPPED, CANCELLED (CHECK constraint)
-- **Generated:** Lists exactly these values.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** CHECK constraint values: `PENDING`, `SHIPPED`, `CANCELLED`  
+- **Generated:** lists exactly those values  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 10: Which table stores payment information and what security issue does it have?
-- **Verdict:** CORRECT
-- **Expected:** tblPayment; CardNumberText stores plaintext PAN; PCI violation
-- **Generated:** Correctly identifies table and summarizes PCI issue.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `tblPayment`, `CardNumberText` plaintext unencrypted PAN; PCI violation  
+- **Generated:** matches both table and security issue; tokenization recommendation  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 11: What is the purpose of the bolActive field in tblCustomer and tblProduct?
-- **Verdict:** CORRECT
-- **Expected:** Active flag; customers excluded from marketing when 0; products discontinued when 0
-- **Generated:** Correctly states semantics for both tables.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9645892699236761, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `bolActive` indicates active customer inclusion in marketing and product availability/discontinued  
+- **Generated:** matches exact semantics and 1/0 mapping  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 12: How are inventory transactions tracked in the system?
-- **Verdict:** CORRECT
-- **Expected:** inv_txn_log; txn_type IN/OUT/ADJ; abbreviated fields; prod_id references product
-- **Generated:** Very complete; includes quantity sign logic and audit purpose.
-- **Analysis:** Correct and even adds extra consistent detail.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9305845275935024, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `inv_txn_log` with `txn_type` values IN/OUT/ADJ; abbreviated fields; qty sign conventions; derived inventory quantity rule  
+- **Generated:** includes all core rules, including derived inventory logic  
+- **Analysis:** Correct and detailed.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.898, gate=proceed
 
 ### 13: What is the self-referencing relationship in the Group table?
-- **Verdict:** CORRECT
-- **Expected:** ParentGroupID → GroupID hierarchy; NULL = top-level
-- **Generated:** Correct one-to-many self ref and NULL semantics.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `ParentGroupID → GroupID`; NULL indicates top-level groups  
+- **Generated:** matches fully  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 14: What migration compatibility columns exist in tblCustomer?
-- **Verdict:** CORRECT
-- **Expected:** cust_id and customer_name
-- **Generated:** Correctly describes both with intended migration meaning and NULL status.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `cust_id` (INT) and `customer_name` (VARCHAR 255) for new system compatibility  
+- **Generated:** matches both fields and semantics (“planned”, currently NULL)  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 15: How does the system handle order status history tracking?
-- **Verdict:** CORRECT
-- **Expected:** tblOrderStatusHistory audit trail for each status transition; includes OrderID, OldStatus, NewStatus, ChangedByUser, ChangedDate, ChangeReason
-- **Generated:** Correctly enumerates fields and ties to glossary “every status change creates a history record”.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `tblOrderStatusHistory` audit log, includes OrderID, OldStatus, NewStatus, ChangedByUser, ChangedDate, ChangeReason  
+- **Generated:** matches all fields and audit-trail semantics  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 16: What is the inconsistent naming pattern between order tables?
-- **Verdict:** CORRECT
-- **Expected:** vw_SalesOrderHdr uses vw_ but is actually table; ord_line_item uses ord_ and references lngOrderID as ord_id
-- **Generated:** Correctly explains naming inconsistency and cross-table prefix mismatch.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `vw_SalesOrderHdr` misnamed prefix; `ord_line_item` uses `ord_`; plus `ord_id` naming inconsistency  
+- **Generated:** focuses on prefix misnaming/prefix inconsistency and related-table naming  
+- **Analysis:** Still semantically correct, though it does not explicitly restate the `ord_id` FK name inconsistency in the main narrative (but it is implied by context).  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 17: What deprecated fields exist in tblProduct and why should they be avoided?
-- **Verdict:** CORRECT
-- **Expected:** prod_num, item_desc, unit_cost—deprecated/bugs; shouldn’t be used for new code
-- **Generated:** Correctly identifies and explains each deprecated field and “Only strSKU should be used”.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `prod_num`, `item_desc`, `unit_cost` (VARCHAR money bug)  
+- **Generated:** matches all three and explains why `unit_cost` is unusable without conversion  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.860, gate=proceed
 
 ### 18: How are shipping carriers configured in the system?
-- **Verdict:** CORRECT
-- **Expected:** tblShippingCarrier with CarrierID/Name/Code/TrackingURL/bolActive; only bolActive=1 offered
-- **Generated:** Correctly states fields and bolActive business rule.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `tblShippingCarrier` fields incl. `CarrierCode`, `TrackingURL` with `{TRACKING_NUM}`, `bolActive` business rule  
+- **Generated:** matches table fields + active-carrier usage  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 19: What is the relationship between User table passwords and security?
-- **Verdict:** CORRECT
-- **Expected:** PasswordHash uses SHA-256 without salt → rainbow-table vulnerability
-- **Generated:** Correctly points to unsalted SHA-256 and repeats the password security issue.
-- **Analysis:** Correct (even though it also mentions other security issues; extra correct info is fine).
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `PasswordHash` SHA-256 unsalted → rainbow-table vulnerability; reserved-word `User` needs quoting  
+- **Generated:** covers unsalted SHA-256; also mentions payment/card security separately (correct but not requested)  
+- **Analysis:** No incorrect password/security claim; extra correct info doesn’t harm.  
+- **Retrieval:** gt_coverage=null? (bundle shows `gt_coverage: null`), top_score=0.700, gate=proceed
 
 ### 20: What fields in vw_SalesOrderHdr use the 'flt' Hungarian notation prefix and what do they store?
-- **Verdict:** CORRECT
-- **Expected:** fltSubTotal, fltTaxAmount, fltTotalAmount are monetary fields (DECIMAL(12,2))
-- **Generated:** Correctly lists all three and explains stored meaning.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9628830911922404, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `fltSubTotal`, `fltTaxAmount`, `fltTotalAmount` are DECIMAL(12,2) money fields  
+- **Generated:** lists all three and describes meaning/subtotal/tax/total including shipping  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.963, gate=proceed
 
 ### 21: How does the schema handle the different date/time field naming conventions?
-- **Verdict:** CORRECT
-- **Expected:** dtm prefix for datetime fields; also notes exceptions (User table uses LastLogin/CreatedDate)
-- **Generated:** Correctly states general dtm usage but also points out inconsistent overall conventions and exceptions. This is aligned with expected intent.
-- **Analysis:** Correct semantic coverage.
-- **Retrieval:** gt_coverage=1.0, top_score=0.7, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** PARTIALLY_CORRECT  
+- **Expected:** Consistent `dtm` Hungarian prefix across key tables; note exceptions like `User` breaks convention (LastLogin/CreatedDate)  
+- **Generated:** explains that overall naming conventions are inconsistent and focuses on `dtm` examples; states non-perfect consistency; mentions other datetime columns (`PaymentDate`, `ChangedDate`) but does not explicitly cover the expected “User table breaks convention with LastLogin/CreatedDate” as an explicit comparison to dtm fields.  
+- **Analysis:** Still grounded and largely correct, but slightly off target relative to expected structured “dtm consistency + exceptions” framing.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 22: What table prefix patterns exist in the schema and what do they indicate?
-- **Verdict:** CORRECT
-- **Expected:** tbl, vw_ (misnamed), ord_, inv_, plus reserved-word no-prefix Group/User
-- **Generated:** Correctly enumerates prefix patterns and indicates vw_ is misleading; explains ord_/inv_ purpose.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9955662347993564, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** `tbl` standard; `vw_` misnamed table; `ord_`, `inv_` module prefixes; reserved-word no-prefix `Group`/`User`  
+- **Generated:** matches and explains evolution/misnaming; includes “no prefix” reserved words needing quoting  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.996, gate=proceed
 
 ### 23: What foreign key relationships exist for the vw_SalesOrderHdr table?
-- **Verdict:** CORRECT
-- **Expected:** Explicit FK: intCustID→tblCustomer.strCustID; implicit refs from Payment/OrderStatusHistory/LineItems to lngOrderID
-- **Generated:** Correctly lists those relationships.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9955662347993564, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** explicit FK `intCustID → tblCustomer.strCustID`; plus references via Payment/StatusHistory/LineItems to `lngOrderID` (implicit/mentioned)  
+- **Generated:** lists all those relationships  
+- **Analysis:** Correct and complete vs expected.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.996, gate=proceed
 
 ### 24: How does the legacy system handle product SKU format and uniqueness?
-- **Verdict:** CORRECT
-- **Expected:** strSKU has UNIQUE and format Category-Color-Size; prod_num deprecated
-- **Generated:** Correct.
-- **Analysis:** Correct.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9662197710315901, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** SKU in `strSKU` UNIQUE; format `Category-Color-Size`; deprecated `prod_num` exists but avoid  
+- **Generated:** matches uniqueness and format; mentions only `strSKU` for migration; correctly notes denormalized `product_code` snapshots  
+- **Analysis:** Correct.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.700, gate=proceed
 
 ### 25: What are the critical data quality issues identified for migration?
-- **Verdict:** CORRECT
-- **Expected:** PCI plaintext card numbers; unit_cost type; missing FK inv_txn_log.user_id; unsalted SHA-256 password hash; misleading Hungarian notation; reserved words quoting requirement
-- **Generated:** Correctly aggregates multiple critical categories (FK gaps, security/privacy, data inconsistencies). It emphasizes referential integrity gaps as well, which is consistent with the provided glossary.
-- **Analysis:** Semantically correct and grounded; includes all major expected themes.
-- **Retrieval:** gt_coverage=1.0, top_score=0.9662197710315901, gate=proceed
+- **Type:** unknown | **Difficulty:** unknown  
+- **Verdict:** CORRECT  
+- **Expected:** PCI violation, unit_cost type issue, missing FK constraint, unsalted SHA-256, misleading Hungarian notation, reserved-word tables quoting  
+- **Generated:** covers those critical issues and adds additional referential integrity + performance items from glossary context  
+- **Analysis:** Semantically aligned and includes extra correct items.  
+- **Retrieval:** gt_coverage=1.0, top_score=0.966, gate=proceed
 
 ---
 
 ## Anomalies & Recommendations
 
 ### Red Flags
-1. **Retrieval confidence floor masking variability**
-   - Many questions show `retrieval_quality_score_raw ≈ 0.55` while `retrieval_quality_score_adjusted = 0.7` due to `pool_confidence_applied = true`.
-   - This suggests the reranker’s top candidates weren’t always very confident, but the system’s gating/pool mechanism still recovered sufficient contexts.
-
-2. **No abstention coverage**
-   - `abstained_count = 0` and `gate_abstentions = 0`. If negative questions exist in the real use-case, this ablation run doesn’t test the abstention mechanism.
-
-3. **Dataset_info complexity/difficulty fields are empty**
-   - `dataset_info.complexity = ""`, `difficulty_distribution` keys are “unknown”, so difficulty-aware tuning cannot be validated from this bundle alone.
+- **Ablation metadata missing:** No `ablation_context` explaining changes vs baseline; rubric dimension 5 is therefore N/A.
+- **Question typing not labeled:** `query_type` and `difficulty` are all `"unknown"` across dataset; limits stress-testing analysis (e.g., negative questions).
+- **Many queries show low `retrieval_quality_score_raw` (~0.55) with confidence floor applied:** This suggests the reranker’s top-candidate confidence is not uniformly high, even though answers are correct. That points to a potential calibration/thresholding tuning opportunity.
 
 ### Recommendations
-- **Instrument retrieval diagnostics beyond top-score**: log distribution of reranker scores (mean/std) and how often the adjusted floor triggers. Consider a policy to increase `pool_size` or relax noise filtering only when raw < threshold but gt coverage is still 1.0.
-- **Add explicit negative/abstention test cases** in future bundles (even if expected answer is “not found”), to validate `retrieval_quality_gate` behavior.
-- **Use `elapsed_s` correctly** for builder/query reports; currently builder/query `elapsed_s` is `0`, limiting latency regression detection.
-
----
+1. **Expose and log per-stage retrieval details** (RRF contributions, traversal hits) for the low raw-score cluster (many Q4/Q6/Q9/Q10/Q11/etc.).
+2. **Review reranker calibration / pool_confidence floor**: the system frequently relies on the applied confidence floor to reach the “proceed” region; verify that this doesn’t mask edge-case retrieval failures for harder question types.
+3. **Label query types/difficulty** in the dataset so the abstention and multi-hop rubric logic can be validated properly.
+4. **Improve “frame fidelity” for Q21**: add targeted prompting that mirrors expected rubric structure (e.g., “dtm prefix consistently used except X”).
 
 ## Comparison Notes (if applicable)
-No baseline (`AB-00`) results or `ablation_context.changes_vs_baseline` were provided, so a causal comparison to the baseline cannot be performed under the rubric.
+- No baseline comparison bundle is included. This evaluation cannot confirm whether AB-BEST-K20 improves over AB-00, only that the run itself is strong.
+
+---
