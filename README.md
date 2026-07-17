@@ -435,7 +435,7 @@ tests/
   fixtures/         7 synthetic datasets with gold standard QA pairs
 docs/
   draft/            Architecture specs, requirements, prompts, ADRs, ablation plan, datasets, test plan
-  changelogs/       Version changelogs (v1.0.0 → v1.4.2)
+  changelogs/       Version changelogs (v1.0.0 → v1.5.1)
   audits/           Security audit reports
   AI_JUDGE_PROMPT.md  AI Judge system prompt
   RUNNING_SERVICES.md  Setup guide
@@ -447,37 +447,40 @@ docs/
 
 ### Evaluation Results (AB-BEST)
 
-Best configuration evaluated across 7 datasets (111 tables, 210 questions), scored by AI Judge (`gpt-5.4-nano-2026-03-17`):
+Best configuration evaluated across 7 datasets (111 tables, 210 questions), re-judged on v1.5.1 by the systematic AI Judge (`gpt-5.4-nano-2026-03-17`):
 
-| Dataset | Tables | Questions | Grounded | Score |
-|---------|:------:|:---------:|:--------:|:-----:|
-| DS01 E-commerce | 7 | 15 | 15/15 | **5.00** |
-| DS02 Finance | 8 | 25 | 25/25 | **5.00** |
-| DS03 Healthcare | 10 | 30 | 30/30 | **4.70** |
-| DS04 Manufacturing | 13 | 40 | 40/40 | **4.75** |
-| DS05 Edge: Incomplete | 5 | 20 | 20/20 | **4.30** |
-| DS06 Edge: Legacy | 10 | 25 | 25/25 | **5.00** |
-| DS07 Stress (58 tables) | 58 | 55 | 55/55 | **4.35** |
+| Dataset | Tables | Questions | GT Cov | Grounded | Score |
+|---------|:------:|:---------:|:------:|:--------:|:-----:|
+| DS01 E-commerce | 7 | 15 | 100% | 15/15 | 4.50 |
+| DS02 Finance | 8 | 25 | 99% | 25/25 | 4.70 |
+| DS03 Healthcare | 10 | 30 | 94% | 30/30 | 3.65 |
+| DS04 Manufacturing | 13 | 40 | 82% | 40/40 | 4.45 |
+| DS05 Edge: Incomplete | 5 | 20 | 79% | 20/20 | 4.45 |
+| DS06 Edge: Legacy | 10 | 25 | 63% | 25/25 | 4.25 |
+| DS07 Stress (58 tables) | 58 | 55 | 85% | 55/55 | 4.20 |
+| **Average** | — | **210** | **86%** | **210/210** | **4.31/5** |
 
-**210/210 answers grounded (100%), zero hallucinations.** Average score **4.73/5**.
+**210/210 answers grounded (100%), zero hallucinations, 100% builder completion** across all seven datasets including the 58-table stress set. Scores are lower and more compressed than the earlier manual-judge figure (AB-BEST 4.73→4.31): the systematic LLM judge is stricter, and the v1.5.1 KG builds differ stochastically from earlier runs.
 
 ### Ablation Campaign
 
-21 ablation studies + AB-BEST variant (K20), evaluated by AI Judge on a 1–5 scale:
+21 single-variable studies (AB-00..AB-20) on DS01 + the AB-BEST/AB-BEST-K20 comparison across all 7 datasets, re-run on v1.5.1 and re-judged by the AI Judge on a 1–5 scale. Representative DS01 scores:
 
 | Study | Description | Score | Delta vs AB-00 |
 |-------|-------------|:-----:|:--------------:|
-| AB-04 | Reranker top_k=5 (AB-BEST) | **4.90** | +0.65 |
-| AB-05 | Reranker top_k=20 | 4.90 | +0.65 |
-| AB-00 | Baseline (full pipeline) | 4.25 | -- |
-| AB-01 | Vector-only retrieval (worst) | 3.40 | -0.85 |
+| AB-06 | Chunking 128/16 (best) | **4.80** | +0.30 |
+| AB-03 | Reranker OFF | 4.65 | +0.15 |
+| AB-00 | Baseline (full pipeline) | 4.50 | — |
+| AB-04/05 | Reranker top_k=5 / 20 | 4.50 | 0.00 |
+| AB-01 | Vector-only retrieval | 4.25 | -0.25 |
+| AB-19 | Cypher healing OFF (worst) | **3.80** | -0.70 |
 
-Key findings:
-1. **Hybrid retrieval is non-negotiable** — Vector-only scores 3.40 (-0.85 vs baseline)
-2. **Reranker top_k is the only discriminating parameter** — AB-04/AB-05 both 4.90
-3. **top_k=5 is the efficient optimum** — Same quality as top_k=20 with 4× fewer cross-encoder calls
-4. **K5 validated across all 7 datasets** — K5 avg 4.73 vs K20 avg 4.51 (K5 wins 6/7)
-5. **Schema enrichment and Actor-Critic are critical safety nets** — Disabling either drops GT coverage ≥33 pp
+Key findings (v1.5.1):
+1. **Hybrid retrieval stays the robust default** — BM25-only (AB-02) collapses GT coverage to 54%; it cannot match semantically paraphrased questions.
+2. **No single parameter cleanly discriminates on DS01** — the v1.5.1 judge is tightly compressed (3.80–4.80); the baseline is too simple for most ablations to separate quality.
+3. **top_k=5 is the efficient optimum** — ties top_k=20 at the judge level (4.50 on DS01; 4.31 vs 4.28 across all 7 datasets) with 4× fewer cross-encoder calls.
+4. **Schema enrichment and Actor-Critic are kept ON for robustness, not DS01 quality** — on the v1.5.1 simple baseline, disabling either leaves GT coverage at 98% (the earlier ≥33 pp collapse was a pre-v1.5.1 artefact); their value reappears on degraded/larger schemas (DS05, DS06, DS07).
+5. **Cypher healing is the one component the judge still penalises on DS01** (AB-19, 3.80) — unhealed Cypher leaves the graph structurally weaker even when all tables complete.
 
 Full results in [docs/ablation/RESULTS.md](docs/ablation/RESULTS.md).
 
@@ -497,7 +500,7 @@ Full results in [docs/ablation/RESULTS.md](docs/ablation/RESULTS.md).
 | [docs/draft/ABLATION.md](docs/draft/ABLATION.md) | Ablation study plan and methodology |
 | [docs/draft/DATASET.md](docs/draft/DATASET.md) | Dataset specifications (inputs, few-shot, gold standard) |
 | [docs/draft/TEST_PLAN.md](docs/draft/TEST_PLAN.md) | Test strategy and test case catalogue |
-| [docs/changelogs/](docs/changelogs/) | Version changelogs (v1.0.0 → v1.4.2) |
+| [docs/changelogs/](docs/changelogs/) | Version changelogs (v1.0.0 → v1.5.1) |
 | [docs/audits/](docs/audits/) | Security audit reports |
 | [docs/study-guide/](docs/study-guide/) | Module-by-module study guide (15 chapters) |
 

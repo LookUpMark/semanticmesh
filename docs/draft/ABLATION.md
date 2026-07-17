@@ -5,6 +5,8 @@
 > **Companion documents:** [SPECS.md](./SPECS.md), [REQUIREMENTS.md](./REQUIREMENTS.md), [DATASET.md](./DATASET.md), [TEST_PLAN.md](./TEST_PLAN.md)
 > **Purpose:** Define formal ablation experiments to quantify the contribution of each architectural component. Results feed into the thesis evaluation chapter.
 
+> ⚠️ **This document is the ablation *plan* (methodology, study matrix, configuration flags). The authoritative *current results* live in [`docs/ablation/RESULTS.md`](../ablation/RESULTS.md), re-run on code v1.5.1 and re-judged with `gpt-5.4-nano-2026-03-17` on 2026-07-17. The v1.0.x / v1.1.1 score tables preserved below in §6 are a historical record and are **superseded** by the v1.5.1 figures (which are lower and more compressed because the systematic judge is stricter). Cite RESULTS.md for any current number.
+
 ---
 
 ## Table of Contents
