@@ -1,87 +1,70 @@
 # HANDOFF
 
 ## Goal
-Complete the v1.5.1 ablation campaign with dual metrics (retrieval_quality_score_raw/adjusted, pool_size, pool_confidence_applied) for both AB-BEST and AB-BEST-K20 configurations across 7 datasets (DS01-07).
+Allineare TUTTA la documentazione (`docs/ablation/RESULTS.md`) e la tesi
+(`docs/overleaf/`) ai risultati della campagna ablation v1.5.1, dopo aver
+completato AB-BEST-K20 DS03-07 e ri-eseguito l'AI Judge su tutti i bundle.
+Riassunto in italiano con utente; docs/tesi rimangono in inglese.
 
 ## Current state
-- **AB-BEST (7/7):** ✅ COMPLETED - All datasets grounded=100% with dual metrics
-  - DS01-07 evaluation bundles generated 2026-07-03 09:12-10:54 UTC
-  - Dual metrics confirmed in per_question data (_raw, _adjusted, pool_size, pool_confidence_applied)
-- **AB-BEST-K20 (2/7):** ⏸️ STOPPED at DS02
-  - DS01-02: ✅ grounded=100% (completed 11:00-11:11 UTC)
-  - DS03-07: ⏸️ NOT STARTED
-  - Campaign stopped via user request after DS02 completion
-- **Environment:** Linux setup with uv package manager, thesis-neo4j Docker container active
-- **Branch:** dev (up to date with origin/dev)
+- **Branch:** `dev`, clean, up to date con origin.
+- **Commits di questa sessione (in ordine):**
+  - `29b99d4` — AB-BEST-K20 DS03-07 completato (5 dataset, grounded 100%, dual-metrics, 93.5m).
+  - `0f4a32a` — fix langfuse: bump a v3 (v2 incompatibile con langchain 1.x).
+  - `e51b83a` — AI Judge su tutti i 35 bundle (`gpt-5.4-nano-2026-03-17`).
+- **Neo4j:** container `thesis-neo4j` FERMO (docker stop). `--auto-neo4j` lo riavvia al prossimo run.
+- **Bundle totali:** 35 (AB-00..AB-20 × DS01 = 21; AB-BEST × DS01-07 = 7; AB-BEST-K20 × DS01-07 = 7).
 
-## Files touched
-- `src/graph/build_nodes.py` - Contains case-variant dedup fix (lines 424-449) preventing ConstraintError when LLM creates UPPERCASE PhysicalTable nodes
-- `pyproject.toml` - langchain-core/text-splitters bounds fixed to >=1.0,<2.0 (resolves compatibility with langchain 1.x)
-- `run_remainder_linux.sh` - Campaign script for Linux (sets NEO4J_CONTAINER_NAME=thesis-neo4j, runs all datasets for both studies)
-- `outputs/ablation/AB-BEST/datasets/*/evaluation_bundle.json` - 7 completed bundles with dual metrics
-- `outputs/ablation/AB-BEST-K20/datasets/01_basics_ecommerce/evaluation_bundle.json` - K20 DS01 completed
-- `outputs/ablation/AB-BEST-K20/datasets/02_intermediate_finance/evaluation_bundle.json` - K20 DS02 completed
+## Decisioni prese (con utente, 2026-07-17)
+1. **Ri-run AB-00..20 con codice v1.5.1** — i bundle AB-00..20 sono STALE (giugno, pre-dual-metrics, `dual=False`). Per RESULTS/tesi coerenti vanno ri-runnati con lo stesso codice di AB-BEST/K20. Utente ha scelto questa opzione (la più pulita scientificamente).
+2. **AI Judge sostituisce score manuali** — i nuovi score `gpt-5.4-nano` sistematici sostituiscono i vecchi score manuali in RESULTS.md/tesi, con nota metodologica.
 
-## Decisions made
-- **Re-run all AB-BEST DS01-07** - Existing bundles lacked dual metrics (generated before code change) and may have been affected by case-variant bug inconsistently
-- **Stop at DS02 for K20** - User requested pause; DS01-02 provide initial K20 data point vs AB-BEST comparison
-- **Use uv package manager** - No .venv existed; uv preferred over pip for Python 3.13
-- **Set NEO4J_CONTAINER_NAME=thesis-neo4j** - Local container uses different name than handoff's neo4j-thesis
+## Score AI Judge preliminari (su bundle attuali, PRIMA del ri-run AB-00..20)
+> Attenzione: score AB-00..20 qui sotto sono su bundle STALE pre-v1.5.1. Van rifatti dopo ri-run.
+- **AB-BEST (K5) DS01-07:** 4.70 / 4.45 / 3.85 / 4.45 / 4.25 / 4.00 / 4.45 → **avg 4.31**
+- **AB-BEST-K20 DS01-07:** 4.20 / 4.60 / 4.70 / 3.95 / 4.20 / 4.25 / 4.20 → **avg 4.30**
+- **K5 vs K20 = parità** (Δ -0.01). K5 vince 4/7, K20 vince 3/7. **Sovverte la narrativa storica** (vecchi: K5 4.73 vs K20 4.51, K5 6/7).
+- AB-00..20 (DS01, stale): AB-00=4.50, AB-01=3.65, AB-02=3.70, AB-04=4.20, AB-05=4.50, AB-19=3.45... (da rifare).
 
-## Constraints
-- **Neo4j container naming:** Local container is `thesis-neo4j` (not `neo4j-thesis` from handoff)
-- **Python version:** 3.13.13 (uv managed)
-- **LLM non-determinism:** Langfuse callback incompatibility (langfuse 2.60.10 vs langchain 1.3.11) causes warnings but doesn't affect results
-- **Dataset independence:** Each run clears graph (--clear-graph=True in builder), so datasets can run independently
+## GT coverage v1.5.1 (dai bundle, già validi)
+K20 ≥ K5 su tutti i 7 dataset (K5 avg 0.860, K20 avg 0.986). Δ max: DS06 legacy +0.370 (K5 0.63→K20 1.00), DS05 +0.211.
 
-## Attempts and failures
-- **Case-variant dedup bug** - Attempted to run DS04 fresh, got ConstraintError on `tb_category`. Root cause: LLM-healed Cypher creates UPPERCASE PhysicalTable (TB_CATEGORY) while FK stub creates lowercase (tb_category). SET with case-insensitive WHERE matched both → collision. Fixed by dedup in build_nodes.py (keeper selection + DETACH DELETE variants).
-- **Langchain dependency conflict** - Initial `uv pip install -e .` failed due to pyproject.toml pinning `langchain-core>=0.3,<1.0` incompatible with `langchain>=1.0`. Fixed by updating bounds to >=1.0,<2.0.
-- **Pytest import errors** - Missing testcontainers module. Installed with uv pip install.
-
-## Open issues
-- **Langfuse tracing incompatibility:** langfuse 2.60.10's CallbackHandler imports `langchain.callbacks.base` which doesn't exist in langchain 1.3.11 (moved to langchain_core). Warnings appear but don't affect results. Can fix by downgrading langfuse or patching import path.
-- **AB-BEST-K20 DS03-07 remaining:** 5 datasets (~3-4 hours estimated) not yet run.
-
-## Next exact steps
-1. **Resume AB-BEST-K20 campaign** (when ready):
+## Next exact steps (riprendi da qui)
+1. **Ri-run AB-00..20 v1.5.1 su DS01** (era INTERROTTO a 0/21):
    ```bash
-   bash run_remainder_linux.sh
+   cd /home/marcantoniolopez/Documenti/github/semanticmesh
+   export NEO4J_CONTAINER_NAME=thesis-neo4j NEO4J_URI=bolt://localhost:7687
+   .venv/bin/python -m scripts.run_pipeline --all-studies \
+     --datasets tests/fixtures/01_basics_ecommerce/gold_standard.json --auto-neo4j
    ```
-   This will re-run DS01-02 (already complete, safe to skip) + DS03-07.
-   To skip completed datasets, modify script to start at DS03 or use `--datasets` flag explicitly.
+   ~1-1.5h. Verifica: `grep -c "✅ AB-" /tmp/rerun.log` = 21; bundle hanno `retrieval_quality_score_raw` (dual=True).
 
-2. **Verify dual metrics** in completed bundles:
+2. **Ri-giudica 35 bundle** (--force, così coerenti epoca v1.5.1):
    ```bash
-   .venv/bin/python -c "import json; d=json.load(open('outputs/ablation/AB-BEST/datasets/01_basics_ecommerce/evaluation_bundle.json')); print(d['per_question'][0].get('retrieval_quality_score_raw'))"
+   .venv/bin/python -m scripts.run_ai_judge --all --force \
+     --studies AB-00 AB-01 AB-02 AB-03 AB-04 AB-05 AB-06 AB-07 AB-08 AB-09 AB-10 AB-11 AB-12 AB-13 AB-14 AB-15 AB-16 AB-17 AB-18 AB-19 AB-20 AB-BEST AB-BEST-K20 \
+     --datasets 01_basics_ecommerce 02_intermediate_finance 03_advanced_healthcare 04_complex_manufacturing 05_edgecases_incomplete 06_edgecases_legacy 07_stress_large_scale \
+     --output outputs/ablation/ai_judge_report.md
    ```
 
-3. **Commit completed results** (when satisfied):
-   ```bash
-   git add outputs/ablation/AB-BEST/ outputs/ablation/AB-BEST-K20/ run_remainder_linux.sh
-   git commit -m "feat(ablation): complete AB-BEST campaign and start AB-BEST-K20 with dual metrics"
-   ```
+3. **Allinea docs/tesi** con score nuovi:
+   - `docs/ablation/RESULTS.md`: sez 2 (tabella AB-00..20), sez 4 (AB-BEST 7-ds, avg 4.31), sez 8 (K5 vs K20 parità 4.31/4.30, **riscrivere narrative 8.3-8.6** — non regge "K5 strictly better"), sez 5 key findings.
+   - `docs/overleaf/content/chapters/chapter5.tex`: tabella `ablation_results` (riga ~71) score nuovi; sez `reranker_impact` (AB-04=4.20 vs AB-05=4.50, **non più entrambi 4.90**); aggiungi sez K20/dual-metrics/floor-issue (ASSENTI dalla tesi, esistono solo in RESULTS.md).
+   - Tesi in **inglese**.
 
-## Commands / checks
-- **Check bundle grounding:**
-  ```bash
-  .venv/bin/python -c "import json; d=json.load(open('outputs/ablation/AB-BEST/datasets/01_basics_ecommerce/evaluation_bundle.json')); print(d['query_report']['grounded_rate'])"
-  ```
-- **Verify dual metrics present:**
-  ```bash
-  .venv/bin/python -c "import json; d=json.load(open('outputs/ablation/AB-BEST/datasets/01_basics_ecommerce/evaluation_bundle.json')); print('dual_metrics' in d or any('retrieval_quality_score' in str(q) for q in d.get('per_question',[])))"
-  ```
-- **Check Neo4j container status:**
-  ```bash
-  docker ps | grep thesis-neo4j
-  ```
-- **Run single dataset test:**
-  ```bash
-  NEO4J_CONTAINER_NAME=thesis-neo4j NEO4J_URI=bolt://localhost:7687 .venv/bin/python -m scripts.run_pipeline --best --dataset tests/fixtures/04_complex_manufacturing/gold_standard.json --auto-neo4j
-  ```
+4. **Commit** risultati ri-run + judge + doc alignment. Aggiorna questo HANDOFF o rimuovilo.
 
-## References
-- commit `cbbb7e5` - feat: update dependencies and improve node graph building (langchain-core >=1.0, case-variant dedup, run_remainder_linux.sh)
-- commit `2316d38` - fix(pipeline): resolve case-sensitivity in DDL, implement pool-aware dual metrics for retrieval, and document floor issue
-- docs/ablation/RESULTS.md section 8.7 - CE score floor issue and pool-aware confidence adjustments
-- tests/fixtures/ - 7 dataset fixtures: 01_basics_ecommerce, 02_intermediate_finance, 03_advanced_healthcare, 04_complex_manufacturing, 05_edgecases_incomplete, 06_edgecases_legacy, 07_stress_large_scale
+## Constraints / note
+- **Langfuse v3 fixato** (`0f4a32a`): warning sparito, tracing riattivato. `flush_observability` resta safe (try/except, v3 handler non ha `.flush()`).
+- **Warning soft pipeline** (non rottura, fallback gestiscono): Cypher multi-statement→deterministic retry, healer DELETE-block→retry, 1 grader timeout→pass. LLM cypher generator migliorabile (debito tecnico).
+- **CRLF warning** git: benigno (normalizza LF).
+- **AI judge script:** `scripts/run_ai_judge.py`. Score in `ai_judge.md` (NON in bundle JSON). Aggrega `scripts/generate_ablation_report.py`.
+- **Formato score:** tabella 5 dimensioni weighted → Overall. Parse: `\*\*Overall\*\*.*?\*\*([0-5]\.\d{1,2})\*\*`.
+
+## Files chiave
+- `scripts/run_pipeline.py` — runner ablation (`--all-studies`, `--datasets`, `--auto-neo4j`)
+- `scripts/run_ai_judge.py` — AI judge (`--all --force --studies --datasets --output`)
+- `docs/ablation/RESULTS.md` — risultati ablation (449 righe, da aggiornare)
+- `docs/overleaf/content/chapters/chapter5.tex` — Evaluation (sez 5.4 Empirical Results)
+- `src/config/observability.py:49` — import langfuse v3 (`from langfuse.langchain import CallbackHandler`)
+- `outputs/ablation/ai_judge_report.md` — report combinato AI judge
