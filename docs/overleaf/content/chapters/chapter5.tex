@@ -75,35 +75,35 @@ Table~\ref{tab:ablation_results} presents the results of the ablation campaign o
 
 \begin{table}[htbp]
 \centering
-\caption{Ablation study results on the DS01 E-Commerce baseline dataset (v1.1.1 Codebase Re-run).}
+\caption{Ablation study results on the DS01 E-Commerce baseline dataset (v1.5.1 re-run, re-judged with \texttt{gpt-5.4-nano-2026-03-17}).}
 \label{tab:ablation_results}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}llccclc@{}}
 \toprule
 \textbf{Study} & \textbf{Configuration} & \textbf{Tables} & \textbf{Triplets} & \textbf{Entities} & \textbf{GT Coverage} & \textbf{AI Judge Score} \\
 \midrule
-AB-00 & Baseline (default) & 7/7 & 124 & 65 & 100\% & 4.50 / 5.0 \\
-AB-01 & Retrieval: Vector-only & 7/7 & 94 & 46 & 86\% & 3.40 / 5.0 \\
-AB-02 & Retrieval: BM25-only & 7/7 & 96 & 53 & 49\% & 4.25 / 5.0 \\
-AB-03 & Reranker OFF & 7/7 & 109 & 52 & 69\% & 4.80 / 5.0 \\
-AB-04 & Reranker top\_k=5 & 7/7 & 87 & 54 & 80\% & 4.90 / 5.0 \\
-AB-05 & Reranker top\_k=20 & 7/7 & 94 & 54 & 100\% & 4.90 / 5.0 \\
-AB-06 & Chunking 128/16 & 7/7 & 91 & 51 & 98\% & 4.50 / 5.0 \\
-AB-07 & Chunking 384/48 & 7/7 & 102 & 50 & 98\% & 4.50 / 5.0 \\
-AB-08 & Chunking 512/64 & 7/7 & 98 & 50 & 98\% & 4.50 / 5.0 \\
-AB-09 & Extraction tokens=4096 & 7/7 & 101 & 51 & 100\% & 4.50 / 5.0 \\
-AB-10 & Extraction tokens=16384 & 7/7 & 99 & 52 & 100\% & 4.25 / 5.0 \\
-AB-11 & ER Similarity=0.65 & 7/7 & 64 & 33 & 100\% & 4.50 / 5.0 \\
-AB-12 & ER Similarity=0.85 & 7/7 & 72 & 33 & 100\% & 4.50 / 5.0 \\
-AB-13 & ER blocking top\_k=5 & 7/7 & 84 & 51 & 98\% & 4.50 / 5.0 \\
-AB-14 & ER blocking top\_k=20 & 7/7 & 100 & 54 & 98\% & 4.50 / 5.0 \\
-AB-15 & Schema Enrichment OFF & 7/7 & 54 & 35 & 61\% & 4.50 / 5.0 \\
-AB-16 & Actor-Critic Validation OFF & 7/7 & 86 & 47 & 67\% & 4.50 / 5.0 \\
-AB-17 & HITL Threshold=0.70 & 7/7 & 90 & 49 & 100\% & 4.50 / 5.0 \\
-AB-18 & HITL Threshold=0.85 & 7/7 & 59 & 36 & 100\% & 4.50 / 5.0 \\
-AB-19 & Cypher Healing OFF & 7/7 & 89 & 48 & 100\% & 4.05 / 5.0 \\
-AB-20 & Hallucination Grader OFF & 7/7 & 93 & -- & 98\% & 4.50 / 5.0 \\
-\textbf{AB-BEST} & \textbf{Optimised Config} & \textbf{7/7} & \textbf{112} & \textbf{51} & \textbf{100\%} & \textbf{5.00 / 5.0} \\
+AB-00 & Baseline (default) & 7/7 & 112 & 76 & 98\% & 4.50 / 5.0 \\
+AB-01 & Retrieval: Vector-only & 7/7 & 80 & 64 & 100\% & 4.25 / 5.0 \\
+AB-02 & Retrieval: BM25-only & 7/7 & 112 & 69 & 54\% & 4.25 / 5.0 \\
+AB-03 & Reranker OFF & 7/7 & 100 & 56 & 100\% & 4.65 / 5.0 \\
+AB-04 & Reranker top\_k=5 & 7/7 & 92 & 42 & 100\% & 4.50 / 5.0 \\
+AB-05 & Reranker top\_k=20 & 7/7 & 112 & 71 & 100\% & 4.50 / 5.0 \\
+AB-06 & Chunking 128/16 & 7/7 & 106 & 59 & 100\% & 4.80 / 5.0 \\
+AB-07 & Chunking 384/48 & 7/7 & 101 & 74 & 98\% & 4.50 / 5.0 \\
+AB-08 & Chunking 512/64 & 7/7 & 102 & 68 & 92\% & 4.50 / 5.0 \\
+AB-09 & Extraction tokens=4096 & 7/7 & 124 & 85 & 98\% & 4.40 / 5.0 \\
+AB-10 & Extraction tokens=16384 & 7/7 & 125 & 62 & 100\% & 4.50 / 5.0 \\
+AB-11 & ER Similarity=0.65 & 7/7 & 98 & 62 & 98\% & 4.50 / 5.0 \\
+AB-12 & ER Similarity=0.85 & 7/7 & 99 & 61 & 95\% & 4.25 / 5.0 \\
+AB-13 & ER blocking top\_k=5 & 7/7 & 122 & 65 & 98\% & 4.50 / 5.0 \\
+AB-14 & ER blocking top\_k=20 & 7/7 & 137 & 74 & 92\% & 4.15 / 5.0 \\
+AB-15 & Schema Enrichment OFF & 7/7 & 91 & 53 & 98\% & 4.50 / 5.0 \\
+AB-16 & Actor-Critic Validation OFF & 7/7 & 126 & 92 & 98\% & 4.40 / 5.0 \\
+AB-17 & HITL Threshold=0.70 & 7/7 & 95 & 53 & 93\% & 4.20 / 5.0 \\
+AB-18 & HITL Threshold=0.85 & 7/7 & 91 & 49 & 98\% & 4.50 / 5.0 \\
+AB-19 & Cypher Healing OFF & 7/7 & 109 & 69 & 98\% & 3.80 / 5.0 \\
+AB-20 & Hallucination Grader OFF & 7/7 & 106 & 59 & 92\% & 4.50 / 5.0 \\
+\textbf{AB-BEST} & \textbf{Optimised Config} & \textbf{7/7} & \textbf{68} & \textbf{29} & \textbf{100\%} & \textbf{4.50 / 5.0} \\
 \bottomrule
 \end{tabular}%
 }
@@ -112,14 +112,28 @@ AB-20 & Hallucination Grader OFF & 7/7 & 93 & -- & 98\% & 4.50 / 5.0 \\
 \subsection{Retrieval Mode Impact}
 \label{sec:eval:retrieval_impact}
 
-The results demonstrate the necessity of hybrid retrieval. Disabling keyword search (AB-01, vector-only) reduces Gold Standard (GT) coverage to $86\%$ and drops the AI Judge score to $3.40/5.0$. More severely, disabling vector search (AB-02, BM25-only) causes GT coverage to collapse to $49\%$, showing that keyword search fails on queries using semantically paraphrased terms.
+The results confirm hybrid retrieval as the robust default. On this simple dataset the three retrieval modes are barely separated by the judge (hybrid $4.50$, vector-only $4.25$, BM25-only $4.25$), but the retrieval signals still point the same way as on harder datasets. Disabling vector search (AB-02, BM25-only) collapses Gold Standard (GT) coverage to $54\%$, since keyword search cannot match semantically paraphrased terms. Vector-only (AB-01) keeps full GT coverage ($100\%$) but its retrieval-quality score drops markedly, because the cross-encoder is fed dense-only candidates. Hybrid retrieval (dense + keyword + graph traversal) is the only mode that preserves both GT coverage and a high retrieval score, and is therefore retained in AB-BEST.
 
 \subsection{Reranker and Context Window Optimization}
 \label{sec:eval:reranker_impact}
 
-The reranking step acts as an essential quality gate. Disabling the reranker (AB-03) drops GT coverage to $69\%$. Restricting the reranked output to the top 5 chunks (AB-04) achieves a high AI Judge score ($4.90/5.0$) despite a lower GT coverage of $80\%$ compared to expanding the output to the top 20 chunks (AB-05) which achieves $100\%$ coverage but scores the same ($4.90/5.0$). This demonstrates that wider context windows can introduce noise that offsets retrieval gains. Consequently, the optimal configuration (AB-BEST) utilizes \texttt{top\_k=5} to optimize inference efficiency (reducing cross-encoder latency by 4x) without sacrificing qualitative performance.
+On DS01 the reranker setting does not discriminate quality: restricting the output to the top 5 chunks (AB-04) and expanding it to the top 20 (AB-05) both score $4.50/5.0$ with full GT coverage ($100\%$), and even disabling the reranker entirely (AB-03) lands at $4.65/5.0$. The dataset is small enough that any of the three retrieves the expected sources. The wider context window ($\texttt{top\_k=20}$) was validated across all seven datasets (Section~\ref{sec:eval:topk_sensitivity}): there the two settings are again effectively tied at the judge level ($4.31$ vs $4.28$ average), so AB-BEST retains \texttt{top\_k=5} for the $4\times$ cross-encoder inference saving without sacrificing qualitative performance.
 
 \subsection{Pipeline Validation and Enrichment}
 \label{sec:eval:validation_impact}
 
-The largest impacts on retrieval coverage occurred when disabling schema mapping validation and enrichment. Disabling Actor-Critic validation (AB-16) reduces GT coverage to $67\%$, while disabling schema enrichment (AB-15) prevents the system from mapping abbreviated column names, resulting in a low GT coverage of $61\%$. Although their AI Judge scores on this simple baseline dataset remain at $4.50/5.0$ due to the judge evaluating overall correctness, their significant reduction in retrieval coverage confirms that automated mapping requires active semantic correction and acronym expansion to remain robust on larger scales.
+On the v1.5.1 DS01 baseline, disabling schema-mapping validation and enrichment does \emph{not} degrade retrieval coverage: both Actor-Critic validation OFF (AB-16) and schema enrichment OFF (AB-15) retain $98\%$ GT coverage and judge scores within noise of the baseline ($4.40$ and $4.50$). The earlier GT-coverage collapse observed for these components (to $67\%$ and $61\%$ on pre-v1.5.1 runs) does not reproduce on this simple 7-table schema, where the downstream graph still retrieves the expected sources even without acronym expansion or critic validation. Their value is expected to resurface on larger or degraded schemas (DS05, DS07); they are therefore kept ON in AB-BEST for robustness. The one pipeline component whose absence the judge still penalises on DS01 is Cypher healing (AB-19, $3.80/5.0$): even when all tables complete, unhealed Cypher leaves the graph structurally weaker.
+
+\subsection{Cross-Dataset Generalisation and Top-K Sensitivity}
+\label{sec:eval:topk_sensitivity}
+
+The DS01 ablation isolates single variables on a simple baseline; the value of the optimised configuration (AB-BEST) appears on the harder DS02--DS07, where it sustains $100\%$ grounded answers across all $210$ questions (zero hallucinations) and $100\%$ builder completion, including the $58$-table stress set. Its average AI-Judge score over the seven datasets is $4.31/5.0$ under the systematic \texttt{gpt-5.4-nano} judge, with the hardest cases being DS03 Healthcare ($3.65$, multi-hop clinical questions) and the degraded schemas DS06 legacy ($4.25$) and DS07 stress ($4.20$).
+
+To validate the reranker pool size beyond DS01, the full pipeline was re-run with \texttt{reranker\_top\_k=20} (AB-BEST-K20) on all seven datasets. The two configurations are effectively tied at the judge level: AB-BEST (K5) averages $4.31$ versus AB-BEST-K20 $4.28$ ($\Delta = -0.03$); K5 wins three datasets, K20 wins two, and two are tied. K20 retrieves strictly more expected sources on every dataset (average GT coverage $0.986$ vs $0.860$, largest gains on the degraded schemas DS06 $+0.37$ and DS05 $+0.21$), but that recall advantage does not translate into higher answer quality --- on complex schemas the extra chunks at ranks 6--20 are often related-but-wrong tables that dilute precision. AB-BEST therefore retains \texttt{top\_k=5} on efficiency grounds (a $4\times$ reduction in cross-encoder inference) rather than quality dominance.
+
+\subsection{Retrieval Quality Score Floor and Dual Metrics}
+\label{sec:eval:dual_metrics}
+
+A measurement caveat surfaced during the v1.5.1 campaign: cross-encoder (CE) absolute scores are artificially low on highly technical, multi-section content such as DDL and data dictionaries. A chunk that is unambiguously the best match for a query may receive a raw CE score of $\sim 0.15$, which would cause the retrieval-quality gate to flag it as poor and distort downstream confidence heuristics --- a ``floor issue''.
+
+To address this without weakening the gate, the rerank node exports two metrics: \texttt{retrieval\_quality\_score\_raw} (the unmodified CE score of the top chunk) and \texttt{retrieval\_quality\_score\_adjusted} (a pool-aware floor). When the candidate pool exceeds a minimum size (\texttt{pool\_confidence\_min\_size}) and the raw score is below a ceiling (\texttt{pool\_confidence\_ceiling}), the score is floored to a minimum acceptable value (\texttt{pool\_confidence\_floor}). The rationale is that being ranked first in a large, competitive pool is stronger evidence of relevance than the raw absolute CE score implies. The quality gate consumes the adjusted score (avoiding false rejections on technical documents) while the raw score is preserved in the evaluation bundle for analysis. The \texttt{pool\_confidence\_applied} flag records when the adjustment was triggered.
