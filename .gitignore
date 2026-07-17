@@ -88,6 +88,20 @@ docs/overleaf/**/*.synctex.gz
 docs/overleaf/**/*.toc
 docs/overleaf/**/*.fdb_latexmk
 docs/overleaf/**/*.fls
+# glossaries / acronyms (thesis.tex \input glossaries.tex; emitted if \makeglossaries enabled)
+docs/overleaf/**/*.glg
+docs/overleaf/**/*.gls
+docs/overleaf/**/*.glsymbols
+docs/overleaf/**/*.acn
+docs/overleaf/**/*.acr
+docs/overleaf/**/*.alg
+docs/overleaf/**/*.auxlock
+docs/overleaf/**/*.synctex.gz
+docs/overleaf/**/*.synctex(busy)
+# beamer sidecars (not used by the thesis report, but harmless if ever added)
+docs/overleaf/**/*.nav
+docs/overleaf/**/*.snm
+docs/overleaf/**/*.vrb
 docs/overleaf/thesis.pdf
 
 # Study guide

@@ -192,7 +192,7 @@ The retrieval parameters are configurable: vector search returns up to \texttt{r
 \label{fig:sd:query_p1}
 \end{figure}
 
-\textbf{Phase 2: Reranking and Quality Gate.} The fused candidates are rescored by a cross-encoder (bge-reranker-v2-m3) that jointly encodes each (query, chunk) pair for higher precision than bi-encoder scores alone. A retrieval quality gate then evaluates the sufficiency of the reranked context and assigns one of three routing decisions: \emph{proceed} (adequate context, proceed to generation), \emph{proceed\_with\_warning} (sparse but usable evidence, proceed with calibrated behaviour), or \emph{abstain\_early} (insufficient context, skip generation entirely). Figure~\ref{fig:sd:query_p2} shows the reranking and gating pipeline.
+\textbf{Phase 2: Reranking and Quality Gate.} The fused candidates are rescored by a cross-encoder (bge-reranker-v2-m3~\cite{xiao2023cpack}) that jointly encodes each (query, chunk) pair for higher precision than bi-encoder scores alone. A retrieval quality gate then evaluates the sufficiency of the reranked context and assigns one of three routing decisions: \emph{proceed} (adequate context, proceed to generation), \emph{proceed\_with\_warning} (sparse but usable evidence, proceed with calibrated behaviour), or \emph{abstain\_early} (insufficient context, skip generation entirely). Figure~\ref{fig:sd:query_p2} shows the reranking and gating pipeline.
 
 \begin{figure}[htbp]
 \centering

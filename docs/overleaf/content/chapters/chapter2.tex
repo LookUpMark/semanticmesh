@@ -91,7 +91,7 @@ In this thesis, the hallucination grading mechanism in the Query pipeline implem
 
 The evolution from single-pass retrieval to autonomous agents represents the current frontier of RAG systems. Agentic RAG~\cite{singh2026agenticretrievalaugmentedgenerationsurvey} replaces the fixed retrieve-then-generate pipeline with an agent that plans retrieval strategies, uses tools (search engines, SQL queries, APIs), and iteratively refines its answers based on intermediate observations.
 
-The foundational pattern is ReAct~\cite{yao2023reactsynergizingreasoningacting}, which interleaves \emph{Thought} (reasoning about the current state), \emph{Action} (executing a tool call), and \emph{Observation} (processing the result) in a loop until the task is complete. ReAct demonstrates competitive performance with chain-of-thought reasoning on multi-step benchmarks such as HotpotQA and FEVER, with particular improvements in reducing hallucination through grounding in real observations rather than relying solely on parametric knowledge. Figure~\ref{fig:agentic_rag} illustrates the evolution from baseline RAG to agentic RAG with the ReAct loop.
+The foundational pattern is ReAct~\cite{yao2023reactsynergizingreasoningacting}, which interleaves \emph{Thought} (reasoning about the current state), \emph{Action} (executing a tool call), and \emph{Observation} (processing the result) in a loop until the task is complete. ReAct demonstrates competitive performance with chain-of-thought reasoning on multi-step benchmarks such as HotpotQA~\cite{yang2018hotpotqa} and FEVER~\cite{thorne2018fever}, with particular improvements in reducing hallucination through grounding in real observations rather than relying solely on parametric knowledge. Figure~\ref{fig:agentic_rag} illustrates the evolution from baseline RAG to agentic RAG with the ReAct loop.
 
 \begin{figure}[htbp]
 \centering
@@ -209,7 +209,7 @@ The shift from fine-tuning to prompt engineering is significant: this thesis use
 \subsection{Reasoning and Acting Patterns}
 \label{sec:rw:reasoning_patterns}
 
-Chain-of-Thought (CoT) prompting~\cite{wei2022chainofthoughtpromptingelicitsreasoning} demonstrated that providing LLMs with reasoning exemplars elicits explicit reasoning chains that dramatically improve performance on arithmetic, commonsense, and symbolic reasoning tasks. Kojima et al.~\cite{kojima2022largelanguagemodelszeroshotreasoners} further showed that even zero-shot CoT---simply appending ``Let's think step by step''---improves reasoning in large models. On the GSM8K math benchmark, few-shot CoT prompting improved accuracy from 17.9\% to 56.9\%. Figure~\ref{fig:cot} illustrates the chain-of-thought prompting paradigm.
+Chain-of-Thought (CoT) prompting~\cite{wei2022chainofthoughtpromptingelicitsreasoning} demonstrated that providing LLMs with reasoning exemplars elicits explicit reasoning chains that dramatically improve performance on arithmetic, commonsense, and symbolic reasoning tasks. Kojima et al.~\cite{kojima2022largelanguagemodelszeroshotreasoners} further showed that even zero-shot CoT---simply appending ``Let's think step by step''---improves reasoning in large models. On the GSM8K math benchmark~\cite{cobbe2021gsm8k}, few-shot CoT prompting improved accuracy from 17.9\% to 56.9\%. Figure~\ref{fig:cot} illustrates the chain-of-thought prompting paradigm.
 
 \begin{figure}[htbp]
 \centering
