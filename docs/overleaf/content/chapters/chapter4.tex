@@ -37,6 +37,30 @@ The \texttt{QueryState} schema represents the context of a single Q\&A execution
     \item \texttt{grader\_decision}: A structured object tracking whether the answer passes or requires regeneration due to hallucination.
 \end{itemize}
 
+\begin{table}[H]
+\centering
+\caption{Builder Pipeline Components and Implementation Files}
+\label{tab:builder_components}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Component} & \textbf{Implementation File} \\
+\midrule
+Document Ingestion & \texttt{src/ingestion/pdf\_loader.py}, \texttt{src/ingestion/file\_registry.py} \\
+Entity Extraction & \texttt{src/extraction/triplet\_extractor.py} \\
+Entity Resolution & \texttt{src/resolution/entity\_resolver.py} \\
+Schema Parsing & \texttt{src/ingestion/ddl\_parser.py} \\
+Schema Enrichment & \texttt{src/ingestion/schema\_enricher.py} \\
+Schema Mapping & \texttt{src/graph/parallel\_mapping.py} \\
+Actor-Critic Validation & \texttt{src/graph/validation\_nodes.py} \\
+Cypher Generation & \texttt{src/graph/cypher\_generator.py} \\
+State Management & \texttt{src/models/state.py} \\
+Builder Orchestration & \texttt{src/graph/builder\_graph.py} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
 \section{Document Ingestion and Schema Parsing}
 \label{sec:imp:ingestion}
 
@@ -147,4 +171,25 @@ The REST API is implemented in \texttt{src/api/app.py} using FastAPI and exposed
     \item \textbf{Ablation Router} (\texttt{/api/v1/ablation/}): Triggers custom configuration runs and executes ablation studies.
     \item \textbf{Config Router} (\texttt{/api/v1/config}): Exposes GET and POST endpoints to retrieve the current system settings and dynamically apply runtime environment-variable overrides for non-sensitive settings (such as feature flags and thresholds).
 \end{itemize}
-All endpoints support JSON formatting, error logging, and standard authentication headers.
+All endpoints support JSON formatting, error logging, and standard authentication headers. Table~\ref{tab:api_endpoints} summarizes the available endpoints.
+
+\begin{table}[H]
+\centering
+\caption{REST API Endpoints}
+\label{tab:api_endpoints}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lp{8cm}l@{}}
+\toprule
+\textbf{Router} & \textbf{Endpoint} & \textbf{Method} \\
+\midrule
+Demo & \texttt{/api/v1/demo/build} & POST \\
+Demo & \texttt{/api/v1/demo/query} & POST \\
+Demo & \texttt{/api/v1/demo/stats} & GET \\
+Ablation & \texttt{/api/v1/ablation/run} & POST \\
+Ablation & \texttt{/api/v1/ablation/results} & GET \\
+Config & \texttt{/api/v1/config} & GET \\
+Config & \texttt{/api/v1/config} & POST \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}

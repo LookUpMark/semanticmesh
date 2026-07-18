@@ -94,7 +94,7 @@ The end-to-end data flow proceeds as follows. PDF documents (business glossaries
 
 The Builder Graph is defined in \texttt{src/\allowbreak{}graph/\allowbreak{}builder\_graph.py} and orchestrates the ontology construction pipeline through twelve nodes organised into six phases.
 
-\textbf{Phase 1: Document Ingestion.} PDF documents are loaded via the OpenDataLoader PDF integration for LangChain and segmented using a two-level hierarchical chunking strategy. Parent chunks (800 tokens, 96-token overlap) provide rich context for downstream extraction; child chunks (256 tokens, 32-token overlap) provide fine granularity for vector similarity search. Only child chunks are embedded with BGE-M3~\cite{chen2024bgeM3embeddingmultilingualmultifunctionality} and stored in Neo4j as \texttt{Chunk} nodes; parent chunks are stored as \texttt{ParentChunk} nodes without embeddings and are retrieved at generation time by traversing \texttt{CHILD\_OF} edges from the matched child. Figure~\ref{fig:sd:builder_p1} illustrates this phase.
+\textbf{Phase 1: Document Ingestion.} PDF documents are loaded via the OpenDataLoader PDF integration for LangChain~\cite{langchain2023github} and segmented using a two-level hierarchical chunking strategy. Parent chunks (800 tokens, 96-token overlap) provide rich context for downstream extraction; child chunks (256 tokens, 32-token overlap) provide fine granularity for vector similarity search. Only child chunks are embedded with BGE-M3~\cite{chen2024bgeM3embeddingmultilingualmultifunctionality} and stored in Neo4j as \texttt{Chunk} nodes; parent chunks are stored as \texttt{ParentChunk} nodes without embeddings and are retrieved at generation time by traversing \texttt{CHILD\_OF} edges from the matched child. Figure~\ref{fig:sd:builder_p1} illustrates this phase.
 
 \begin{figure}[htbp]
 \centering
@@ -112,12 +112,12 @@ The Builder Graph is defined in \texttt{src/\allowbreak{}graph/\allowbreak{}buil
 \label{fig:sd:builder_p2}
 \end{figure}
 
-\textbf{Phase 3: Schema Parsing and Enrichment.} DDL files are parsed deterministically using sqlglot into typed schema objects (\texttt{TableSchema}, \texttt{ColumnSchema}). An optional LLM-based enrichment step expands cryptic abbreviations in column and table names (e.g., \texttt{CLI\_NM} $\rightarrow$ ``Client Name'') to improve subsequent mapping accuracy. Figure~\ref{fig:sd:builder_p3} shows this linear pipeline.
+\textbf{Phase 3: Schema Parsing and Enrichment.} DDL files are parsed deterministically using sqlglot~\cite{sqlglot} into typed schema objects (\texttt{TableSchema}, \texttt{ColumnSchema}). An optional LLM-based enrichment step expands cryptic abbreviations in column and table names (e.g., \texttt{CLI\_NM} $\rightarrow$ ``Client Name'') to improve subsequent mapping accuracy. Figure~\ref{fig:sd:builder_p3} shows this linear pipeline.
 
 \begin{figure}[htbp]
 \centering
 \borderimage[width=0.35\textwidth]{images/chapter3/builder_phase3_schema.png}
-\caption{Builder Graph --- Phase~3: DDL parsing via sqlglot AST and LLM-based acronym expansion.}
+\caption{Builder Graph --- Phase~3: DDL parsing via sqlglot~\cite{sqlglot} AST and LLM-based acronym expansion.}
 \label{fig:sd:builder_p3}
 \end{figure}
 
@@ -154,7 +154,7 @@ Table~\ref{tab:builder_nodes} summarises the Builder Graph nodes, their responsi
 \midrule
 \texttt{extract\_triplets} & Extraction & Extract (subject, predicate, object) facts from chunks via LLM JSON mode or heuristic fallback \\[4pt]
 \texttt{entity\_resolution} & Resolution & Block candidates via embedding similarity, cluster via Union-Find, adjudicate via LLM judge \\[4pt]
-\texttt{parse\_ddl} & Schema & Deterministically parse DDL files into typed schema objects via sqlglot \\[4pt]
+\texttt{parse\_ddl} & Schema & Deterministically parse DDL files into typed schema objects via sqlglot~\cite{sqlglot} \\[4pt]
 \texttt{enrich\_schema} & Schema & Expand cryptic abbreviations in column and table names via LLM \\[4pt]
 \texttt{parallel\_mapping} & Mapping & Orchestrate concurrent mapping+validation for all tables via ThreadPool \\[4pt]
 \texttt{rag\_mapping} & Mapping & Propose semantic alignment between a physical table and business entities via RAG retrieval \\[4pt]

@@ -19,7 +19,30 @@ This thesis presented SemanticMesh, a multi-agent framework that automates seman
 \section{Empirical Summary}
 \label{sec:conclusion:empirical}
 
-Evaluated across seven synthetic datasets (111 tables, 210 questions) under the systematic \texttt{gpt-5.4-nano} judge, the AB-BEST configuration produced \textbf{210/210 grounded answers (100\%), zero hallucinations, and 100\% builder completion}, including the 58-table stress set (DS07). Its average AI-Judge score was \textbf{4.31/5}, with the hardest cases being DS03 Healthcare (3.65, multi-hop clinical questions) and the degraded schemas DS06 legacy (4.25) and DS07 stress (4.20).
+Evaluated across seven synthetic datasets (111 tables, 210 questions) under the systematic \texttt{gpt-5.4-nano} judge, the AB-BEST configuration produced \textbf{210/210 grounded answers (100\%), zero hallucinations, and 100\% builder completion}, including the 58-table stress set (DS07). Its average AI-Judge score was \textbf{4.31/5}, with the hardest cases being DS03 Healthcare (3.65, multi-hop clinical questions) and the degraded schemas DS06 legacy (4.25) and DS07 stress (4.20). Table~\ref{tab:results_summary} provides a detailed breakdown by dataset.
+
+\begin{table}[H]
+\centering
+\caption{AB-BEST Evaluation Results Across All Datasets (K5 configuration)}
+\label{tab:results_summary}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Dataset} & \textbf{Questions} & \textbf{AI-Judge Score} & \textbf{K5 vs K20} \\
+\midrule
+DS01 E-Commerce & 15 & 4.50 & K20 wins (4.50 vs 4.99) \\
+DS02 Finance & 25 & 4.70 & K5 wins (4.70 vs 4.10) \\
+DS03 Healthcare & 30 & 3.65 & K20 wins (3.65 vs 4.20) \\
+DS04 Manufacturing & 40 & 4.45 & K5 wins (4.45 vs 4.25) \\
+DS05 Edge-incomplete & 20 & 4.45 & K5 wins (4.45 vs 3.95) \\
+DS06 Edge-legacy & 25 & 4.25 & Tie (4.25 vs 4.25) \\
+DS07 Stress & 55 & 4.20 & Tie (4.20 vs 4.20) \\
+\midrule
+\textbf{Average} & \textbf{30} & \textbf{4.31} & \textbf{K5 $\approx$ Tie (4.31 vs 4.28)} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
 
 Two findings of the ablation campaign deserve emphasis because they revise intuitive expectations:
 \begin{itemize}
@@ -54,7 +77,7 @@ Several directions follow directly from the limitations above and from the archi
 \begin{itemize}
     \item \textbf{Community detection for global reasoning.} SemanticMesh currently has no graph-level community-detection stage (unlike Microsoft GraphRAG's Leiden-based hierarchical clustering~\cite{blondel2008fast, traag2019from}). Incorporating Louvain or Leiden community detection to partition large schemas into localised sub-graphs would enable hierarchical map-reduce answering of broad, global questions and is the most promising route to the multi-hop and large-scale limitations.
     \item \textbf{Semantic intra-table chunking.} Clustering the columns of wide tables into semantic subgroups before mapping would reduce context-window pressure and is expected to improve mapping precision on wide schemas.
-    \item \textbf{Domain-specific embedding or SLM fine-tuning.} Fine-tuning a small language model (e.g.\ via Parameter-Efficient Fine-Tuning) on the corporate document corpus would address embedding drift and reduce the cost of the extraction and entity-resolution tiers.
+    \item \textbf{Domain-specific embedding or SLM fine-tuning.} Fine-tuning a small language model (e.g.\ via Parameter-Efficient Fine-Tuning~\cite{hu2022lora}) on the corporate document corpus would address embedding drift and reduce the cost of the extraction and entity-resolution tiers.
     \item \textbf{Adaptive retrieval pool.} Because $k{=}20$ strictly improves recall without hurting judged quality, an adaptive policy that raises the pool size when the adjusted retrieval-quality score is low could capture the recall gain only where the answer is under-supported, paying the cross-encoder cost only when needed.
     \item \textbf{Stronger text-to-Cypher generation.} Although the single-statement guard and deterministic fallback make Cypher generation robust, a dedicated text-to-Cypher model~\cite{tiwari2025autocypherimprovingllmscypher} could further reduce the residual multi-statement emissions and the fallback load.
     \item \textbf{Active learning from human-in-the-loop review.} Persisting HITL mapping corrections to refine future mapping proposals and system prompts would let the system improve with use, directly targeting the precision gap on multi-hop and degraded-schema questions.

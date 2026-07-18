@@ -41,7 +41,7 @@ Two custom metrics evaluate pipeline-specific self-reflection and alignment perf
 \subsection{Custom AI Judge Framework}
 \label{sec:eval:ai_judge}
 
-Standard automated metrics like RAGAS often penalize technical responses containing database identifiers or structured schemas. We therefore implement a custom LLM-as-a-Judge framework powered by \texttt{gpt-5.4-nano-2026-03-17}. The AI Judge evaluates generated answers across five weighted dimensions using a structured rubric:
+Standard automated metrics like RAGAS often penalize technical responses containing database identifiers or structured schemas. We therefore implement a custom LLM-as-a-Judge framework powered by \texttt{gpt-5.4-nano-2026-03-17}~\cite{openai2024gpt54nano}. The AI Judge evaluates generated answers across five weighted dimensions using a structured rubric:
 \begin{enumerate}
     \item \textbf{Builder Quality} ($25\%$): Evaluates the correctness of triplet extraction, entity resolution deduplication, and schema mapping validation.
     \item \textbf{Retrieval Effectiveness} ($25\%$): Evaluates whether the hybrid retrieval (vector, BM25, and graph) correctly captured the required context.
@@ -75,7 +75,7 @@ Table~\ref{tab:ablation_results} presents the results of the ablation campaign o
 
 \begin{table}[htbp]
 \centering
-\caption{Ablation study results on the DS01 E-Commerce baseline dataset (v1.5.1 re-run, re-judged with \texttt{gpt-5.4-nano-2026-03-17}).}
+\caption{Ablation study results on the DS01 E-Commerce baseline dataset (v1.5.1 re-run, re-judged with \texttt{gpt-5.4-nano-2026-03-17}~\cite{openai2024gpt54nano}).}
 \label{tab:ablation_results}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}llccclc@{}}
@@ -127,7 +127,7 @@ On the v1.5.1 DS01 baseline, disabling schema-mapping validation and enrichment 
 \subsection{Cross-Dataset Generalisation and Top-K Sensitivity}
 \label{sec:eval:topk_sensitivity}
 
-The DS01 ablation isolates single variables on a simple baseline; the value of the optimised configuration (AB-BEST) appears on the harder DS02--DS07, where it sustains $100\%$ grounded answers across all $210$ questions (zero hallucinations) and $100\%$ builder completion, including the $58$-table stress set. Its average AI-Judge score over the seven datasets is $4.31/5.0$ under the systematic \texttt{gpt-5.4-nano} judge, with the hardest cases being DS03 Healthcare ($3.65$, multi-hop clinical questions) and the degraded schemas DS06 legacy ($4.25$) and DS07 stress ($4.20$).
+The DS01 ablation isolates single variables on a simple baseline; the value of the optimised configuration (AB-BEST) appears on the harder DS02--DS07, where it sustains $100\%$ grounded answers across all $210$ questions (zero hallucinations) and $100\%$ builder completion, including the $58$-table stress set. Its average AI-Judge score over the seven datasets is $4.31/5.0$ under the systematic \texttt{gpt-5.4-nano}~\cite{openai2024gpt54nano} judge, with the hardest cases being DS03 Healthcare ($3.65$, multi-hop clinical questions) and the degraded schemas DS06 legacy ($4.25$) and DS07 stress ($4.20$).
 
 To validate the reranker pool size beyond DS01, the full pipeline was re-run with \texttt{reranker\_top\_k=20} (AB-BEST-K20) on all seven datasets. The two configurations are effectively tied at the judge level: AB-BEST (K5) averages $4.31$ versus AB-BEST-K20 $4.28$ ($\Delta = -0.03$); K5 wins three datasets, K20 wins two, and two are tied. K20 retrieves strictly more expected sources on every dataset (average GT coverage $0.986$ vs $0.860$, largest gains on the degraded schemas DS06 $+0.37$ and DS05 $+0.21$), but that recall advantage does not translate into higher answer quality --- on complex schemas the extra chunks at ranks 6--20 are often related-but-wrong tables that dilute precision. AB-BEST therefore retains \texttt{top\_k=5} on efficiency grounds (a $4\times$ reduction in cross-encoder inference) rather than quality dominance.
 
@@ -137,3 +137,28 @@ To validate the reranker pool size beyond DS01, the full pipeline was re-run wit
 A measurement caveat surfaced during the v1.5.1 campaign: cross-encoder (CE) absolute scores are artificially low on highly technical, multi-section content such as DDL and data dictionaries. A chunk that is unambiguously the best match for a query may receive a raw CE score of $\sim 0.15$, which would cause the retrieval-quality gate to flag it as poor and distort downstream confidence heuristics --- a ``floor issue''.
 
 To address this without weakening the gate, the rerank node exports two metrics: \texttt{retrieval\_quality\_score\_raw} (the unmodified CE score of the top chunk) and \texttt{retrieval\_quality\_score\_adjusted} (a pool-aware floor). When the candidate pool exceeds a minimum size (\texttt{pool\_confidence\_min\_size}) and the raw score is below a ceiling (\texttt{pool\_confidence\_ceiling}), the score is floored to a minimum acceptable value (\texttt{pool\_confidence\_floor}). The rationale is that being ranked first in a large, competitive pool is stronger evidence of relevance than the raw absolute CE score implies. The quality gate consumes the adjusted score (avoiding false rejections on technical documents) while the raw score is preserved in the evaluation bundle for analysis. The \texttt{pool\_confidence\_applied} flag records when the adjustment was triggered.
+
+Table~\ref{tab:ablation_findings} summarizes the key findings from the ablation study and their implications for system design.
+
+\begin{table}[H]
+\centering
+\caption{Key Findings from Ablation Study}
+\label{tab:ablation_findings}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lp{10cm}@{}}
+\toprule
+\textbf{Finding} & \textbf{Implication} \\
+\midrule
+Baseline compression & DS01 judge scores (3.80--4.80) show most single-variable changes are indistinguishable from baseline (4.50) \\
+Cypher Healing critical & AB-19 (Healing OFF) drops to 3.80, the only statistically significant penalty on DS01 \\
+Recall $\neq$ Quality & K20 raises GT coverage (0.860 $\to$ 0.986) but not judge score (4.31 vs 4.28) \\
+Technical doc floor & Cross-encoder scores artificially low on DDL/dictionaries → pool-aware adjustment needed \\
+Hybrid retrieval robust & Dense+keyword+graph preserves both GT coverage and retrieval quality \\
+ER similarity threshold & 0.75 optimal on DS01 (4.50); 0.85 conservative hurts GT (95\% vs 98\%) \\
+Schema enrichment value & Neutral on DS01 v1.5.1 (98\% GT, 4.50); kept for robustness on degraded schemas \\
+Actor-Critic validation & Neutral on DS01 v1.5.1 (98\% GT, 4.40); critical for complex mappings \\
+HITL threshold & 0.70 over-interrupts (4.20); 0.80 optimal balance; 0.85 matches baseline (4.50) \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
