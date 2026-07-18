@@ -1,6 +1,13 @@
-% only the text for the summary
+% Sintesi in italiano
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Sed arcu non odio euismod lacinia at quis risus sed. Tempor commodo ullamcorper a lacus vestibulum. Sed elementum tempus egestas sed sed risus. Netus et malesuada fames ac turpis. Sed blandit libero volutpat sed cras ornare arcu dui vivamus. Vel pharetra vel turpis nunc eget lorem dolor. Iaculis nunc sed augue lacus viverra vitae congue. Orci eu lobortis elementum nibh. Faucibus nisl tincidunt eget nullam non nisi est sit. Ante metus dictum at tempor commodo ullamcorper. Tempus quam pellentesque nec nam. Nulla malesuada pellentesque elit eget gravida.
+Questa tesi presenta SemanticMesh, un framework multi-agente che automatizza la scoperta semantica e la data governance bridging il gap semantico tra documentazione di business non strutturata e schemi di database fisici, costruendo un Knowledge Graph interrogabile in Neo4j.
 
+L'architettura proposta separa rigorosamente il grafo di costruzione (Builder) dal grafo di interrogazione (Query), seguendo i principi CQRS applicati a pipeline LLM. Questa separazione abilita esecuzione indipendente, aggiornamenti incrementali e isolamento tra correttezza di costruzione e latenza di interrogazione.
 
-% $400\times$ is nicer than 400x
+La risoluzione entità a due stadi combina blocking vettoriale BGE-M3 con clustering Union-Find e un giudice LLM mid-tier per deduplicazione precisa di concetti business. Tre loop di auto-correzione indipendenti forniscono robustezza: validazione Actor-Critic per schema mapping, Cypher healing per generazione query, e hallucination grader per qualità risposta.
+
+La strategia di retrieval ibrido combina ricerca densa, BM25 e attraversamento grafo con Reciprocal Rank Fusion, ridondato da cross-encoder \texttt{bge-reranker-v2-m3}. Un factory LLM five-tier astrae dodici provider backend dietro un interfaccia \texttt{LLMProtocol} unificato, con rilevamento automatico e fallback. Un sistema SHA-256 rileva documenti modificati e triggera riprocessing parziale.
+
+Valutato attraverso sette dataset sintetici (111 tabelle, 210 domande) con un giudice AI domain-specific, la configurazione AB-BEST ha prodotto 210/210 risposte grounded (100\%), zero allucinazioni, e 100\% completamento builder, incluso lo stress set di 58 tabelle (DS07). Il punteggio medio AI-Judge è stato 4.31/5, con i casi più difficili rappresentati da DS03 Healthcare (3.65, domande cliniche multi-hop) e gli schemi degradati DS06 legacy (4.25) e DS07 stress (4.20).
+
+Un contributo metodologico chiave è la campagna di ablation sistematica (21 studi a variabile singolo più configurazioni ottimizzate AB-BEST e AB-BEST-K20) che ha identificato quali componenti e iperparametri massimizzano qualità end-to-end, informando le scelte di design con evidenze empiriche piuttosto che assunzioni intuitive. Il giudice AI sistematico supera le limitazioni di RAGAS su risposte tecniche contenenti identificativi database e jargon di dominio.
