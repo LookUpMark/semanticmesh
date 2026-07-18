@@ -131,3 +131,8 @@ thesis.*
 
 # Docs build artifacts (not tracked)
 docs/overleaf/thesis.pdf
+
+# Utility scripts and lock files (local use only, not versioned)
+run_remainder.sh
+run_remainder_linux.sh
+uv.lock
