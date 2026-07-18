@@ -123,3 +123,8 @@ raw
 .codex*
 .aider.conf.yml
 HANDOFF.md
+
+# Root-level LaTeX build artifacts (generated during build)
+thesis.*
+!thesis.tex
+!thesis.pdf
