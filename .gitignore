@@ -128,3 +128,6 @@ HANDOFF.md
 thesis.*
 !thesis.tex
 !thesis.pdf
+
+# Docs build artifacts (not tracked)
+docs/overleaf/thesis.pdf
