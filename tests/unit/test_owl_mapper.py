@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from rdflib import Graph, Literal, URIRef
+from rdflib import Graph, Literal
 from rdflib.namespace import RDF, RDFS, SKOS
 
 from src.graph import owl_mapper

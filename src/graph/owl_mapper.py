@@ -19,7 +19,7 @@ from __future__ import annotations
 import urllib.parse
 from typing import Any
 
-from rdflib import BNode, Graph, Literal, Namespace, URIRef
+from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDF, RDFS, SKOS
 
 SM = Namespace("http://semanticmesh/graph/v1#")
@@ -74,7 +74,7 @@ def node_to_rdf(
     """Map a node dict to RDF triples in ``graph``. Return its URI, or None to skip."""
     labels: list[str] = list(node.get("labels", []))
     props: dict[str, Any] = dict(node.get("props", {}) or {})
-    label = next((l for l in labels if l in _LABEL_SCHEME), None)
+    label = next((lbl for lbl in labels if lbl in _LABEL_SCHEME), None)
     if label is None:
         return None
     uri = node_uri(label, props)
