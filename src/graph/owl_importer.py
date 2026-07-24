@@ -70,6 +70,21 @@ def _build_node_statements(nodes: list[dict]) -> list[tuple[str, dict]]:
     return stmts
 
 
+def _alias_identity(fragment: str, params: dict, letter: str) -> tuple[str, dict]:
+    """Rewrite a node-identity fragment+params to alias <letter> and namespaced $params.
+
+    Prevents param collisions when two endpoints of an edge use the same generic
+    param name (e.g. both single-key nodes use ``$key``).
+    """
+    new_frag = fragment.replace("n:", f"{letter}:").replace("(n", f"({letter}")
+    new_params: dict = {}
+    for k, v in params.items():
+        namespaced = f"{letter}_{k}"
+        new_frag = new_frag.replace(f"${k}", f"${namespaced}")
+        new_params[namespaced] = v
+    return new_frag, new_params
+
+
 def _merge_graph(
     client: Neo4jClient,
     nodes: list[dict],
@@ -103,11 +118,10 @@ def _merge_graph(
         tgt = eid_identity.get(edge.get("end_eid", ""))
         if not src or not tgt:
             continue
-        src_frag, src_p = src
-        tgt_frag, tgt_p = tgt
-        # rewrite aliases a/b
-        src_frag = src_frag.replace("n:", "a:").replace("(n", "(a")
-        tgt_frag = tgt_frag.replace("n:", "b:").replace("(n", "(b")
+        # Namespace each side's alias AND params so two single-key endpoints
+        # (both using $key) don't collide when merged into one param dict.
+        src_frag, src_p = _alias_identity(src[0], src[1], "a")
+        tgt_frag, tgt_p = _alias_identity(tgt[0], tgt[1], "b")
         cypher = (f"MATCH {src_frag} MATCH {tgt_frag} "
                   f"MERGE (a)-[r:`{rel_type}`]->(b) SET r += $props")
         params = {**src_p, **tgt_p, "props": edge.get("props", {})}

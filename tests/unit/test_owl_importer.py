@@ -64,3 +64,21 @@ class TestImportFromOwlText:
     def test_invalid_strategy_raises(self) -> None:
         with pytest.raises(ValueError, match="unsupported_strategy"):
             owl_importer.import_from_owl_text(_owl_text(), strategy="bogus")
+
+    def test_two_single_key_endpoints_params_do_not_collide(self) -> None:
+        # Regression: both endpoints are single-key nodes using $key. The rel
+        # builder must namespace params (a_key / b_key) so they survive the merge
+        # into one param dict — otherwise tgt overwrites src and the MATCH fails.
+        client = MagicMock()
+        with patch.object(owl_importer, "Neo4jClient") as mock_client, \
+             patch.object(owl_importer, "setup_schema"):
+            mock_client.return_value.__enter__.return_value = client
+            owl_importer.import_from_owl_text(_owl_text(), strategy="clean")
+        # The second execute_batch call carries the relationship statements.
+        rel_batch = client.execute_batch.call_args_list[-1].args[0]
+        assert len(rel_batch) == 1
+        cypher, params = rel_batch[0]
+        assert params["a_key"] == "Customer"
+        assert params["b_key"] == "TB_CST"
+        assert "$a_key" in cypher and "$b_key" in cypher
+
