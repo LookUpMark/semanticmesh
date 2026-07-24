@@ -181,3 +181,25 @@ class TestRoundTrip:
         e = out_edges[0]
         assert e["rel_type"] == "MAPPED_TO"
         assert e["props"]["confidence"] == 0.9
+
+    def test_roundtrip_slashes_in_paths_and_special_chars(self) -> None:
+        # Real-world guard: SourceFile paths and Chunk source_doc contain "/",
+        # and names may contain special chars. The sm: URI must encode "/" so
+        # the segment separator stays unambiguous on parse.
+        nodes = [
+            {"eid": "1", "labels": ["SourceFile"], "props": {"path": "src/data/docs/guide.pdf"}},
+            {"eid": "2", "labels": ["Chunk"],
+             "props": {"chunk_index": 7, "source_doc": "sub/dir/guide.pdf"}},
+            {"eid": "3", "labels": ["BusinessConcept"],
+             "props": {"name": "A/B #1 & Co", "definition": "x"}},
+        ]
+        text = owl_mapper.to_owl_xml(nodes, edges=[])
+        out_nodes, _ = owl_mapper.from_owl_xml(text)
+        by_label = {tuple(n["labels"]): n["props"] for n in out_nodes}
+        assert by_label[("SourceFile",)]["path"] == "src/data/docs/guide.pdf"
+        chunk = by_label[("Chunk",)]
+        assert chunk["chunk_index"] == 7
+        assert isinstance(chunk["chunk_index"], int)
+        assert chunk["source_doc"] == "sub/dir/guide.pdf"
+        assert by_label[("BusinessConcept",)]["name"] == "A/B #1 & Co"
+
