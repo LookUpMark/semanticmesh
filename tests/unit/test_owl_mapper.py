@@ -125,3 +125,59 @@ class TestEdgeToRdf:
         owl_mapper.edge_to_rdf(edge, g, eid_to_uri)
         # confidence lives on the reified statement
         assert (None, owl_mapper.SM["confidence"], Literal(0.9)) in g
+
+
+class TestRoundTrip:
+    def test_serialize_and_parse_roundtrips_nodes(self) -> None:
+        nodes = [
+            {
+                "eid": "1",
+                "labels": ["BusinessConcept"],
+                "props": {"name": "Customer", "definition": "A buyer", "synonyms": ["Client"]},
+            },
+            {
+                "eid": "2",
+                "labels": ["PhysicalTable"],
+                "props": {"table_name": "TB_CST", "ddl_source": "CREATE TABLE TB_CST (id INT)"},
+            },
+        ]
+        edges: list[dict] = []
+        text = owl_mapper.to_owl_xml(nodes, edges)
+        out_nodes, out_edges = owl_mapper.from_owl_xml(text)
+        assert len(out_nodes) == 2
+        names = {n["props"].get("name") or n["props"].get("table_name") for n in out_nodes}
+        assert names == {"Customer", "TB_CST"}
+
+    def test_roundtrip_preserves_definition_and_synonyms(self) -> None:
+        nodes = [
+            {
+                "eid": "1",
+                "labels": ["BusinessConcept"],
+                "props": {
+                    "name": "Order",
+                    "definition": "A purchase",
+                    "synonyms": ["Purchase", "Sale"],
+                },
+            }
+        ]
+        text = owl_mapper.to_owl_xml(nodes, edges=[])
+        out_nodes, _ = owl_mapper.from_owl_xml(text)
+        bc = [n for n in out_nodes if "BusinessConcept" in n["labels"]][0]
+        assert bc["props"]["definition"] == "A purchase"
+        assert set(bc["props"]["synonyms"]) == {"Purchase", "Sale"}
+
+    def test_roundtrip_edges_with_props(self) -> None:
+        nodes = [
+            {"eid": "1", "labels": ["BusinessConcept"], "props": {"name": "Customer"}},
+            {"eid": "2", "labels": ["PhysicalTable"], "props": {"table_name": "TB_CST"}},
+        ]
+        edges = [
+            {"eid": "r1", "start_eid": "1", "end_eid": "2", "rel_type": "MAPPED_TO",
+             "props": {"confidence": 0.9}},
+        ]
+        text = owl_mapper.to_owl_xml(nodes, edges)
+        out_nodes, out_edges = owl_mapper.from_owl_xml(text)
+        assert len(out_edges) == 1
+        e = out_edges[0]
+        assert e["rel_type"] == "MAPPED_TO"
+        assert e["props"]["confidence"] == 0.9

@@ -143,3 +143,171 @@ def edge_to_rdf(
             for v in values:
                 graph.add((stmt, SM[pname], Literal(v)))
     return True
+
+
+# Reverse of _LABEL_SCHEME: uri-segment → (label, key-prop-or-tuple).
+_SEGMENT_TO_LABEL: dict[str, tuple[str, str | tuple[str, ...]]] = {
+    seg: (label, scheme[2]) for label, scheme in _LABEL_SCHEME.items() for seg in [scheme[0]]
+}
+
+# Reverse of _SEMANTIC_PROPS: predicate local-name → prop name.
+_PRED_TO_PROP: dict[str, str] = {
+    "definition": "definition",
+    "altLabel": "synonyms",
+    "comment": "comment",
+}
+
+
+def _bind_namespaces(graph: Graph) -> None:
+    graph.bind("sm", SM)
+    graph.bind("skos", SKOS)
+    graph.bind("rdfs", RDFS)
+
+
+def build_graph(
+    nodes: list[dict],
+    edges: list[dict],
+    *,
+    include_embeddings: bool = False,
+) -> tuple[Graph, dict[str, URIRef]]:
+    """Map all nodes+edges into a fresh Graph. Return (graph, eid→uri)."""
+    graph = Graph()
+    _bind_namespaces(graph)
+    eid_to_uri: dict[str, URIRef] = {}
+    for node in nodes:
+        uri = node_to_rdf(node, graph, include_embeddings=include_embeddings)
+        if uri is not None:
+            eid_to_uri[node.get("eid", "")] = uri
+    for edge in edges:
+        edge_to_rdf(edge, graph, eid_to_uri)
+    return graph, eid_to_uri
+
+
+def to_owl_xml(
+    nodes: list[dict],
+    edges: list[dict],
+    *,
+    include_embeddings: bool = False,
+) -> str:
+    """Serialize node/edge dicts to an OWL/RDF XML string."""
+    graph, _ = build_graph(nodes, edges, include_embeddings=include_embeddings)
+    return graph.serialize(format="xml")
+
+
+def _parse_node_uri(uri: URIRef) -> tuple[str, dict[str, Any]] | None:
+    """Inverse of node_uri: sm URI → (label, key-props). Return None if not a node URI."""
+    if not str(uri).startswith(str(SM)):
+        return None
+    local = str(uri)[len(str(SM)) :]
+    if "/" not in local:
+        return None
+    segment, _, rest = local.partition("/")
+    entry = _SEGMENT_TO_LABEL.get(segment)
+    if entry is None:
+        return None
+    label, key = entry
+    decoded = [urllib.parse.unquote(p) for p in rest.split("/")]
+    if isinstance(key, tuple):
+        # coerce numeric index keys back to int
+        props: dict[str, Any] = {}
+        for kname, raw in zip(key, decoded, strict=True):
+            props[kname] = int(raw) if kname.endswith("_index") else raw
+        return label, props
+    props = {key: decoded[0]}
+    return label, props
+
+
+def from_owl_xml(text: str) -> tuple[list[dict], list[dict]]:
+    """Parse an OWL/RDF XML string back into (nodes, edges) dicts.
+
+    Reverses to_owl_xml. Node props come from typed literals; edge props come
+    from reified sm:Statement blank nodes.
+    """
+    graph = Graph()
+    graph.parse(data=text, format="xml")
+
+    # Collect reified statements (edge props) first.
+    reified: dict[tuple[URIRef, URIRef, Any], dict[str, Any]] = {}
+    for stmt in graph.subjects(RDF.type, SM.Statement):
+        s = graph.value(stmt, RDF.subject)
+        p = graph.value(stmt, RDF.predicate)
+        o = graph.value(stmt, RDF.object)
+        if s is None or p is None or o is None:
+            continue
+        key = (s, p, o)
+        props: dict[str, Any] = {}
+        for pred in graph.predicates(stmt):
+            if pred in (RDF.type, RDF.subject, RDF.predicate, RDF.object):
+                continue
+            pname = str(pred)[len(str(SM)) :]
+            vals = [lit.toPython() for lit in graph.objects(stmt, pred)]
+            props[pname] = vals[0] if len(vals) == 1 else vals
+        reified[key] = props
+
+    # Nodes: group all typed-literal/uri triples by subject.
+    node_props: dict[URIRef, dict[str, Any]] = {}
+    node_labels: dict[URIRef, list[str]] = {}
+    for s, p, o in graph:
+        parsed = _parse_node_uri(s)
+        if parsed is None:
+            continue
+        label, key_props = parsed
+        node_labels.setdefault(s, [])
+        if label not in node_labels[s]:
+            node_labels[s].append(label)
+        props = node_props.setdefault(s, {})
+        props.update(key_props)
+        local = _local_name(p)
+        if p == RDF.type or p == RDFS.label:
+            continue
+        prop_name = _PRED_TO_PROP.get(local)
+        if prop_name is None:
+            if not str(p).startswith(str(SM)):
+                continue
+            prop_name = local
+        if isinstance(o, Literal):
+            val = o.toPython()
+            if prop_name == "synonyms":
+                props.setdefault(prop_name, []).append(val)
+            else:
+                props[prop_name] = val
+
+    nodes = []
+    uri_to_eid: dict[URIRef, str] = {}
+    for i, (uri, labels) in enumerate(node_labels.items()):
+        eid = str(i)
+        uri_to_eid[uri] = eid
+        nodes.append({"eid": eid, "labels": labels, "props": node_props.get(uri, {})})
+
+    # Edges: every sm:-predicate triple that is a known relationship type.
+    rel_segments = {scheme[0] for scheme in _LABEL_SCHEME.values()}
+    edges: list[dict] = []
+    seen: set[tuple[URIRef, URIRef, Any]] = set()
+    for s, p, o in graph:
+        if not str(p).startswith(str(SM)):
+            continue
+        rel_type = str(p)[len(str(SM)) :]
+        if rel_type == "Statement" or rel_type in rel_segments:
+            continue
+        if rel_type not in _REL_TYPES:
+            continue
+        key = (s, p, o)
+        if key in seen:
+            continue
+        seen.add(key)
+        edges.append(
+            {
+                "eid": f"r{len(edges)}",
+                "start_eid": uri_to_eid.get(s, ""),
+                "end_eid": uri_to_eid.get(o, ""),
+                "rel_type": rel_type,
+                "props": reified.get(key, {}),
+            }
+        )
+    return nodes, edges
+
+
+def _local_name(uri: Any) -> str:
+    """Return the local name of a URI/namespace term (after the last # or /)."""
+    text = str(uri)
+    return text.rsplit("#", 1)[-1].rsplit("/", 1)[-1]
