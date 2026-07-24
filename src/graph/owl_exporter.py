@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -100,7 +100,7 @@ def export_to_owl_files(
     if not nodes and not edges:
         raise ValueError("no_data_to_export: the Knowledge Graph is empty")
 
-    export_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    export_id = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     out_dir = _EXPORT_DIR / export_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -126,7 +126,7 @@ def export_to_owl_files(
 
     metadata = {
         "export_id": export_id,
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat(),
         "nodes_count": len(nodes),
         "relationships_count": len(edges),
         "include_embeddings": include_embeddings,
