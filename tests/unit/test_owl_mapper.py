@@ -76,3 +76,52 @@ class TestNodeToRdf:
         node = {"eid": "6", "labels": ["BusinessConcept"], "props": {}}
         g = Graph()
         assert owl_mapper.node_to_rdf(node, g) is None
+
+
+class TestEdgeToRdf:
+    def test_known_edge_emits_predicate(self) -> None:
+        eid_to_uri = {
+            "1": owl_mapper.SM["concept/Customer"],
+            "2": owl_mapper.SM["table/TB_CST"],
+        }
+        edge = {
+            "eid": "r1",
+            "start_eid": "1",
+            "end_eid": "2",
+            "rel_type": "MAPPED_TO",
+            "props": {"confidence": 0.9},
+        }
+        g = Graph()
+        ok = owl_mapper.edge_to_rdf(edge, g, eid_to_uri)
+        assert ok is True
+        assert (
+            owl_mapper.SM["concept/Customer"],
+            owl_mapper.SM.MAPPED_TO,
+            owl_mapper.SM["table/TB_CST"],
+        ) in g
+
+    def test_unknown_rel_type_skipped(self) -> None:
+        eid_to_uri = {"1": owl_mapper.SM["concept/A"], "2": owl_mapper.SM["table/B"]}
+        edge = {"start_eid": "1", "end_eid": "2", "rel_type": "WEIRD", "props": {}}
+        g = Graph()
+        assert owl_mapper.edge_to_rdf(edge, g, eid_to_uri) is False
+        assert len(g) == 0
+
+    def test_missing_endpoint_skipped(self) -> None:
+        eid_to_uri = {"1": owl_mapper.SM["concept/A"]}  # endpoint 2 unknown
+        edge = {"start_eid": "1", "end_eid": "2", "rel_type": "MAPPED_TO", "props": {}}
+        g = Graph()
+        assert owl_mapper.edge_to_rdf(edge, g, eid_to_uri) is False
+
+    def test_edge_props_attached_as_reification(self) -> None:
+        eid_to_uri = {"1": owl_mapper.SM["concept/A"], "2": owl_mapper.SM["table/B"]}
+        edge = {
+            "start_eid": "1",
+            "end_eid": "2",
+            "rel_type": "MAPPED_TO",
+            "props": {"confidence": 0.9},
+        }
+        g = Graph()
+        owl_mapper.edge_to_rdf(edge, g, eid_to_uri)
+        # confidence lives on the reified statement
+        assert (None, owl_mapper.SM["confidence"], Literal(0.9)) in g

@@ -19,7 +19,7 @@ from __future__ import annotations
 import urllib.parse
 from typing import Any
 
-from rdflib import Graph, Literal, Namespace, URIRef
+from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDF, RDFS, SKOS
 
 SM = Namespace("http://semanticmesh/graph/v1#")
@@ -95,3 +95,51 @@ def node_to_rdf(
         for v in values:
             graph.add((uri, pred, Literal(v)))
     return uri
+
+
+# Known relationship types → sm: object properties.
+_REL_TYPES: frozenset[str] = frozenset(
+    {
+        "MAPPED_TO",
+        "HAS_ATTRIBUTE",
+        "REFERENCES",
+        "MENTIONS",
+        "DESCRIBED_BY",
+        "PART_OF",
+        "INSTANCE_OF",
+        "CONTAINS_CHUNK",
+        "CHILD_OF",
+    }
+)
+
+
+def edge_to_rdf(
+    edge: dict[str, Any],
+    graph: Graph,
+    eid_to_uri: dict[str, URIRef],
+) -> bool:
+    """Map an edge dict to an RDF triple (reified for props). Return False if skipped."""
+    rel_type = edge.get("rel_type")
+    if rel_type not in _REL_TYPES:
+        return False
+    src = eid_to_uri.get(edge.get("start_eid", ""))
+    tgt = eid_to_uri.get(edge.get("end_eid", ""))
+    if src is None or tgt is None:
+        return False
+    pred = SM[rel_type]
+    graph.add((src, pred, tgt))
+    # Attach edge properties via OWL reification so round-trip is lossless.
+    props = edge.get("props", {}) or {}
+    if props:
+        stmt = BNode()
+        graph.add((stmt, RDF.type, SM.Statement))
+        graph.add((stmt, RDF.subject, src))
+        graph.add((stmt, RDF.predicate, pred))
+        graph.add((stmt, RDF.object, tgt))
+        for pname, pval in props.items():
+            if pval is None:
+                continue
+            values = pval if isinstance(pval, list) else [pval]
+            for v in values:
+                graph.add((stmt, SM[pname], Literal(v)))
+    return True
