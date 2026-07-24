@@ -775,6 +775,61 @@ class RenameSnapshotRequest(BaseModel):
     )
 
 
+# ── OWL export/import models ──────────────────────────────────────────────────
+
+
+class OwlExportRequest(BaseModel):
+    """Request to export the live KG to OWL 2 DL files."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    include_embeddings: bool = Field(
+        default=False,
+        description="Include BGE-M3 embedding vectors (large; omitted by default).",
+    )
+
+
+class OwlExportMeta(BaseModel):
+    """Metadata for an OWL export."""
+
+    export_id: str = Field(description="Timestamp-based export id, e.g. '20260724_143022'.")
+    timestamp: str = Field(description="ISO-8601 UTC creation timestamp.")
+    files: list[str] = Field(description="OWL file names in this export.")
+    checksums: dict[str, str] = Field(description="SHA-256 hex digest per file.")
+    nodes_count: int = Field(description="Number of nodes exported.")
+    relationships_count: int = Field(description="Number of relationships exported.")
+    include_embeddings: bool = Field(default=False)
+
+
+class OwlImportRequest(BaseModel):
+    """Request to import OWL into the KG."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    strategy: Literal["clean", "versioned", "merge"] = Field(
+        default="clean",
+        description=(
+            "'clean' clears and rebuilds; 'versioned' snapshots first then "
+            "clear+rebuild; 'merge' MERGEs without clearing."
+        ),
+    )
+    files: list[str] = Field(
+        description="OWL file paths or contents to import (union-parsed).",
+    )
+
+
+class OwlImportResult(BaseModel):
+    """Result of an OWL import."""
+
+    strategy: str
+    nodes_merged: int
+    relationships_merged: int
+    backup_snapshot_id: str | None = Field(
+        default=None,
+        description="Set only for strategy='versioned' — the auto-backup snapshot id.",
+    )
+
+
 # ── Conversation models ────────────────────────────────────────────────────────
 
 
