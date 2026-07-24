@@ -203,3 +203,19 @@ class TestRoundTrip:
         assert chunk["source_doc"] == "sub/dir/guide.pdf"
         assert by_label[("BusinessConcept",)]["name"] == "A/B #1 & Co"
 
+    def test_from_owl_documents_merges_multiple_xml_files(self) -> None:
+        # An export produces 4 complete XML documents. Concatenating their text
+        # is invalid XML; from_owl_documents must parse each and union the triples.
+        doc1 = owl_mapper.to_owl_xml(
+            [{"eid": "1", "labels": ["BusinessConcept"], "props": {"name": "Customer"}}],
+            edges=[],
+        )
+        doc2 = owl_mapper.to_owl_xml(
+            [{"eid": "2", "labels": ["PhysicalTable"], "props": {"table_name": "TB_CST"}}],
+            edges=[],
+        )
+        out_nodes, _ = owl_mapper.from_owl_documents([doc1, doc2])
+        names = {n["props"].get("name") or n["props"].get("table_name") for n in out_nodes}
+        assert names == {"Customer", "TB_CST"}
+
+

@@ -18,7 +18,7 @@ from typing import Any, Literal
 
 from src.config.logging import get_logger
 from src.graph.neo4j_client import Neo4jClient, setup_schema
-from src.graph.owl_mapper import from_owl_xml
+from src.graph.owl_mapper import from_owl_documents
 
 logger = get_logger(__name__)
 
@@ -132,12 +132,17 @@ def _merge_graph(
     return len(node_stmts), len(rel_stmts)
 
 
-def import_from_owl_text(text: str, strategy: Strategy) -> dict[str, Any]:
-    """Parse OWL XML text and import into Neo4j with the given strategy."""
+def import_from_owl_text(text: str | list[str], strategy: Strategy) -> dict[str, Any]:
+    """Parse OWL XML (single document or list of documents) and import into Neo4j.
+
+    A single ``str`` is one OWL document; a ``list[str]`` is multiple documents
+    (e.g. the 4 files of an export) which are parsed separately and merged.
+    """
     if strategy not in ("clean", "versioned", "merge"):
         raise ValueError("unsupported_strategy: use one of clean|versioned|merge")
 
-    nodes, edges = from_owl_xml(text)
+    texts = [text] if isinstance(text, str) else text
+    nodes, edges = from_owl_documents(texts) if texts else ([], [])
     backup_id: str | None = None
 
     if strategy == "versioned":

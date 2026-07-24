@@ -1133,7 +1133,7 @@ def import_owl(req: OwlImportRequest) -> OwlImportResult:
         raise HTTPException(status_code=400, detail="no_owl_files_provided")
 
     try:
-        result = import_from_owl_text("\n".join(texts), strategy=req.strategy)
+        result = import_from_owl_text(texts, strategy=req.strategy)
         return OwlImportResult(**result)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

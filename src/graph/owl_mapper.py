@@ -218,14 +218,35 @@ def _parse_node_uri(uri: URIRef) -> tuple[str, dict[str, Any]] | None:
 
 
 def from_owl_xml(text: str) -> tuple[list[dict], list[dict]]:
-    """Parse an OWL/RDF XML string back into (nodes, edges) dicts.
+    """Parse a single OWL/RDF XML document into (nodes, edges) dicts.
 
     Reverses to_owl_xml. Node props come from typed literals; edge props come
     from reified sm:Statement blank nodes.
     """
     graph = Graph()
     graph.parse(data=text, format="xml")
+    return _extract_nodes_edges(graph)
 
+
+def from_owl_documents(texts: list[str]) -> tuple[list[dict], list[dict]]:
+    """Parse several OWL/RDF XML documents into one merged (nodes, edges) result.
+
+    Each export produces multiple files (entities/tables/mappings/technical),
+    each a complete XML document. Concatenating their text yields invalid XML,
+    so parse each separately and union the triples before extracting. Duplicate
+    nodes/edges (a node appears in its own file and again in mappings.owl)
+    collapse on the union because they share the same sm: URI.
+    """
+    merged = Graph()
+    for text in texts:
+        single = Graph()
+        single.parse(data=text, format="xml")
+        merged += single
+    return _extract_nodes_edges(merged)
+
+
+def _extract_nodes_edges(graph: Graph) -> tuple[list[dict], list[dict]]:
+    """Extract (nodes, edges) dicts from a parsed Graph (single or unioned)."""
     # Collect reified statements (edge props) first.
     reified: dict[tuple[URIRef, URIRef, Any], dict[str, Any]] = {}
     for stmt in graph.subjects(RDF.type, SM.Statement):
