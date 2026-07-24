@@ -82,3 +82,33 @@ class TestImportFromOwlText:
         assert params["b_key"] == "TB_CST"
         assert "$a_key" in cypher and "$b_key" in cypher
 
+    def test_duplicate_pair_edges_distinguished_by_props(self) -> None:
+        # Regression (DS07): two REFERENCES edges A→B with different FK columns
+        # must get distinct MERGE patterns, else Neo4j collapses them into one
+        # relationship. The distinguishing props go INSIDE [r:TYPE {...}].
+        from src.graph.owl_mapper import to_owl_xml
+
+        nodes = [
+            {"eid": "1", "labels": ["PhysicalTable"], "props": {"table_name": "A"}},
+            {"eid": "2", "labels": ["PhysicalTable"], "props": {"table_name": "B"}},
+        ]
+        edges = [
+            {"eid": "r1", "start_eid": "1", "end_eid": "2", "rel_type": "REFERENCES",
+             "props": {"column": "fk_a", "references_column": "id"}},
+            {"eid": "r2", "start_eid": "1", "end_eid": "2", "rel_type": "REFERENCES",
+             "props": {"column": "fk_b", "references_column": "id"}},
+        ]
+        client = MagicMock()
+        with patch.object(owl_importer, "Neo4jClient") as mock_client, \
+             patch.object(owl_importer, "setup_schema"):
+            mock_client.return_value.__enter__.return_value = client
+            owl_importer.import_from_owl_text(to_owl_xml(nodes, edges), strategy="clean")
+        rel_batch = client.execute_batch.call_args_list[-1].args[0]
+        assert len(rel_batch) == 2
+        patterns = {cypher for cypher, _ in rel_batch}
+        # both the distinguishing column params must appear, inside the rel brackets
+        assert any("$rp_column" in c and "fk_a" not in c for c in patterns)
+        assert all("$rp_column" in c for c in patterns)  # prop pattern present
+        params_list = [p for _, p in rel_batch]
+        assert {p["rp_column"] for p in params_list} == {"fk_a", "fk_b"}
+

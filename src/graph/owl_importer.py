@@ -133,9 +133,17 @@ def _merge_graph(
         # (both using $key) don't collide when merged into one param dict.
         src_frag, src_p = _alias_identity(src[0], src[1], "a")
         tgt_frag, tgt_p = _alias_identity(tgt[0], tgt[1], "b")
+        edge_props = edge.get("props", {}) or {}
+        # Include edge props in the MERGE pattern so multiple edges of the same
+        # type between the same pair survive (e.g. two FK columns A→B with
+        # different `column` would otherwise collapse into one relationship).
+        # Neo4j can't dereference $map.key, so flatten each prop to $rp_<name>.
+        rp_params = {f"rp_{k}": v for k, v in edge_props.items()}
+        prop_inner = ", ".join(f"{k}: $rp_{k}" for k in edge_props)
+        rel_inner = f" {{ {prop_inner} }}" if prop_inner else ""
         cypher = (f"MATCH {src_frag} MATCH {tgt_frag} "
-                  f"MERGE (a)-[r:`{rel_type}`]->(b) SET r += $props")
-        params = {**src_p, **tgt_p, "props": edge.get("props", {})}
+                  f"MERGE (a)-[r:`{rel_type}`{rel_inner}]->(b) SET r += $props")
+        params = {**src_p, **tgt_p, **rp_params, "props": edge_props}
         rel_stmts.append((cypher, params))
 
     for i in range(0, len(rel_stmts), 200):

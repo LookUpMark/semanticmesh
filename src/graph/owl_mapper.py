@@ -123,7 +123,15 @@ def edge_to_rdf(
     graph: Graph,
     eid_to_uri: dict[str, URIRef],
 ) -> bool:
-    """Map an edge dict to an RDF triple (reified for props). Return False if skipped."""
+    """Map an edge dict to RDF. Return False if skipped.
+
+    Emits the base triple (src, pred, tgt) for graph visualization in tools
+    like Protégé, PLUS a distinct reified ``sm:Statement`` per edge. RDF triples
+    are unique by (s, p, o), so without per-edge reification two same-type edges
+    between the same pair (e.g. two FK columns A→B) would collapse into one.
+    The statement carries the edge's own properties and gives each edge a
+    distinct identity for lossless round-trip.
+    """
     rel_type = edge.get("rel_type")
     if rel_type not in _REL_TYPES:
         return False
@@ -133,20 +141,17 @@ def edge_to_rdf(
         return False
     pred = SM[rel_type]
     graph.add((src, pred, tgt))
-    # Attach edge properties via OWL reification so round-trip is lossless.
-    props = edge.get("props", {}) or {}
-    if props:
-        stmt = BNode()
-        graph.add((stmt, RDF.type, SM.Statement))
-        graph.add((stmt, RDF.subject, src))
-        graph.add((stmt, RDF.predicate, pred))
-        graph.add((stmt, RDF.object, tgt))
-        for pname, pval in props.items():
-            if pval is None:
-                continue
-            values = pval if isinstance(pval, list) else [pval]
-            for v in values:
-                graph.add((stmt, SM[pname], Literal(v)))
+    stmt = BNode()
+    graph.add((stmt, RDF.type, SM.Statement))
+    graph.add((stmt, RDF.subject, src))
+    graph.add((stmt, RDF.predicate, pred))
+    graph.add((stmt, RDF.object, tgt))
+    for pname, pval in (edge.get("props", {}) or {}).items():
+        if pval is None:
+            continue
+        values = pval if isinstance(pval, list) else [pval]
+        for v in values:
+            graph.add((stmt, SM[pname], Literal(v)))
     return True
 
 
@@ -252,24 +257,6 @@ def from_owl_documents(texts: list[str]) -> tuple[list[dict], list[dict]]:
 
 def _extract_nodes_edges(graph: Graph) -> tuple[list[dict], list[dict]]:
     """Extract (nodes, edges) dicts from a parsed Graph (single or unioned)."""
-    # Collect reified statements (edge props) first.
-    reified: dict[tuple[URIRef, URIRef, Any], dict[str, Any]] = {}
-    for stmt in graph.subjects(RDF.type, SM.Statement):
-        s = graph.value(stmt, RDF.subject)
-        p = graph.value(stmt, RDF.predicate)
-        o = graph.value(stmt, RDF.object)
-        if s is None or p is None or o is None:
-            continue
-        key = (s, p, o)
-        props: dict[str, Any] = {}
-        for pred in graph.predicates(stmt):
-            if pred in (RDF.type, RDF.subject, RDF.predicate, RDF.object):
-                continue
-            pname = str(pred)[len(str(SM)) :]
-            vals = [lit.toPython() for lit in graph.objects(stmt, pred)]
-            props[pname] = vals[0] if len(vals) == 1 else vals
-        reified[key] = props
-
     # Nodes: group all typed-literal/uri triples by subject.
     node_props: dict[URIRef, dict[str, Any]] = {}
     node_labels: dict[URIRef, list[str]] = {}
@@ -311,29 +298,60 @@ def _extract_nodes_edges(graph: Graph) -> tuple[list[dict], list[dict]]:
         uri_to_eid[uri] = eid
         nodes.append({"eid": eid, "labels": labels, "props": node_props.get(uri, {})})
 
-    # Edges: every sm:-predicate triple that is a known relationship type.
-    rel_segments = {scheme[0] for scheme in _LABEL_SCHEME.values()}
+    # Edges: one per reified sm:Statement (preserves props + duplicate-pair edges,
+    # which a plain-triple scan could not). Plus a base-triple fallback for OWL
+    # produced by external tools (Protégé/Stardog) that emit edges as plain
+    # triples without sm:Statement reification.
     edges: list[dict] = []
-    seen: set[tuple[URIRef, URIRef, Any]] = set()
-    for s, p, o in graph:
-        if not str(p).startswith(str(SM)):
+    covered: set[tuple[Any, Any, Any]] = set()
+
+    def _edge_props(stmt: Any) -> dict[str, Any]:
+        props: dict[str, Any] = {}
+        for pred in graph.predicates(stmt):
+            if pred in (RDF.type, RDF.subject, RDF.predicate, RDF.object):
+                continue
+            pname = str(pred)[len(str(SM)) :]
+            vals = [lit.toPython() for lit in graph.objects(stmt, pred)]
+            props[pname] = vals[0] if len(vals) == 1 else vals
+        return props
+
+    for stmt in graph.subjects(RDF.type, SM.Statement):
+        s = graph.value(stmt, RDF.subject)
+        p = graph.value(stmt, RDF.predicate)
+        o = graph.value(stmt, RDF.object)
+        if s is None or p is None or o is None:
             continue
-        rel_type = str(p)[len(str(SM)) :]
-        if rel_type == "Statement" or rel_type in rel_segments:
-            continue
+        rel_type = _local_name(p)
         if rel_type not in _REL_TYPES:
             continue
-        key = (s, p, o)
-        if key in seen:
-            continue
-        seen.add(key)
         edges.append(
             {
                 "eid": f"r{len(edges)}",
                 "start_eid": uri_to_eid.get(s, ""),
                 "end_eid": uri_to_eid.get(o, ""),
                 "rel_type": rel_type,
-                "props": reified.get(key, {}),
+                "props": _edge_props(stmt),
+            }
+        )
+        covered.add((s, p, o))
+
+    # Fallback: plain triples of known rel types not already covered by a statement.
+    for s, p, o in graph:
+        if not str(p).startswith(str(SM)):
+            continue
+        rel_type = _local_name(p)
+        if rel_type == "Statement" or rel_type not in _REL_TYPES:
+            continue
+        if (s, p, o) in covered:
+            continue
+        covered.add((s, p, o))
+        edges.append(
+            {
+                "eid": f"r{len(edges)}",
+                "start_eid": uri_to_eid.get(s, ""),
+                "end_eid": uri_to_eid.get(o, ""),
+                "rel_type": rel_type,
+                "props": {},
             }
         )
     return nodes, edges
