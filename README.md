@@ -364,12 +364,40 @@ python -m scripts.serve_api --reload     # Auto-reload for development
 | **Pipeline** | `POST /demo/pipeline`, `/pipeline/upload` | Full E2E: build + query |
 | **Graph** | `GET /demo/graph/stats`, `/graph/data` | Live Neo4j statistics and export |
 | **Snapshots** | CRUD `/demo/kg/snapshots` | Save/load/manage KG snapshots |
+| **OWL** | `POST /demo/kg/owl/export`, `GET /demo/kg/owl/export/{id}`, `POST /demo/kg/owl/import` | Export/import KG as OWL 2 DL (Protégé/Stardog/GraphDB compatible) |
 | **Conversations** | CRUD `/demo/conversations` | Persist chat history |
 | **Ablation** | `POST /ablation/run/preset`, `/run/custom` | Launch ablation studies |
 | **Results** | `GET /ablation/bundle/...`, `/evaluate/...` | Download bundles, AI Judge payloads |
 
 All `/api/v1/*` endpoints require `X-API-Key` header when `API_KEY` is set.
 Swagger UI at `http://localhost:8000/docs`.
+
+### OWL Export / Import
+
+Export the live Knowledge Graph to OWL 2 DL for use in Protégé, Stardog, or
+GraphDB, or as a portable backup:
+
+```bash
+# Export → returns metadata with export_id; download is a .tar.gz of 4 .owl files + metadata.json
+curl -X POST -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"include_embeddings": false}' \
+  http://localhost:8000/api/v1/demo/kg/owl/export
+
+# Download the tarball
+curl -H "X-API-Key: $KEY" \
+  http://localhost:8000/api/v1/demo/kg/owl/export/20260724_143022 -o export.tar.gz
+
+# Import (strategy: clean | versioned | merge). `files` accepts paths or inline OWL XML.
+curl -X POST -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"strategy": "versioned", "files": ["entities.owl", "tables.owl", "mappings.owl"]}' \
+  http://localhost:8000/api/v1/demo/kg/owl/import
+```
+
+| Strategy | Behavior |
+|----------|----------|
+| `clean` | Clear graph, then rebuild from OWL |
+| `versioned` | Snapshot live graph first (auto-backup for rollback), then clear + rebuild |
+| `merge` | MERGE only — incremental, no clear |
 
 ### CLI Scripts
 
