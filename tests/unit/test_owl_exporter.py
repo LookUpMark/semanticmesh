@@ -86,3 +86,35 @@ class TestExportDirValidation:
         (exports / "20260724_143022").mkdir()
         monkeypatch.setattr(owl_exporter, "_EXPORT_DIR", exports)
         assert owl_exporter.export_dir("20260724_143022").exists()
+
+
+class TestCrossPartitionEdges:
+    def test_cross_partition_edges_survive_file_split(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Regression: edges whose endpoints live in different label partitions
+        # (e.g. Chunk→BusinessConcept MENTIONS, PhysicalTable→Attribute HAS_COLUMN)
+        # were dropped because per-file RDF build only knew that file's nodes.
+        # Each edge must carry both endpoint nodes into its partition file.
+        from src.graph.owl_mapper import from_owl_documents
+
+        monkeypatch.setattr(owl_exporter, "_EXPORT_DIR", tmp_path / "owl_exports")
+        nodes = [
+            {"eid": "1", "labels": ["BusinessConcept"], "props": {"name": "Customer"}},
+            {"eid": "2", "labels": ["Chunk"], "props": {"chunk_index": 0, "source_doc": "g.pdf"}},
+            {"eid": "3", "labels": ["PhysicalTable"], "props": {"table_name": "TB_CST"}},
+            {"eid": "4", "labels": ["Attribute"], "props": {"name": "id"}},
+        ]
+        edges = [
+            {"eid": "r1", "start_eid": "2", "end_eid": "1", "rel_type": "MENTIONS", "props": {}},
+            {"eid": "r2", "start_eid": "3", "end_eid": "4", "rel_type": "HAS_COLUMN", "props": {}},
+        ]
+        with patch.object(owl_exporter, "_dump_graph", return_value=(nodes, edges)):
+            meta = owl_exporter.export_to_owl_files()
+
+        directory = owl_exporter.export_dir(meta["export_id"])
+        texts = [p.read_text() for p in directory.glob("*.owl")]
+        _out_nodes, out_edges = from_owl_documents(texts)
+        rel_types = {e["rel_type"] for e in out_edges}
+        assert rel_types == {"MENTIONS", "HAS_COLUMN"}
+        assert len(out_edges) == 2

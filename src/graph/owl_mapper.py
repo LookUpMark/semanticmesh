@@ -106,6 +106,7 @@ _REL_TYPES: frozenset[str] = frozenset(
     {
         "MAPPED_TO",
         "HAS_ATTRIBUTE",
+        "HAS_COLUMN",
         "REFERENCES",
         "MENTIONS",
         "DESCRIBED_BY",

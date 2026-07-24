@@ -25,8 +25,8 @@ logger = get_logger(__name__)
 Strategy = Literal["clean", "versioned", "merge"]
 
 _ALLOWED_RELS = frozenset(
-    {"MAPPED_TO", "HAS_ATTRIBUTE", "REFERENCES", "MENTIONS", "DESCRIBED_BY",
-     "PART_OF", "INSTANCE_OF", "CONTAINS_CHUNK", "CHILD_OF"}
+    {"MAPPED_TO", "HAS_ATTRIBUTE", "HAS_COLUMN", "REFERENCES", "MENTIONS",
+     "DESCRIBED_BY", "PART_OF", "INSTANCE_OF", "CONTAINS_CHUNK", "CHILD_OF"}
 )
 
 # ponytail: the node/edge → MERGE builders below mirror kg_registry._import_graph.

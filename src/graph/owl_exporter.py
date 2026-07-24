@@ -32,8 +32,9 @@ _PARTITION_LABELS: dict[str, set[str]] = {
     "technical.owl": {"Chunk", "ParentChunk", "SourceFile"},
 }
 # Edge partition by rel_type; mappings.owl gets the schema edges.
+# HAS_COLUMN is the real builder rel type (PhysicalTable→Attribute).
 _PARTITION_RELS: dict[str, set[str]] = {
-    "mappings.owl": {"MAPPED_TO", "REFERENCES", "HAS_ATTRIBUTE"},
+    "mappings.owl": {"MAPPED_TO", "REFERENCES", "HAS_COLUMN", "HAS_ATTRIBUTE"},
 }
 
 
@@ -67,22 +68,28 @@ def _partition_edges(
     edges: list[dict],
     nodes: list[dict],
 ) -> tuple[dict[str, list[dict]], dict[str, list[dict]]]:
-    """Partition edges, and gather the nodes each edge touches for its file."""
+    """Partition edges, and gather the endpoint nodes each edge touches.
+
+    Every edge brings BOTH its endpoint nodes into its partition file, so each
+    file is self-contained and cross-partition edges (e.g. MENTIONS: Chunk→
+    BusinessConcept, where the endpoints live in different label partitions)
+    are not dropped during per-file RDF build.
+    """
     eid_to_node = {n["eid"]: n for n in nodes}
-    edge_buckets: dict[str, list[dict]] = {f: [] for f in _PARTITION_RELS}
-    node_buckets: dict[str, list[dict]] = {f: [] for f in _PARTITION_RELS}
+    edge_buckets: dict[str, list[dict]] = {}
+    node_buckets: dict[str, list[dict]] = {}
     for edge in edges:
         rel = edge.get("rel_type")
-        for fname, rels in _PARTITION_RELS.items():
-            if rel in rels:
-                edge_buckets[fname].append(edge)
-                for eid in (edge.get("start_eid"), edge.get("end_eid")):
-                    n = eid_to_node.get(eid)
-                    if n and n not in node_buckets[fname]:
-                        node_buckets[fname].append(n)
-                break
-        else:
-            edge_buckets.setdefault("technical.owl", []).append(edge)
+        target = next(
+            (f for f, rels in _PARTITION_RELS.items() if rel in rels),
+            "technical.owl",
+        )
+        edge_buckets.setdefault(target, []).append(edge)
+        touched = node_buckets.setdefault(target, [])
+        for eid in (edge.get("start_eid"), edge.get("end_eid")):
+            n = eid_to_node.get(eid)
+            if n and n not in touched:
+                touched.append(n)
     return edge_buckets, node_buckets
 
 
