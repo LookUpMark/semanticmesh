@@ -783,11 +783,6 @@ class OwlExportRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    include_embeddings: bool = Field(
-        default=False,
-        description="Include BGE-M3 embedding vectors (large; omitted by default).",
-    )
-
 
 class OwlExportMeta(BaseModel):
     """Metadata for an OWL export."""
@@ -798,7 +793,6 @@ class OwlExportMeta(BaseModel):
     checksums: dict[str, str] = Field(description="SHA-256 hex digest per file.")
     nodes_count: int = Field(description="Number of nodes exported.")
     relationships_count: int = Field(description="Number of relationships exported.")
-    include_embeddings: bool = Field(default=False)
 
 
 class OwlImportRequest(BaseModel):

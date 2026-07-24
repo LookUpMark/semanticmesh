@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -36,15 +37,15 @@ _PARTITION_RELS: dict[str, set[str]] = {
 }
 
 
-def _dump_graph(*, include_embeddings: bool = False) -> tuple[list[dict], list[dict]]:
-    """Return (nodes, edges) dicts from Neo4j. Thin wrapper over kg_registry."""
+def _dump_graph() -> tuple[list[dict], list[dict]]:
+    """Return (nodes, edges) dicts from Neo4j. Thin wrapper over kg_registry.
+
+    kg_registry._export_graph already strips embedding vectors (regenerated on
+    query), so embeddings are never exported — matching the backup design.
+    """
     from src.graph.kg_registry import _export_graph
 
-    nodes, edges = _export_graph()
-    if not include_embeddings:
-        for n in nodes:
-            n["props"].pop("embedding", None)
-    return nodes, edges
+    return _export_graph()
 
 
 def _partition_nodes(nodes: list[dict]) -> dict[str, list[dict]]:
@@ -91,12 +92,9 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def export_to_owl_files(
-    *,
-    include_embeddings: bool = False,
-) -> dict[str, Any]:
+def export_to_owl_files() -> dict[str, Any]:
     """Export the live graph to 4 OWL files + metadata.json. Return metadata dict."""
-    nodes, edges = _dump_graph(include_embeddings=include_embeddings)
+    nodes, edges = _dump_graph()
     if not nodes and not edges:
         raise ValueError("no_data_to_export: the Knowledge Graph is empty")
 
@@ -118,7 +116,7 @@ def export_to_owl_files(
                     part_nodes.append(n)
                     existing_eids.add(n["eid"])
         part_edges = edge_buckets.get(fname, [])
-        graph, _ = build_graph(part_nodes, part_edges, include_embeddings=include_embeddings)
+        graph, _ = build_graph(part_nodes, part_edges)
         text = graph.serialize(format="xml")
         path = out_dir / fname
         path.write_text(text, encoding="utf-8")
@@ -129,7 +127,6 @@ def export_to_owl_files(
         "timestamp": datetime.now(UTC).isoformat(),
         "nodes_count": len(nodes),
         "relationships_count": len(edges),
-        "include_embeddings": include_embeddings,
         "files": list(checksums),
         "checksums": checksums,
     }
@@ -144,9 +141,22 @@ def export_to_owl_files(
     return metadata
 
 
+# Export ids are timestamps (YYYYMMDD_HHMMSS). Validate format + path containment
+# to prevent traversal via the download endpoint (e.g. /export/..).
+_EXPORT_ID_RE = re.compile(r"\d{8}_\d{6}")
+
+
 def export_dir(export_id: str) -> Path:
-    """Return the directory path for a given export id (for download)."""
-    return _EXPORT_DIR / export_id
+    """Return the resolved directory path for a validated export id.
+
+    Raises ValueError if the id is malformed or resolves outside _EXPORT_DIR.
+    """
+    if not _EXPORT_ID_RE.fullmatch(export_id):
+        raise ValueError(f"invalid_export_id: {export_id!r}")
+    directory = (_EXPORT_DIR / export_id).resolve()
+    if not directory.is_relative_to(_EXPORT_DIR.resolve()):
+        raise ValueError(f"invalid_export_id: {export_id!r}")
+    return directory
 
 
 def list_exports() -> list[dict[str, Any]]:

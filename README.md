@@ -387,9 +387,11 @@ curl -X POST -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
 curl -H "X-API-Key: $KEY" \
   http://localhost:8000/api/v1/demo/kg/owl/export/20260724_143022 -o export.tar.gz
 
-# Import (strategy: clean | versioned | merge). `files` accepts paths or inline OWL XML.
+# Import (strategy: clean | versioned | merge). `files` is a list of inline OWL XML
+# documents (read them from disk and pass the contents, e.g. via a JSON builder).
 curl -X POST -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
-  -d '{"strategy": "versioned", "files": ["entities.owl", "tables.owl", "mappings.owl"]}' \
+  -d "$(jq -n --arg a "$(cat entities.owl)" --arg b "$(cat tables.owl)" \
+        '{strategy:"versioned", files:[$a,$b]}')" \
   http://localhost:8000/api/v1/demo/kg/owl/import
 ```
 

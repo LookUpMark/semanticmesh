@@ -1057,12 +1057,15 @@ def delete_conversation(conversation_id: str) -> dict[str, str]:
 def export_owl(req: OwlExportRequest) -> OwlExportMeta:
     try:
         from src.graph.owl_exporter import export_to_owl_files
-        meta = export_to_owl_files(include_embeddings=req.include_embeddings)
+        meta = export_to_owl_files()
         return OwlExportMeta(**meta)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=503, detail=f"neo4j_unavailable: {exc}") from exc
+        logger.exception("OWL export failed")
+        raise HTTPException(
+            status_code=503, detail="OWL export failed. Check server logs."
+        ) from exc
 
 
 @router.get(
@@ -1078,7 +1081,11 @@ def download_owl_export(export_id: str):
 
     from src.graph.owl_exporter import export_dir
 
-    directory = export_dir(export_id)
+    # export_dir validates the id format + path containment (defense vs traversal).
+    try:
+        directory = export_dir(export_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not directory.exists():
         raise HTTPException(status_code=404, detail=f"export '{export_id}' not found")
 
@@ -1090,6 +1097,7 @@ def download_owl_export(export_id: str):
         buf.seek(0)
         yield buf.read()
 
+    # export_id is validated as \d{8}_\d{6} — safe to interpolate in the header.
     return StreamingResponse(
         _tar_stream(),
         media_type="application/gzip",
@@ -1110,32 +1118,26 @@ def list_owl_exports() -> list[OwlExportMeta]:
 @router.post(
     "/kg/owl/import",
     response_model=OwlImportResult,
-    summary="Import OWL files into the KG",
+    summary="Import OWL documents into the KG",
     description=(
-        "Parses the given OWL files (union) and imports them into Neo4j. "
+        "Parses the given OWL XML documents (union) and imports them into Neo4j. "
+        "Each entry in `files` is inline OWL XML content. "
         "strategy: 'clean' | 'versioned' | 'merge'."
     ),
 )
 def import_owl(req: OwlImportRequest) -> OwlImportResult:
-    import pathlib
-
     from src.graph.owl_importer import import_from_owl_text
 
-    texts: list[str] = []
-    for f in req.files:
-        p = pathlib.Path(f)
-        if p.exists():
-            texts.append(p.read_text(encoding="utf-8"))
-        else:
-            # treat as inline OWL XML content
-            texts.append(f)
-    if not texts:
-        raise HTTPException(status_code=400, detail="no_owl_files_provided")
+    if not req.files:
+        raise HTTPException(status_code=400, detail="no_owl_documents_provided")
 
     try:
-        result = import_from_owl_text(texts, strategy=req.strategy)
+        result = import_from_owl_text(list(req.files), strategy=req.strategy)
         return OwlImportResult(**result)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"import_failed: {exc}") from exc
+        logger.exception("OWL import failed")
+        raise HTTPException(
+            status_code=500, detail="OWL import failed. Check server logs."
+        ) from exc

@@ -35,24 +35,30 @@ _ALLOWED_RELS = frozenset(
 # not disturb the 530 passing tests.
 
 
-def _node_identity(node: dict) -> tuple[str, dict] | None:
-    """Return (cypher_match_fragment, params) for MERGE, or None to skip."""
+def _node_identity(node: dict) -> tuple[str, dict, tuple[str, ...]] | None:
+    """Return (cypher_match_fragment, params, identity_prop_names) for MERGE.
+
+    identity_prop_names are the node props the MERGE keys on — excluded from the
+    subsequent SET so they aren't redundantly re-written (matches kg_registry).
+    """
     labels = node.get("labels", [])
     props = node.get("props", {})
     if "BusinessConcept" in labels and props.get("name"):
-        return "(n:BusinessConcept {name: $key})", {"key": props["name"]}
+        return "(n:BusinessConcept {name: $key})", {"key": props["name"]}, ("name",)
     if "PhysicalTable" in labels and props.get("table_name"):
-        return "(n:PhysicalTable {table_name: $key})", {"key": props["table_name"]}
+        return "(n:PhysicalTable {table_name: $key})", {"key": props["table_name"]}, ("table_name",)
     if "Attribute" in labels and props.get("name"):
-        return "(n:Attribute {name: $key})", {"key": props["name"]}
+        return "(n:Attribute {name: $key})", {"key": props["name"]}, ("name",)
     if "Chunk" in labels and props.get("chunk_index") is not None:
         return ("(n:Chunk {chunk_index: $idx, source_doc: $src})",
-                {"idx": props["chunk_index"], "src": props.get("source_doc", "")})
+                {"idx": props["chunk_index"], "src": props.get("source_doc", "")},
+                ("chunk_index", "source_doc"))
     if "ParentChunk" in labels and props.get("parent_chunk_index") is not None:
         return ("(n:ParentChunk {parent_chunk_index: $idx, source_doc: $src})",
-                {"idx": props["parent_chunk_index"], "src": props.get("source_doc", "")})
+                {"idx": props["parent_chunk_index"], "src": props.get("source_doc", "")},
+                ("parent_chunk_index", "source_doc"))
     if "SourceFile" in labels and props.get("path"):
-        return "(n:SourceFile {path: $key})", {"key": props["path"]}
+        return "(n:SourceFile {path: $key})", {"key": props["path"]}, ("path",)
     return None
 
 
@@ -62,9 +68,9 @@ def _build_node_statements(nodes: list[dict]) -> list[tuple[str, dict]]:
         ident = _node_identity(node)
         if ident is None:
             continue
-        match_frag, ident_params = ident
+        match_frag, ident_params, ident_prop_names = ident
         props = {k: v for k, v in node["props"].items()
-                 if k not in ident_params and k != "embedding"}
+                 if k not in ident_prop_names and k != "embedding"}
         stmts.append((f"MERGE {match_frag} SET n += $props",
                       {**ident_params, "props": props}))
     return stmts
@@ -75,6 +81,11 @@ def _alias_identity(fragment: str, params: dict, letter: str) -> tuple[str, dict
 
     Prevents param collisions when two endpoints of an edge use the same generic
     param name (e.g. both single-key nodes use ``$key``).
+
+    Constraint: no param name may be a prefix of another (e.g. ``$s`` and
+    ``$src``), or the substring replace would corrupt the longer name. Current
+    identity params (key/idx/src) satisfy this — keep it that way when adding
+    new node identities.
     """
     new_frag = fragment.replace("n:", f"{letter}:").replace("(n", f"({letter}")
     new_params: dict = {}
@@ -101,8 +112,8 @@ def _merge_graph(
     for i in range(0, len(node_stmts), 200):
         client.execute_batch(node_stmts[i: i + 200])
 
-    # eid → identity match fragment for relationship wiring
-    eid_identity: dict[str, tuple[str, dict]] = {}
+    # eid → identity (fragment, params, prop_names) for relationship wiring
+    eid_identity: dict[str, tuple[str, dict, tuple[str, ...]]] = {}
     for node in nodes:
         ident = _node_identity(node)
         if ident:

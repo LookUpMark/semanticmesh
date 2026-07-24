@@ -35,7 +35,7 @@ def _fake_graph_dump():
 class TestExportToOwlFiles:
     def test_writes_four_owl_files_plus_metadata(self, tmp_path: Path) -> None:
         with patch.object(owl_exporter, "_dump_graph", return_value=_fake_graph_dump()):
-            meta = owl_exporter.export_to_owl_files(include_embeddings=False)
+            meta = owl_exporter.export_to_owl_files()
         out_dir = tmp_path / "owl_exports" / meta["export_id"]
         assert (out_dir / "entities.owl").exists()
         assert (out_dir / "tables.owl").exists()
@@ -67,3 +67,22 @@ class TestExportToOwlFiles:
             pytest.raises(ValueError, match="no_data_to_export"),
         ):
             owl_exporter.export_to_owl_files()
+
+
+class TestExportDirValidation:
+    def test_rejects_traversal_id(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(owl_exporter, "_EXPORT_DIR", tmp_path / "owl_exports")
+        with pytest.raises(ValueError, match="invalid_export_id"):
+            owl_exporter.export_dir("..")
+
+    def test_rejects_malformed_id(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(owl_exporter, "_EXPORT_DIR", tmp_path / "owl_exports")
+        with pytest.raises(ValueError, match="invalid_export_id"):
+            owl_exporter.export_dir("not-a-timestamp")
+
+    def test_accepts_well_formed_id(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        exports = tmp_path / "owl_exports"
+        exports.mkdir()
+        (exports / "20260724_143022").mkdir()
+        monkeypatch.setattr(owl_exporter, "_EXPORT_DIR", exports)
+        assert owl_exporter.export_dir("20260724_143022").exists()

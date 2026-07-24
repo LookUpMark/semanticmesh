@@ -218,4 +218,17 @@ class TestRoundTrip:
         names = {n["props"].get("name") or n["props"].get("table_name") for n in out_nodes}
         assert names == {"Customer", "TB_CST"}
 
+    def test_non_synonyms_list_prop_roundtrips_as_list(self) -> None:
+        # Any list-typed prop (not just synonyms) must survive round-trip as a
+        # list — a backup tool must not silently drop multi-value data.
+        nodes = [
+            {"eid": "1", "labels": ["BusinessConcept"],
+             "props": {"name": "Order", "tags": ["urgent", "intl", "b2b"]}},
+        ]
+        text = owl_mapper.to_owl_xml(nodes, edges=[])
+        out_nodes, _ = owl_mapper.from_owl_xml(text)
+        # RDF triples are set-backed, so multi-value order is not preserved —
+        # the data is what matters.
+        assert set(out_nodes[0]["props"]["tags"]) == {"urgent", "intl", "b2b"}
+
 

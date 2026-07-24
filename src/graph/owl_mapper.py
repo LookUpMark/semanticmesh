@@ -82,11 +82,15 @@ def node_to_rdf(
         return None
     _, rdf_class, key = _LABEL_SCHEME[label]
     graph.add((uri, RDF.type, rdf_class))
-    key_prop = key[0] if isinstance(key, tuple) else key
-    if props.get(key_prop) is not None:
-        graph.add((uri, RDFS.label, Literal(str(props[key_prop]))))
+    # Skip ALL identity props — they're encoded in the URI (node_uri), so emitting
+    # them again as triples would collide on extraction (compound keys: chunk_index
+    # AND source_doc). rdfs:label carries the primary key for human readers.
+    key_props_skip = set(key) if isinstance(key, tuple) else {key}
+    primary_key = key[0] if isinstance(key, tuple) else key
+    if props.get(primary_key) is not None:
+        graph.add((uri, RDFS.label, Literal(str(props[primary_key]))))
     for pname, pval in props.items():
-        if pval is None or pname == key_prop:
+        if pval is None or pname in key_props_skip:
             continue
         if pname == "embedding" and not include_embeddings:
             continue
@@ -287,11 +291,17 @@ def _extract_nodes_edges(graph: Graph) -> tuple[list[dict], list[dict]]:
                 continue
             prop_name = local
         if isinstance(o, Literal):
-            val = o.toPython()
-            if prop_name == "synonyms":
-                props.setdefault(prop_name, []).append(val)
-            else:
-                props[prop_name] = val
+            # Collect all values for this predicate; collapse to scalar below.
+            # Generalizes the old synonyms-only special case — any list-typed
+            # prop (current or future) round-trips losslessly.
+            props.setdefault(prop_name, []).append(o.toPython())
+
+    # Collapse single-value lists to scalars; keep multi-value as lists.
+    # Identity key props (scalars from key_props) are untouched.
+    for prop_map in node_props.values():
+        for k, v in prop_map.items():
+            if isinstance(v, list) and len(v) == 1:
+                prop_map[k] = v[0]
 
     nodes = []
     uri_to_eid: dict[URIRef, str] = {}
