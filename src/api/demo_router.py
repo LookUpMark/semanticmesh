@@ -22,6 +22,10 @@ from src.api.models import (
     ConversationMeta,
     GraphStatsResponse,
     KGSnapshotMeta,
+    OwlExportMeta,
+    OwlExportRequest,
+    OwlImportRequest,
+    OwlImportResult,
     PipelineJobResponse,
     PipelineRequest,
     PipelineResultResponse,
@@ -1034,3 +1038,104 @@ def delete_conversation(conversation_id: str) -> dict[str, str]:
         raise HTTPException(
             status_code=500, detail="Internal server error. Check server logs."
         ) from exc
+
+
+# ── OWL export/import ─────────────────────────────────────────────────────────
+
+
+@router.post(
+    "/kg/owl/export",
+    response_model=OwlExportMeta,
+    summary="Export the live KG to OWL 2 DL files",
+    description=(
+        "Exports the current Neo4j Knowledge Graph to four OWL files "
+        "(entities, tables, mappings, technical) plus a metadata.json with "
+        "SHA-256 checksums. Returns export metadata; download via "
+        "**GET /demo/kg/owl/export/{export_id}**."
+    ),
+)
+def export_owl(req: OwlExportRequest) -> OwlExportMeta:
+    try:
+        from src.graph.owl_exporter import export_to_owl_files
+        meta = export_to_owl_files(include_embeddings=req.include_embeddings)
+        return OwlExportMeta(**meta)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"neo4j_unavailable: {exc}") from exc
+
+
+@router.get(
+    "/kg/owl/export/{export_id}",
+    summary="Download an OWL export as a tarball",
+    description="Streams a .tar.gz of the export directory (4 .owl files + metadata.json).",
+)
+def download_owl_export(export_id: str):
+    import io
+    import tarfile
+
+    from fastapi.responses import StreamingResponse
+
+    from src.graph.owl_exporter import export_dir
+
+    directory = export_dir(export_id)
+    if not directory.exists():
+        raise HTTPException(status_code=404, detail=f"export '{export_id}' not found")
+
+    def _tar_stream():
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+            for path in sorted(directory.iterdir()):
+                tar.add(path, arcname=path.name)
+        buf.seek(0)
+        yield buf.read()
+
+    return StreamingResponse(
+        _tar_stream(),
+        media_type="application/gzip",
+        headers={"Content-Disposition": f'attachment; filename="owl_export_{export_id}.tar.gz"'},
+    )
+
+
+@router.get(
+    "/kg/owl/export",
+    response_model=list[OwlExportMeta],
+    summary="List all OWL exports",
+)
+def list_owl_exports() -> list[OwlExportMeta]:
+    from src.graph.owl_exporter import list_exports
+    return [OwlExportMeta(**m) for m in list_exports()]
+
+
+@router.post(
+    "/kg/owl/import",
+    response_model=OwlImportResult,
+    summary="Import OWL files into the KG",
+    description=(
+        "Parses the given OWL files (union) and imports them into Neo4j. "
+        "strategy: 'clean' | 'versioned' | 'merge'."
+    ),
+)
+def import_owl(req: OwlImportRequest) -> OwlImportResult:
+    import pathlib
+
+    from src.graph.owl_importer import import_from_owl_text
+
+    texts: list[str] = []
+    for f in req.files:
+        p = pathlib.Path(f)
+        if p.exists():
+            texts.append(p.read_text(encoding="utf-8"))
+        else:
+            # treat as inline OWL XML content
+            texts.append(f)
+    if not texts:
+        raise HTTPException(status_code=400, detail="no_owl_files_provided")
+
+    try:
+        result = import_from_owl_text("\n".join(texts), strategy=req.strategy)
+        return OwlImportResult(**result)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"import_failed: {exc}") from exc
