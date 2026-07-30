@@ -107,6 +107,9 @@ docs/overleaf/thesis.pdf
 # Study guide
 docs/study-guide/
 
+# Superpowers specs/plans (local-only)
+docs/superpowers/
+
 # Node / build artifacts
 node_modules/
 .vite/
