@@ -19,12 +19,7 @@ if ! docker ps --format "{{.Names}}" | grep -q "semanticmesh-neo4j"; then
     exit 1
 fi
 
-echo "[$(date)] Dumping Neo4j database..."
-docker exec semanticmesh-neo4j neo4j-admin database dump neo4j --to-path=/tmp
-docker cp semanticmesh-neo4j:/tmp/neo4j.dump ./backups/neo4j_$(date +%Y%m%d_%H%M%S).dump
-echo "[$(date)] Neo4j dump complete"
-
-# 2. OWL export (if API is running)
+# OWL export FIRST — while services are up (no downtime yet)
 if curl -s --fail http://localhost:8000/health > /dev/null; then
     echo "[$(date)] Exporting OWL..."
     curl -s -X POST -H "X-API-Key: $API_KEY" \
@@ -36,6 +31,31 @@ if curl -s --fail http://localhost:8000/health > /dev/null; then
 else
     echo "[$(date)] API not running, skipping OWL export"
 fi
+
+# Neo4j dump — CE has no online backup, must stop DB briefly.
+# ponytail: brief downtime (~10s) per backup. Upgrade to Enterprise for online backup.
+echo "[$(date)] Stopping Neo4j for consistent dump..."
+docker compose stop neo4j
+
+# Resolve the actual Neo4j volume (project-prefixed) — find it regardless of project name
+VOLUME=$(docker volume ls --format '{{.Name}}' | grep 'neo4j_data$' | head -1)
+if [ -z "$VOLUME" ]; then
+    echo "Error: neo4j_data volume not found"
+    docker compose start neo4j
+    exit 1
+fi
+
+echo "[$(date)] Dumping Neo4j (volume: $VOLUME)..."
+# neo4j-admin runs as uid 7474 (neo4j) inside the container — relax host perms so it can write
+chmod 777 ./backups 2>/dev/null || true
+docker run --rm -v "${VOLUME}:/data" -v "$(pwd)/backups:/backups" neo4j:5 \
+    neo4j-admin database dump neo4j --to-path=/backups
+mv ./backups/neo4j.dump "./backups/neo4j_$(date +%Y%m%d_%H%M%S).dump" 2>/dev/null || true
+chmod 755 ./backups 2>/dev/null || true
+echo "[$(date)] Neo4j dump complete"
+
+echo "[$(date)] Restarting Neo4j..."
+docker compose start neo4j
 
 # 3. Clean old backups (keep last 7 days)
 echo "[$(date)] Cleaning old backups..."
