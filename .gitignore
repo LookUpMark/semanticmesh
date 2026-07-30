@@ -136,3 +136,10 @@ docs/overleaf/thesis.pdf
 run_remainder.sh
 run_remainder_linux.sh
 uv.lock
+
+# Deployment artifacts (Docker + certbot + backups)
+backups/*.dump
+backups/*.json
+certbot_conf/
+certbot-www/
+.env.local
