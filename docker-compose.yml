@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5
+    container_name: semanticmesh-neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-thesis_password}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=1G
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - semanticmesh-net
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-thesis_password}", "RETURN 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: semanticmesh-api
+    ports:
+      - "8000:8000"  # Direct access (dev) or internal (prod)
+    environment:
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-thesis_password}
+      - NEO4J_URI=bolt://neo4j:7687
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - API_KEY=${API_KEY}
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./.env:/app/.env
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks:
+      - semanticmesh-net
+    runtime: nvidia  # Auto-fallback to runc
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  nginx:
+    image: nginx:alpine
+    container_name: semanticmesh-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot_conf:/etc/letsencrypt
+      - ./certbot-www:/var/www/certbot
+    depends_on:
+      - api
+    networks:
+      - semanticmesh-net
+
+volumes:
+  neo4j_data:
+
+networks:
+  semanticmesh-net:
+    driver: bridge
