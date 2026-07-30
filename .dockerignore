@@ -1,0 +1,34 @@
+# VCS
+.git
+.gitignore
+
+# Secrets — never enter the build context
+.env
+.env.*
+!.env.example
+
+# Virtual envs & caches
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.mypy_cache
+.pytest_cache
+.ruff_cache
+
+# Docker / deployment artifacts
+backups/
+certbot_conf/
+certbot-www/
+outputs/
+
+# IDE / tooling
+.claude/
+.idea/
+.vscode/
+
+# Large generated files
+data/
+*.log
+HANDOFF.md

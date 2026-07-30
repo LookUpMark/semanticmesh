@@ -54,9 +54,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 8G   # bge-m3 (~2GB) + bge-reranker-v2-m3 (~2GB) loaded lazily on first use
         reservations:
-          memory: 1G
+          memory: 2G
           # GPU auto-detect: allocate only if NVIDIA present, else CPU-only.
           # Docker ignores this block when no matching device exists.
           devices:

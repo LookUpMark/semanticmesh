@@ -241,7 +241,7 @@ LLM_MODEL_MIDTIER=gpt-5-nano-2025-08-07       # For schema enrichment, mapping
 source .venv/bin/activate
 set -a && source .env && set +a          # Load env vars into shell
 
-python -m scripts.serve_api              # http://127.0.1:8000
+python -m scripts.serve_api              # http://127.0.0.1:8000
 python -m scripts.serve_api --reload     # Dev mode (auto-reload on code changes)
 ```
 
@@ -351,17 +351,28 @@ docker compose up neo4j api --build
 
 **Production (with SSL):**
 
+> nginx requires TLS certs to start. Obtain them **first** with certbot in
+> `--standalone` mode (nginx not running, so port 80 is free), then bring up
+> the full stack. Point the cert path in `nginx.conf` at your domain.
+
 ```bash
-# 1. Generate SSL certificates
-docker run --rm -v certbot_conf:/etc/letsencrypt -v certbot-www:/var/www/certbot \
-  certbot/certbot certonly --webroot -w /var/www/certbot \
+# 0. Edit nginx.conf: replace 'semanticmesh.local' with your domain
+sed -i 's/semanticmesh.local/yourdomain.com/g' nginx.conf
+
+# 1. Obtain certs (standalone — nginx must be stopped so port 80 is free)
+docker run --rm -p 80:80 -v certbot_conf:/etc/letsencrypt \
+  certbot/certbot certonly --standalone \
   -d yourdomain.com --email your@email.com --agree-tos
 
-# 2. Start full stack
+# 2. Start full stack (nginx now finds the certs)
 docker compose up -d
 
 # 3. Verify
 curl https://yourdomain.com/health
+
+# 4. Auto-renew (cron) — webroot mode while nginx serves :80
+0 3 * * * docker run --rm -v certbot_conf:/etc/letsencrypt -v certbot-www:/var/www/certbot \
+  certbot/certbot renew --quiet && docker compose exec nginx nginx -s reload
 ```
 
 **GPU Support:**
@@ -454,7 +465,7 @@ The primary interface is the FastAPI REST API:
 
 ```bash
 # Start the server
-python -m scripts.serve_api              # Default: http://127.0.1:8000
+python -m scripts.serve_api              # Default: http://127.0.0.1:8000
 python -m scripts.serve_api --reload     # Auto-reload for development
 ```
 

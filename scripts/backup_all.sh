@@ -19,15 +19,20 @@ if ! docker ps --format "{{.Names}}" | grep -q "semanticmesh-neo4j"; then
     exit 1
 fi
 
-# OWL export FIRST — while services are up (no downtime yet)
+# OWL export — best-effort semantic backup (non-fatal). Must run while DB is up.
+# Empty graph or API/auth issues are warned, not fatal — the Neo4j dump is the critical backup.
 if curl -s --fail http://localhost:8000/health > /dev/null; then
     echo "[$(date)] Exporting OWL..."
-    curl -s -X POST -H "X-API-Key: $API_KEY" \
-        -H "Content-Type: application/json" \
-        -d '{"include_embeddings": false}' \
-        http://localhost:8000/api/v1/demo/kg/owl/export \
-        -o ./backups/owl_export_meta.json
-    echo "[$(date)] OWL export complete"
+    # OwlExportRequest has extra="forbid" → empty body only
+    HTTP_CODE=$(curl -s -o ./backups/owl_export_meta.json -w "%{http_code}" -X POST \
+        -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" -d '{}' \
+        http://localhost:8000/api/v1/demo/kg/owl/export)
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo "[$(date)] OWL export complete"
+    else
+        echo "[$(date)] OWL export skipped (HTTP $HTTP_CODE — e.g. empty graph). Neo4j dump still runs."
+        rm -f ./backups/owl_export_meta.json
+    fi
 else
     echo "[$(date)] API not running, skipping OWL export"
 fi
@@ -46,12 +51,13 @@ if [ -z "$VOLUME" ]; then
 fi
 
 echo "[$(date)] Dumping Neo4j (volume: $VOLUME)..."
-# neo4j-admin runs as uid 7474 (neo4j) inside the container — relax host perms so it can write
-chmod 777 ./backups 2>/dev/null || true
-docker run --rm -v "${VOLUME}:/data" -v "$(pwd)/backups:/backups" neo4j:5 \
-    neo4j-admin database dump neo4j --to-path=/backups
-mv ./backups/neo4j.dump "./backups/neo4j_$(date +%Y%m%d_%H%M%S).dump" 2>/dev/null || true
-chmod 755 ./backups 2>/dev/null || true
+# Two-step to avoid chmod 777 on the host backups dir:
+#   1. dump into the volume (/data is owned by the neo4j user → writeable)
+#   2. copy the dump out to the host backups dir via a root alpine container
+docker run --rm --entrypoint bash -v "${VOLUME}:/data" neo4j:5 -c \
+    "mkdir -p /data/sm-backup-staging && neo4j-admin database dump neo4j --to-path=/data/sm-backup-staging"
+docker run --rm -v "${VOLUME}:/data" -v "$(pwd)/backups:/backups" alpine \
+    sh -c "mv /data/sm-backup-staging/neo4j.dump \"/backups/neo4j_$(date +%Y%m%d_%H%M%S).dump\" && rm -rf /data/sm-backup-staging"
 echo "[$(date)] Neo4j dump complete"
 
 echo "[$(date)] Restarting Neo4j..."
