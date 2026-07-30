@@ -338,7 +338,7 @@ cp .env.example .env
 # Edit .env with your API keys (OPENAI_API_KEY required)
 
 # 3. Create directories
-mkdir -p data outputs backups
+mkdir -p data outputs backups certbot_conf certbot-www
 
 # 4. Start (dev mode, no SSL)
 docker compose up neo4j api --build
