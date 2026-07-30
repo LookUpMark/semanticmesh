@@ -16,6 +16,7 @@ Master's thesis, Politecnico di Torino, March 2026.
 - [Architecture](#architecture)
 - [Key Features](#key-features)
 - [Getting Started](#getting-started)
+- [Deployment](#deployment)
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
@@ -76,10 +77,10 @@ flowchart TD
     K -. "next table" .-> F
 
     classDef input fill:#FAFAFA,stroke:#424242,stroke-width:2px
-    classDef process fill:#F5F5F5,stroke:#9E9E9E,stroke-width:1.5px
-    classDef key fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
-    classDef optional fill:#FAFAFA,stroke:#9E9E9E,stroke-width:1.5px,stroke-dasharray: 5 5
-    classDef database fill:#37474F,stroke:#263238,stroke-width:2px,color:#ECEFF1
+classDef process fill:#F5F5F5,stroke:#9E9E9E,stroke-width:1.5px
+classDef key fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+classDef optional fill:#FAFAFA,stroke:#9E9E9E,stroke-width:1.5px,stroke-dasharray: 5 5
+classDef database fill:#37474F,stroke:#263238,stroke-width:2px,color:#ECEFF1
 ```
 
 #### Query Graph
@@ -111,10 +112,10 @@ flowchart TD
 
     classDef input fill:#FAFAFA,stroke:#424242,stroke-width:2px
     classDef process fill:#F5F5F5,stroke:#9E9E9E,stroke-width:1.5px
-    classDef key fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
-    classDef gate fill:#FAFAFA,stroke:#424242,stroke-width:2px
-    classDef output fill:#37474F,stroke:#263238,stroke-width:2px,color:#ECEFF1
-    classDef optional fill:#FAFAFA,stroke:#9E9E9E,stroke-width:1.5px,stroke-dasharray: 5 5
+classDef key fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+classDef gate fill:#FAFAFA,stroke:#424242,stroke-width:2px
+classDef output fill:#37474F,stroke:#263238,stroke-width:2px,color:#ECEFF1
+classDef optional fill:#FAFAFA,stroke:#9E9E9E,stroke-width:1.5px,stroke-dasharray: 5 5
 ```
 
 ### Builder Graph
@@ -222,7 +223,7 @@ Edit `.env` with your values:
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=your_password_here        # Must match Docker -e NEO4J_AUTH
 
-OPENAI_API_KEY=sk-proj-...               # At least one LLM key
+OPENAI_API_KEY=sk-proj...               # At least one LLM key
 
 # Generate a secure API key for the REST API:
 # python -c "import secrets; print(secrets.token_urlsafe(32))"
@@ -240,7 +241,7 @@ LLM_MODEL_MIDTIER=gpt-5-nano-2025-08-07       # For schema enrichment, mapping
 source .venv/bin/activate
 set -a && source .env && set +a          # Load env vars into shell
 
-python -m scripts.serve_api              # http://127.0.0.1:8000
+python -m scripts.serve_api              # http://127.0.1:8000
 python -m scripts.serve_api --reload     # Dev mode (auto-reload on code changes)
 ```
 
@@ -256,7 +257,7 @@ python -m scripts.serve_api --reload     # Dev mode (auto-reload on code changes
 ```bash
 # Health check (no auth)
 curl http://localhost:8000/health
-# → {"status": "ok"}
+# → {"status":"ok"}
 
 # Authenticated request (requires API_KEY)
 curl -H "X-API-Key: YOUR_KEY" http://localhost:8000/api/v1/demo/graph/stats
@@ -314,6 +315,110 @@ langgraph dev
 
 Requires a LangSmith account (uses LANGCHAIN_API_KEY). Shows animated graph execution, state inspection, and step-through debugging.
 
+---
+
+## Deployment
+
+### Quick Start (Docker Compose)
+
+**Prerequisites:**
+- Docker 20+ and Docker Compose
+- 4GB RAM minimum (8GB recommended)
+- Neo4j Community Edition 5.x (auto-pulled by Docker)
+
+**Setup (one-time):**
+
+```bash
+# 1. Clone and navigate
+git clone https://github.com/LookUpMark/semanticmesh.git
+cd semanticmesh
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your API keys (OPENAI_API_KEY required)
+
+# 3. Create directories
+mkdir -p data outputs backups
+
+# 4. Start (dev mode, no SSL)
+docker compose up neo4j api --build
+```
+
+**Access:**
+- API: http://localhost:8000
+- Swagger docs: http://localhost:8000/docs
+- Neo4j Browser: http://localhost:7474 (neo4j / thesis_password)
+
+**Production (with SSL):**
+
+```bash
+# 1. Generate SSL certificates
+docker run --rm -v certbot_conf:/etc/letsencrypt -v certbot-www:/var/www/certbot \
+  certbot/certbot certonly --webroot -w /var/www/certbot \
+  -d yourdomain.com --email your@email.com --agree-tos
+
+# 2. Start full stack
+docker compose up -d
+
+# 3. Verify
+curl https://yourdomain.com/health
+```
+
+**GPU Support:**
+
+If NVIDIA drivers detected, GPU used automatically for embedding/reranker acceleration:
+```bash
+# Check GPU availability
+nvidia-smi
+docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+
+# Start with GPU (automatic)
+docker compose up neo4j api --build
+```
+
+**Backup & Restore:**
+
+```bash
+# Manual backup
+./scripts/backup_all.sh
+
+# Automated backup (cron)
+0 2 * * * cd /path/semanticmesh && ./scripts/backup_all.sh
+
+# Rollback to specific version
+./scripts/rollback.sh 20260730_143022
+```
+
+**Operations:**
+
+```bash
+# Logs
+docker compose logs -f api
+docker compose logs -f neo4j
+
+# Restart services
+docker compose restart api
+
+# Stop all
+docker compose down
+
+# Stop with volume cleanup
+docker compose down -v
+```
+
+**Troubleshooting:**
+
+```bash
+# Neo4j won't start → check password mismatch
+docker compose logs neo4j | grep -i error
+
+# API can't reach Neo4j → check health status
+docker compose ps
+
+# GPU not detected → verify drivers
+nvidia-smi
+docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+```
 
 ---
 
@@ -349,7 +454,7 @@ The primary interface is the FastAPI REST API:
 
 ```bash
 # Start the server
-python -m scripts.serve_api              # Default: http://127.0.0.1:8000
+python -m scripts.serve_api              # Default: http://127.0.1:8000
 python -m scripts.serve_api --reload     # Auto-reload for development
 ```
 
@@ -495,7 +600,6 @@ Best configuration evaluated across 7 datasets (111 tables, 210 questions), re-j
 ### Ablation Campaign
 
 21 single-variable studies (AB-00..AB-20) on DS01 + the AB-BEST/AB-BEST-K20 comparison across all 7 datasets, re-run on v1.5.1 and re-judged by the AI Judge on a 1–5 scale. Representative DS01 scores:
-
 | Study | Description | Score | Delta vs AB-00 |
 |-------|-------------|:-----:|:--------------:|
 | AB-06 | Chunking 128/16 (best) | **4.80** | +0.30 |
