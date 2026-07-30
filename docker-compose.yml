@@ -53,13 +53,18 @@ services:
         condition: service_healthy
     networks:
       - semanticmesh-net
-    runtime: nvidia  # Auto-fallback to runc
     deploy:
       resources:
         limits:
           memory: 2G
         reservations:
           memory: 1G
+          # GPU auto-detect: allocate only if NVIDIA present, else CPU-only.
+          # Docker ignores this block when no matching device exists.
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   nginx:
     image: nginx:alpine
