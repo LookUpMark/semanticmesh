@@ -1,0 +1,78 @@
+% !TEX encoding = UTF-8 Unicode
+% !TEX TS-program = pdflatex
+%
+% Thesis Summary (standalone, English).
+% Grounded on the thesis chapters (evaluation results: v1.5.1).
+% Compiles to its own PDF: summary.pdf
+%   pdflatex summary.tex   (no biber needed)
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=1.4em}
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.2ex plus 0.3ex}{0.7ex plus 0.2ex}
+
+\title{\vspace{-1.5em}\bfseries Generative AI and Foundation Models for Automated Data Engineering and Metadata Orchestration\\\large\normalfont Summary}
+\author{Marc'Antonio Lopez (s336362)\\[2pt]\small Supervisor: Prof.\ Paolo Garza\\
+\small Politecnico di Torino --- Computer Engineering (AI \& Data Analytics)\\
+\small Academic Year 2025/2026}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-1.5em}
+
+\section{Context and Problem}
+
+Modern enterprises manage thousands of tables across operational systems, data warehouses, and analytics platforms. Each table carries a schema that encodes business logic, yet the documentation describing that logic---requirement specifications, glossaries, data dictionaries, and policy files---rarely stays synchronised with the evolving database. This \emph{semantic gap} between business documentation and physical data infrastructure is a core challenge of data governance, compounded by regulatory frameworks that impose strict requirements on data lineage, metadata accuracy, and auditability. Data stewards bridge the gap today through manual cataloguing and ad-hoc querying: a laborious, error-prone process that does not scale to the volume and velocity of change typical of enterprise environments. Documentation speaks in domain terms (``net revenue'', ``customer churn'', ``subscription plan''), while schemas use technical identifiers (\texttt{TBL\_REVENUE\_FY}, \texttt{CUST\_CHRN\_FLG}, \texttt{SUB\_PLAN\_CD}). Traditional data catalogues (Collibra, Alation) require extensive manual configuration; baseline RAG handles factual lookup but fails on cross-document reasoning and complex schema relationships; existing GraphRAG systems address graph reasoning but are not designed for governance---they lack entity resolution across heterogeneous sources, schema-mapping validation, and incremental update mechanisms. Crucially, no existing system combines all the capabilities this task demands: automated knowledge-graph construction from heterogeneous governance documents, validated schema mapping between business concepts and physical tables, multi-loop self-correction, incremental updates, and systematic ablation-based evaluation.
+
+\section{Objective and Contributions}
+
+This thesis presents \textbf{SemanticMesh}, a multi-agent framework that automates semantic discovery by bridging the semantic gap between unstructured business documentation and physical DDL schemas, constructing a queryable Knowledge Graph in Neo4j that maps business concepts to physical tables and answers natural-language questions over the resulting graph through retrieval-augmented generation. Its main contributions are: \textbf{(i)}~a two-graph architecture that strictly separates ontology construction (Builder) from query answering (Query), following a CQRS-style separation of writes from reads applied to LLM pipelines; \textbf{(ii)}~a multi-stage entity resolution combining embedding-based vector blocking (BGE-M3 with Union-Find clustering at a cosine threshold) and an LLM judge; \textbf{(iii)}~three independent self-correction loops (Actor-Critic schema-mapping validation, Cypher healing, and a Self-RAG-style hallucination grader); \textbf{(iv)}~a hybrid retrieval strategy (dense + BM25 + graph traversal) with Reciprocal Rank Fusion and cross-encoder re-ranking; \textbf{(v)}~a provider-agnostic five-tier LLM factory abstracting twelve backends behind a uniform \texttt{LLMProtocol}, with automatic detection and fallback; \textbf{(vi)}~a SHA-256 hash-based incremental update mechanism that reprocesses only modified documents; and \textbf{(vii)}~a domain-specific AI-Judge evaluation framework that overcomes the limitations of generic automated metrics on technical responses.
+
+\section{Architecture and Implementation}
+
+The central decision is the separation into two independent LangGraph state machines, each with its own typed state schema (\texttt{BuilderState}, \texttt{QueryState}), its own nodes and conditional edges, and its own checkpointer; the sole shared resource is the Neo4j Knowledge Graph, written by the Builder and read by the Query. The \textbf{Builder Graph} (twelve nodes, six phases) constructs the ontology: document ingestion with two-level hierarchical chunking (parent 800 / child 256 tokens), BGE-M3 embedding of child chunks only, and SHA-256 change detection; triplet extraction in JSON mode with self-reflection (or a deterministic spaCy heuristic fallback) and two-stage entity resolution; deterministic DDL parsing via \texttt{sqlglot} and LLM-based acronym expansion; RAG-augmented schema mapping with Actor-Critic validation and best-proposal tracking; few-shot Cypher generation with \texttt{EXPLAIN}-based healing and a deterministic parameterised fallback; and batch \texttt{UNWIND} persistence. The \textbf{Query Graph} (nine nodes, five phases) answers questions: three-channel hybrid retrieval (dense, BM25, graph traversal) fused by Reciprocal Rank Fusion ($k{=}60$); cross-encoder re-ranking (\texttt{bge-reranker-v2-m3}) with a retrieval-quality gate routing to generation, generation-with-warning, or early abstention; answer generation ($T{=}0.3$); Self-RAG hallucination grading with a regeneration loop; and finalisation with source references. The graph follows a purpose-built ontology with six node labels (\texttt{BusinessConcept}, \texttt{PhysicalTable}, \texttt{Chunk}, \texttt{ParentChunk}, \texttt{SourceFile}, \texttt{Attribute}) and five relationship types (\texttt{MAPPED\_TO}, \texttt{REFERENCES}, \texttt{MENTIONS}, \texttt{CHILD\_OF}, \texttt{HAS\_COLUMN}), backed by 1024-dimensional vector indexes and unique constraints that enforce idempotent upserts. The three self-correction loops share a bounded generate--validate--inject-feedback--retry structure capped at three attempts: the Actor-Critic loop tracks the highest-confidence valid proposal across retries; Cypher healing falls back to a deterministic parameterised builder on exhaustion, so persistence always succeeds; and the hallucination grader force-passes the current answer once the retry budget is spent, preventing unbounded computation. Incremental updates rely on a SHA-256 file registry that skips unchanged files and reprocesses only modified ones via a cascading delete and orphan cleanup, so the graph is never rebuilt from scratch. A five-tier LLM factory (\emph{lightweight}, \emph{extraction}, \emph{mid-tier}, \emph{generation}, \emph{reasoning}) matches model capability to task complexity---temperature $T{=}0.0$ on all structured tasks for determinism and reproducibility, $T{=}0.3$ only on generation---with each tier a singleton providing retry, latency logging, and token tracking. The entire system relies on prompt engineering and orchestration alone---no model fine-tuning---so it adapts to new domains and providers without retraining. A FastAPI REST API exposes asynchronous build/query, ablation runs, and runtime configuration; confidence-based routing optimises LLM usage (above 0.85 the Critic call is skipped; below the human threshold the mapping is suspended for human-in-the-loop review).
+
+\section{Evaluation}
+
+The system is evaluated on seven synthetic datasets (111 tables, 210 questions) with a curated gold standard, designed to simulate varying schema complexity and documentation quality across domains---E-Commerce, Finance, Healthcare, Manufacturing, edge-incomplete, edge-legacy, and a 58-table stress set (DS07). The gold standard is synthetic because no public benchmark covers data-governance question answering at this level of schema detail. Evaluation combines standard RAGAS metrics (faithfulness, answer relevancy, context precision and recall) with custom ones (Cypher healing rate, HITL confidence agreement); all structured tasks run at $T{=}0$ for reproducibility. A custom \textbf{AI Judge} based on \texttt{gpt-5.4-nano} evaluates answers over five weighted dimensions (Builder Quality 25\%, Retrieval Effectiveness 25\%, Answer Quality 30\%, Pipeline Health 10\%, Ablation Impact 10\%). The motivation is empirical: RAGAS's \emph{answer relevancy} penalises technical responses containing database identifiers---grounded answers scored as low as 0.16---its \emph{context precision} penalises the large parent chunks required by graph-structured retrieval, and its metrics cannot reward correct negative answers (``I don't know'').
+
+\begin{center}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Dataset} & \textbf{Questions} & \textbf{AI-Judge} \\
+\midrule
+DS01 E-Commerce       & 15 & 4.50 \\
+DS02 Finance          & 25 & 4.70 \\
+DS03 Healthcare       & 30 & 3.65 \\
+DS04 Manufacturing    & 40 & 4.45 \\
+DS05 Edge-incomplete  & 20 & 4.45 \\
+DS06 Edge-legacy      & 25 & 4.25 \\
+DS07 Stress (58 tab.) & 55 & 4.20 \\
+\midrule
+\textbf{Average}      & \textbf{30} & \textbf{4.31 / 5} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The optimised configuration AB-BEST produced \textbf{210/210 grounded answers (100\%), zero hallucinations, and 100\% builder completion}, with an average AI-Judge score of \textbf{4.31/5}; the hardest cases are DS03 Healthcare (3.65, multi-hop clinical questions) and the degraded schemas DS06 (4.25) and DS07 (4.20).
+
+\section{Ablation and Key Findings}
+
+A campaign of 21 single-variable studies (AB-00--AB-20) plus the optimised AB-BEST and AB-BEST-K20 configurations quantified the contribution of each component (retrieval mode, reranker parameters, chunking strategy, entity-resolution thresholds, HITL validation, component-off). Two findings revise intuitive expectations: \textbf{(1)}~on the DS01 baseline the judge is tightly compressed (3.80--4.80), so most single-variable changes are indistinguishable from the baseline (4.50); the only component whose absence the judge penalises is Cypher healing (AB-19, 3.80), so the remaining components are retained for robustness on degraded or larger schemas rather than for measurable DS01 quality; \textbf{(2)}~retrieval recall is decoupled from judged answer quality: widening the reranker pool from $k{=}5$ to $k{=}20$ raised Gold-Standard coverage from 0.860 to 0.986 but not the score (4.31 vs.\ 4.28), since the extra chunks at ranks 6--20 are often related-but-wrong tables that dilute precision; AB-BEST therefore keeps $k{=}5$ for a $4\times$ cross-encoder inference saving. A \emph{floor} issue also surfaced: cross-encoder absolute scores are artificially low on highly technical content (DDL, data dictionaries), addressed by exporting both a raw and a pool-aware adjusted score consumed by the quality gate to avoid false rejections.
+
+\section{Limitations and Future Work}
+
+Among the observed limitations: declining precision on multi-hop clinical questions (DS03); reduced Gold-Standard coverage on incomplete or legacy schemas (DS05 79\%, DS06 63\%), since documentation gaps propagate into the constructed graph; and the retrieval-score floor, a workaround rather than a fundamental fix. Qualitative design limitations (very wide tables, scale of global reasoning, embedding drift on specialised vocabulary) remain plausible but unmeasured at the stated thresholds. The most promising future directions include community detection (Louvain/Leiden) for hierarchical global reasoning, semantic intra-table chunking for wide schemas, fine-tuning of a small domain-specific model (SLM via LoRA), an adaptive retrieval-pool policy, and active learning from human-in-the-loop corrections.
+
+\end{document}

@@ -2,7 +2,10 @@
 FROM python:3.12-slim AS builder
 WORKDIR /app
 COPY pyproject.toml README.md ./
-RUN pip install --no-cache-dir -e ".[dev]"
+# Runtime image: install the package only (no dev deps, non-editable).
+# ponytail: was `-e ".[dev]"` — pulled pytest/mypy/ruff/testcontainers into the
+# 9.84GB runtime image. `.[dev]` dropped, `-e` dropped (prod source is read-only).
+RUN pip install --no-cache-dir .
 
 # Stage 2: Runtime image
 FROM python:3.12-slim
