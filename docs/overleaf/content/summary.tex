@@ -1,8 +1,14 @@
 % Sintesi in italiano — equivalente italiano dell'abstract (content/abstract.tex).
 % Grounded sui risultati di valutazione v1.5.1.
 
+\begingroup
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\baselineskip}
+
 Le aziende moderne gestiscono i dati attraverso schemi fisici il cui significato è disperso nella documentazione di governance non strutturata~---~dizionari dati, policy e documenti di progettazione. Questo \emph{scarto semantico} fra documentazione e schema rende la scoperta e la governance dei dati lente, manuali e soggette a errore. La tesi presenta \textbf{SemanticMesh}, un framework multi-agente che colma tale scarto: ingerisce documenti di governance e DDL, costruisce in Neo4j un Knowledge Graph che collega concetti di business e tabelle fisiche, e risponde a interrogazioni in linguaggio naturale sul grafo tramite retrieval-augmented generation.
 
 SemanticMesh è organizzato attorno a un'architettura a due grafi di ispirazione CQRS: un grafo \emph{Builder} write-heavy che estrae triple, risolve le entità, mappa gli schemi su un'ontologia e genera ed esegue Cypher; e un grafo \emph{Query} read-heavy che esegue retrieval ibrido. Il Builder combina una entity resolution a due stadi~---~blocking vettoriale BGE-M3 con clustering Union-Find, seguito da un giudice LLM mid-tier~---~con loop di auto-riflessione: validazione Actor-Critic dello schema mapping, Cypher healing con fallback deterministico parametrico e hallucination grader di ispirazione Self-RAG. Il grafo Query fonde ricerca densa, BM25 e attraversamento del grafo tramite Reciprocal Rank Fusion, e re-rankizza i candidati con un cross-encoder \texttt{bge-reranker-v2-m3} dietro un quality gate.
 
 Il sistema è valutato tramite una campagna di ablation di 21 studi a variabile singola più la configurazione ottimizzata, su sette dataset sintetici (111 tabelle, 210 domande) con un LLM-as-a-Judge domain-specific. La configurazione migliore ha ottenuto \textbf{210/210 risposte grounded (100\%) con zero allucinazioni} e un punteggio medio di \textbf{4.31/5}, incluso uno stress set di 58 tabelle. L'ablation informa la configurazione di default e revisiona due aspettative intuitive: sul baseline la maggior parte delle variazioni a variabile singola è indistinguibile dal baseline, per cui i componenti sono mantenuti per robustezza su schemi degradati; e il recall è disaccoppiato dalla qualità della risposta, poiché allargare il pool del reranker da $k{=}5$ a $k{=}20$ ha innalzato la copertura del Gold-Standard da $0.860$ a $0.986$ senza innalzare il punteggio (4.31 contro 4.28). La tesi documenta inoltre limitazioni e direzioni future (community detection, embedding di dominio).
+
+\endgroup
